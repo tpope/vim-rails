@@ -1,6 +1,6 @@
 " rails.vim - Detect a rails application
 " Author:       Tim Pope <vimNOSPAM@tpope.info>
-" Last Change:  2006 May 23
+" Last Change:  2006 May 29
 " $Id$
 
 " See doc/rails.txt for details.
