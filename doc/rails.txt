@@ -1,0 +1,258 @@
+*rails.txt*	Plugin for working with Ruby on Rails applications
+
+Author: Tim Pope <vimNOSPAM@tpope.info>		*rails-plugin-author*
+
+|rails-introduction|	Introduction and Feature Summary
+|rails-installation|	Installation and Usage
+|rails-configuration|	Configuration
+|rails-options|		Managed Vim Options
+|rails-navigation|	Navigation
+|rails-mappings|	Mappings
+|rails-commands|	Commands
+|rails-partials|	Partial Extraction
+
+This plugin is only available if 'compatible' is not set.
+
+{Vi does not have any of this}
+
+==============================================================================
+INTRODUCTION					*rails-introduction* *rails*
+
+TextMate may be the latest craze, but Vim is forever.  This plugin offers the
+following features for Ruby on Rails application development.
+
+1. Automatically detects buffers containing files from Rails applications,
+   and applies settings to those buffers (and only those buffers).  You can
+   use an |autocommand| to apply your own custom settings as well.
+   |rails-configuration|
+
+2. Unintrusive.  It should only affect files in a Rails application; regular
+   Ruby scripts are left untouched.  Even when enabled, the plugin should keep
+   out of your way if you're not using its features.  (If you find a situation
+   where this is not a case, contact the |rails-plugin-author|.)
+
+3. Provides reasonable settings for working with Rails applications.  Rake is
+   the 'makeprg' (and it always knows where your Rakefile is), 'shiftwidth'
+   is 2, and 'path' includes an appropriate collection of directories from
+   your application. |rails-options|
+
+4. Easy navigation of the Rails directory structure.  |gf| considers context
+   and knows about partials, fixtures, and much more.  |:Alternate| (easily
+   mapped with |<Plug>RailsAlternate|) helps you jump from your view, to your
+   helper, to your controller, to your test. |rails-navigation|
+
+5. Partial extraction.  |:Partial| {file} replaces the desired range (ideally
+   selected in visual line mode) with "render :partial => '{file}'", which is
+   automatically created with the content you created.  The @{file} instance
+   variable is replaced with the {file} local variable. |rails-partials|
+
+6. Snippets.  (Just kidding.)
+
+==============================================================================
+INSTALLATION AND USAGE				*rails-installation*
+
+If you have the zip file, extract it to vimfiles (Windows) or ~/.vim
+(everything else).  You should have the following files: >
+	plugin/rails.vim
+	doc/rails.txt
+See |add-local-help| for instructions on enabling the documentation.  In a
+nutshell: >
+	:helptags ~/.vim/doc
+
+Whenever you edit a file in a Rails application, this plugin will be
+automatically activated.  This sets various options and defines a few
+buffer-specific commands.
+
+==============================================================================
+CONFIGURATION					*rails-configuration*
+
+Little configuration should need to be done; this plugin automatically detects
+and adjusts Vim sensibly and subtly.  If you would like to set your own custom
+Vim settings when ever a Rails file is loaded, you can use an autocmd like the
+following in your vimrc: >
+	autocmd User rails map <buffer> <LocalLeader>ra <Plug>RailsAlternate
+
+A few global variables control the behavior of this plugin.  In general, they
+can be enabled with lines line the following in your vimrc: >
+	let g:rails_some_option=1
+<
+						*g:rails_loaded*
+Do not load the plugin. For emergency use only. >
+	let g:rails_loaded=1
+<
+						*g:rails_no_isfname*
+Disables the changes to the 'isfname' option.  See |rails-'isfname'|.
+
+						*g:rails_statusline*
+Give a clue in the statusline when this plugin is enabled: >
+	let g:rails_statusline=1
+This requires that the current filetype is in your existing 'statusline'.
+ 
+==============================================================================
+MANAGED VIM OPTIONS			*rails-options*
+
+The following options are set local to buffers where the plugin is active.
+
+					*rails-'shiftwidth'*	*rails-'sw'*
+					*rails-'softtabstop'*	*rails-'sts'*
+					*rails-'expandtab'*	*rails-'et'*
+A value of 2 is used for 'shiftwidth' (and 'softtabstop'), and 'expandtab' is
+enabled.  This is a strong convention in Rails, so the conventional wisdom
+that this is a user preference has been ignored.
+
+					*rails-'path'*		*rails-'pa'*
+All the relevant directories from your application are added to your 'path'.
+This makes it easy to access a buried file: >
+	:find blog_controller.rb
+<
+					*rails-'suffixesadd'*	*rails-'sua'*
+This is filetype dependent, but typically includes .rb, .rhtml, and several
+others.  This allows shortening the above example: >
+	:find blog_controller
+<
+					*rails-'includeexpr'*	*rails-'inex'*
+The 'include' and 'includeexpr' options are set to enable the magic described
+in |rails-gf|.
+
+					*rails-'isfname'*	*rails-'isf'*
+The |rails-gf| feature is further enhanced by changing 'isfname'.
+Unfortunately, this is a global option.  To compensate, the plugin attempts to
+restore this option upon changing buffers.  If this causes problems for you,
+enable the |g:rails_no_isfname| setting.  Also, please explain your problem to
+the |rails-plugin-author|, so that it might be addressed in a future release.
+
+					*rails-'makeprg'*	*rails-'mp'*
+					*rails-'errorformat'*	*rails-'efm'*
+Rake is used as the 'makeprg', so |:make| will work as expected.  Also, thanks
+to the rubyunit compiler, 'errorformat' is set appropriately to handle your
+tests.
+
+					*rails-'filetype'*	*rails-'ft'*
+The 'filetype' is sometimes adjusted for Rails files.  Most notably, *.rxml
+and *.rjs are treated as Ruby files, and files that have been falsely
+identified as Mason sources are changed back to ERuby files (but only when
+they are part of a Rails application).
+
+==============================================================================
+NAVIGATION					*rails-navigation*
+
+The 'path' has been modified to include all the best places to be.
+>
+	:find blog_controller
+	:find book_test
+<
+						*rails-gf*
+Use |gf|, |CTRL-W_f|, and |CTRL-W_gf| liberally, as 'includeexpr' has been
+hacked to make them quite intelligent.
+
+Example uses of |gf|, and where they might lead.
+(* indicates cursor position)
+>
+	Pos*t.find(:first)
+<	app/models/post.rb ~
+>
+	has_many :c*omments
+<	app/models/comment.rb ~
+>
+	link_to "Home", :controller => :bl*og
+<	app/controllers/blog_controller.rb ~
+>
+	<%= render :partial => 'sh*ared/sidebar' %>
+<	app/views/shared/_sidebar.rhtml ~
+>
+	<%= stylesheet_link_tag :scaf*fold %>
+<	public/stylesheets/scaffold.css ~
+>
+	class BlogController < Applica*tionController
+<	app/controllers/application.rb ~
+>
+	class ApplicationController < ActionCont*roller::Base
+<	.../action_controller/base.rb ~
+>
+	fixtures :pos*ts
+<	test/fixtures/posts.yml ~
+>
+	layout :pri*nt
+<	app/views/layouts/print.rhtml ~
+>
+	(In the Blog controller)
+	def li*st
+<	app/views/blog/list.rhtml ~
+
+Suggestions for further contexts to consider are welcome.
+
+==============================================================================
+MAPPINGS					*rails-mappings*
+
+There are no default mappings.
+
+						*<Plug>RailsAlternate*
+<Plug>RailsAlternate	Switch to the "alternate" file.  Typically this just
+			adds or removes "_test" from the filename , but try it
+			in lots of places, you may be surprised. >
+				:map <Leader>ra <Plug>RailsAlternate
+
+==============================================================================
+COMMANDS					*rails-commands*
+
+						*rails-:Cd*
+:Cd [{directory}]	|:cd| to /path/to/railsapp/{directory}.
+
+						*rails-:Lcd*
+:Lcd [{directory}]	|:lcd| to /path/to/railsapp/{directory}.
+
+						*rails-:Script*
+:Script {script} {options}
+			Call ruby script/{script} {options}.
+
+						*rails-:Console*
+:Console {options}	Start script/console.
+
+						*rails-:Alternate*
+:Alternate		Load the "alternate" file.  See
+			|<Plug>RailsAlternate|.
+
+						*rails-:Partial*
+:[range]Partial [{controller}/]{name}	
+			Create a {name} partial from [range] lines (default:
+			current line).  See |rails-partials|.
+
+						*rails-:Partial!*
+:Partial!		Does not exist (yet).  You will have to manually
+			delete an old partial before creating a new one.
+
+
+==============================================================================
+PARTIAL EXTRACTION				*rails-partials*
+
+The |rails-:Partial| command can be used to extract a partial to a new file.
+
+If this is your file, in app/views/blog/show.rhtml: >
+
+  1	<div>
+  2	  <h2><%= @post.title %></h2>
+  3	  <p><%= @post.body %></p>
+  4	</div>
+
+And you issue this command: >
+
+	:2,3Partial post
+
+Your file will change to this: >
+
+  1	<div>
+  2	  <%= render :partial => 'post' %>
+  3	</div>
+
+And app/views/blog/_post.rhtml will now contain: >
+
+  1	<h2><%= post.title %></h2>
+  2	<p><%= post.body %></p>
+<
+The easiest way to choose what to extract is to use |linewise-visual| mode.
+Then, a simple >
+	:'<,'>Partial blog/post
+will suffice. (Note the use of a controller name in this example.)
+
+==============================================================================
+vim:tw=78:ts=8:ft=help:norl:
