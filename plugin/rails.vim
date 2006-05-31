@@ -269,6 +269,16 @@ function! s:Syntax()
         exe "syn match railsRubyHelperMethod ".rails_view_helpers
         hi def link railsRubyHelperMethod           railsRubyMethod
       endif
+      if t=~ '^test\>'
+        if !exists("s:rails_test_asserts")
+          " TODO: ActionController::Assertions
+          let s:rails_test_asserts = s:RubyEval('require %{test/unit/testcase}; puts Test::Unit::TestCase.instance_methods.grep(/^assert/).sort.uniq.join(%{ })',"assert_equal")
+        endif
+        "let g:rails_test_asserts = s:rails_test_asserts
+        let rails_test_asserts = '+\.\@<!\<\('.substitute(s:rails_test_asserts,'\s\+','\\|','g').'\)\>+'
+        exe "syn match railsRubyTestMethod ".rails_test_asserts
+        hi def link railsRubyTestMethod             railsRubyMethod
+      endif
       hi def link railsRubyError rubyError
       hi def link railsRubyMethod railsMethod
       hi def link railsMethod rubyFunction
@@ -513,8 +523,8 @@ endfunction
 " Statusline {{{1
 function! s:InitStatusline()
   if &statusline !~ 'Rails'
-    let &statusline=substitute(&statusline,'%y','%y%{RailsStatusline()}','')
-    let &statusline=substitute(&statusline,'%Y','%Y%{RailsSTATUSLINE()}','')
+    let &statusline=substitute(&statusline,'\C%y','%y%{RailsStatusline()}','')
+    let &statusline=substitute(&statusline,'\C%Y','%Y%{RailsSTATUSLINE()}','')
   endif
 endfunction
 
