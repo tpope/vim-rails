@@ -18,6 +18,10 @@ let g:loaded_rails = 1
 let cpo_save = &cpo
 set cpo&vim
 
+function s:gsub(str,pat,rep)
+  return substitute(a:str,'\C'.a:pat,a:rep,'g')
+endfunction
+
 function s:RubyEval(ruby,...)
   if a:0 > 0
     let def = a:1
@@ -63,8 +67,8 @@ function! RailsFilePath()
   elseif exists("b:rails_file_path")
     return b:rails_file_path
   endif
-  let f = substitute(expand("%:p"),'\\ \@!','/','g')
-  if substitute(b:rails_app_path,'\\ \@!','/','g') == strpart(f,0,strlen(b:rails_app_path))
+  let f = s:gsub(expand("%:p"),'\\ \@!','/')
+  if s:gsub(b:rails_app_path,'\\ \@!','/') == strpart(f,0,strlen(b:rails_app_path))
     return strpart(f,strlen(b:rails_app_path)+1)
   else
     return f
@@ -248,15 +252,18 @@ function! s:Syntax()
       let s:rails_view_helpers = s:RubyEval('require %{action_view}; puts ActionView::Helpers.constants.select {|c| c =~ /Helper$/}.collect {|c|ActionView::Helpers.const_get c}.collect {|c| c.public_instance_methods(false)}.flatten.sort.uniq.reject {|m| m =~ /[=?]$/}.join(%{ })',"form_tag end_form_tag")
     endif
 "    let g:rails_view_helpers = s:rails_view_helpers
-    let rails_view_helpers = '+\.\@<!\<\('.substitute(s:rails_view_helpers,'\s\+','\\|','g').'\)\>+'
+    let rails_view_helpers = '+\.\@<!\<\('.s:gsub(s:rails_view_helpers,'\s\+','\\|').'\)\>+'
     if &syntax == 'ruby'
       if t =~ '^model$' || t =~ '^model-ar\>'
         syn keyword railsRubyModelActsMethod acts_as_list acts_as_nested_set acts_as_tree
         syn keyword railsRubyModelAssociationMethod belongs_to has_one has_many has_and_belongs_to_many
+        syn match railsRubyModelCallbackMethod '\<\(before\|after\)_\(create\|destroy\|save\|update\|validation\|validation_on_create\|validation_on_update\)\>'
         syn keyword railsRubyModelClassMethod attr_accessible attr_protected establish_connection set_inheritance_column set_locking_column set_primary_key set_sequence_name set_table_name
         syn keyword railsRubyModelValidationMethod validate validate_on_create validate_on_update validates_acceptance_of validates_associated validates_confirmation_of validates_each validates_exclusion_of validates_format_of validates_inclusion_of validates_length_of validates_numericality_of validates_presence_of validates_size_of validates_uniqueness_of
+        syn match railsRubyModelCallbackMethod '\<after_\(find\|initialize\)\>'
         hi def link railsRubyModelActsMethod        railsRubyModelMethod
         hi def link railsRubyModelAssociationMethod railsRubyModelMethod
+        hi def link railsRubyModelCallbackMethod    railsRubyModelMethod
         hi def link railsRubyModelClassMethod       railsRubyModelMethod
         hi def link railsRubyModelValidationMethod  railsRubyModelMethod
         hi def link railsRubyModelMethod            railsRubyMethod
@@ -264,10 +271,14 @@ function! s:Syntax()
       if t =~ '^controller\>' || t =~ '^view\>' || t=~ '^helper\>'
         syn match railsRubyMethod '\<\%(params\|request\|response\|session\|headers\|template\|cookies\|flash\)\>'
         syn match railsRubyError '@\%(params\|request\|response\|session\|headers\|template\|cookies\|flash\)\>'
+        syn keyword railsRubyRenderMethod render render_component
+        hi def link railsRubyRenderMethod           railsRubyMethod
       endif
       if t =~ '^helper\>' || t=~ '^view\>'
         exe "syn match railsRubyHelperMethod ".rails_view_helpers
         hi def link railsRubyHelperMethod           railsRubyMethod
+      elseif t =~ '^controller'
+        syn keyword railsRubyRenderMethod render_to_string render_component_as_string
       endif
       if t=~ '^test\>'
         if !exists("s:rails_test_asserts")
@@ -275,7 +286,7 @@ function! s:Syntax()
           let s:rails_test_asserts = s:RubyEval('require %{test/unit/testcase}; puts Test::Unit::TestCase.instance_methods.grep(/^assert/).sort.uniq.join(%{ })',"assert_equal")
         endif
         "let g:rails_test_asserts = s:rails_test_asserts
-        let rails_test_asserts = '+\.\@<!\<\('.substitute(s:rails_test_asserts,'\s\+','\\|','g').'\)\>+'
+        let rails_test_asserts = '+\.\@<!\<\('.s:gsub(s:rails_test_asserts,'\s\+','\\|').'\)\>+'
         exe "syn match railsRubyTestMethod ".rails_test_asserts
         hi def link railsRubyTestMethod             railsRubyMethod
       endif
@@ -313,7 +324,7 @@ function! s:Syntax()
 endfunction
 
 function! s:EscapePath(p)
-  return substitute(a:p,' ','\\ ','g')
+  return s:gsub(a:p,' ','\\ ')
 endfunction
 
 function! s:SetRubyBasePath()
@@ -361,18 +372,18 @@ function! s:RailsUnderscore(str,...)
   let str = substitute(str,'\s*$','','')
   let str = substitute(str,'^[:@]','','')
   "    let str = substitute(str,"\\([\"']\\)\\(.*\\)\\1",'\2','')
-  let str = substitute(str,"[\"']",'','g')
+  let str = s:gsub(str,"[\"']",'')
   if line =~ '\<\(require\|load\)\s*(\s*$'
     return str
   endif
-  let str = substitute(str,'::','/','g')
-  let str = substitute(str,'\(\u\+\)\(\u\l\)','\1_\2','g')
-  let str = substitute(str,'\(\l\|\d\)\(\u\)','\1_\2','g')
-  let str = substitute(str,'-','_','g')
+  let str = s:gsub(str,'::','/')
+  let str = s:gsub(str,'\(\u\+\)\(\u\l\)','\1_\2')
+  let str = s:gsub(str,'\(\l\|\d\)\(\u\)','\1_\2')
+  let str = s:gsub(str,'-','_')
   let str = tolower(str)
   let fpat = '\(\s*\%("\f*"\|:\f*\|'."'\\f*'".'\)\s*,\s*\)*'
   if a:str =~ '\u'
-    " Classes should always be in .rb's
+    " Classes should always be in .rb files
     let str = str . '.rb'
   elseif line =~ '\(:partial\|"partial"\|'."'partial'".'\)\s*=>\s*'
     let str = substitute(str,'\([^/]\+\)$','_\1','')
@@ -523,8 +534,8 @@ endfunction
 " Statusline {{{1
 function! s:InitStatusline()
   if &statusline !~ 'Rails'
-    let &statusline=substitute(&statusline,'\C%y','%y%{RailsStatusline()}','')
     let &statusline=substitute(&statusline,'\C%Y','%Y%{RailsSTATUSLINE()}','')
+    let &statusline=substitute(&statusline,'\C%y','%y%{RailsStatusline()}','')
   endif
 endfunction
 
