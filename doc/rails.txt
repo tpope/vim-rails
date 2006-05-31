@@ -70,6 +70,7 @@ Little configuration should need to be done; this plugin automatically detects
 and adjusts Vim sensibly and subtly.  If you would like to set your own custom
 Vim settings when ever a Rails file is loaded, you can use an autocmd like the
 following in your vimrc: >
+	autocmd User Rails* Lcd
 	autocmd User Rails* map <buffer> <LocalLeader>ra <Plug>RailsAlternate
 Note the use of an asterisk; this is required to allow for future expansion.
 
@@ -91,7 +92,8 @@ Enables changes to the 'isfname' option.  Default is enabled.  See
 						*g:rails_statusline*  >
 	let g:rails_statusline=1
 Give a clue in the statusline when this plugin is enabled.  This requires that
-the current filetype is in your existing 'statusline'.
+the current filetype is in your existing 'statusline'.  Not enabled by default
+but highly recommended.
 
 						*g:rails_syntax*  >
 	let g:rails_syntax=1

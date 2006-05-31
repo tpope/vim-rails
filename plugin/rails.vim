@@ -219,7 +219,11 @@ function! s:InitBuffer(path)
   endif
   " Since so many generated files are malformed...
   set endofline
-  silent doautocmd User Rails-blah
+  let t = RailsFileType()
+  if t != ""
+    let t = "-".t
+  endif
+  exe "silent doautocmd User Rails".t."-"
   if filereadable(b:rails_app_path."/config/rails.vim")
     sandbox exe "source ".rp."/config/rails.vim"
   endif
