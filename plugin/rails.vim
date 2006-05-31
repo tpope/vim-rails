@@ -34,7 +34,15 @@ function s:RubyEval(ruby,...)
   if !executable("ruby")
     return def
   endif
-  let results = system('ruby -e '.s:qq().'require %{rubygems} rescue nil; require %{active_support} rescue nil; '.a:ruby.s:qq())
+  if &shellquote == ""
+    let q = '"'
+  else
+    let q = &shellquote
+  endif
+  let cmd = 'ruby -e '.q.'require %{rubygems} rescue nil; require %{active_support} rescue nil; '.a:ruby.q
+  "let g:rails_last_ruby_command = cmd
+  let results = system(cmd)
+  "let g:rails_last_ruby_result = results
   if results =~ '-e:\d'
     return def
   else
@@ -130,6 +138,8 @@ function! RailsFileType()
     endif
   elseif f =~ '\<db/migrations\>'
     let r = "migration"
+  elseif f =~ '\<lib/tasks\>'
+    let r = "task"
   elseif e == "css" || e == "js" || e == "html"
     let r = e
   endif
@@ -256,24 +266,25 @@ function! s:Syntax()
   if (!exists("g:rails_syntax") || g:rails_syntax) && (exists("g:syntax_on") || exists("g:syntax_manual"))
     let t = RailsFileType()
     if !exists("s:rails_view_helpers")
-      let s:rails_view_helpers = s:RubyEval('require %{action_view}; puts ActionView::Helpers.constants.grep(/Helper$/).collect {|c|ActionView::Helpers.const_get c}.collect {|c| c.public_instance_methods(false)}.flatten.sort.uniq.reject {|m| m =~ /[=?]$/}.join(%{ })',"form_tag end_form_tag")
+      let s:rails_view_helpers = s:RubyEval('require %{action_view}; puts ActionView::Helpers.constants.grep(/Helper$/).collect {|c|ActionView::Helpers.const_get c}.collect {|c| c.public_instance_methods(false)}.flatten.sort.uniq.reject {|m| m =~ /[=?]$/}.join(%{ })',"h form_tag end_form_tag")
     endif
-"    let g:rails_view_helpers = s:rails_view_helpers
+    "let g:rails_view_helpers = s:rails_view_helpers
     let rails_view_helpers = '+\.\@<!\<\('.s:gsub(s:rails_view_helpers,'\s\+','\\|').'\)\>+'
     if &syntax == 'ruby'
       if t =~ '^model$' || t =~ '^model-ar\>'
-        syn keyword railsRubyModelActsMethod acts_as_list acts_as_nested_set acts_as_tree
-        syn keyword railsRubyModelAssociationMethod belongs_to has_one has_many has_and_belongs_to_many
-        syn match railsRubyModelCallbackMethod '\<\(before\|after\)_\(create\|destroy\|save\|update\|validation\|validation_on_create\|validation_on_update\)\>'
-        syn keyword railsRubyModelClassMethod attr_accessible attr_protected establish_connection set_inheritance_column set_locking_column set_primary_key set_sequence_name set_table_name
-        syn keyword railsRubyModelValidationMethod validate validate_on_create validate_on_update validates_acceptance_of validates_associated validates_confirmation_of validates_each validates_exclusion_of validates_format_of validates_inclusion_of validates_length_of validates_numericality_of validates_presence_of validates_size_of validates_uniqueness_of
-        "syn match railsRubyModelCallbackMethod '\<after_\(find\|initialize\)\>'
-        hi def link railsRubyModelActsMethod        railsRubyModelMethod
-        hi def link railsRubyModelAssociationMethod railsRubyModelMethod
-        hi def link railsRubyModelCallbackMethod    railsRubyModelMethod
-        hi def link railsRubyModelClassMethod       railsRubyModelMethod
-        hi def link railsRubyModelValidationMethod  railsRubyModelMethod
-        hi def link railsRubyModelMethod            railsRubyMethod
+        syn keyword railsRubyARActsMethod acts_as_list acts_as_nested_set acts_as_tree
+        syn keyword railsRubyARAssociationMethod belongs_to has_one has_many has_and_belongs_to_many
+        syn match railsRubyARCallbackMethod '\<\(before\|after\)_\(create\|destroy\|save\|update\|validation\|validation_on_create\|validation_on_update\)\>'
+        syn keyword railsRubyARClassMethod attr_accessible attr_protected establish_connection set_inheritance_column set_locking_column set_primary_key set_sequence_name set_table_name
+        syn keyword railsRubyARValidationMethod validate validate_on_create validate_on_update validates_acceptance_of validates_associated validates_confirmation_of validates_each validates_exclusion_of validates_format_of validates_inclusion_of validates_length_of validates_numericality_of validates_presence_of validates_size_of validates_uniqueness_of
+        syn keyword railsRubyARMethod composed_of
+        "syn match railsRubyARCallbackMethod '\<after_\(find\|initialize\)\>'
+        hi def link railsRubyARActsMethod           railsRubyARMethod
+        hi def link railsRubyARAssociationMethod    railsRubyARMethod
+        hi def link railsRubyARCallbackMethod       railsRubyARMethod
+        hi def link railsRubyARClassMethod          railsRubyARMethod
+        hi def link railsRubyARValidationMethod     railsRubyARMethod
+        hi def link railsRubyARMethod               railsRubyMethod
       endif
       if t =~ '^controller\>' || t =~ '^view\>' || t=~ '^helper\>'
         syn match railsRubyMethod '\<\%(params\|request\|response\|session\|headers\|template\|cookies\|flash\)\>'
@@ -294,13 +305,14 @@ function! s:Syntax()
         hi def link railsRubyFilterMethod           railsRubyMethod
       endif
       if t=~ '^test\>'
-        if !exists("s:rails_test_asserts")
-          " TODO: ActionController::Assertions
-          let s:rails_test_asserts = s:RubyEval('require %{test/unit/testcase}; puts Test::Unit::TestCase.instance_methods.grep(/^assert/).sort.uniq.join(%{ })',"assert_equal")
-        endif
-        "let g:rails_test_asserts = s:rails_test_asserts
-        let rails_test_asserts = '+\.\@<!\<\('.s:gsub(s:rails_test_asserts,'\s\+','\\|').'\)\>+'
-        exe "syn match railsRubyTestMethod ".rails_test_asserts
+"        if !exists("s:rails_test_asserts")
+"          let s:rails_test_asserts = s:RubyEval('require %{test/unit/testcase}; puts Test::Unit::TestCase.instance_methods.grep(/^assert/).sort.uniq.join(%{ })',"assert_equal")
+"        endif
+"        let rails_test_asserts = '+\.\@<!\<\('.s:gsub(s:rails_test_asserts,'\s\+','\\|').'\)\>+'
+"        exe "syn match railsRubyTestMethod ".rails_test_asserts
+        syn match railsRubyTestMethod +\.\@<!\<\(add_assertion\|assert\|assert_block\|assert_equal\|assert_in_delta\|assert_instance_of\|assert_kind_of\|assert_match\|assert_nil\|assert_no_match\|assert_not_equal\|assert_not_nil\|assert_not_same\|assert_nothing_raised\|assert_nothing_thrown\|assert_operator\|assert_raise\|assert_raises\|assert_respond_to\|assert_same\|assert_send\|assert_throws\|flunk\)\>+
+        syn match railsRubyTestControllerMethod +\.\@<!\<\(assert_response\|assert_redirected_to\|assert_template\|assert_recognizes\|assert_generates\|assert_routing\|assert_tag\|assert_no_tag\|assert_dom_equal\|assert_dom_not_equal\|assert_valid\)\>+
+        hi def link railsRubyTestControllerMethod   railsRubyTestMethod
         hi def link railsRubyTestMethod             railsRubyMethod
       endif
       hi def link railsRubyError rubyError
