@@ -23,10 +23,10 @@ following features for Ruby on Rails application development.
 
 1. Automatically detects buffers containing files from Rails applications,
    and applies settings to those buffers (and only those buffers).  You can
-   use an |autocommand| to apply your own custom settings as well.
+   use an autocommand to apply your own custom settings as well.
    |rails-configuration|
 
-2. Unintrusive.  It should only affect files in a Rails application; regular
+2. Unintrusive.  Only files in a Rails application should be affected; regular
    Ruby scripts are left untouched.  Even when enabled, the plugin should keep
    out of your way if you're not using its features.  (If you find a situation
    where this is not a case, contact the |rails-plugin-author|.)
@@ -70,23 +70,33 @@ Little configuration should need to be done; this plugin automatically detects
 and adjusts Vim sensibly and subtly.  If you would like to set your own custom
 Vim settings when ever a Rails file is loaded, you can use an autocmd like the
 following in your vimrc: >
-	autocmd User rails map <buffer> <LocalLeader>ra <Plug>RailsAlternate
+	autocmd User Rails* map <buffer> <LocalLeader>ra <Plug>RailsAlternate
+Note the use of an asterisk; this is required to allow for future expansion.
 
 A few global variables control the behavior of this plugin.  In general, they
-can be enabled with lines line the following in your vimrc: >
+can be enabled by setting them to 1 in your vimrc, and disabled by setting
+them to 0. >
 	let g:rails_some_option=1
+	let g:rails_some_option=0
 <
-						*g:rails_loaded*
-Do not load the plugin. For emergency use only. >
+						*g:rails_loaded*  >
 	let g:rails_loaded=1
-<
-						*g:rails_no_isfname*
-Disables the changes to the 'isfname' option.  See |rails-'isfname'|.
+Do not load the plugin. For emergency use only.
 
-						*g:rails_statusline*
-Give a clue in the statusline when this plugin is enabled: >
+						*g:rails_isfname*  >
+	let g:rails_isfname=1
+Enables changes to the 'isfname' option.  Default is enabled.  See
+|rails-'isfname'|.
+
+						*g:rails_statusline*  >
 	let g:rails_statusline=1
-This requires that the current filetype is in your existing 'statusline'.
+Give a clue in the statusline when this plugin is enabled.  This requires that
+the current filetype is in your existing 'statusline'.
+
+						*g:rails_syntax*  >
+	let g:rails_syntax=1
+When enabled, this tweaks the syntax highlighting to be more Rails friendly.
+Default is disabled, which will most likely change in a future version.
  
 ==============================================================================
 MANAGED VIM OPTIONS			*rails-options*
@@ -118,7 +128,7 @@ in |rails-gf|.
 The |rails-gf| feature is further enhanced by changing 'isfname'.
 Unfortunately, this is a global option.  To compensate, the plugin attempts to
 restore this option upon changing buffers.  If this causes problems for you,
-enable the |g:rails_no_isfname| setting.  Also, please explain your problem to
+disable the |g:rails_isfname| setting.  Also, please explain your problem to
 the |rails-plugin-author|, so that it might be addressed in a future release.
 
 					*rails-'makeprg'*	*rails-'mp'*
@@ -189,7 +199,7 @@ There are no default mappings.
 						*<Plug>RailsAlternate*
 <Plug>RailsAlternate	Switch to the "alternate" file.  Typically this just
 			adds or removes "_test" from the filename , but try it
-			in lots of places, you may be surprised. >
+			in lots of places; you may be surprised. >
 				:map <Leader>ra <Plug>RailsAlternate
 
 ==============================================================================

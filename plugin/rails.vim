@@ -10,13 +10,30 @@
 " Exit quickly when:
 " - this plugin was already loaded (or disabled)
 " - when 'compatible' is set
-if exists("g:loaded_rails") || &cp
+if exists("g:loaded_rails") && g:loaded_rails || &cp
   finish
 endif
 let g:loaded_rails = 1
 
 let cpo_save = &cpo
 set cpo&vim
+
+function s:RubyEval(ruby,...)
+  if a:0 > 0
+    let def = a:1
+  else
+    let def = ""
+  endif
+  if !executable("ruby")
+    return def
+  endif
+  let results = system('ruby -e '.s:qq().'require %{rubygems} rescue nil; require %{active_support} rescue nil; '.a:ruby.s:qq())
+  if results =~ '-e:\d'
+    return def
+  else
+    return results
+  endif
+endfunction
 
 function! s:InitPlugin()
   if has("autocmd")
@@ -27,7 +44,7 @@ function! s:InitPlugin()
       autocmd BufLeave * call s:ClearGlobals()
     augroup END
   endif
-  if exists("g:rails_statusline")
+  if exists("g:rails_statusline") && g:rails_statusline
     call s:InitStatusline()
   endif
 endfunction
@@ -38,6 +55,78 @@ function! RailsAppPath()
   else
     return ""
   endif
+endfunction
+
+function! RailsFilePath()
+  if !exists("b:rails_app_path")
+    return ""
+  elseif exists("b:rails_file_path")
+    return b:rails_file_path
+  endif
+  let f = substitute(expand("%:p"),'\\ \@!','/','g')
+  if substitute(b:rails_app_path,'\\ \@!','/','g') == strpart(f,0,strlen(b:rails_app_path))
+    return strpart(f,strlen(b:rails_app_path)+1)
+  else
+    return f
+  endif
+endfunction
+
+function! RailsFileType()
+  if !exists("b:rails_app_path")
+    return ""
+  elseif exists("b:rails_file_type")
+    return b:rails_file_type
+  endif
+  let f = RailsFilePath()
+  let e = fnamemodify(RailsFilePath(),':e')
+  let r = ""
+  let top = getline(1).getline(2).getline(3)
+  if f == ""
+    let r = f
+  elseif f =~ '_controller\.rb$'
+    if top =~ '\<wsdl_service_name\>'
+      let r = "controller-api"
+    else
+      let r = "controller"
+    endif
+  elseif f =~ '_api\.rb'
+    let r = "api"
+  elseif f =~ '\<test/test_helper\.rb$'
+    let r = "test"
+  elseif f =~ '_helper\.rb$'
+    let r = "helper"
+  elseif f =~ '\<app/models'
+    if top =~ '<\s*ActiveRecord::Base\>'
+      let r = "model-ar"
+    elseif top =~ '<\s*ActionMailer::Base\>'
+      let r = "model-am"
+    else
+      let r = "model"
+    endif
+  elseif f =~ '\<app/views/layouts\>'
+    let r = "view-layout-" . e
+  elseif f =~ '\<app/views/.*/_\k\+\.\k\+$'
+    let r = "view-partial-" . e
+  elseif f =~ '\<app/views\>'
+    let r = "view-" . e
+  elseif f =~ '\<test/unit/.*_test\.rb'
+    let r = "test-unit"
+  elseif f =~ '\<test/functional/.*_test\.rb'
+    let r = "test-functional"
+  elseif f =~ '\<test/integration/.*_test\.rb'
+    let r = "test-integration"
+  elseif f =~ '\<test/fixtures\>'
+    if e == "yml"
+      let r = "fixtures-yaml"
+    else
+      let r = "fixtures-" . e
+    endif
+  elseif f =~ '\<db/migrations\>'
+    let r = "migration"
+  elseif e == "css" || e == "js" || e == "html"
+    let r = e
+  endif
+  return r
 endfunction
 
 function! s:qq()
@@ -68,9 +157,11 @@ function! s:Detect(filename)
 endfunction
 
 function! s:SetGlobals()
-  if exists("b:rails_app_path") && !exists("g:rails_no_isfname")
-    let b:rails_restore_isfname=&isfname
-    set isfname=@,48-57,/,-,_,\",',:
+  if exists("b:rails_app_path")
+    if !exists("g:rails_isfname") || g:rails_isfname
+      let b:rails_restore_isfname=&isfname
+      set isfname=@,48-57,/,-,_,\",',:
+    endif
   endif
 endfunction
 
@@ -92,6 +183,7 @@ function! s:InitBuffer(path)
     setlocal filetype=ruby
   endif
   call s:Commands()
+  call s:Syntax()
   silent! compiler rubyunit
   let &l:makeprg='rake -f '.rp.'/Rakefile'
   call s:SetRubyBasePath()
@@ -102,10 +194,10 @@ function! s:InitBuffer(path)
     " It would be nice if we could do this without pulling in half of Rails
     " set include=\\<\\zs\\u\\f*\\l\\f*\\ze\\>\\\|^\\s*\\(require\\\|load\\)\\s\\+['\"]\\zs\\f\\+\\ze
     set include=\\<\\zsAct\\f*::Base\\ze\\>\\\|^\\s*\\(require\\\|load\\)\\s\\+['\"]\\zs\\f\\+\\ze
-    setlocal includeexpr=RailsFilename()
+    setlocal includeexpr=RailsIncludeexpr()
   else
     " Does this cause problems in any filetypes?
-    setlocal includeexpr=RailsFilename()
+    setlocal includeexpr=RailsIncludeexpr()
     setlocal suffixesadd=.rb,.rhtml,.rxml,.rjs,.css,.js,.yml,.csv,.rake,.sql,.html
   endif
   if &filetype == "ruby"
@@ -121,8 +213,8 @@ function! s:InitBuffer(path)
     let &l:path = rp."/app/views,".&l:path.",".rp."/public"
   endif
   " Since so many generated files are malformed...
-  set eol
-  silent doautocmd User rails
+  set endofline
+  silent doautocmd User Rails*
   if filereadable(b:rails_app_path."/config/rails.vim")
     sandbox exe "source ".rp."/config/rails.vim"
   endif
@@ -149,6 +241,67 @@ function s:Commands()
   endif
 endfunction
 
+function! s:Syntax()
+  if exists("g:rails_syntax") && g:rails_syntax && (exists("g:syntax_on") || exists("g:syntax_manual"))
+    let t = RailsFileType()
+    if !exists("s:rails_view_helpers")
+      let s:rails_view_helpers = s:RubyEval('require %{action_view}; puts ActionView::Helpers.constants.select {|c| c =~ /Helper$/}.collect {|c|ActionView::Helpers.const_get c}.collect {|c| c.public_instance_methods(false)}.flatten.sort.uniq.reject {|m| m =~ /[=?]$/}.join(%{ })',"form_tag end_form_tag")
+    endif
+"    let g:rails_view_helpers = s:rails_view_helpers
+    let rails_view_helpers = '+\.\@<!\<\('.substitute(s:rails_view_helpers,'\s\+','\\|','g').'\)\>+'
+    if &syntax == 'ruby'
+      if t =~ '^model$' || t =~ '^model-ar\>'
+        syn keyword railsRubyModelActsMethod acts_as_list acts_as_nested_set acts_as_tree
+        syn keyword railsRubyModelAssociationMethod belongs_to has_one has_many has_and_belongs_to_many
+        syn keyword railsRubyModelClassMethod attr_accessible attr_protected establish_connection set_inheritance_column set_locking_column set_primary_key set_sequence_name set_table_name
+        syn keyword railsRubyModelValidationMethod validate validate_on_create validate_on_update validates_acceptance_of validates_associated validates_confirmation_of validates_each validates_exclusion_of validates_format_of validates_inclusion_of validates_length_of validates_numericality_of validates_presence_of validates_size_of validates_uniqueness_of
+        hi def link railsRubyModelActsMethod        railsRubyModelMethod
+        hi def link railsRubyModelAssociationMethod railsRubyModelMethod
+        hi def link railsRubyModelClassMethod       railsRubyModelMethod
+        hi def link railsRubyModelValidationMethod  railsRubyModelMethod
+        hi def link railsRubyModelMethod            railsRubyMethod
+      endif
+      if t =~ '^controller\>' || t =~ '^view\>' || t=~ '^helper\>'
+        syn match railsRubyMethod '\<\%(params\|request\|response\|session\|headers\|template\|cookies\|flash\)\>'
+        syn match railsRubyError '@\%(params\|request\|response\|session\|headers\|template\|cookies\|flash\)\>'
+      endif
+      if t =~ '^helper\>' || t=~ '^view\>'
+        exe "syn match railsRubyHelperMethod ".rails_view_helpers
+        hi def link railsRubyHelperMethod           railsRubyMethod
+      endif
+      hi def link railsRubyError rubyError
+      hi def link railsRubyMethod railsMethod
+      hi def link railsMethod rubyFunction
+    elseif &syntax == "eruby" && t =~ '^view\>'
+      exe "syn match railsErubyHelperMethod ".rails_view_helpers." containedin=@erubyRegions"
+        syn match railsErubyMethod '\<\%(params\|request\|response\|session\|headers\|template\|cookies\|flash\)\>' containedin=@erubyRegions
+        syn match railsErubyMethod '\.\@<!\<\(h\|html_escape\|u\|url_encode\)\>' containedin=@erubyRegions
+      syn match railsRubyError '@\%(params\|request\|response\|session\|headers\|template\|cookies\|flash\)\>' containedin=@erubyRegions
+      hi def link railsRubyError                    rubyError
+      hi def link railsErubyHelperMethod            railsErubyMethod
+      hi def link railsErubyMethod                  railsMethod
+      hi def link railsMethod                       rubyFunction
+    elseif &syntax == "yaml"
+      " Modeled after syntax/eruby.vim
+      unlet b:current_syntax
+      let g:main_syntax = 'eruby'
+      syn include @rubyTop syntax/ruby.vim
+      unlet g:main_syntax
+      syn cluster railsYamlRegions contains=railsYamlOneLiner,railsYamlBlock,railsYamlExpression,railsYamlComment
+      syn region  railsYamlOneLiner   matchgroup=railsYamlDelimiter start="^%%\@!" end="$"  contains=@railsRubyTop	       containedin=ALLBUT,@railsYamlRegions keepend oneline
+      syn region  railsYamlBlock	    matchgroup=railsYamlDelimiter start="<%%\@!" end="%>" contains=@rubyTop	       containedin=ALLBUT,@railsYamlRegions
+      syn region  railsYamlExpression matchgroup=railsYamlDelimiter start="<%="    end="%>" contains=@rubyTop	       containedin=ALLBUT,@railsYamlRegions
+      syn region  railsYamlComment    matchgroup=railsYamlDelimiter start="<%#"    end="%>" contains=rubyTodo,@Spell containedin=ALLBUT,@railsYamlRegions keepend
+        syn match railsYamlMethod '\.\@<!\<\(h\|html_escape\|u\|url_encode\)\>' containedin=@erubyRegions
+      hi def link railsYamlDelimiter              Delimiter
+      hi def link railsYamlMethod                 railsMethod
+      hi def link railsMethod                     rubyFunction
+      hi def link railsYamlComment                Comment
+      let b:current_syntax = "yaml"
+    endif
+  endif
+endfunction
+
 function! s:EscapePath(p)
   return substitute(a:p,' ','\\ ','g')
 endfunction
@@ -167,7 +320,7 @@ function! s:InitRuby()
   endif
 endfunction
 
-function! RailsFilename()
+function! RailsIncludeexpr()
   " Is this foolproof?
   if mode() =~ '[iR]' || expand("<cfile>") != v:fname
     return s:RailsUnderscore(v:fname)
@@ -206,7 +359,7 @@ function! s:RailsUnderscore(str,...)
   let str = substitute(str,'\(\u\+\)\(\u\l\)','\1_\2','g')
   let str = substitute(str,'\(\l\|\d\)\(\u\)','\1_\2','g')
   let str = substitute(str,'-','_','g')
-  let str = substitute(str,'.*','\L&','')
+  let str = tolower(str)
   let fpat = '\(\s*\%("\f*"\|:\f*\|'."'\\f*'".'\)\s*,\s*\)*'
   if a:str =~ '\u'
     " Classes should always be in .rb's
@@ -313,34 +466,42 @@ function s:MakePartial(bang,...) range abort
 endfunction
 
 function s:FindAlternate()
-  if expand("%:t") == "database.yml"
+  let f = RailsFilePath()
+  let t = RailsFileType()
+  if expand("%:t") == "database.yml" || f =~ '\<config/environments/'
     find environment.rb
   elseif expand("%:t") == "environment.rb" || expand("%:t") == "schema.rb"
     find database.yml
-  elseif expand("%:p") =~ '[\/]app[\/]views[\/]'
+  elseif t =~ '^view\>'
+    if t =~ '\<layout\>'
+      let dest = fnamemodify(f,':r:s?/layouts\>??').'/layout'
+      echo dest
+    else
+      let dest = f
+    endif
     " Go to the helper, controller, or model
-    let helper = s:EscapePath(expand("%:p:h:s?.*[\/]app[\/]views[\/]?app/helpers/?")."_helper.rb")
-    let controller = s:EscapePath(expand("%:p:h:s?.*[\/]app[\/]views[\/]?app/controllers/?")."_controller.rb")
-    let model = s:EscapePath(expand("%:p:h:s?.*[\/]app[\/]views[\/]?app/models/?").".rb")
+    let helper     = fnamemodify(dest,":h:s?/views/?/helpers/?")."_helper.rb"
+    let controller = fnamemodify(dest,":h:s?/views/?/controllers/?")."_controller.rb"
+    let model      = fnamemodify(dest,":h:s?/views/?/models/?").".rb"
     if filereadable(b:rails_app_path."/".helper)
       " Would it be better to skip the helper and go straight to the
       " controller?
-      exe "find ".helper
+      exe "find ".s:EscapePath(helper)
     elseif filereadable(b:rails_app_path."/".controller)
-      exe "find ".controller
+      exe "find ".s:EscapePath(controller)
     elseif filereadable(b:rails_app_path."/".model)
-      exe "find ".model
+      exe "find ".s:EscapePath(model)
     else
-      exe "find ".controller
+      exe "find ".s:EscapePath(controller)
     endif
-  elseif expand("%:p") =~ '/app/helpers/.*_helper\.rb$'
-    let controller = s:EscapePath(expand("%:p:s?.*[\/]app[\/]helpers[\/]?app/controllers/?:s?_helper.rb$?_controller.rb?"))
-    exe "find ".controller
-  elseif expand("%:e") == "csv" || expand("%:e") == "yml"
+  elseif t =~ '^helper\>'
+    let controller = substitute(substitute(f,'/helpers/','/controllers/',''),'_helper\.rb$','_controller.rb','')
+    exe "find ".s:EscapePath(controller)
+  elseif t =~ '\<fixtures\>'
     let file = s:RailsSingularize(expand("%:t:r")).'_test'
     exe "find ".s:EscapePath(file)
   else
-    let file = expand("%:t:r")
+    let file = fnamemodify(f,":t:r")
     if file =~ '_test$'
       exe "find ".s:EscapePath(substitute(file,'_test$','',''))
     else
@@ -359,7 +520,12 @@ endfunction
 
 function! RailsStatusline()
   if exists("b:rails_app_path")
-    return "[Rails]"
+    let t = RailsFileType()
+    if t != ""
+      return "[Rails-".t."]"
+    else
+      return "[Rails]"
+    endif
   else
     return ""
   endif
@@ -367,7 +533,12 @@ endfunction
 
 function! RailsSTATUSLINE()
   if exists("b:rails_app_path")
-    return ",RAILS"
+    let t = RailsFileType()
+    if t != ""
+      return ",RAILS-".toupper(t)
+    else
+      return ",RAILS"
+    endif
   else
     return ""
   endif
