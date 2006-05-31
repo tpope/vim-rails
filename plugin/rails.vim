@@ -5,6 +5,8 @@
 " $Id$
 
 " See doc/rails.txt for details. Grab it from the URL above if you don't have it
+" To access it from Vim, see :help add-local-help
+" Afterwards, you should be able to do :help rails
 
 " ========
 
