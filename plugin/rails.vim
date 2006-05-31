@@ -1,9 +1,10 @@
 " rails.vim - Detect a rails application
 " Author:       Tim Pope <vimNOSPAM@tpope.info>
-" Last Change:  2006 May 29
+" Last Change:  2006 May 31
+" URL:          http://svn.tpope.net/rails/vim/railsvim
 " $Id$
 
-" See doc/rails.txt for details.
+" See doc/rails.txt for details. Grab it from the URL above if you don't have it
 
 " ========
 
@@ -84,7 +85,7 @@ function! RailsFileType()
   let f = RailsFilePath()
   let e = fnamemodify(RailsFilePath(),':e')
   let r = ""
-  let top = getline(1).getline(2).getline(3)
+  let top = getline(1).getline(2).getline(3).getline(4).getline(5)
   if f == ""
     let r = f
   elseif f =~ '_controller\.rb$'
@@ -218,7 +219,7 @@ function! s:InitBuffer(path)
   endif
   " Since so many generated files are malformed...
   set endofline
-  silent doautocmd User Rails*
+  silent doautocmd User Rails-blah
   if filereadable(b:rails_app_path."/config/rails.vim")
     sandbox exe "source ".rp."/config/rails.vim"
   endif
@@ -246,10 +247,10 @@ function s:Commands()
 endfunction
 
 function! s:Syntax()
-  if exists("g:rails_syntax") && g:rails_syntax && (exists("g:syntax_on") || exists("g:syntax_manual"))
+  if (!exists("g:rails_syntax") || g:rails_syntax) && (exists("g:syntax_on") || exists("g:syntax_manual"))
     let t = RailsFileType()
     if !exists("s:rails_view_helpers")
-      let s:rails_view_helpers = s:RubyEval('require %{action_view}; puts ActionView::Helpers.constants.select {|c| c =~ /Helper$/}.collect {|c|ActionView::Helpers.const_get c}.collect {|c| c.public_instance_methods(false)}.flatten.sort.uniq.reject {|m| m =~ /[=?]$/}.join(%{ })',"form_tag end_form_tag")
+      let s:rails_view_helpers = s:RubyEval('require %{action_view}; puts ActionView::Helpers.constants.grep(/Helper$/).collect {|c|ActionView::Helpers.const_get c}.collect {|c| c.public_instance_methods(false)}.flatten.sort.uniq.reject {|m| m =~ /[=?]$/}.join(%{ })',"form_tag end_form_tag")
     endif
 "    let g:rails_view_helpers = s:rails_view_helpers
     let rails_view_helpers = '+\.\@<!\<\('.s:gsub(s:rails_view_helpers,'\s\+','\\|').'\)\>+'
@@ -260,7 +261,7 @@ function! s:Syntax()
         syn match railsRubyModelCallbackMethod '\<\(before\|after\)_\(create\|destroy\|save\|update\|validation\|validation_on_create\|validation_on_update\)\>'
         syn keyword railsRubyModelClassMethod attr_accessible attr_protected establish_connection set_inheritance_column set_locking_column set_primary_key set_sequence_name set_table_name
         syn keyword railsRubyModelValidationMethod validate validate_on_create validate_on_update validates_acceptance_of validates_associated validates_confirmation_of validates_each validates_exclusion_of validates_format_of validates_inclusion_of validates_length_of validates_numericality_of validates_presence_of validates_size_of validates_uniqueness_of
-        syn match railsRubyModelCallbackMethod '\<after_\(find\|initialize\)\>'
+        "syn match railsRubyModelCallbackMethod '\<after_\(find\|initialize\)\>'
         hi def link railsRubyModelActsMethod        railsRubyModelMethod
         hi def link railsRubyModelAssociationMethod railsRubyModelMethod
         hi def link railsRubyModelCallbackMethod    railsRubyModelMethod
@@ -277,8 +278,14 @@ function! s:Syntax()
       if t =~ '^helper\>' || t=~ '^view\>'
         exe "syn match railsRubyHelperMethod ".rails_view_helpers
         hi def link railsRubyHelperMethod           railsRubyMethod
-      elseif t =~ '^controller'
+      elseif t =~ '^controller\>'
+        syn keyword railsRubyControllerHelperMethod helper helper_attr helper_method
         syn keyword railsRubyRenderMethod render_to_string render_component_as_string
+        syn match railsRubyFilterMethod '\<\(append_\|prepend_\|\)\(before\|around\|after\)_filter\>'
+        syn match railsRubyFilterMethod '\<skip_\(before\|after\)_filter\>'
+        syn keyword railsRubyFilterMethod verify
+        hi def link railsRubyControllerHelperMethod railsRubyMethod
+        hi def link railsRubyFilterMethod           railsRubyMethod
       endif
       if t=~ '^test\>'
         if !exists("s:rails_test_asserts")
