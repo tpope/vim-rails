@@ -1,11 +1,12 @@
 " rails.vim - Detect a rails application
 " Author:       Tim Pope <vimNOSPAM@tpope.info>
-" Last Change:  2006 May 31
+" Last Change:  2006 Jun 01
+" GetLatestVimScripts: 1567 1 :AutoInstall: rails.vim
 " URL:          http://svn.tpope.net/rails/vim/railsvim
 " $Id$
 
 " See doc/rails.txt for details. Grab it from the URL above if you don't have it
-" To access it from Vim, see :help add-local-help
+" To access it from Vim, see :help add-local-help (hint: :helptags ~/.vim/doc)
 " Afterwards, you should be able to do :help rails
 
 " ========
@@ -21,8 +22,21 @@ let g:loaded_rails = 1
 let cpo_save = &cpo
 set cpo&vim
 
+function s:sub(str,pat,rep)
+  return substitute(a:str,'\C'.a:pat,a:rep,'')
+endfunction
+
 function s:gsub(str,pat,rep)
   return substitute(a:str,'\C'.a:pat,a:rep,'g')
+endfunction
+
+function! s:qq()
+  " Quote character
+  if &shellxquote == "'"
+    return '"'
+  else
+    return "'"
+  endif
 endfunction
 
 function s:RubyEval(ruby,...)
@@ -50,17 +64,39 @@ function s:RubyEval(ruby,...)
   endif
 endfunction
 
+function! s:SetOptDefault(opt,val)
+  if !exists("g:".a:opt)
+    exe "let g:".a:opt." = ".a:val
+  endif
+endfunction
+
+function! s:InitConfig()
+  call s:SetOptDefault("rails_level",2)
+  let l = g:rails_level
+  call s:SetOptDefault("rails_statusline",l>2)
+  call s:SetOptDefault("rails_syntax",l>1)
+  call s:SetOptDefault("rails_isfname",l>1)
+  call s:SetOptDefault("rails_mappings",l>2)
+  call s:SetOptDefault("rails_abbreviations",l>5)
+  if l > 3
+    call s:SetOptDefault("ruby_no_identifiers",1)
+    call s:SetOptDefault("rubycomplete_rails",1)
+  endif
+"  call s:SetOptDefault("",)
+endfunction
+
 function! s:InitPlugin()
-  if has("autocmd")
-    augroup <SID>railsDetect
+  call s:InitConfig()
+  if g:rails_statusline
+    call s:InitStatusline()
+  endif
+  if has("autocmd") && g:rails_level >= 0
+    augroup railsPluginDetect
       autocmd!
       autocmd BufNewFile,BufRead * call s:Detect(expand("<afile>:p"))
       autocmd BufEnter * call s:SetGlobals()
       autocmd BufLeave * call s:ClearGlobals()
     augroup END
-  endif
-  if exists("g:rails_statusline") && g:rails_statusline
-    call s:InitStatusline()
   endif
 endfunction
 
@@ -98,7 +134,7 @@ function! RailsFileType()
   let top = getline(1).getline(2).getline(3).getline(4).getline(5)
   if f == ""
     let r = f
-  elseif f =~ '_controller\.rb$'
+  elseif f =~ '_controller\.rb$' || f =~ '\<app/controllers/application\.rb$'
     if top =~ '\<wsdl_service_name\>'
       let r = "controller-api"
     else
@@ -136,23 +172,14 @@ function! RailsFileType()
     else
       let r = "fixtures-" . e
     endif
-  elseif f =~ '\<db/migrations\>'
+  elseif f =~ '\<db/migrate\>'
     let r = "migration"
-  elseif f =~ '\<lib/tasks\>'
+  elseif f =~ '\<lib/tasks\>' || f=~ '\<Rakefile$'
     let r = "task"
   elseif e == "css" || e == "js" || e == "html"
     let r = e
   endif
   return r
-endfunction
-
-function! s:qq()
-  " Quote character
-  if &shellxquote == "'"
-    return '"'
-  else
-    return "'"
-  endif
 endfunction
 
 function! s:Detect(filename)
@@ -193,44 +220,48 @@ function! s:InitBuffer(path)
   call s:InitRuby()
   let b:rails_app_path = a:path
   let rp = s:EscapePath(b:rails_app_path)
-  if &ft == "mason"
-    setlocal filetype=eruby
-  endif
-  if &ft == "" && ( expand("%:e") == "rjs" || expand("%:e") == "rxml" )
-    setlocal filetype=ruby
-  endif
-  call s:Commands()
-  call s:Syntax()
-  silent! compiler rubyunit
-  let &l:makeprg='rake -f '.rp.'/Rakefile'
-  call s:SetRubyBasePath()
-  if &ft == "ruby" || &ft == "eruby" || &ft == "rjs" || &ft == "rxml"
-    " This is a strong convention in Rails, so we'll break the usual rule
-    " of considering shiftwidth to be a personal preference
-    setlocal sw=2 sts=2 et
-    " It would be nice if we could do this without pulling in half of Rails
-    " set include=\\<\\zs\\u\\f*\\l\\f*\\ze\\>\\\|^\\s*\\(require\\\|load\\)\\s\\+['\"]\\zs\\f\\+\\ze
-    set include=\\<\\zsAct\\f*::Base\\ze\\>\\\|^\\s*\\(require\\\|load\\)\\s\\+['\"]\\zs\\f\\+\\ze
-    setlocal includeexpr=RailsIncludeexpr()
-  else
-    " Does this cause problems in any filetypes?
-    setlocal includeexpr=RailsIncludeexpr()
-    setlocal suffixesadd=.rb,.rhtml,.rxml,.rjs,.css,.js,.yml,.csv,.rake,.sql,.html
-  endif
-  if &filetype == "ruby"
-    setlocal suffixesadd=.rb,.rhtml,.rxml,.rjs,.yml,.csv,.rake,s.rb
-    setlocal define=^\\s*def\\s\\+\\(self\\.\\)\\=
-    let views = substitute(expand("%:p"),'[\/]app[\/]controllers[\/]\(.\{-\}\)_controller.rb','/app/views/\1','')
-    if views != expand("%:p")
-      let &l:path = &l:path.",".s:EscapePath(views)
+  if g:rails_level > 0
+    if &ft == "mason"
+      setlocal filetype=eruby
     endif
-  elseif &filetype == "eruby"
-    set include=\\<\\zsAct\\f*::Base\\ze\\>\\\|^\\s*\\(require\\\|load\\)\\s\\+['\"]\\zs\\f\\+\\ze\\\|\\zs<%=\\ze
-    setlocal suffixesadd=.rhtml,.rxml,.rjs,.rb,.css,.js
-    let &l:path = rp."/app/views,".&l:path.",".rp."/public"
+    if &ft == "" && ( expand("%:e") == "rjs" || expand("%:e") == "rxml" )
+      setlocal filetype=ruby
+    endif
+    call s:Syntax()
+    call s:Commands()
+    call s:Mappings()
+    call s:Abbreviations()
+    silent! compiler rubyunit
+    let &l:makeprg='rake -f '.rp.'/Rakefile'
+    call s:SetRubyBasePath()
+    if &ft == "ruby" || &ft == "eruby" || &ft == "rjs" || &ft == "rxml"
+      " This is a strong convention in Rails, so we'll break the usual rule
+      " of considering shiftwidth to be a personal preference
+      setlocal sw=2 sts=2 et
+      " It would be nice if we could do this without pulling in half of Rails
+      " set include=\\<\\zs\\u\\f*\\l\\f*\\ze\\>\\\|^\\s*\\(require\\\|load\\)\\s\\+['\"]\\zs\\f\\+\\ze
+      set include=\\<\\zsAct\\f*::Base\\ze\\>\\\|^\\s*\\(require\\\|load\\)\\s\\+['\"]\\zs\\f\\+\\ze
+      setlocal includeexpr=RailsIncludeexpr()
+    else
+      " Does this cause problems in any filetypes?
+      setlocal includeexpr=RailsIncludeexpr()
+      setlocal suffixesadd=.rb,.rhtml,.rxml,.rjs,.css,.js,.yml,.csv,.rake,.sql,.html
+    endif
+    if &filetype == "ruby"
+      setlocal suffixesadd=.rb,.rhtml,.rxml,.rjs,.yml,.csv,.rake,s.rb
+      setlocal define=^\\s*def\\s\\+\\(self\\.\\)\\=
+      let views = substitute(expand("%:p"),'[\/]app[\/]controllers[\/]\(.\{-\}\)_controller.rb','/app/views/\1','')
+      if views != expand("%:p")
+        let &l:path = &l:path.",".s:EscapePath(views)
+      endif
+    elseif &filetype == "eruby"
+      set include=\\<\\zsAct\\f*::Base\\ze\\>\\\|^\\s*\\(require\\\|load\\)\\s\\+['\"]\\zs\\f\\+\\ze\\\|\\zs<%=\\ze
+      setlocal suffixesadd=.rhtml,.rxml,.rjs,.rb,.css,.js
+      let &l:path = rp."/app/views,".&l:path.",".rp."/public"
+    endif
+    " Since so many generated files are malformed...
+    set endofline
   endif
-  " Since so many generated files are malformed...
-  set endofline
   let t = RailsFileType()
   if t != ""
     let t = "-".t
@@ -256,7 +287,6 @@ function s:Commands()
   silent exe "command! -buffer -nargs=? Lcd :lcd ".rp."/<args>"
   let ext = expand("%:e")
   command! -buffer -nargs=0 Alternate :call s:FindAlternate()
-  map <buffer> <silent> <Plug>RailsAlternate :Alternate<CR>
   if ext == "rhtml" || ext == "rxml" || ext == "rjs"
     command! -buffer -nargs=? -range Partial :<line1>,<line2>call s:MakePartial(<bang>0,<f-args>)
   endif
@@ -277,6 +307,7 @@ function! s:Syntax()
         syn match railsRubyARCallbackMethod '\<\(before\|after\)_\(create\|destroy\|save\|update\|validation\|validation_on_create\|validation_on_update\)\>'
         syn keyword railsRubyARClassMethod attr_accessible attr_protected establish_connection set_inheritance_column set_locking_column set_primary_key set_sequence_name set_table_name
         syn keyword railsRubyARValidationMethod validate validate_on_create validate_on_update validates_acceptance_of validates_associated validates_confirmation_of validates_each validates_exclusion_of validates_format_of validates_inclusion_of validates_length_of validates_numericality_of validates_presence_of validates_size_of validates_uniqueness_of
+"        syn match railsRubyARMethod +\<(acts_as_list\|acts_as_tree\|after_create\|after_destroy\|after_save\|after_update\|after_validation\|after_validation_on_create\|after_validation_on_update\|before_create\|before_destroy\|before_save\|before_update\|before_validation\|before_validation_on_create\|before_validation_on_update\|composed_of\|belongs_to\|has_one\|has_many\|has_and_belongs_to_many\|helper\|helper_method\|validate\|validate_on_create\|validates_numericality_of\|validate_on_update\|validates_acceptance_of\|validates_associated\|validates_confirmation_of\|validates_each\|validates_format_of\|validates_inclusion_of\|validates_length_of\|validates_presence_of\|validates_size_of\|validates_uniqueness_of\|attr_protected\|attr_accessible)\>+
         syn keyword railsRubyARMethod composed_of
         "syn match railsRubyARCallbackMethod '\<after_\(find\|initialize\)\>'
         hi def link railsRubyARActsMethod           railsRubyARMethod
@@ -297,11 +328,14 @@ function! s:Syntax()
         hi def link railsRubyHelperMethod           railsRubyMethod
       elseif t =~ '^controller\>'
         syn keyword railsRubyControllerHelperMethod helper helper_attr helper_method
-        syn keyword railsRubyRenderMethod render_to_string render_component_as_string
+        "syn match railsRubyControllerMethod +\<(before_filter\|skip_before_filter\|skip_after_filter\|after_filter\|filter\|layout\|require_dependency\|render\|render_action\|render_text\|render_file\|render_template\|render_nothing\|render_component\|render_without_layout\|url_for\|redirect_to\|redirect_to_path\|redirect_to_url\|helper\|helper_method\|model\|service\|observer\|serialize\|scaffold\|verify)\>+
+        syn keyword railsRubyControllerDeprecatedMethod render_action render_text render_file render_template render_nothing render_without_layout
+        syn keyword railsRubyRenderMethod render_to_string render_component_as_string redirect_to
         syn match railsRubyFilterMethod '\<\(append_\|prepend_\|\)\(before\|around\|after\)_filter\>'
         syn match railsRubyFilterMethod '\<skip_\(before\|after\)_filter\>'
         syn keyword railsRubyFilterMethod verify
         hi def link railsRubyControllerHelperMethod railsRubyMethod
+        hi def link railsRubyControllerDeprecatedMethod railsRubyError
         hi def link railsRubyFilterMethod           railsRubyMethod
       endif
       if t=~ '^test\>'
@@ -310,23 +344,28 @@ function! s:Syntax()
 "        endif
 "        let rails_test_asserts = '+\.\@<!\<\('.s:gsub(s:rails_test_asserts,'\s\+','\\|').'\)\>+'
 "        exe "syn match railsRubyTestMethod ".rails_test_asserts
-        syn match railsRubyTestMethod +\.\@<!\<\(add_assertion\|assert\|assert_block\|assert_equal\|assert_in_delta\|assert_instance_of\|assert_kind_of\|assert_match\|assert_nil\|assert_no_match\|assert_not_equal\|assert_not_nil\|assert_not_same\|assert_nothing_raised\|assert_nothing_thrown\|assert_operator\|assert_raise\|assert_raises\|assert_respond_to\|assert_same\|assert_send\|assert_throws\|flunk\)\>+
+        syn match railsRubyTestMethod +\.\@<!\<\(add_assertion\|assert\|assert_block\|assert_equal\|assert_in_delta\|assert_instance_of\|assert_kind_of\|assert_match\|assert_nil\|assert_no_match\|assert_not_equal\|assert_not_nil\|assert_not_same\|assert_nothing_raised\|assert_nothing_thrown\|assert_operator\|assert_raise\|assert_respond_to\|assert_same\|assert_send\|assert_throws\|flunk\)\>+
         syn match railsRubyTestControllerMethod +\.\@<!\<\(assert_response\|assert_redirected_to\|assert_template\|assert_recognizes\|assert_generates\|assert_routing\|assert_tag\|assert_no_tag\|assert_dom_equal\|assert_dom_not_equal\|assert_valid\)\>+
         hi def link railsRubyTestControllerMethod   railsRubyTestMethod
         hi def link railsRubyTestMethod             railsRubyMethod
       endif
-      hi def link railsRubyError rubyError
-      hi def link railsRubyMethod railsMethod
-      hi def link railsMethod rubyFunction
+      syn keyword railsRubyMethod cattr_accessor mattr_accessor
+      syn keyword railsRubyInclude require_dependency require_gem
+      hi def link railsRubyError    rubyError
+      hi def link railsRubyInclude  rubyInclude
+      hi def link railsRubyMethod   railsMethod
+      hi def link railsMethod Function
     elseif &syntax == "eruby" && t =~ '^view\>'
       exe "syn match railsErubyHelperMethod ".rails_view_helpers." containedin=@erubyRegions"
-        syn match railsErubyMethod '\<\%(params\|request\|response\|session\|headers\|template\|cookies\|flash\)\>' containedin=@erubyRegions
-        syn match railsErubyMethod '\.\@<!\<\(h\|html_escape\|u\|url_encode\)\>' containedin=@erubyRegions
+      syn match railsErubyMethod '\<\%(params\|request\|response\|session\|headers\|template\|cookies\|flash\)\>' containedin=@erubyRegions
+      syn match railsErubyMethod '\.\@<!\<\(h\|html_escape\|u\|url_encode\)\>' containedin=@erubyRegions
+        syn keyword railsErubyRenderMethod render render_component containedin=@erubyRegions
       syn match railsRubyError '@\%(params\|request\|response\|session\|headers\|template\|cookies\|flash\)\>' containedin=@erubyRegions
       hi def link railsRubyError                    rubyError
       hi def link railsErubyHelperMethod            railsErubyMethod
+      hi def link railsErubyRenderMethod            railsErubyMethod
       hi def link railsErubyMethod                  railsMethod
-      hi def link railsMethod                       rubyFunction
+      hi def link railsMethod                       Function
     elseif &syntax == "yaml"
       " Modeled after syntax/eruby.vim
       unlet b:current_syntax
@@ -341,7 +380,7 @@ function! s:Syntax()
         syn match railsYamlMethod '\.\@<!\<\(h\|html_escape\|u\|url_encode\)\>' containedin=@erubyRegions
       hi def link railsYamlDelimiter              Delimiter
       hi def link railsYamlMethod                 railsMethod
-      hi def link railsMethod                     rubyFunction
+      hi def link railsMethod                     Function
       hi def link railsYamlComment                Comment
       let b:current_syntax = "yaml"
     endif
@@ -371,8 +410,15 @@ function! RailsIncludeexpr()
   if mode() =~ '[iR]' || expand("<cfile>") != v:fname
     return s:RailsUnderscore(v:fname)
   else
-    return s:RailsUnderscore(v:fname,line("."),col("."))
+    return s:RailsUnderscore(v:fname,1)
   endif
+endfunction
+
+function! s:LinePeak()
+  let line = getline(line("."))
+  let line = s:sub(line,'^\(.\{'.col(".").'\}\).*','\1')
+  let line = s:sub(line,'\([:"'."'".']\|%[qQ]\=[[({<]\)\=\f*$','')
+  return line
 endfunction
 
 function! s:RailsUnderscore(str,...)
@@ -384,11 +430,10 @@ function! s:RailsUnderscore(str,...)
   endif
   let g:mymode = mode()
   let str = a:str
-  if a:0 == 2
+  if a:0 == 1
     " Get the text before the filename under the cursor.
     " We'll cheat and peak at this in a bit
-    let line = getline(a:1)
-    let line = substitute(line,'^\(.\{'.a:2.'\}\).*','\1','')
+    let line = s:LinePeak()
     let line = substitute(line,'\([:"'."'".']\|%[qQ]\=[[({<]\)\=\f*$','','')
   else
     let line = ""
@@ -587,6 +632,140 @@ function! RailsSTATUSLINE()
     endif
   else
     return ""
+  endif
+endfunction
+" }}}1
+" Mappings/Abbreviations {{{1
+
+function! s:Mappings()
+  map <buffer> <silent> <Plug>RailsAlternate :Alternate<CR>
+  if g:rails_mappings
+    if !hasmapto("<Plug>RailsAlternate")
+      map <buffer> <LocalLeader>ra <Plug>RailsAlternate
+    endif
+  endif
+endfunction
+
+function! <SID>RailsSelectiveExpand(pat,good,default)
+  let c = nr2char(getchar(0))
+  let good = s:gsub(a:good,'\\<Esc>',"\<Esc>")
+  if c == "" || c == "\t"
+    return good
+  elseif c =~ a:pat
+    return good.c
+  else
+    return a:default.c
+  endif
+endfunction
+
+function! <SID>DiscretionaryComma()
+  let c = nr2char(getchar(0))
+  if c =~ '[\r,;]'
+    return c
+  else
+    return ",".c
+  endif
+endfunction
+
+function! <SID>TheMagicC()
+  let l = s:LinePeak()
+  if l =~ '\<find\s*\((\|:first,\|:all,\)'
+    return <SID>RailsSelectiveExpand('..',':conditions => ',':c')
+  elseif l =~ '\<render\s\+:partial\s\+=>\s*'
+    return <SID>RailsSelectiveExpand('..',':collection => ',':c')
+  else
+    return <SID>RailsSelectiveExpand('..',':controller => ',':c')
+  endif
+endfunction
+
+function! s:AddSelectiveExpand(abbr,pat,expn)
+  let pat = s:gsub(a:pat,"'","'.\"'\".'")
+  exe "iabbr <buffer> <silent> ".a:abbr." <C-R>=<SID>RailsSelectiveExpand('".pat."','".a:expn."','".a:abbr."')<CR>"
+endfunction
+
+function! s:AddTabExpand(abbr,expn)
+  call s:AddSelectiveExpand(a:abbr,'..',a:expn)
+endfunction
+
+function! s:Abbreviations()
+  " EXPERIMENTAL.  USE AT YOUR OWN RISK
+  " Some of these were cherry picked from the TextMate snippets
+  if g:rails_abbreviations
+    " Limit to the right filetypes.  But error on the liberal side
+    if RailsFileType() =~ '^\(controller\|view\|helper\|test-functional\|test-integration\)\>'
+      call s:AddSelectiveExpand('pa','[[]','params')
+      call s:AddSelectiveExpand('rq','[[]','request')
+      call s:AddSelectiveExpand('rs','[[]','response')
+      call s:AddSelectiveExpand('se','[[]','session')
+      call s:AddSelectiveExpand('he','[[]','headers')
+      call s:AddSelectiveExpand('te','[[]','template')
+      call s:AddSelectiveExpand('co','[[]','cookies')
+      call s:AddSelectiveExpand('fl','[[]','flash')
+      call s:AddTabExpand('rr','render ')
+      call s:AddTabExpand('rp','render :partial => ')
+      call s:AddTabExpand('ri','render :inline => ')
+      call s:AddTabExpand('rt','render :text => ')
+      call s:AddTabExpand('rtlt','render :layout => true, :text => ')
+      call s:AddTabExpand('rl','render :layout => ')
+      call s:AddTabExpand('ra','render :action => ')
+      call s:AddTabExpand('rc','render :controller => ')
+      call s:AddTabExpand('rf','render :file => ')
+      iabbr render_partial render :partial =>
+      iabbr render_action render :action =>
+      iabbr render_text render :text =>
+      iabbr render_file render :file =>
+      iabbr render_template render :template =>
+      iabbr <silent> render_nothing render :nothing => true<C-R>=<SID>DiscretionaryComma()<CR>
+      iabbr <silent> render_without_layout render :layout => false<C-R>=<SID>DiscretionaryComma()<CR>
+    endif
+    if RailsFileType() =~ '^view\>'
+      call s:AddTabExpand('dotiw','distance_of_time_in_words ')
+      call s:AddTabExpand('taiw','time_ago_in_words ')
+    endif
+    if RailsFileType() =~ '^controller\>'
+      call s:AddSelectiveExpand('rn','[,\r]','render :nothing => true')
+      call s:AddTabExpand('rea','redirect_to :action => ')
+      call s:AddTabExpand('rec','redirect_to :controller => ')
+    endif
+    if RailsFileType() =~ '^model-ar\>' || RailsFileType() =~ '^model$'
+      call s:AddTabExpand('bt','belongs_to ')
+      call s:AddTabExpand('ho','has_one ')
+      call s:AddTabExpand('hm','has_many ')
+      call s:AddTabExpand('habtm','has_and_belongs_to_many ')
+      call s:AddTabExpand('va','validates_associated ')
+      call s:AddTabExpand('vc','validates_confirmation_of ')
+      call s:AddTabExpand('ve','validates_exclusion_of ')
+      call s:AddTabExpand('vf','validates_format_of ')
+      call s:AddTabExpand('vi','validates_inclusion_of ')
+      call s:AddTabExpand('vl','validates_length_of ')
+      call s:AddTabExpand('vn','validates_numericality_of ')
+      call s:AddTabExpand('vp','validates_presence_of ')
+      call s:AddTabExpand('vu','validates_uniqueness_of ')
+    endif
+    if RailsFileType() =~ '^migration\>'
+      call s:AddTabExpand('mrnt','rename_table ')
+      call s:AddTabExpand('mcc','t.column ')
+      call s:AddTabExpand('mrnc','rename_column ')
+      call s:AddTabExpand('mac','add_column ')
+      call s:AddTabExpand('mdt','drop_table ')
+      call s:AddTabExpand('mrc','remove_column ')
+      " ugh, stupid POS
+      " call s:AddTabExpand('mct','create_table "" do <Bar>t<Bar>\<Lt>Esc>7hi')
+    endif
+    if RailsFileType() =~ '^test\>'
+      call s:AddTabExpand('ae','assert_equal ')
+      call s:AddTabExpand('ako','assert_kind_of ')
+      call s:AddTabExpand('ann','assert_not_nil ')
+      call s:AddTabExpand('ar','assert_raise ')
+      call s:AddTabExpand('art','assert_redirected_to ')
+      call s:AddTabExpand('are','assert_response ')
+    endif
+    iabbr <buffer> <silent> :c <C-R>=<SID>TheMagicC()<CR>
+    call s:AddTabExpand(':a',':action => ')
+    call s:AddTabExpand(':i',':id => ')
+    call s:AddTabExpand(':o',':object => ')
+    call s:AddSelectiveExpand('fi','(','find')
+    call s:AddTabExpand('logi','logger.info ')
   endif
 endfunction
 " }}}1

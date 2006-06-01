@@ -10,6 +10,7 @@ Author: Tim Pope <vimNOSPAM@tpope.info>		*rails-plugin-author*
 |rails-mappings|	Mappings
 |rails-commands|	Commands
 |rails-partials|	Partial Extraction
+|rails-todo|		To Do
 
 This plugin is only available if 'compatible' is not set.
 
@@ -18,8 +19,9 @@ This plugin is only available if 'compatible' is not set.
 ==============================================================================
 INTRODUCTION					*rails-introduction* *rails*
 
-TextMate may be the latest craze, but Vim is forever.  This plugin offers the
-following features for Ruby on Rails application development.
+TextMate may be the latest craze for developing Ruby on Rails applications,
+but Vim is forever.  This plugin offers the following features for Ruby on
+Rails application development.
 
 1. Automatically detects buffers containing files from Rails applications,
    and applies settings to those buffers (and only those buffers).  You can
@@ -71,7 +73,7 @@ and adjusts Vim sensibly and subtly.  If you would like to set your own custom
 Vim settings when ever a Rails file is loaded, you can use an autocmd like the
 following in your vimrc: >
 	autocmd User Rails* Lcd
-	autocmd User Rails* map <buffer> <LocalLeader>ra <Plug>RailsAlternate
+	autocmd User Rails* map <buffer> <M-6> <Plug>RailsAlternate
 Note the use of an asterisk; this is required to allow for future expansion.
 
 A few global variables control the behavior of this plugin.  In general, they
@@ -80,25 +82,45 @@ them to 0. >
 	let g:rails_some_option=1
 	let g:rails_some_option=0
 <
+						*g:rails_level*  >
+	let g:rails_level=3
+This is a general control of the level of features loaded.  Behavior can be
+subsequently refined with other settings.
+
+value	meaning ~
+
+-1	Completely disabled.
+0	User level autocommands only.
+1	Minimal features; mainly option management.
+2	Default.
+3	Adds a few niceties like mappings and the statusline.  Recommended.
+4	Enables recommended features in other plugins too (like
+	omnicompletion).  Author's choice.
+5+	Experimental features.
+
 						*g:rails_loaded*  >
 	let g:rails_loaded=1
 Do not load the plugin. For emergency use only.
 
 						*g:rails_isfname*  >
 	let g:rails_isfname=1
-Enables changes to the 'isfname' option.  Default is enabled.  See
-|rails-'isfname'|.
+Enables changes to the 'isfname' option.  Enabled when |g:rails_level| >= 2.
+See |rails-'isfname'|.
 
 						*g:rails_statusline*  >
 	let g:rails_statusline=1
 Give a clue in the statusline when this plugin is enabled.  This requires that
-the current filetype is in your existing 'statusline'.  Not enabled by default
-but highly recommended.
+the current filetype is in your existing 'statusline'.  Enabled when
+|g:rails_level| >= 3.
+
+						*g:rails_mappings*  >
+	let g:rails_mappings=1
+Enables a few <LocalLeader> mappings.  See |rails-mappings|.
 
 						*g:rails_syntax*  >
 	let g:rails_syntax=1
 When enabled, this tweaks the syntax highlighting to be more Rails friendly.
-Default is enabled.
+Enabled when |g:rails_level| >= 2.
 
 When g:rails_syntax is enabled, you may find your Ruby files to be a bit heavy
 on the cyan (or however your Identifiers are highlighted).  You may want to
@@ -200,11 +222,13 @@ Suggestions for further contexts to consider are welcome.
 ==============================================================================
 MAPPINGS					*rails-mappings*
 
-There are no default mappings.
+<Plug> mappings are always available (if the plugin is loaded) and can be
+manually mapped to the key sequence of your choice.  <LocalLeader> mappings
+are available if |g:rails_mappings| is enabled or |g:rails_level| >= 3.
 
 						*<Plug>RailsAlternate*
 <Plug>RailsAlternate	Switch to the "alternate" file.  Typically this just
-			adds or removes "_test" from the filename , but try it
+<LocalLeader>ra		adds or removes "_test" from the filename , but try it
 			in lots of places; you may be surprised. >
 				:map <Leader>ra <Plug>RailsAlternate
 
@@ -269,6 +293,11 @@ The easiest way to choose what to extract is to use |linewise-visual| mode.
 Then, a simple >
 	:'<,'>Partial blog/post
 will suffice. (Note the use of a controller name in this example.)
+
+==============================================================================
+TODO						*rails-todo*
+
+Perhaps some abbreviations (disabled by default).
 
 ==============================================================================
 vim:tw=78:ts=8:ft=help:norl:
