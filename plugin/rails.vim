@@ -438,7 +438,7 @@ endfunction
 
 function! s:ControllerFunc(bang,prefix,suffix,...)
   if a:0
-    let c = a:1
+    let c = s:sub(RailsUnderscore(a:1),'\.rb$','')
   else
     let c = s:controller()
   endif
@@ -550,7 +550,7 @@ function! s:Syntax()
       syn cluster railsErubyRegions contains=erubyOneLiner,erubyBlock,erubyExpression
       exe "syn match railsErubyHelperMethod ".rails_view_helpers." contained containedin=@railsErubyRegions"
       syn match railsErubyMethod '\<\%(params\|request\|response\|session\|headers\|template\|cookies\|flash\)\>' contained containedin=@railsErubyRegions
-"      syn match railsErubyMethod '\.\@<!\<\(h\|html_escape\|u\|url_encode\)\>' contained containedin=@railsErubyRegions
+      syn match railsErubyMethod '\.\@<!\<\(h\|html_escape\|u\|url_encode\)\>' contained containedin=@railsErubyRegions
         syn keyword railsErubyRenderMethod render render_component contained containedin=@railsErubyRegions
       syn match railsRubyError '@\%(params\|request\|response\|session\|headers\|template\|cookies\|flash\)\>' contained containedin=@railsErubyRegions
       hi def link railsRubyError                    rubyError
@@ -652,6 +652,8 @@ function! s:RailsFind()
   let res = s:findamethod('belongs_to\|has_one\|composed_of','app/models/\1')
   if res != ""|return res|endif
   let res = s:RailsSingularize(s:findamethod('has_many\|has_and_belongs_to_many','app/models/\1'))
+  let res = s:RailsSingularize(s:findasymbol('through','app/models/\1'))
+  if res != ""|return res|endif
   if res != ""|return res|endif
   let res = s:findamethod('fixtures','test/fixtures/\1')
   if res != ""|return res|endif
@@ -664,6 +666,10 @@ function! s:RailsFind()
   let res = s:findasymbol('controller','app/controllers/\1_controller')
   if res != ""|return res|endif
   let res = s:findasymbol('action','\1')
+  if res != ""|return res|endif
+  let res = s:sub(s:findasymbol('partial','\1'),'\k\+$','_&')
+  if res != ""|return res|endif
+  let res = s:sub(s:findfromview('render\s*(\=\s*:partial\s\+=>\s*','\1'),'\k\+$','_&')
   if res != ""|return res|endif
   let res = s:findfromview('stylesheet_link_tag','public/stylesheets/\1')
   if res != ""|return res|endif
@@ -1076,6 +1082,7 @@ function! s:Abbreviations()
       call s:AddParenExpand('mac','add_column','')
       call s:AddParenExpand('mdt','drop_table','')
       call s:AddParenExpand('mrc','remove_column','')
+      call s:AddParenExpand('mct','create_table','')
       " ugh, stupid POS
       " call s:AddTabExpand('mct','create_table "" do <Bar>t<Bar>\<Lt>Esc>7hi')
     endif
