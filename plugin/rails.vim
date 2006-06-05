@@ -485,6 +485,7 @@ function! s:Syntax()
         let s:rails_view_helpers = s:rubyeval('require %{action_view}; puts ActionView::Helpers.constants.grep(/Helper$/).collect {|c|ActionView::Helpers.const_get c}.collect {|c| c.public_instance_methods(false)}.flatten.sort.uniq.reject {|m| m =~ /[=?]$/}.join(%{ })',"form_tag end_form_tag")
       else
         let s:rails_view_helpers = "form_tag end_form_tag"
+      endif
     endif
     "let g:rails_view_helpers = s:rails_view_helpers
     let rails_view_helpers = '+\.\@<!\<\('.s:gsub(s:rails_view_helpers,'\s\+','\\|').'\)\>+'
