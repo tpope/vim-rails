@@ -297,11 +297,10 @@ will suffice. (Note the use of a controller name in this example.)
 ==============================================================================
 TODO						*rails-todo*
 
-Perhaps some abbreviations (disabled by default).
+Better interface to abbreviations (perhaps a second file)
 :Generate, and edit the file
 :Partial that can handle collections
 Run individual unit tests TEST=% TESTOPTS='-n/#{testname}/'
-Jump from controller to view
 
 ==============================================================================
 vim:tw=78:ts=8:ft=help:norl:

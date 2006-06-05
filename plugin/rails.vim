@@ -22,15 +22,15 @@ let g:loaded_rails = 1
 let cpo_save = &cpo
 set cpo&vim
 
-function s:sub(str,pat,rep)
+function! s:sub(str,pat,rep)
   return substitute(a:str,'\C'.a:pat,a:rep,'')
 endfunction
 
-function s:gsub(str,pat,rep)
+function! s:gsub(str,pat,rep)
   return substitute(a:str,'\C'.a:pat,a:rep,'g')
 endfunction
 
-function s:quote(str)
+function! s:quote(str)
   " Imperfect but adequate for Ruby arguments
   if a:str =~ '^[A-Za-z0-9_/.-]\+$'
     return a:str
@@ -39,11 +39,11 @@ function s:quote(str)
   endif
 endfunction
 
-function! s:EscapePath(p)
+function! s:escapepath(p)
   return s:gsub(a:p,' ','\\ ')
 endfunction
 
-function s:RubyEval(ruby,...)
+function! s:rubyeval(ruby,...)
   if a:0 > 0
     let def = a:1
   else
@@ -65,6 +65,18 @@ function s:RubyEval(ruby,...)
     return def
   else
     return results
+  endif
+endfunction
+
+function! s:lastmethod()
+  let line = line(".")
+  while line > 0 && getline(line) !~ &l:define
+    let line = line -1
+  endwhile
+  if line
+    return matchstr(getline(line),&define.'\zs\k\+')
+  else
+    return ""
   endif
 endfunction
 
@@ -189,7 +201,7 @@ function! RailsFileType()
   return r
 endfunction
 
-function s:UseSubversion()
+function! s:UseSubversion()
   if exists("b:rails_use_subversion")
     return b:rails_use_subversion
   else
@@ -236,7 +248,7 @@ endfunction
 function! s:InitBuffer(path)
   call s:InitRuby()
   let b:rails_app_path = a:path
-  let rp = s:EscapePath(b:rails_app_path)
+  let rp = s:escapepath(b:rails_app_path)
   if g:rails_level > 0
     if &ft == "mason"
       setlocal filetype=eruby
@@ -272,7 +284,7 @@ function! s:InitBuffer(path)
       setlocal define=^\\s*def\\s\\+\\(self\\.\\)\\=
       let views = substitute(expand("%:p"),'[\/]app[\/]controllers[\/]\(.\{-\}\)_controller.rb','/app/views/\1','')
       if views != expand("%:p")
-        let &l:path = &l:path.",".s:EscapePath(views)
+        let &l:path = &l:path.",".s:escapepath(views)
       endif
     elseif &filetype == "eruby"
       set include=\\<\\zsAct\\f*::Base\\ze\\>\\\|^\\s*\\(require\\\|load\\)\\s\\+['\"]\\zs\\f\\+\\ze\\\|\\zs<%=\\ze
@@ -295,18 +307,18 @@ endfunction
 
 " Commands {{{1
 
-function s:Commands()
-  let rp = s:EscapePath(b:rails_app_path)
-"  silent exe 'command! -buffer -complete=custom,s:ScriptComplete -nargs=+ Script :!ruby '.s:EscapePath(b:rails_app_path.'/script/').'<args>'
+function! s:Commands()
+  let rp = s:escapepath(b:rails_app_path)
+"  silent exe 'command! -buffer -complete=custom,s:ScriptComplete -nargs=+ Script :!ruby '.s:escapepath(b:rails_app_path.'/script/').'<args>'
   command! -buffer -complete=custom,s:ScriptComplete -nargs=+ Script :call s:Script(<bang>0,<f-args>)
   command! -buffer -complete=custom,s:ConsoleComplete -nargs=* Console :Script console <args>
   command! -buffer -nargs=1 Runner :call s:Script(<bang>0,"runner",<f-args>)
   "command! -buffer -nargs=1 Controller :find <args>_controller
   silent exe "command! -buffer -nargs=? Cd :cd ".rp."/<args>"
   silent exe "command! -buffer -nargs=? Lcd :lcd ".rp."/<args>"
-  command! -buffer -complete=custom,s:FindList -nargs=? -count=1 Find :call s:Find(<bang>0,<count>,"",<f-args>)
-  command! -buffer -complete=custom,s:FindList -nargs=? -count=1 SplitFind :call s:Find(<bang>0,<count>,"split",<f-args>)
-  command! -buffer -complete=custom,s:FindList -nargs=? -count=1 TabFind :call s:Find(<bang>0,<count>,"tab",<f-args>)
+  command! -buffer -complete=custom,s:FindList -nargs=* -count=1 Find :call s:Find(<bang>0,<count>,"",<f-args>)
+  command! -buffer -complete=custom,s:FindList -nargs=* -count=1 SplitFind :call s:Find(<bang>0,<count>,"split",<f-args>)
+  command! -buffer -complete=custom,s:FindList -nargs=* -count=1 TabFind :call s:Find(<bang>0,<count>,"tab",<f-args>)
   let ext = expand("%:e")
   command! -buffer -nargs=0 Alternate :call s:FindAlternate()
   if ext == "rhtml" || ext == "rxml" || ext == "rjs"
@@ -314,17 +326,24 @@ function s:Commands()
   endif
 endfunction
 
-function s:Find(bang,count,arg,...)
+function! s:Find(bang,count,arg,...)
+  let str = ""
   if a:0
-    let file = RailsUnderscore(a:1)
+    let i = 1
+    while i < a:0
+      let str = str . s:escapepath(a:{i}) . " "
+      let i = i + 1
+    endwhile
+    let file = s:escapepath(RailsUnderscore(a:{i},1))
   else
     "let file = RailsUnderscore(expand("<cfile>"),1)
     let file = s:RailsFind()
   endif
-  exe a:count.a:arg."find ".s:EscapePath(file)
+"  echo a:count.a:arg."find ".str.s:escapepath(file)
+  exe a:count.a:arg."find ".str.s:escapepath(file)
 endfunction
 
-function s:FindList(ArgLead, CmdLine, CursorPos)
+function! s:FindList(ArgLead, CmdLine, CursorPos)
   if exists("*UserFileComplete") " genutils.vim
     return UserFileComplete(RailsUnderscore(a:ArgLead), a:CmdLine, a:CursorPos, 1, &path)
   else
@@ -332,7 +351,7 @@ function s:FindList(ArgLead, CmdLine, CursorPos)
   endif
 endfunction
 
-function s:Script(bang,cmd,...)
+function! s:Script(bang,cmd,...)
   let str = ""
   let c = 1
   while c <= a:0
@@ -342,7 +361,7 @@ function s:Script(bang,cmd,...)
   exe "!ruby -C ".s:quote(RailsAppPath())." ".s:quote("script/".a:cmd).str
 endfunction
 
-function s:ScriptComplete(ArgLead,CmdLine,P)
+function! s:ScriptComplete(ArgLead,CmdLine,P)
   "  return s:gsub(glob(RailsAppPath()."/script/**"),'\%(.\%(\n\)\@<!\)*[\/]script[\/]','')
   let cmd = s:sub(a:CmdLine,'^\u\w*\s\+','')
 "  let g:A = a:ArgLead
@@ -364,17 +383,17 @@ function s:ScriptComplete(ArgLead,CmdLine,P)
 "  return s:RealMansGlob(RailsAppPath()."/script",a:ArgLead."*")
 endfunction
 
-function s:CustomComplete(A,L,P,cmd)
+function! s:CustomComplete(A,L,P,cmd)
   let L = "Script ".a:cmd." ".s:sub(a:L,'^\h\w*\s\+','')
   let P = a:P - strlen(a:L) + strlen(L)
   return s:ScriptComplete(a:A,L,P)
 endfunction
 
-function s:ConsoleComplete(A,L,P)
+function! s:ConsoleComplete(A,L,P)
   return s:CustomComplete(a:A,a:L,a:P,"console")
 endfunction
 
-function s:RealMansGlob(path,glob)
+function! s:RealMansGlob(path,glob)
   " HOW COULD SUCH A SIMPLE OPERATION BE SO COMPLICATED?
   if a:path =~ '[\/]$'
     let path = a:path
@@ -402,7 +421,7 @@ function! s:Syntax()
   if (!exists("g:rails_syntax") || g:rails_syntax) && (exists("g:syntax_on") || exists("g:syntax_manual"))
     let t = RailsFileType()
     if !exists("s:rails_view_helpers")
-      let s:rails_view_helpers = s:RubyEval('require %{action_view}; puts ActionView::Helpers.constants.grep(/Helper$/).collect {|c|ActionView::Helpers.const_get c}.collect {|c| c.public_instance_methods(false)}.flatten.sort.uniq.reject {|m| m =~ /[=?]$/}.join(%{ })',"h form_tag end_form_tag")
+      let s:rails_view_helpers = s:rubyeval('require %{action_view}; puts ActionView::Helpers.constants.grep(/Helper$/).collect {|c|ActionView::Helpers.const_get c}.collect {|c| c.public_instance_methods(false)}.flatten.sort.uniq.reject {|m| m =~ /[=?]$/}.join(%{ })',"h form_tag end_form_tag")
     endif
     "let g:rails_view_helpers = s:rails_view_helpers
     let rails_view_helpers = '+\.\@<!\<\('.s:gsub(s:rails_view_helpers,'\s\+','\\|').'\)\>+'
@@ -448,7 +467,7 @@ function! s:Syntax()
       endif
       if t=~ '^test\>'
 "        if !exists("s:rails_test_asserts")
-"          let s:rails_test_asserts = s:RubyEval('require %{test/unit/testcase}; puts Test::Unit::TestCase.instance_methods.grep(/^assert/).sort.uniq.join(%{ })',"assert_equal")
+"          let s:rails_test_asserts = s:rubyeval('require %{test/unit/testcase}; puts Test::Unit::TestCase.instance_methods.grep(/^assert/).sort.uniq.join(%{ })',"assert_equal")
 "        endif
 "        let rails_test_asserts = '+\.\@<!\<\('.s:gsub(s:rails_test_asserts,'\s\+','\\|').'\)\>+'
 "        exe "syn match railsRubyTestMethod ".rails_test_asserts
@@ -500,7 +519,7 @@ endfunction
 " }}}1
 
 function! s:SetRubyBasePath()
-  let rp = s:EscapePath(b:rails_app_path)
+  let rp = s:escapepath(b:rails_app_path)
   let &l:path = '.,'.rp.",".rp."/app/controllers,".rp."/app,".rp."/app/models,".rp."/app/helpers,".rp."/components,".rp."/config,".rp."/lib,".rp."/vendor/plugins/*/lib,".rp."/vendor,".rp."/test/unit,".rp."/test/functional,".rp."/test/integration,".rp."/test,".substitute(&l:path,'^\.,','','')
 endfunction
 
@@ -553,18 +572,41 @@ function! s:findit(pat,repl)
 endfunction
 
 function! s:findamethod(func,repl)
-  return s:findit('\s*\<\%('.a:func.'\)\s*(\=\s*[:'."'".'"]\(\k\+\)\>.\=',a:repl)
+  return s:findit('\s*\<\%('.a:func.'\)\s*(\=\s*[:'."'".'"]\(\f\+\)\>.\=',a:repl)
+endfunction
+
+function! s:findasymbol(sym,repl)
+  return s:findit('\s*:\%('.a:sym.'\)\s*=>\s*(\=\s*[:'."'".'"]\(\f\+\)\>.\=',a:repl)
+endfunction
+
+function! s:findfromview(func,repl)
+  return s:findit('\s*\%(<%=\=\)=\s*\<\%('.a:func.'\)\s*(\=\s*[:'."'".'"]\(\f\+\)\>['."'".'"]\=\s*\%(%>\s*\)\=',a:repl)
 endfunction
 
 function! s:RailsFind()
+  " UGH
   let res = s:findamethod('belongs_to\|has_one\|composed_of','app/models/\1')
   if res != ""|return res|endif
   let res = s:RailsSingularize(s:findamethod('has_many\|has_and_belongs_to_many','app/models/\1'))
   if res != ""|return res|endif
   let res = s:findamethod('fixtures','test/fixtures/\1')
   if res != ""|return res|endif
+  let res = s:findamethod('layout','app/views/layouts/\1')
+  if res != ""|return res|endif
+  let res = s:findasymbol('layout','app/views/layouts/\1')
+  if res != ""|return res|endif
+  let res = s:findamethod('helper','app/helpers/\1_helper')
+  if res != ""|return res|endif
+  let res = s:findasymbol('controller','app/controllers/\1_controller')
+  if res != ""|return res|endif
+  let res = s:findasymbol('action','\1')
+  if res != ""|return res|endif
+  let res = s:findfromview('stylesheet_link_tag','public/stylesheets/\1')
+  if res != ""|return res|endif
+  let res = s:sub(s:findfromview('javascript_include_tag','public/javascripts/\1'),'/defaults$','/application')
+  if res != ""|return res|endif
   if RailsFileType() =~ '^controller\>'
-    let res = s:findit('\s*\<def\s\+\(\k\+\)\>(\=','app/'.s:sub(expand("%:p"),'.*[\/]app[\/]controllers[\/]\(.\{-\}\)_controller.rb','views/\1').'/\1')
+    let res = s:findit('\s*\<def\s\+\(\k\+\)\>(\=',s:sub(RailsFilePath(),'app/controllers/\(.\{-\}\)_controller.rb','app/views/\1').'/\1')
     if res != ""|return res|endif
   endif
   let isf_keep = &isfname
@@ -665,7 +707,7 @@ function! s:RailsSingularize(word)
   return word
 endfunction
 
-function s:MakePartial(bang,...) range abort
+function! s:MakePartial(bang,...) range abort
   if a:0 == 0 || a:0 > 1
     echoerr "Incorrect number of arguments"
     return
@@ -687,13 +729,13 @@ function s:MakePartial(bang,...) range abort
   endif
   let var = "@".name
   if dir =~ '^/'
-    let out = s:EscapePath(b:rails_app_path).dir."/_".fname
+    let out = s:escapepath(b:rails_app_path).dir."/_".fname
   elseif dir == ""
-    let out = s:EscapePath(curdir)."/_".fname
+    let out = s:escapepath(curdir)."/_".fname
   elseif isdirectory(curdir."/".dir)
-    let out = s:EscapePath(curdir)."/".dir."/_".fname
+    let out = s:escapepath(curdir)."/".dir."/_".fname
   else
-    let out = s:EscapePath(b:rails_app_path)."/app/views/".dir."/_".fname
+    let out = s:escapepath(b:rails_app_path)."/app/views/".dir."/_".fname
   endif
   " No tabs, they'll just complicate things
   let spaces = matchstr(getline(a:firstline),"^ *")
@@ -717,7 +759,7 @@ function s:MakePartial(bang,...) range abort
   endif
 endfunction
 
-function s:FindAlternate()
+function! s:FindAlternate()
   let f = RailsFilePath()
   let t = RailsFileType()
   if expand("%:t") == "database.yml" || f =~ '\<config/environments/'
@@ -735,29 +777,31 @@ function s:FindAlternate()
     let helper     = fnamemodify(dest,":h:s?/views/?/helpers/?")."_helper.rb"
     let controller = fnamemodify(dest,":h:s?/views/?/controllers/?")."_controller.rb"
     let model      = fnamemodify(dest,":h:s?/views/?/models/?").".rb"
-    if filereadable(b:rails_app_path."/".helper)
+    if filereadable(b:rails_app_path."/".helper) && 0
       " Would it be better to skip the helper and go straight to the
       " controller?
-      exe "find ".s:EscapePath(helper)
+      exe "find ".s:escapepath(helper)
     elseif filereadable(b:rails_app_path."/".controller)
-      exe "find ".s:EscapePath(controller)
+      let jumpto = expand("%:t:r")
+      exe "find ".s:escapepath(controller)
+      exe "silent! djump ".jumpto
     elseif filereadable(b:rails_app_path."/".model)
-      exe "find ".s:EscapePath(model)
+      exe "find ".s:escapepath(model)
     else
-      exe "find ".s:EscapePath(controller)
+      exe "find ".s:escapepath(controller)
     endif
   elseif t =~ '^helper\>'
     let controller = substitute(substitute(f,'/helpers/','/controllers/',''),'_helper\.rb$','_controller.rb','')
-    exe "find ".s:EscapePath(controller)
+    exe "find ".s:escapepath(controller)
   elseif t =~ '\<fixtures\>'
     let file = s:RailsSingularize(expand("%:t:r")).'_test'
-    exe "find ".s:EscapePath(file)
+    exe "find ".s:escapepath(file)
   else
     let file = fnamemodify(f,":t:r")
     if file =~ '_test$'
-      exe "find ".s:EscapePath(substitute(file,'_test$','',''))
+      exe "find ".s:escapepath(substitute(file,'_test$','',''))
     else
-      exe "find ".s:EscapePath(file).'_test'
+      exe "find ".s:escapepath(file).'_test'
     endif
   endif
 endfunction
@@ -803,6 +847,12 @@ function! s:Mappings()
   map <buffer> <silent> <Plug>RailsFind      :Find<CR>
   map <buffer> <silent> <Plug>RailsSplitFind :SplitFind<CR>
   map <buffer> <silent> <Plug>RailsTabFind   :TabFind<CR>
+  if RailsFileType() =~ '^view\>'
+"    map <buffer> <silent> <Plug>RailsView    :exe "find ".substitute(RailsFilePath(),'app/views/\(.\{-\}\)/\(\k\+\)\..*','app/controllers/\1_controller<Bar>silent! djump \2','')<CR>
+    exe "map <buffer> <Plug>RailsView :Find ".substitute(RailsFilePath(),'app/views/\(.\{-\}\)/\(\k\+\)\..*','\1_controller<Bar>djump \2','')."<CR>"
+  elseif RailsFileType() =~ '^controller\>'
+    map <buffer> <silent> <Plug>RailsView    :exe "find ".substitute(RailsFilePath(),'app/controllers/\(.\{-\}\)_controller\.rb','app/views/\1/'.<SID>lastmethod(),'')<CR>
+  endif
   if g:rails_mappings
     if !hasmapto("<Plug>RailsAlternate")
       map <buffer> <LocalLeader>ra <Plug>RailsAlternate
@@ -815,6 +865,9 @@ function! s:Mappings()
     endif
     if !hasmapto("<Plug>RailsTabFind")
       map <buffer> <C-W>gf         <Plug>RailsTabFind
+    endif
+    if !hasmapto("<Plug>RailsView")
+      map <buffer> <LocalLeader>rv <Plug>RailsView
     endif
   endif
 endfunction
