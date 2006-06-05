@@ -107,6 +107,12 @@ Do not load the plugin. For emergency use only.
 Enables changes to the 'isfname' option.  Enabled when |g:rails_level| >= 2.
 See |rails-'isfname'|.
 
+						*g:rails_expensive*  >
+	let g:rails_expensive=1
+Enables or disables expensive (slow) features (typically involving calls to
+the Ruby interpreter).  Recommended for moderately fast computers.  Enabled
+when |g:rails_level| >= 2.
+
 						*g:rails_statusline*  >
 	let g:rails_statusline=1
 Give a clue in the statusline when this plugin is enabled.  This requires that
@@ -228,9 +234,17 @@ are available if |g:rails_mappings| is enabled or |g:rails_level| >= 3.
 
 						*<Plug>RailsAlternate*
 <Plug>RailsAlternate	Switch to the "alternate" file.  Typically this just
-<LocalLeader>ra		adds or removes "_test" from the filename , but try it
+<LocalLeader>ra		adds or removes "_test" from the filename, but try it
 			in lots of places; you may be surprised. >
 				:map <Leader>ra <Plug>RailsAlternate
+<
+						*<Plug>RailsMagicM*
+<Plug>RailsMagicM	Magic.  Maybe it will execute the current test Method,
+<LocalLeader>rm		or Make all test Methods in the current test run.
+			Maybe it will find the create_foos Migration for your
+			current Model.  Or Maybe it will find the controller
+			Method for your view, or vice versa.  You Might find
+			it easiest to just try it yourself!
 
 ==============================================================================
 COMMANDS					*rails-commands*
@@ -250,7 +264,7 @@ COMMANDS					*rails-commands*
 
 						*rails-:Alternate*
 :Alternate		Load the "alternate" file.  See
-			|<Plug>RailsAlternate|.
+			|<Plug>RailsAlternate|.  (deprecated)
 
 						*rails-:Partial*
 :[range]Partial [{controller}/]{name}	
@@ -297,10 +311,10 @@ will suffice. (Note the use of a controller name in this example.)
 ==============================================================================
 TODO						*rails-todo*
 
-Better interface to abbreviations (perhaps a second file)
+Better interface to abbreviations (perhaps a separate plugin)
 :Generate, and edit the file
 :Partial that can handle collections
-Run individual unit tests TEST=% TESTOPTS='-n/#{testname}/'
+Some sort of <RailsLeader>
 
 ==============================================================================
 vim:tw=78:ts=8:ft=help:norl:

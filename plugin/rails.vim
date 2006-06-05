@@ -80,6 +80,25 @@ function! s:lastmethod()
   endif
 endfunction
 
+function! s:controller()
+  let t = RailsFileType()
+  let f = RailsFilePath()
+  if f =~ '\<app/views/layouts/'
+    return s:sub(f,'.*\<app/views/layouts/\(.\{-\}\)\.\k\+$','\1')
+  elseif f =~ '\<app/views/'
+    return s:sub(f,'.*\<app/views/\(.\{-\}\)/\k\+\.\k\+$','\1')
+  elseif f =~ '\<app/helpers/.*_helper\.rb$'
+    return s:sub(f,'.*\<app/helpers/\(.\{-\}\)_helper\.rb$','\1')
+  elseif f =~ '\<app/controllers/.*_controller\.rb$'
+    return s:sub(f,'.*\<app/controllers/\(.\{-\}\)_controller\.rb$','\1')
+  elseif f =~ '\<app/apis/.*_api\.rb$'
+    return s:sub(f,'.*\<app/apis/\(.\{-\}\)_api\.rb$','\1')
+  elseif f =~ '\<test/functional/.*_controller_test\.rb$'
+    return s:sub(f,'.*\<test/functional/\(.\{-\}\)_controller_test\.rb$','\1')
+  endif
+  return ""
+endfunction
+
 function! s:SetOptDefault(opt,val)
   if !exists("g:".a:opt)
     exe "let g:".a:opt." = ".a:val
@@ -94,6 +113,7 @@ function! s:InitConfig()
   call s:SetOptDefault("rails_isfname",l>1)
   call s:SetOptDefault("rails_mappings",l>2)
   call s:SetOptDefault("rails_abbreviations",l>5)
+  call s:SetOptDefault("rails_expensive",l>2)
   call s:SetOptDefault("rails_subversion",l>3)
   if l > 3
     call s:SetOptDefault("ruby_no_identifiers",1)
@@ -313,7 +333,9 @@ function! s:Commands()
   command! -buffer -complete=custom,s:ScriptComplete -nargs=+ Script :call s:Script(<bang>0,<f-args>)
   command! -buffer -complete=custom,s:ConsoleComplete -nargs=* Console :Script console <args>
   command! -buffer -nargs=1 Runner :call s:Script(<bang>0,"runner",<f-args>)
-  "command! -buffer -nargs=1 Controller :find <args>_controller
+  command! -buffer -nargs=? Migration :call s:Migration(<bang>0,<q-args>)
+  command! -buffer -nargs=* Controller :call s:ControllerFunc(<bang>0,"app/controllers/","_controller.rb",<f-args>)
+  command! -buffer -nargs=* Helper :call s:ControllerFunc(<bang>0,"app/helpers/","_helper.rb",<f-args>)
   silent exe "command! -buffer -nargs=? Cd :cd ".rp."/<args>"
   silent exe "command! -buffer -nargs=? Lcd :lcd ".rp."/<args>"
   command! -buffer -complete=custom,s:FindList -nargs=* -count=1 Find :call s:Find(<bang>0,<count>,"",<f-args>)
@@ -323,6 +345,27 @@ function! s:Commands()
   command! -buffer -nargs=0 Alternate :call s:FindAlternate()
   if ext == "rhtml" || ext == "rxml" || ext == "rjs"
     command! -buffer -nargs=? -range Partial :<line1>,<line2>call s:MakePartial(<bang>0,<f-args>)
+  endif
+endfunction
+
+function s:Migration(bang,arg)
+  if a:arg =~ '^\d$'
+    let glob = '00'.a:arg.'_*.rb'
+  elseif a:arg =~ '^\d\d$'
+    let glob = '0'.a:arg.'_*.rb'
+  elseif a:arg =~ '^\d\d\d$'
+    let glob = ''.a:arg.'_*.rb'
+  elseif a:arg == ''
+    let glob = '*.rb'
+  else
+    let glob = '*'.a:arg.'*.rb'
+  endif
+  let migr = s:sub(glob(RailsAppPath().'/db/migrate/'.glob),'.*\n','')
+  if migr != ''
+    exe "edit ".s:escapepath(migr)
+  else
+    echoerr "Migration not found".(a:arg=='' ? '' : ': '.a:arg)
+    return
   endif
 endfunction
 
@@ -393,6 +436,23 @@ function! s:ConsoleComplete(A,L,P)
   return s:CustomComplete(a:A,a:L,a:P,"console")
 endfunction
 
+function! s:ControllerFunc(bang,prefix,suffix,...)
+  if a:0
+    let c = a:1
+  else
+    let c = s:controller()
+  endif
+  if c == ""
+    echoerr "No controller name given"
+    return
+  endif
+  let cmd = "edit".(a:bang?"! ":' ').s:escapepath(RailsAppPath()).'/'.a:prefix.c.a:suffix
+  exe cmd
+  if a:0 > 1
+    exe "silent! djump ".a:2
+  endif
+endfunction
+
 function! s:RealMansGlob(path,glob)
   " HOW COULD SUCH A SIMPLE OPERATION BE SO COMPLICATED?
   if a:path =~ '[\/]$'
@@ -421,7 +481,10 @@ function! s:Syntax()
   if (!exists("g:rails_syntax") || g:rails_syntax) && (exists("g:syntax_on") || exists("g:syntax_manual"))
     let t = RailsFileType()
     if !exists("s:rails_view_helpers")
-      let s:rails_view_helpers = s:rubyeval('require %{action_view}; puts ActionView::Helpers.constants.grep(/Helper$/).collect {|c|ActionView::Helpers.const_get c}.collect {|c| c.public_instance_methods(false)}.flatten.sort.uniq.reject {|m| m =~ /[=?]$/}.join(%{ })',"h form_tag end_form_tag")
+      if g:rails_expensive
+        let s:rails_view_helpers = s:rubyeval('require %{action_view}; puts ActionView::Helpers.constants.grep(/Helper$/).collect {|c|ActionView::Helpers.const_get c}.collect {|c| c.public_instance_methods(false)}.flatten.sort.uniq.reject {|m| m =~ /[=?]$/}.join(%{ })',"form_tag end_form_tag")
+      else
+        let s:rails_view_helpers = "form_tag end_form_tag"
     endif
     "let g:rails_view_helpers = s:rails_view_helpers
     let rails_view_helpers = '+\.\@<!\<\('.s:gsub(s:rails_view_helpers,'\s\+','\\|').'\)\>+'
@@ -454,7 +517,7 @@ function! s:Syntax()
         exe "syn match railsRubyHelperMethod ".rails_view_helpers
         hi def link railsRubyHelperMethod           railsRubyMethod
       elseif t =~ '^controller\>'
-        syn keyword railsRubyControllerHelperMethod helper helper_attr helper_method
+        syn keyword railsRubyControllerHelperMethod helper helper_attr helper_method filter layout url_for scaffold
         "syn match railsRubyControllerMethod +\<(before_filter\|skip_before_filter\|skip_after_filter\|after_filter\|filter\|layout\|require_dependency\|render\|render_action\|render_text\|render_file\|render_template\|render_nothing\|render_component\|render_without_layout\|url_for\|redirect_to\|redirect_to_path\|redirect_to_url\|helper\|helper_method\|model\|service\|observer\|serialize\|scaffold\|verify)\>+
         syn keyword railsRubyControllerDeprecatedMethod render_action render_text render_file render_template render_nothing render_without_layout
         syn keyword railsRubyRenderMethod render_to_string render_component_as_string redirect_to
@@ -502,10 +565,10 @@ function! s:Syntax()
       unlet g:main_syntax
       syn cluster erubyRegions contains=railsYamlOneLiner,railsYamlBlock,railsYamlExpression,railsYamlComment
       syn cluster railsErubyRegions contains=railsYamlOneLiner,railsYamlBlock,railsYamlExpression
-      syn region  railsYamlOneLiner   matchgroup=railsYamlDelimiter start="^%%\@!" end="$"  contains=@railsRubyTop	       containedin=ALLBUT,@railsYamlRegions keepend oneline
-      syn region  railsYamlBlock	    matchgroup=railsYamlDelimiter start="<%%\@!" end="%>" contains=@rubyTop	       containedin=ALLBUT,@railsYamlRegions
-      syn region  railsYamlExpression matchgroup=railsYamlDelimiter start="<%="    end="%>" contains=@rubyTop	       containedin=ALLBUT,@railsYamlRegions
-      syn region  railsYamlComment    matchgroup=railsYamlDelimiter start="<%#"    end="%>" contains=rubyTodo,@Spell containedin=ALLBUT,@railsYamlRegions keepend
+      syn region  railsYamlOneLiner   matchgroup=railsYamlDelimiter start="^%%\@!" end="$"  contains=@railsRubyTop	containedin=ALLBUT,@railsYamlRegions keepend oneline
+      syn region  railsYamlBlock	    matchgroup=railsYamlDelimiter start="<%%\@!" end="%>" contains=@rubyTop	containedin=ALLBUT,@railsYamlRegions
+      syn region  railsYamlExpression matchgroup=railsYamlDelimiter start="<%="    end="%>" contains=@rubyTop	    	containedin=ALLBUT,@railsYamlRegions
+      syn region  railsYamlComment    matchgroup=railsYamlDelimiter start="<%#"    end="%>" contains=rubyTodo,@Spell	containedin=ALLBUT,@railsYamlRegions keepend
         syn match railsYamlMethod '\.\@<!\<\(h\|html_escape\|u\|url_encode\)\>' containedin=@railsErubyRegions
       hi def link railsYamlDelimiter              Delimiter
       hi def link railsYamlMethod                 railsMethod
@@ -847,16 +910,8 @@ function! s:Mappings()
   map <buffer> <silent> <Plug>RailsFind      :Find<CR>
   map <buffer> <silent> <Plug>RailsSplitFind :SplitFind<CR>
   map <buffer> <silent> <Plug>RailsTabFind   :TabFind<CR>
-  if RailsFileType() =~ '^view\>'
-"    map <buffer> <silent> <Plug>RailsView    :exe "find ".substitute(RailsFilePath(),'app/views/\(.\{-\}\)/\(\k\+\)\..*','app/controllers/\1_controller<Bar>silent! djump \2','')<CR>
-    exe "map <buffer> <Plug>RailsView :Find ".substitute(RailsFilePath(),'app/views/\(.\{-\}\)/\(\k\+\)\..*','\1_controller<Bar>djump \2','')."<CR>"
-  elseif RailsFileType() =~ '^controller\>'
-    map <buffer> <silent> <Plug>RailsView    :exe "find ".substitute(RailsFilePath(),'app/controllers/\(.\{-\}\)_controller\.rb','app/views/\1/'.<SID>lastmethod(),'')<CR>
-  endif
+  map <buffer> <silent> <Plug>RailsMagicM    :call <SID>magicm()<CR>
   if g:rails_mappings
-    if !hasmapto("<Plug>RailsAlternate")
-      map <buffer> <LocalLeader>ra <Plug>RailsAlternate
-    endif
     if !hasmapto("<Plug>RailsFind")
       map <buffer> gf              <Plug>RailsFind
     endif
@@ -866,9 +921,29 @@ function! s:Mappings()
     if !hasmapto("<Plug>RailsTabFind")
       map <buffer> <C-W>gf         <Plug>RailsTabFind
     endif
-    if !hasmapto("<Plug>RailsView")
-      map <buffer> <LocalLeader>rv <Plug>RailsView
+    map <buffer> <LocalLeader>ra <Plug>RailsAlternate
+    map <buffer> <LocalLeader>rm <Plug>RailsMagicM
+    " Deprecated
+    map <buffer> <LocalLeader>rv <Plug>RailsMagicM
+  endif
+endfunction
+
+function! s:magicm()
+  let t = RailsFileType()
+  if t =~ '^test\>'
+    let meth = s:lastmethod()
+    if meth =~ '^test_'
+      let call = " TESTOPTS=-n/".meth."/"
+    else
+      let call = ""
     endif
+    exe "make TEST=%".call
+  elseif t =~ '^view\>'
+    exe "find ".substitute(RailsFilePath(),'app/views/\(.\{-\}\)/\(\k\+\)\..*','app/controllers/\1_controller|silent! djump \2','')
+  elseif t =~ '^controller\>'
+    exe "find ".substitute(RailsFilePath(),'app/controllers/\(.\{-\}\)_controller\.rb','app/views/\1/'.s:lastmethod(),'')
+  elseif t =~ '^model-ar\>'
+    call s:Migration(0,'create_'.s:sub(expand('%:t:r'),'y$','ie$').'s')
   endif
 endfunction
 
