@@ -85,7 +85,7 @@ function! s:InitConfig()
   call s:SetOptDefault("rails_subversion",l>3)
   if l > 3
     call s:SetOptDefault("ruby_no_identifiers",1)
-    call s:SetOptDefault("rubycomplete_rails",1)
+"    call s:SetOptDefault("rubycomplete_rails",1)
   endif
 "  call s:SetOptDefault("",)
 endfunction
@@ -241,7 +241,7 @@ function! s:InitBuffer(path)
     if &ft == "mason"
       setlocal filetype=eruby
     endif
-    if &ft == "" && ( expand("%:e") == "rjs" || expand("%:e") == "rxml" )
+    if &ft == "" && ( expand("%:e") == "rjs" || expand("%:e") == "rxml" || expand("%:e") == "mab" )
       setlocal filetype=ruby
     endif
     call s:Syntax()
@@ -251,6 +251,9 @@ function! s:InitBuffer(path)
     silent! compiler rubyunit
     let &l:makeprg='rake -f '.rp.'/Rakefile'
     call s:SetRubyBasePath()
+    if has("balloon_eval")
+      setlocal balloonexpr=RailsUnderscore(v:beval_text,1) ballooneval
+    endif
     if &ft == "ruby" || &ft == "eruby" || &ft == "rjs" || &ft == "rxml"
       " This is a strong convention in Rails, so we'll break the usual rule
       " of considering shiftwidth to be a personal preference
@@ -262,10 +265,10 @@ function! s:InitBuffer(path)
     else
       " Does this cause problems in any filetypes?
       setlocal includeexpr=RailsIncludeexpr()
-      setlocal suffixesadd=.rb,.rhtml,.rxml,.rjs,.css,.js,.yml,.csv,.rake,.sql,.html
+      setlocal suffixesadd=.rb,.rhtml,.rxml,.rjs,.css,.js,.yml,.csv,.rake,.sql,.html,.mab
     endif
     if &filetype == "ruby"
-      setlocal suffixesadd=.rb,.rhtml,.rxml,.rjs,.yml,.csv,.rake,s.rb
+      setlocal suffixesadd=.rb,.rhtml,.rxml,.rjs,.mab,.yml,.csv,.rake,s.rb
       setlocal define=^\\s*def\\s\\+\\(self\\.\\)\\=
       let views = substitute(expand("%:p"),'[\/]app[\/]controllers[\/]\(.\{-\}\)_controller.rb','/app/views/\1','')
       if views != expand("%:p")
@@ -273,7 +276,7 @@ function! s:InitBuffer(path)
       endif
     elseif &filetype == "eruby"
       set include=\\<\\zsAct\\f*::Base\\ze\\>\\\|^\\s*\\(require\\\|load\\)\\s\\+['\"]\\zs\\f\\+\\ze\\\|\\zs<%=\\ze
-      setlocal suffixesadd=.rhtml,.rxml,.rjs,.rb,.css,.js
+      setlocal suffixesadd=.rhtml,.rxml,.rjs,.mab,.rb,.css,.js
       let &l:path = rp."/app/views,".&l:path.",".rp."/public"
     endif
     " Since so many generated files are malformed...
@@ -301,10 +304,31 @@ function s:Commands()
   "command! -buffer -nargs=1 Controller :find <args>_controller
   silent exe "command! -buffer -nargs=? Cd :cd ".rp."/<args>"
   silent exe "command! -buffer -nargs=? Lcd :lcd ".rp."/<args>"
+  command! -buffer -complete=custom,s:FindList -nargs=? -count=1 Find :call s:Find(<bang>0,<count>,"",<f-args>)
+  command! -buffer -complete=custom,s:FindList -nargs=? -count=1 SplitFind :call s:Find(<bang>0,<count>,"split",<f-args>)
+  command! -buffer -complete=custom,s:FindList -nargs=? -count=1 TabFind :call s:Find(<bang>0,<count>,"tab",<f-args>)
   let ext = expand("%:e")
   command! -buffer -nargs=0 Alternate :call s:FindAlternate()
   if ext == "rhtml" || ext == "rxml" || ext == "rjs"
     command! -buffer -nargs=? -range Partial :<line1>,<line2>call s:MakePartial(<bang>0,<f-args>)
+  endif
+endfunction
+
+function s:Find(bang,count,arg,...)
+  if a:0
+    let file = RailsUnderscore(a:1)
+  else
+    "let file = RailsUnderscore(expand("<cfile>"),1)
+    let file = s:RailsFind()
+  endif
+  exe a:count.a:arg."find ".s:EscapePath(file)
+endfunction
+
+function s:FindList(ArgLead, CmdLine, CursorPos)
+  if exists("*UserFileComplete") " genutils.vim
+    return UserFileComplete(RailsUnderscore(a:ArgLead), a:CmdLine, a:CursorPos, 1, &path)
+  else
+    return ""
   endif
 endfunction
 
@@ -321,9 +345,9 @@ endfunction
 function s:ScriptComplete(ArgLead,CmdLine,P)
   "  return s:gsub(glob(RailsAppPath()."/script/**"),'\%(.\%(\n\)\@<!\)*[\/]script[\/]','')
   let cmd = s:sub(a:CmdLine,'^\u\w*\s\+','')
-  let g:A = a:ArgLead
-  let g:L = cmd
-  let g:P = a:P
+"  let g:A = a:ArgLead
+"  let g:L = cmd
+"  let g:P = a:P
   if cmd !~ '^[ A-Za-z0-9_-]*$'
     " You're on your own, bud
     return ""
@@ -492,9 +516,9 @@ endfunction
 function! RailsIncludeexpr()
   " Is this foolproof?
   if mode() =~ '[iR]' || expand("<cfile>") != v:fname
-    return s:RailsUnderscore(v:fname)
+    return RailsUnderscore(v:fname)
   else
-    return s:RailsUnderscore(v:fname,1)
+    return RailsUnderscore(v:fname,1)
   endif
 endfunction
 
@@ -505,7 +529,53 @@ function! s:LinePeak()
   return line
 endfunction
 
-function! s:RailsUnderscore(str,...)
+function! s:matchcursor(pat)
+  let line = getline(".")
+  let lastend = 0
+  while lastend >= 0
+    let beg = match(line,'\C'.a:pat,lastend)
+    let end = matchend(line,'\C'.a:pat,lastend)
+    if beg < col(".") && end >= col(".")
+      return matchstr(line,'\C'.a:pat,lastend)
+    endif
+    let lastend = end
+  endwhile
+  return ""
+endfunction
+
+function! s:findit(pat,repl)
+  let res = s:matchcursor(a:pat)
+  if res != ""
+    return s:sub(res,a:pat,a:repl)
+  else
+    return ""
+  endif
+endfunction
+
+function! s:findamethod(func,repl)
+  return s:findit('\s*\<\%('.a:func.'\)\s*(\=\s*[:'."'".'"]\(\k\+\)\>.\=',a:repl)
+endfunction
+
+function! s:RailsFind()
+  let res = s:findamethod('belongs_to\|has_one\|composed_of','app/models/\1')
+  if res != ""|return res|endif
+  let res = s:RailsSingularize(s:findamethod('has_many\|has_and_belongs_to_many','app/models/\1'))
+  if res != ""|return res|endif
+  let res = s:findamethod('fixtures','test/fixtures/\1')
+  if res != ""|return res|endif
+  if RailsFileType() =~ '^controller\>'
+    let res = s:findit('\s*\<def\s\+\(\k\+\)\>(\=','app/'.s:sub(expand("%:p"),'.*[\/]app[\/]controllers[\/]\(.\{-\}\)_controller.rb','views/\1').'/\1')
+    if res != ""|return res|endif
+  endif
+  let isf_keep = &isfname
+  set isfname=@,48-57,/,-,_,: ",\",'
+  let cfile = expand("<cfile>")
+  let res = RailsUnderscore(cfile,1)
+  let &isfname = isf_keep
+  return res
+endfunction
+
+function! RailsUnderscore(str,...)
   if a:str == "ApplicationController"
     return "controllers/application.rb"
   elseif a:str == "<%="
@@ -565,6 +635,13 @@ function! s:RailsUnderscore(str,...)
     let str = 'models/'.s:RailsSingularize(str).'.rb'
   elseif line =~ '\<def\s\+' && expand("%:t") =~ '_controller\.rb'
     let str = substitute(expand("%:p"),'.*[\/]app[\/]controllers[\/]\(.\{-\}\)_controller.rb','views/\1','').'/'.str
+    if filereadable(str.".rhtml")
+      let str = str . ".rhtml"
+    elseif filereadable(str.".rxml")
+      let str = str . ".rxml"
+    elseif filereadable(str.".rjs")
+      let str = str . ".rjs"
+    endif
   else
     " If we made it this far, we'll risk making it singular.
     let str = s:RailsSingularize(str)
@@ -584,7 +661,7 @@ function! s:RailsSingularize(word)
   let word = substitute(word,'[aeio]\@<!ies$','ys','')
   let word = substitute(word,'xe[ns]$','xs','')
   let word = substitute(word,'ves$','fs','')
-  let word = substitute(word,'s$','','')
+  let word = substitute(word,'s\@<!s$','','')
   return word
 endfunction
 
@@ -723,9 +800,21 @@ endfunction
 
 function! s:Mappings()
   map <buffer> <silent> <Plug>RailsAlternate :Alternate<CR>
+  map <buffer> <silent> <Plug>RailsFind      :Find<CR>
+  map <buffer> <silent> <Plug>RailsSplitFind :SplitFind<CR>
+  map <buffer> <silent> <Plug>RailsTabFind   :TabFind<CR>
   if g:rails_mappings
     if !hasmapto("<Plug>RailsAlternate")
       map <buffer> <LocalLeader>ra <Plug>RailsAlternate
+    endif
+    if !hasmapto("<Plug>RailsFind")
+      map <buffer> gf              <Plug>RailsFind
+    endif
+    if !hasmapto("<Plug>RailsSplitFind")
+      map <buffer> <C-W>f          <Plug>RailsSplitFind
+    endif
+    if !hasmapto("<Plug>RailsTabFind")
+      map <buffer> <C-W>gf         <Plug>RailsTabFind
     endif
   endif
 endfunction
@@ -874,7 +963,11 @@ function! s:Abbreviations()
     call s:AddTabExpand(':i',':id => ')
     call s:AddTabExpand(':o',':object => ')
     call s:AddTabExpand(':p',':partial => ')
+    call s:AddParenExpand('logd','logger.debug','')
     call s:AddParenExpand('logi','logger.info','')
+    call s:AddParenExpand('logw','logger.warn','')
+    call s:AddParenExpand('loge','logger.error','')
+    call s:AddParenExpand('logf','logger.fatal','')
     call s:AddParenExpand('fi','find','')
   endif
 endfunction
