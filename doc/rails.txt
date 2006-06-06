@@ -39,11 +39,11 @@ Rails application development.
    your application. |rails-options|
 
 4. Easy navigation of the Rails directory structure.  |gf| considers context
-   and knows about partials, fixtures, and much more.  |:Alternate| (easily
+   and knows about partials, fixtures, and much more.  |:Ralternate| (easily
    mapped with |<Plug>RailsAlternate|) helps you jump from your view, to your
    helper, to your controller, to your test. |rails-navigation|
 
-5. Partial extraction.  |:Partial| {file} replaces the desired range (ideally
+5. Partial extraction.  |:Rpartial| {file} replaces the desired range (ideally
    selected in visual line mode) with "render :partial => '{file}'", which is
    automatically created with your content.  The @{file} instance variable is
    replaced with the {file} local variable. |rails-partials|
@@ -249,37 +249,37 @@ are available if |g:rails_mappings| is enabled or |g:rails_level| >= 3.
 ==============================================================================
 COMMANDS					*rails-commands*
 
-						*rails-:Cd*
-:Cd [{directory}]	|:cd| to /path/to/railsapp/{directory}.
+						*rails-:Rcd*
+:Rcd [{directory}]	|:cd| to /path/to/railsapp/{directory}.
 
-						*rails-:Lcd*
-:Lcd [{directory}]	|:lcd| to /path/to/railsapp/{directory}.
+						*rails-:Rlcd*
+:Rlcd [{directory}]	|:lcd| to /path/to/railsapp/{directory}.
 
-						*rails-:Script*
-:Script {script} {options}
+						*rails-:Rscript*
+:Rscript {script} {options}
 			Call ruby script/{script} {options}.
 
-						*rails-:Console*
-:Console {options}	Start script/console.
+						*rails-:Rconsole*
+:Rconsole {options}	Start script/console.
 
-						*rails-:Alternate*
-:Alternate		Load the "alternate" file.  See
+						*rails-:Ralternate*
+:Ralternate		Load the "alternate" file.  See
 			|<Plug>RailsAlternate|.  (deprecated)
 
-						*rails-:Partial*
-:[range]Partial [{controller}/]{name}	
+						*rails-:Rpartial*
+:[range]Rpartial [{controller}/]{name}	
 			Create a {name} partial from [range] lines (default:
 			current line).  See |rails-partials|.
 
-						*rails-:Partial!*
-:Partial!		Does not exist (yet).  You will have to manually
+						*rails-:Rpartial!*
+:Rpartial!		Does not exist (yet).  You will have to manually
 			delete an old partial before creating a new one.
 
 
 ==============================================================================
 PARTIAL EXTRACTION				*rails-partials*
 
-The |rails-:Partial| command can be used to extract a partial to a new file.
+The |rails-:Rpartial| command can be used to extract a partial to a new file.
 
 If this is your file, in app/views/blog/show.rhtml: >
 
@@ -315,7 +315,7 @@ Finally, take note of what happens when the range is nested inside a for or
 TODO						*rails-todo*
 
 Better interface to abbreviations (perhaps a separate plugin)
-:Generate, and edit the file
+:RNew for a new Rails Application
 Some sort of <RailsLeader>
 
 ==============================================================================

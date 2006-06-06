@@ -101,7 +101,7 @@ endfunction
 
 function! s:SetOptDefault(opt,val)
   if !exists("g:".a:opt)
-    exe "let g:".a:opt." = ".a:val
+    exe "let g:".a:opt." = '".a:val."'"
   endif
 endfunction
 
@@ -115,6 +115,8 @@ function! s:InitConfig()
   call s:SetOptDefault("rails_abbreviations",l>5)
   call s:SetOptDefault("rails_expensive",l>2)
   call s:SetOptDefault("rails_subversion",l>3)
+  call s:SetOptDefault("rails_default_file","README")
+  call s:SetOptDefault("rails_default_database","")
   if l > 3
     "call s:SetOptDefault("ruby_no_identifiers",1)
     call s:SetOptDefault("rubycomplete_rails",1)
@@ -135,6 +137,7 @@ function! s:InitPlugin()
       autocmd BufLeave * call s:ClearGlobals()
     augroup END
   endif
+  command! -bang -nargs=* Rails :call s:NewApp(<bang>0,<f-args>)
 endfunction
 
 function! RailsAppPath()
@@ -168,7 +171,7 @@ function! RailsFileType()
   let f = RailsFilePath()
   let e = fnamemodify(RailsFilePath(),':e')
   let r = ""
-  let top = getline(1).getline(2).getline(3).getline(4).getline(5)
+  let top = getline(1)." ".getline(2)." ".getline(3)." ".getline(4)." ".getline(5)
   if f == ""
     let r = f
   elseif f =~ '_controller\.rb$' || f =~ '\<app/controllers/application\.rb$'
@@ -183,8 +186,8 @@ function! RailsFileType()
     let r = "test"
   elseif f =~ '_helper\.rb$'
     let r = "helper"
-  elseif f =~ '\<app/models'
-    if top =~ '\<ActionMailer::Base\>'
+  elseif f =~ '\<app/models\>'
+    if top =~ '\<ActionMailer::Base\>' || f =~ '_mailer\.rb$'
       let r = "model-am"
     elseif top =~ '\<ActionWebService::Strut\>'
       let r = "model-aws"
@@ -221,7 +224,7 @@ function! RailsFileType()
   return r
 endfunction
 
-function! s:UseSubversion()
+function! s:usesubversion()
   if exists("b:rails_use_subversion")
     return b:rails_use_subversion
   else
@@ -330,21 +333,28 @@ endfunction
 function! s:Commands()
   let rp = s:escapepath(b:rails_app_path)
 "  silent exe 'command! -buffer -complete=custom,s:ScriptComplete -nargs=+ Script :!ruby '.s:escapepath(b:rails_app_path.'/script/').'<args>'
-  command! -buffer -complete=custom,s:ScriptComplete -nargs=+ Script :call s:Script(<bang>0,<f-args>)
-  command! -buffer -complete=custom,s:ConsoleComplete -nargs=* Console :Script console <args>
-  command! -buffer -nargs=1 Runner :call s:Script(<bang>0,"runner",<f-args>)
-  command! -buffer -nargs=? Migration :call s:Migration(<bang>0,<q-args>)
-  command! -buffer -nargs=* Controller :call s:ControllerFunc(<bang>0,"app/controllers/","_controller.rb",<f-args>)
-  command! -buffer -nargs=* Helper :call s:ControllerFunc(<bang>0,"app/helpers/","_helper.rb",<f-args>)
-  silent exe "command! -buffer -nargs=? Cd :cd ".rp."/<args>"
-  silent exe "command! -buffer -nargs=? Lcd :lcd ".rp."/<args>"
-  command! -buffer -complete=custom,s:FindList -nargs=* -count=1 Find :call s:Find(<bang>0,<count>,"",<f-args>)
-  command! -buffer -complete=custom,s:FindList -nargs=* -count=1 SplitFind :call s:Find(<bang>0,<count>,"split",<f-args>)
-  command! -buffer -complete=custom,s:FindList -nargs=* -count=1 TabFind :call s:Find(<bang>0,<count>,"tab",<f-args>)
+  command! -buffer -complete=custom,s:ScriptComplete -nargs=+ Rscript :call s:Script(<bang>0,<f-args>)
+  command! -buffer -complete=custom,s:ScriptComplete -nargs=+ Script :Script<bang> <args>
+  command! -buffer -complete=custom,s:GenerateComplete -nargs=* Rgenerate :call s:Generate(<bang>0,<f-args>)
+  command! -buffer -complete=custom,s:ConsoleComplete -nargs=* Rconsole :Rscript console <args>
+  command! -buffer -complete=custom,s:DestroyComplete -nargs=* Rdestroy :call s:Destroy(<bang>0,<f-args>)
+  command! -buffer -nargs=1 Rrunner :call s:Script(<bang>0,"runner",<f-args>)
+  command! -buffer -nargs=? Rmigration :call s:Migration(<bang>0,<q-args>)
+  command! -buffer -nargs=* Rcontroller :call s:ControllerFunc(<bang>0,"app/controllers/","_controller.rb",<f-args>)
+  command! -buffer -nargs=* Rhelper :call s:ControllerFunc(<bang>0,"app/helpers/","_helper.rb",<f-args>)
+  silent exe "command! -buffer -nargs=? Rcd :cd ".rp."/<args>"
+  silent exe "command! -buffer -nargs=? Rlcd :lcd ".rp."/<args>"
+  command! -buffer -nargs=? Cd :Rcd <args>
+  command! -buffer -nargs=? Lcd :Rlcd <args>
+  command! -buffer -complete=custom,s:FindList -nargs=* -count=1 Rfind :call s:Find(<bang>0,<count>,"",<f-args>)
+  command! -buffer -complete=custom,s:FindList -nargs=* -count=1 Rsplitfind :call s:Find(<bang>0,<count>,"split",<f-args>)
+  command! -buffer -complete=custom,s:FindList -nargs=* -count=1 Rtabfind :call s:Find(<bang>0,<count>,"tab",<f-args>)
   let ext = expand("%:e")
-  command! -buffer -nargs=0 Alternate :call s:FindAlternate()
+  command! -buffer -nargs=0 Ralternate :call s:Alternate()
+  command! -buffer -nargs=0 Alternate :Ralternate
   if ext == "rhtml" || ext == "rxml" || ext == "rjs"
-    command! -buffer -nargs=? -range Partial :<line1>,<line2>call s:MakePartial(<bang>0,<f-args>)
+    command! -buffer -nargs=? -range Rpartial :<line1>,<line2>call s:MakePartial(<bang>0,<f-args>)
+    command! -buffer -bang -nargs=? -range Partial :<line1>,<line2>Rpartial<bang> <args>
   endif
 endfunction
 
@@ -394,6 +404,15 @@ function! s:FindList(ArgLead, CmdLine, CursorPos)
   endif
 endfunction
 
+function s:rubyexestr(cmd)
+  return "ruby -C ".s:quote(RailsAppPath())." ".a:cmd
+endfunction
+
+function s:rubyexe(cmd)
+  exe "!".s:rubyexestr(a:cmd)
+  return v:shell_error
+endfunction
+
 function! s:Script(bang,cmd,...)
   let str = ""
   let c = 1
@@ -401,7 +420,84 @@ function! s:Script(bang,cmd,...)
     let str = str . " " . s:quote(a:{c})
     let c = c + 1
   endwhile
-  exe "!ruby -C ".s:quote(RailsAppPath())." ".s:quote("script/".a:cmd).str
+  call s:rubyexe(s:quote("script/".a:cmd).str)
+endfunction
+
+function! s:Destroy(bang,...)
+  let str = ""
+  let c = 1
+  while c <= a:0
+    let str = str . " " . s:quote(a:{c})
+    let c = c + 1
+  endwhile
+  call s:rubyexe(s:quote("script/destroy").str.(s:usesubversion()?' -c':''))
+endfunction
+
+function! s:Generate(bang,...)
+  if a:0 == 0
+    call s:rubyexe("script/generate")
+    return
+  elseif a:0 == 1
+    call s:rubyexe("script/generate ".s:quote(a:1))
+    return
+  endif
+  let target = s:quote(a:1)
+  let str = ""
+  let c = 2
+  while c <= a:0
+    let str = str . " " . s:quote(a:{c})
+    let c = c + 1
+  endwhile
+  if str !~ '-p\>'
+    let execstr = s:rubyexestr("script/generate ".target." -p -f".str)
+    let res = system(execstr)
+    let file = matchstr(res,'\s\+\%(create\|force\)\s\+\zs\f\+\.rb\ze\n')
+    if file == ""
+      let file = matchstr(res,'\s\+\%(exists\)\s\+\zs\f\+\.rb\ze\n')
+    endif
+    echo file
+  else
+    let file = ""
+  endif
+  if !s:rubyexe("script/generate ".target.(s:usesubversion()?' -c':'').str) && file != ""
+    exe "edit ".s:escapepath(RailsAppPath())."/".file
+  endif
+endfunction
+
+function! s:NewApp(bang,...)
+  if a:0 == 0
+    !rails
+    return
+  endif
+  let dir = ""
+  if a:1 !~ '^-'
+    let dir = a:1
+  elseif a:{a:0} =~ '[\/]'
+    let dir = a:{a:0}
+  else
+    let dir = a:1
+  endif
+  if isdirectory(fnamemodify(dir,'%:h')."/.svn") && g:rails_subversion
+    let append = " -c"
+  else
+    let append = ""
+  endif
+  if g:rails_default_database != ""
+    let append = append." -d ".g:rails_default_database
+  endif
+  if a:bang
+    let append = append." --force"
+  endif
+  let str = ""
+  let c = 1
+  while c <= a:0
+    let str = str . " " . s:quote(a:{c})
+    let c = c + 1
+  endwhile
+  exe "!rails".str.append
+  if filereadable(dir."/".g:rails_default_file)
+    exe "edit ".s:escapepath(dir)."/".g:rails_default_file
+  endif
 endfunction
 
 function! s:ScriptComplete(ArgLead,CmdLine,P)
@@ -434,6 +530,14 @@ endfunction
 
 function! s:ConsoleComplete(A,L,P)
   return s:CustomComplete(a:A,a:L,a:P,"console")
+endfunction
+
+function! s:GenerateComplete(A,L,P)
+  return s:CustomComplete(a:A,a:L,a:P,"generate")
+endfunction
+
+function! s:DestroyComplete(A,L,P)
+  return s:CustomComplete(a:A,a:L,a:P,"destroy")
 endfunction
 
 function! s:ControllerFunc(bang,prefix,suffix,...)
@@ -584,7 +688,7 @@ endfunction
 
 function! s:SetRubyBasePath()
   let rp = s:escapepath(b:rails_app_path)
-  let &l:path = '.,'.rp.",".rp."/app/controllers,".rp."/app,".rp."/app/models,".rp."/app/helpers,".rp."/components,".rp."/config,".rp."/lib,".rp."/vendor/plugins/*/lib,".rp."/vendor,".rp."/test/unit,".rp."/test/functional,".rp."/test/integration,".rp."/test,".substitute(&l:path,'^\.,','','')
+  let &l:path = '.,'.rp.",".rp."/app/controllers,".rp."/app,".rp."/app/models,".rp."/app/helpers,".rp."/components,".rp."/config,".rp."/lib,".rp."/vendor/plugins/*/lib,".rp."/vendor,".rp."/test/unit,".rp."/test/functional,".rp."/test/integration,".rp."/app/apis,"."/test,".substitute(&l:path,'^\.,','','')
 endfunction
 
 function! s:InitRuby()
@@ -862,10 +966,10 @@ function! s:MakePartial(bang,...) range abort
   endif
 endfunction
 
-function! s:FindAlternate()
+function! s:Alternate()
   let f = RailsFilePath()
   let t = RailsFileType()
-  if expand("%:t") == "database.yml" || f =~ '\<config/environments/'
+  if expand("%:t") == "database.yml" || f =~ '\<config/environments/' || f == 'README'
     find environment.rb
   elseif expand("%:t") == "environment.rb" || expand("%:t") == "schema.rb"
     find database.yml
@@ -893,6 +997,9 @@ function! s:FindAlternate()
     else
       exe "find ".s:escapepath(controller)
     endif
+  elseif t =~ '^controller-api\>'
+    let api = substitute(substitute(f,'/controllers/','/apis/',''),'_controller\.rb$','_api.rb','')
+    exe "find ".s:escapepath(api)
   elseif t =~ '^helper\>'
     let controller = substitute(substitute(f,'/helpers/','/controllers/',''),'_helper\.rb$','_controller.rb','')
     exe "find ".s:escapepath(controller)
@@ -943,13 +1050,13 @@ function! RailsSTATUSLINE()
   endif
 endfunction
 " }}}1
-" Mappings/Abbreviations {{{1
+" Mappings{{{1
 
 function! s:Mappings()
-  map <buffer> <silent> <Plug>RailsAlternate :Alternate<CR>
-  map <buffer> <silent> <Plug>RailsFind      :Find<CR>
-  map <buffer> <silent> <Plug>RailsSplitFind :SplitFind<CR>
-  map <buffer> <silent> <Plug>RailsTabFind   :TabFind<CR>
+  map <buffer> <silent> <Plug>RailsAlternate :Ralternate<CR>
+  map <buffer> <silent> <Plug>RailsFind      :Rfind<CR>
+  map <buffer> <silent> <Plug>RailsSplitFind :Rsplitfind<CR>
+  map <buffer> <silent> <Plug>RailsTabFind   :Rtabfind<CR>
   map <buffer> <silent> <Plug>RailsMagicM    :call <SID>magicm()<CR>
   if g:rails_mappings
     if !hasmapto("<Plug>RailsFind")
@@ -970,24 +1077,33 @@ endfunction
 
 function! s:magicm()
   let t = RailsFileType()
-  if t =~ '^test\>'
+  if RailsFilePath() == 'README'
+    find config/database.yml
+  elseif t =~ '^test\>'
     let meth = s:lastmethod()
     if meth =~ '^test_'
       let call = " TESTOPTS=-n/".meth."/"
     else
       let call = ""
     endif
-    exe "make ".s:sub(s:gsub(t,'-',':'),'unit$','units')." TEST=%".call
+    exe "make ".s:sub(s:gsub(t,'-',':'),'unit$\|functional$','&s')." TEST=%".call
   elseif t =~ '^view\>'
     exe "find ".substitute(RailsFilePath(),'app/views/\(.\{-\}\)/\(\k\+\)\..*','app/controllers/\1_controller|silent! djump \2','')
+  elseif t =~ '^controller-api\>'
+    exe "find ".substitute(substitute(RailsFilePath(),'/controllers/','/apis/',''),'_controller\.rb$','_api.rb','')
   elseif t =~ '^controller\>'
     exe "find ".substitute(RailsFilePath(),'app/controllers/\(.\{-\}\)_controller\.rb','app/views/\1/'.s:lastmethod(),'')
   elseif t =~ '^model-ar\>'
     call s:Migration(0,'create_'.s:sub(expand('%:t:r'),'y$','ie$').'s')
+  elseif t =~ '^api\>'
+    exe "find ".substitute(RailsFilePath(),'app/apis/\(.\{-\}\)_api\.rb$','app/controllers/\1_controller','')
   endif
 endfunction
 
-function! <SID>RailsSelectiveExpand(pat,good,default,...)
+" }}}1
+" Abbreviations {{{1
+
+function! s:RailsSelectiveExpand(pat,good,default,...)
   if a:0 > 0
     let nd = a:1
   else
@@ -999,18 +1115,12 @@ function! <SID>RailsSelectiveExpand(pat,good,default,...)
     return good.(a:0 ? " ".a:1 : '')
   elseif c =~ a:pat
     return good.c.(a:0 ? a:1 : '')
-"    return s:sub(good,' $','').c
-"    if good =~ '@'
-"      return s:sub(good,"@",c)
-"    else
-"      return good.c
-"    endif
   else
     return a:default.c
   endif
 endfunction
 
-function! <SID>DiscretionaryComma()
+function! s:DiscretionaryComma()
   let c = nr2char(getchar(0))
   if c =~ '[\r,;]'
     return c
@@ -1019,7 +1129,7 @@ function! <SID>DiscretionaryComma()
   endif
 endfunction
 
-function! <SID>TheMagicC()
+function! s:TheMagicC()
   let l = s:LinePeak()
   if l =~ '\<find\s*\((\|:first,\|:all,\)'
     return <SID>RailsSelectiveExpand('..',':conditions => ',':c')
@@ -1041,6 +1151,10 @@ endfunction
 
 function! s:AddBracketExpand(abbr,expn)
   call s:AddSelectiveExpand(a:abbr,'[[]',a:expn)
+endfunction
+
+function! s:AddColonExpand(abbr,expn)
+  call s:AddSelectiveExpand(a:abbr,':',a:expn)
 endfunction
 
 function! s:AddParenExpand(abbr,expn,...)
@@ -1138,6 +1252,12 @@ function! s:Abbreviations()
     call s:AddParenExpand('loge','logger.error','')
     call s:AddParenExpand('logf','logger.fatal','')
     call s:AddParenExpand('fi','find','')
+    call s:AddColonExpand('AR','ActiveRecord')
+    call s:AddColonExpand('AV','ActionView')
+    call s:AddColonExpand('AC','ActionController')
+    call s:AddColonExpand('AS','ActiveSupport')
+    call s:AddColonExpand('AM','ActionMailer')
+    call s:AddColonExpand('AWS','ActionWebService')
   endif
 endfunction
 " }}}1
