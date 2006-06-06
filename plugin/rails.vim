@@ -787,7 +787,9 @@ function! s:MakePartial(bang,...) range abort
     return
   endif
   let file = a:1
-  let range = a:firstline.",".a:lastline
+  let first = a:firstline
+  let last = a:lastline
+  let range = first.",".last
   let curdir = expand("%:p:h")
   let dir = fnamemodify(file,":h")
   let fname = fnamemodify(file,":t")
@@ -798,30 +800,61 @@ function! s:MakePartial(bang,...) range abort
     let name = fnamemodify(name,":r")
   endif
   let var = "@".name
+  let collection = ""
   if dir =~ '^/'
-    let out = s:escapepath(b:rails_app_path).dir."/_".fname
+    let out = (b:rails_app_path).dir."/_".fname
   elseif dir == ""
-    let out = s:escapepath(curdir)."/_".fname
+    let out = (curdir)."/_".fname
   elseif isdirectory(curdir."/".dir)
-    let out = s:escapepath(curdir)."/".dir."/_".fname
+    let out = (curdir)."/".dir."/_".fname
   else
-    let out = s:escapepath(b:rails_app_path)."/app/views/".dir."/_".fname
+    let out = (b:rails_app_path)."/app/views/".dir."/_".fname
   endif
+  if filereadable(out)
+    echoerr "Partial exists"
+    return
+  endif
+  let out = s:escapepath(out)
   " No tabs, they'll just complicate things
-  let spaces = matchstr(getline(a:firstline),"^ *")
-  if spaces != ""
-    silent! exe range.'sub/'.spaces.'//'
+  if expand("%:e") == "rhtml"
+    let erub1 = '<%\s*'
+    let erub2 = '\s*-\=%>'
+  else
+    let erub1 = ''
+    let erub2 = ''
   endif
-  silent! exe range.'sub?\w\@<!'.var.'\>?'.name.'?g'
+  let spaces = matchstr(getline(first),"^ *")
+  if getline(last+1) =~ '^\s*'.erub1.'end'.erub2.'\s*$'
+    let fspaces = matchstr(getline(last+1),"^ *")
+    if getline(a:firstline-1) =~ '^'.fspaces.erub1.'for\s\+\(\k\+\)\s\+in\s\+\([^ %>]\+\)'.erub2.'\s*$'
+      let collection = s:sub(getline(a:firstline-1),'^'.fspaces.erub1.'for\s\+\(\k\+\)\s\+in\s\+\([^ >]\+\)'.erub2.'\s*$','\1>\2')
+    elseif getline(a:firstline-1) =~ '^'.fspaces.erub1.'\([^ %>]\+\)\.each\s\+do\s\+|\s*\(\k\+\)\s*|'.erub2.'\s*$'
+      let collection = s:sub(getline(a:firstline-1),'^'.fspaces.erub1.'\([^ %>]\+\)\.each\s\+do\s\+|\s*\(\k\+\)\s*|'.erub2.'\s*$','\2>\1')
+    endif
+    if collection != ''
+      let var = matchstr(collection,'^\k\+')
+      let collection = s:sub(collection,'^\k\+>','')
+      let first = first - 1
+      let last = last + 1
+    endif
+  else
+    let fspaces = spaces
+  endif
+  if spaces != ""
+    silent! exe range.'sub/^'.spaces.'//'
+  endif
+  silent! exe range.'sub?\%(\w\|[@:]\)\@<!'.var.'\>?'.name.'?g'
   silent exe range."write ".out
   let renderstr = "render :partial => '".fnamemodify(file,":r")."'"
-  if "@".name != var
+  if collection != ""
+    let renderstr = renderstr.", :collection => ".collection
+  elseif "@".name != var
     let renderstr = renderstr.", :object => ".var
   endif
   if expand("%:e") == "rhtml"
     let renderstr = "<%= ".renderstr." %>"
   endif
-  silent exe "norm :".range."change\<CR>".spaces.renderstr."\<CR>.\<CR>"
+  silent exe "norm :".first.",".last."change\<CR>".fspaces.renderstr."\<CR>.\<CR>"
   if renderstr =~ '<%'
     norm ^6w
   else

@@ -308,12 +308,14 @@ Then, a simple >
 	:'<,'>Partial blog/post
 will suffice. (Note the use of a controller name in this example.)
 
+Finally, take note of what happens when the range is nested inside a for or
+.each loop.
+
 ==============================================================================
 TODO						*rails-todo*
 
 Better interface to abbreviations (perhaps a separate plugin)
 :Generate, and edit the file
-:Partial that can handle collections
 Some sort of <RailsLeader>
 
 ==============================================================================
