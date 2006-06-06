@@ -915,10 +915,14 @@ function! s:MakePartial(bang,...) range abort
     let out = (b:rails_app_path)."/app/views/".dir."/_".fname
   endif
   if filereadable(out)
-    echoerr "Partial exists"
+    let partial_warn = 1
+    "echoerr "Partial exists"
+    "return
+  endif
+  if bufnr(out) > 0
+    echoerr "Partial already open in buffer ".bufnr(out)
     return
   endif
-  let out = s:escapepath(out)
   " No tabs, they'll just complicate things
   if expand("%:e") == "rhtml"
     let erub1 = '<%\s*'
@@ -944,11 +948,7 @@ function! s:MakePartial(bang,...) range abort
   else
     let fspaces = spaces
   endif
-  if spaces != ""
-    silent! exe range.'sub/^'.spaces.'//'
-  endif
-  silent! exe range.'sub?\%(\w\|[@:]\)\@<!'.var.'\>?'.name.'?g'
-  silent exe range."write ".out
+  "silent exe range."write ".out
   let renderstr = "render :partial => '".fnamemodify(file,":r")."'"
   if collection != ""
     let renderstr = renderstr.", :collection => ".collection
@@ -958,11 +958,37 @@ function! s:MakePartial(bang,...) range abort
   if expand("%:e") == "rhtml"
     let renderstr = "<%= ".renderstr." %>"
   endif
+  let buf = @@
+  exe range."yank"
+  let partial = @@
+  let @@ = buf
   silent exe "norm :".first.",".last."change\<CR>".fspaces.renderstr."\<CR>.\<CR>"
   if renderstr =~ '<%'
     norm ^6w
   else
     norm ^5w
+  endif
+  let ft = &ft
+  if &hidden
+    enew
+  else
+    new
+  endif
+  exe "silent file ".s:escapepath(fnamemodify(out,':~:.'))
+  let &ft = ft
+  let @@ = partial
+  put
+  0delete
+  let @@ = buf
+  if spaces != ""
+    silent! exe '%sub/^'.spaces.'//'
+  endif
+  silent! exe '%sub?\%(\w\|[@:]\)\@<!'.var.'\>?'.name.'?g'
+  call s:Detect(out)
+  if exists("l:partial_warn")
+    echohl WarningMsg
+    echo "Warning: partial exists!"
+    echohl None
   endif
 endfunction
 
