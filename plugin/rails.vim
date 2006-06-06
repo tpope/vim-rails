@@ -116,10 +116,10 @@ function! s:InitConfig()
   call s:SetOptDefault("rails_expensive",l>2)
   call s:SetOptDefault("rails_subversion",l>3)
   if l > 3
-    call s:SetOptDefault("ruby_no_identifiers",1)
-"    call s:SetOptDefault("rubycomplete_rails",1)
+    "call s:SetOptDefault("ruby_no_identifiers",1)
+    call s:SetOptDefault("rubycomplete_rails",1)
   endif
-"  call s:SetOptDefault("",)
+  "call s:SetOptDefault("",)
 endfunction
 
 function! s:InitPlugin()
