@@ -39,9 +39,9 @@ Rails application development.
    your application. |rails-options|
 
 4. Easy navigation of the Rails directory structure.  |gf| considers context
-   and knows about partials, fixtures, and much more.  |:Ralternate| (easily
-   mapped with |<Plug>RailsAlternate|) helps you jump from your view, to your
-   helper, to your controller, to your test. |rails-navigation|
+   and knows about partials, fixtures, and much more.  |<Plug>RailsAlternate|
+   (<LocalLeader>ra by default) helps you jump from your view, to your helper,
+   to your controller, to your test. |rails-navigation|
 
 5. Partial extraction.  |:Rpartial| {file} replaces the desired range (ideally
    selected in visual line mode) with "render :partial => '{file}'", which is
@@ -111,7 +111,7 @@ See |rails-'isfname'|.
 	let g:rails_expensive=1
 Enables or disables expensive (slow) features (typically involving calls to
 the Ruby interpreter).  Recommended for moderately fast computers.  Enabled
-when |g:rails_level| >= 2.
+when |g:rails_level| >= 3.
 
 						*g:rails_statusline*  >
 	let g:rails_statusline=1
@@ -121,7 +121,8 @@ the current filetype is in your existing 'statusline'.  Enabled when
 
 						*g:rails_mappings*  >
 	let g:rails_mappings=1
-Enables a few <LocalLeader> mappings.  See |rails-mappings|.
+Enables a few <LocalLeader> mappings.  See |rails-mappings|. Enabled when
+|g:rails_level| >= 3.
 
 						*g:rails_syntax*  >
 	let g:rails_syntax=1
@@ -131,6 +132,14 @@ Enabled when |g:rails_level| >= 2.
 When g:rails_syntax is enabled, you may find your Ruby files to be a bit heavy
 on the cyan (or however your Identifiers are highlighted).  You may want to
 enable g:ruby_no_identifiers, as explained in |ft-ruby-syntax|.
+
+						*g:rails_default_file*  >
+	let g:rails_default_file='config/database.yml'
+File to load when a new Rails application is created.  Defaults to the README.
+
+						*g:rails_default_database*  >
+	let g:rails_default_database='sqlite3'
+Database to use for new applications.  Defaults to letting Rails decide.
  
 ==============================================================================
 MANAGED VIM OPTIONS			*rails-options*
@@ -244,10 +253,14 @@ are available if |g:rails_mappings| is enabled or |g:rails_level| >= 3.
 			Maybe it will find the create_foos Migration for your
 			current Model.  Or Maybe it will find the controller
 			Method for your view, or vice versa.  You Might find
-			it easiest to just try it yourself!
+			it easiest to try it yourself.
 
 ==============================================================================
 COMMANDS					*rails-commands*
+
+						*rails-:Rails*
+:Rails {directory}	The only global command.  Creates a new Rails
+			application in {directory}, and loads the README.
 
 						*rails-:Rcd*
 :Rcd [{directory}]	|:cd| to /path/to/railsapp/{directory}.
@@ -262,6 +275,16 @@ COMMANDS					*rails-commands*
 						*rails-:Rconsole*
 :Rconsole {options}	Start script/console.
 
+						*rails-:Rrunner*
+:Rrunner {code}		Executes {code} with script/runner.  Different from
+			:Rscript runner {code} in that code is passed as one
+			argument.
+
+:Rgenerate {options}	Calls script/generate {options}, and then edits the
+			first file generated.
+
+:Rdestroy {options}	Calls script/destroy {options}.
+
 						*rails-:Ralternate*
 :Ralternate		Load the "alternate" file.  See
 			|<Plug>RailsAlternate|.  (deprecated)
@@ -270,10 +293,6 @@ COMMANDS					*rails-commands*
 :[range]Rpartial [{controller}/]{name}	
 			Create a {name} partial from [range] lines (default:
 			current line).  See |rails-partials|.
-
-						*rails-:Rpartial!*
-:Rpartial!		Does not exist (yet).  You will have to manually
-			delete an old partial before creating a new one.
 
 
 ==============================================================================
@@ -302,21 +321,30 @@ And app/views/blog/_post.rhtml will now contain: >
 
   1	<h2><%= post.title %></h2>
   2	<p><%= post.body %></p>
+
+As a special case, if the file had looked like this: >
+
+  1     <% for object in @posts -%>
+  2	  <h2><%= object.title %></h2>
+  3	  <p><%= object.body %></p>
+  4	<% end -%>
+<
+The end result would have been this: >
+
+  1     <%= render :partial => 'post', :collection => @posts %>
 <
 The easiest way to choose what to extract is to use |linewise-visual| mode.
 Then, a simple >
 	:'<,'>Partial blog/post
 will suffice. (Note the use of a controller name in this example.)
 
-Finally, take note of what happens when the range is nested inside a for or
-.each loop.
-
 ==============================================================================
 TODO						*rails-todo*
 
-Better interface to abbreviations (perhaps a separate plugin)
-:RNew for a new Rails Application
-Some sort of <RailsLeader>
+Abbrevations.  You can enable some experimental ones with
+|g:rails_abbreviations| (but don't tell anyone).
+
+Some sort of <RailsLeader>, as opposed to hardwiring it to <Leader>r.
 
 ==============================================================================
 vim:tw=78:ts=8:ft=help:norl:
