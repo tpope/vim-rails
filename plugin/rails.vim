@@ -284,7 +284,7 @@ function! s:InitBuffer(path)
     let &l:makeprg='rake -f '.rp.'/Rakefile'
     call s:SetRubyBasePath()
     if has("balloon_eval")
-      setlocal balloonexpr=RailsUnderscore(v:beval_text,1) ballooneval
+      "setlocal balloonexpr=RailsUnderscore(v:beval_text,1) ballooneval
     endif
     if &ft == "ruby" || &ft == "eruby" || &ft == "rjs" || &ft == "rxml"
       " This is a strong convention in Rails, so we'll break the usual rule
@@ -944,7 +944,7 @@ function! s:magicm()
     else
       let call = ""
     endif
-    exe "make TEST=%".call
+    exe "make ".s:sub(s:gsub(t,'-',':'),'unit$','units')." TEST=%".call
   elseif t =~ '^view\>'
     exe "find ".substitute(RailsFilePath(),'app/views/\(.\{-\}\)/\(\k\+\)\..*','app/controllers/\1_controller|silent! djump \2','')
   elseif t =~ '^controller\>'
