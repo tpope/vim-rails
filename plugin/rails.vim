@@ -112,7 +112,7 @@ function! s:InitConfig()
   call s:SetOptDefault("rails_syntax",l>1)
   call s:SetOptDefault("rails_isfname",l>1)
   call s:SetOptDefault("rails_mappings",l>2)
-  call s:SetOptDefault("rails_abbreviations",l>5)
+  call s:SetOptDefault("rails_abbreviations",l>4)
   call s:SetOptDefault("rails_expensive",l>2)
   call s:SetOptDefault("rails_subversion",l>3)
   call s:SetOptDefault("rails_default_file","README")
@@ -140,6 +140,7 @@ function! s:InitPlugin()
   command! -bang -nargs=* Rails :call s:NewApp(<bang>0,<f-args>)
 endfunction
 
+" "Public" Interface {{{1
 function! RailsAppPath()
   if exists("b:rails_app_path")
     return b:rails_app_path
@@ -223,6 +224,8 @@ function! RailsFileType()
   endif
   return r
 endfunction
+
+" }}}1
 
 function! s:usesubversion()
   if exists("b:rails_use_subversion")
@@ -685,7 +688,7 @@ function! s:Syntax()
 endfunction
 
 " }}}1
-
+" Navigation {{{1
 function! s:SetRubyBasePath()
   let rp = s:escapepath(b:rails_app_path)
   let &l:path = '.,'.rp.",".rp."/app/controllers,".rp."/app,".rp."/app/models,".rp."/app/helpers,".rp."/components,".rp."/config,".rp."/lib,".rp."/vendor/plugins/*/lib,".rp."/vendor,".rp."/test/unit,".rp."/test/functional,".rp."/test/integration,".rp."/app/apis,"."/test,".substitute(&l:path,'^\.,','','')
@@ -881,6 +884,59 @@ function! s:RailsSingularize(word)
   return word
 endfunction
 
+function! s:Alternate()
+  let f = RailsFilePath()
+  let t = RailsFileType()
+  if expand("%:t") == "database.yml" || f =~ '\<config/environments/' || f == 'README'
+    find environment.rb
+  elseif expand("%:t") == "environment.rb" || expand("%:t") == "schema.rb"
+    find database.yml
+  elseif t =~ '^view\>'
+    if t =~ '\<layout\>'
+      let dest = fnamemodify(f,':r:s?/layouts\>??').'/layout'
+      echo dest
+    else
+      let dest = f
+    endif
+    " Go to the helper, controller, or model
+    let helper     = fnamemodify(dest,":h:s?/views/?/helpers/?")."_helper.rb"
+    let controller = fnamemodify(dest,":h:s?/views/?/controllers/?")."_controller.rb"
+    let model      = fnamemodify(dest,":h:s?/views/?/models/?").".rb"
+    if filereadable(b:rails_app_path."/".helper) && 0
+      " Would it be better to skip the helper and go straight to the
+      " controller?
+      exe "find ".s:escapepath(helper)
+    elseif filereadable(b:rails_app_path."/".controller)
+      let jumpto = expand("%:t:r")
+      exe "find ".s:escapepath(controller)
+      exe "silent! djump ".jumpto
+    elseif filereadable(b:rails_app_path."/".model)
+      exe "find ".s:escapepath(model)
+    else
+      exe "find ".s:escapepath(controller)
+    endif
+  elseif t =~ '^controller-api\>'
+    let api = substitute(substitute(f,'/controllers/','/apis/',''),'_controller\.rb$','_api.rb','')
+    exe "find ".s:escapepath(api)
+  elseif t =~ '^helper\>'
+    let controller = substitute(substitute(f,'/helpers/','/controllers/',''),'_helper\.rb$','_controller.rb','')
+    exe "find ".s:escapepath(controller)
+  elseif t =~ '\<fixtures\>'
+    let file = s:RailsSingularize(expand("%:t:r")).'_test'
+    exe "find ".s:escapepath(file)
+  else
+    let file = fnamemodify(f,":t:r")
+    if file =~ '_test$'
+      exe "find ".s:escapepath(substitute(file,'_test$','',''))
+    else
+      exe "find ".s:escapepath(file).'_test'
+    endif
+  endif
+endfunction
+
+" }}}1
+" Partials {{{1
+
 function! s:MakePartial(bang,...) range abort
   if a:0 == 0 || a:0 > 1
     echoerr "Incorrect number of arguments"
@@ -992,56 +1048,7 @@ function! s:MakePartial(bang,...) range abort
   endif
 endfunction
 
-function! s:Alternate()
-  let f = RailsFilePath()
-  let t = RailsFileType()
-  if expand("%:t") == "database.yml" || f =~ '\<config/environments/' || f == 'README'
-    find environment.rb
-  elseif expand("%:t") == "environment.rb" || expand("%:t") == "schema.rb"
-    find database.yml
-  elseif t =~ '^view\>'
-    if t =~ '\<layout\>'
-      let dest = fnamemodify(f,':r:s?/layouts\>??').'/layout'
-      echo dest
-    else
-      let dest = f
-    endif
-    " Go to the helper, controller, or model
-    let helper     = fnamemodify(dest,":h:s?/views/?/helpers/?")."_helper.rb"
-    let controller = fnamemodify(dest,":h:s?/views/?/controllers/?")."_controller.rb"
-    let model      = fnamemodify(dest,":h:s?/views/?/models/?").".rb"
-    if filereadable(b:rails_app_path."/".helper) && 0
-      " Would it be better to skip the helper and go straight to the
-      " controller?
-      exe "find ".s:escapepath(helper)
-    elseif filereadable(b:rails_app_path."/".controller)
-      let jumpto = expand("%:t:r")
-      exe "find ".s:escapepath(controller)
-      exe "silent! djump ".jumpto
-    elseif filereadable(b:rails_app_path."/".model)
-      exe "find ".s:escapepath(model)
-    else
-      exe "find ".s:escapepath(controller)
-    endif
-  elseif t =~ '^controller-api\>'
-    let api = substitute(substitute(f,'/controllers/','/apis/',''),'_controller\.rb$','_api.rb','')
-    exe "find ".s:escapepath(api)
-  elseif t =~ '^helper\>'
-    let controller = substitute(substitute(f,'/helpers/','/controllers/',''),'_helper\.rb$','_controller.rb','')
-    exe "find ".s:escapepath(controller)
-  elseif t =~ '\<fixtures\>'
-    let file = s:RailsSingularize(expand("%:t:r")).'_test'
-    exe "find ".s:escapepath(file)
-  else
-    let file = fnamemodify(f,":t:r")
-    if file =~ '_test$'
-      exe "find ".s:escapepath(substitute(file,'_test$','',''))
-    else
-      exe "find ".s:escapepath(file).'_test'
-    endif
-  endif
-endfunction
-
+" }}}1
 " Statusline {{{1
 function! s:InitStatusline()
   if &statusline !~ 'Rails'
@@ -1094,10 +1101,11 @@ function! s:Mappings()
     if !hasmapto("<Plug>RailsTabFind")
       map <buffer> <C-W>gf         <Plug>RailsTabFind
     endif
+    map <buffer> <LocalLeader>rf <Plug>RailsFind
     map <buffer> <LocalLeader>ra <Plug>RailsAlternate
     map <buffer> <LocalLeader>rm <Plug>RailsMagicM
     " Deprecated
-    map <buffer> <LocalLeader>rv <Plug>RailsMagicM
+    map <buffer> <LocalLeader>rv :echoerr "Use <Lt>LocalLeader>rm instead!"<CR>
   endif
 endfunction
 
