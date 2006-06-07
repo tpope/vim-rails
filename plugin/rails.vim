@@ -140,93 +140,6 @@ function! s:InitPlugin()
   command! -bang -nargs=* Rails :call s:NewApp(<bang>0,<f-args>)
 endfunction
 
-" "Public" Interface {{{1
-function! RailsAppPath()
-  if exists("b:rails_app_path")
-    return b:rails_app_path
-  else
-    return ""
-  endif
-endfunction
-
-function! RailsFilePath()
-  if !exists("b:rails_app_path")
-    return ""
-  elseif exists("b:rails_file_path")
-    return b:rails_file_path
-  endif
-  let f = s:gsub(expand("%:p"),'\\ \@!','/')
-  if s:gsub(b:rails_app_path,'\\ \@!','/') == strpart(f,0,strlen(b:rails_app_path))
-    return strpart(f,strlen(b:rails_app_path)+1)
-  else
-    return f
-  endif
-endfunction
-
-function! RailsFileType()
-  if !exists("b:rails_app_path")
-    return ""
-  elseif exists("b:rails_file_type")
-    return b:rails_file_type
-  endif
-  let f = RailsFilePath()
-  let e = fnamemodify(RailsFilePath(),':e')
-  let r = ""
-  let top = getline(1)." ".getline(2)." ".getline(3)." ".getline(4)." ".getline(5)
-  if f == ""
-    let r = f
-  elseif f =~ '_controller\.rb$' || f =~ '\<app/controllers/application\.rb$'
-    if top =~ '\<wsdl_service_name\>'
-      let r = "controller-api"
-    else
-      let r = "controller"
-    endif
-  elseif f =~ '_api\.rb'
-    let r = "api"
-  elseif f =~ '\<test/test_helper\.rb$'
-    let r = "test"
-  elseif f =~ '_helper\.rb$'
-    let r = "helper"
-  elseif f =~ '\<app/models\>'
-    if top =~ '\<ActionMailer::Base\>' || f =~ '_mailer\.rb$'
-      let r = "model-am"
-    elseif top =~ '\<ActionWebService::Strut\>'
-      let r = "model-aws"
-    elseif top =~ '\<ActiveRecord::Base\>' || top =~ '\<validates_\w\+_of\>'
-      let r = "model-ar"
-    else
-      let r = "model"
-    endif
-  elseif f =~ '\<app/views/layouts\>'
-    let r = "view-layout-" . e
-  elseif f =~ '\<app/views/.*/_\k\+\.\k\+$'
-    let r = "view-partial-" . e
-  elseif f =~ '\<app/views\>'
-    let r = "view-" . e
-  elseif f =~ '\<test/unit/.*_test\.rb'
-    let r = "test-unit"
-  elseif f =~ '\<test/functional/.*_test\.rb'
-    let r = "test-functional"
-  elseif f =~ '\<test/integration/.*_test\.rb'
-    let r = "test-integration"
-  elseif f =~ '\<test/fixtures\>'
-    if e == "yml"
-      let r = "fixtures-yaml"
-    else
-      let r = "fixtures-" . e
-    endif
-  elseif f =~ '\<db/migrate\>'
-    let r = "migration"
-  elseif f =~ '\<lib/tasks\>' || f=~ '\<Rakefile$'
-    let r = "task"
-  elseif e == "css" || e == "js" || e == "html"
-    let r = e
-  endif
-  return r
-endfunction
-
-" }}}1
-
 function! s:usesubversion()
   if exists("b:rails_use_subversion")
     return b:rails_use_subversion
@@ -331,6 +244,92 @@ function! s:InitBuffer(path)
   return b:rails_app_path
 endfunction
 
+" "Public" Interface {{{1
+function! RailsAppPath()
+  if exists("b:rails_app_path")
+    return b:rails_app_path
+  else
+    return ""
+  endif
+endfunction
+
+function! RailsFilePath()
+  if !exists("b:rails_app_path")
+    return ""
+  elseif exists("b:rails_file_path")
+    return b:rails_file_path
+  endif
+  let f = s:gsub(expand("%:p"),'\\ \@!','/')
+  if s:gsub(b:rails_app_path,'\\ \@!','/') == strpart(f,0,strlen(b:rails_app_path))
+    return strpart(f,strlen(b:rails_app_path)+1)
+  else
+    return f
+  endif
+endfunction
+
+function! RailsFileType()
+  if !exists("b:rails_app_path")
+    return ""
+  elseif exists("b:rails_file_type")
+    return b:rails_file_type
+  endif
+  let f = RailsFilePath()
+  let e = fnamemodify(RailsFilePath(),':e')
+  let r = ""
+  let top = getline(1)." ".getline(2)." ".getline(3)." ".getline(4)." ".getline(5)
+  if f == ""
+    let r = f
+  elseif f =~ '_controller\.rb$' || f =~ '\<app/controllers/application\.rb$'
+    if top =~ '\<wsdl_service_name\>'
+      let r = "controller-api"
+    else
+      let r = "controller"
+    endif
+  elseif f =~ '_api\.rb'
+    let r = "api"
+  elseif f =~ '\<test/test_helper\.rb$'
+    let r = "test"
+  elseif f =~ '_helper\.rb$'
+    let r = "helper"
+  elseif f =~ '\<app/models\>'
+    if top =~ '\<ActionMailer::Base\>' || f =~ '_mailer\.rb$'
+      let r = "model-am"
+    elseif top =~ '\<ActionWebService::Strut\>'
+      let r = "model-aws"
+    elseif top =~ '\<ActiveRecord::Base\>' || top =~ '\<validates_\w\+_of\>'
+      let r = "model-ar"
+    else
+      let r = "model"
+    endif
+  elseif f =~ '\<app/views/layouts\>'
+    let r = "view-layout-" . e
+  elseif f =~ '\<app/views/.*/_\k\+\.\k\+$'
+    let r = "view-partial-" . e
+  elseif f =~ '\<app/views\>'
+    let r = "view-" . e
+  elseif f =~ '\<test/unit/.*_test\.rb'
+    let r = "test-unit"
+  elseif f =~ '\<test/functional/.*_test\.rb'
+    let r = "test-functional"
+  elseif f =~ '\<test/integration/.*_test\.rb'
+    let r = "test-integration"
+  elseif f =~ '\<test/fixtures\>'
+    if e == "yml"
+      let r = "fixtures-yaml"
+    else
+      let r = "fixtures-" . e
+    endif
+  elseif f =~ '\<db/migrate\>'
+    let r = "migration"
+  elseif f =~ '\<lib/tasks\>' || f=~ '\<Rakefile$'
+    let r = "task"
+  elseif e == "css" || e == "js" || e == "html"
+    let r = e
+  endif
+  return r
+endfunction
+
+" }}}1
 " Commands {{{1
 
 function! s:Commands()

@@ -39,16 +39,23 @@ Rails application development.
    your application. |rails-options|
 
 4. Easy navigation of the Rails directory structure.  |gf| considers context
-   and knows about partials, fixtures, and much more.  |<Plug>RailsAlternate|
-   (<LocalLeader>ra by default) helps you jump from your view, to your helper,
-   to your controller, to your test. |rails-navigation|
+   and knows about partials, fixtures, and much more.  There are mappings for
+   easy jumping between files, including favorites like model to migration,
+   template to helper, and controller to functional test. |rails-navigation|
 
 5. Partial extraction.  |:Rpartial| {file} replaces the desired range (ideally
    selected in visual line mode) with "render :partial => '{file}'", which is
    automatically created with your content.  The @{file} instance variable is
    replaced with the {file} local variable. |rails-partials|
 
-6. Snippets.  (Just kidding.)
+6. Enhanced syntax highlighting.
+
+7. Interface to script/*.  Generally, use ":Rscript about" to call
+   "script/about".  Some commands have additional features:
+   ":Rgenerate controller Blog" generates a blog controller and edits
+   apps/controllers/blog_controller.rb. |rails-commands|
+
+8. Snippets.  (Just kidding.)
 
 ==============================================================================
 INSTALLATION AND USAGE				*rails-installation*
@@ -239,7 +246,9 @@ MAPPINGS					*rails-mappings*
 
 <Plug> mappings are always available (if the plugin is loaded) and can be
 manually mapped to the key sequence of your choice.  <LocalLeader> mappings
-are available if |g:rails_mappings| is enabled or |g:rails_level| >= 3.
+are available if |g:rails_mappings| is enabled or |g:rails_level| >= 3.  These
+are still under development, and it would not be unrealistic for them to
+change.
 
 						*<Plug>RailsAlternate*
 <Plug>RailsAlternate	Switch to the "alternate" file.  Typically this just
@@ -342,7 +351,7 @@ will suffice. (Note the use of a controller name in this example.)
 TODO						*rails-todo*
 
 Abbrevations.  You can enable some experimental ones with
-|g:rails_abbreviations| (but don't tell anyone).
+|g:rails_abbreviations| (but don't tell anyone).  Try rp<Tab>.
 
 Some sort of <RailsLeader>, as opposed to hardwiring it to <Leader>r.
 
