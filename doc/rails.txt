@@ -48,7 +48,8 @@ Rails application development.
    automatically created with your content.  The @{file} instance variable is
    replaced with the {file} local variable. |rails-partials|
 
-6. Enhanced syntax highlighting.
+6. Enhanced syntax highlighting.  From has_and_belongs_to_many to
+   distance_of_time_in_words, it's here.
 
 7. Interface to script/*.  Generally, use ":Rscript about" to call
    "script/about".  Some commands have additional features:
@@ -109,10 +110,14 @@ value	meaning ~
 	let g:rails_loaded=1
 Do not load the plugin. For emergency use only.
 
-						*g:rails_isfname*  >
-	let g:rails_isfname=1
-Enables changes to the 'isfname' option.  Enabled when |g:rails_level| >= 2.
-See |rails-'isfname'|.
+						*g:rails_mappings*  >
+	let g:rails_mappings=1
+Enables a few <LocalLeader> mappings.  See |rails-mappings|. Enabled when
+|g:rails_level| >= 3.
+
+						*g:rails_leader*  >
+	let g:rails_leader='<LocalLeader>r'
+Prefix for mappings.  See |rails-mappings|.
 
 						*g:rails_expensive*  >
 	let g:rails_expensive=1
@@ -126,10 +131,10 @@ Give a clue in the statusline when this plugin is enabled.  This requires that
 the current filetype is in your existing 'statusline'.  Enabled when
 |g:rails_level| >= 3.
 
-						*g:rails_mappings*  >
-	let g:rails_mappings=1
-Enables a few <LocalLeader> mappings.  See |rails-mappings|. Enabled when
-|g:rails_level| >= 3.
+						*g:rails_isfname*  >
+	let g:rails_isfname=1
+Enables changes to the 'isfname' option.  Enabled when |g:rails_level| >= 2.
+See |rails-'isfname'|.
 
 						*g:rails_syntax*  >
 	let g:rails_syntax=1
@@ -245,8 +250,9 @@ Suggestions for further contexts to consider are welcome.
 MAPPINGS					*rails-mappings*
 
 <Plug> mappings are always available (if the plugin is loaded) and can be
-manually mapped to the key sequence of your choice.  <LocalLeader> mappings
-are available if |g:rails_mappings| is enabled or |g:rails_level| >= 3.  These
+manually mapped to the key sequence of your choice.  <LocalLeader>r mappings
+are available if |g:rails_mappings| is enabled or |g:rails_level| >= 3.  (The
+<LocalLeader>r prefix can be customized with g:rails_leader.)  These mappings
 are still under development, and it would not be unrealistic for them to
 change.
 
@@ -351,9 +357,7 @@ will suffice. (Note the use of a controller name in this example.)
 TODO						*rails-todo*
 
 Abbrevations.  You can enable some experimental ones with
-|g:rails_abbreviations| (but don't tell anyone).  Try rp<Tab>.
-
-Some sort of <RailsLeader>, as opposed to hardwiring it to <Leader>r.
+|g:rails_abbreviations| (but don't tell anyone).  Try pa[ and rp<Tab>.
 
 ==============================================================================
 vim:tw=78:ts=8:ft=help:norl:

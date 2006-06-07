@@ -9,7 +9,7 @@
 " To access it from Vim, see :help add-local-help (hint: :helptags ~/.vim/doc)
 " Afterwards, you should be able to do :help rails
 
-" ========
+" ============================================================================
 
 " Exit quickly when:
 " - this plugin was already loaded (or disabled)
@@ -21,6 +21,7 @@ let g:loaded_rails = 1
 
 let cpo_save = &cpo
 set cpo&vim
+" Utility Functions {{{1
 
 function! s:sub(str,pat,rep)
   return substitute(a:str,'\C'.a:pat,a:rep,'')
@@ -99,30 +100,18 @@ function! s:controller()
   return ""
 endfunction
 
-function! s:SetOptDefault(opt,val)
-  if !exists("g:".a:opt)
-    exe "let g:".a:opt." = '".a:val."'"
+function! s:usesubversion()
+  if exists("b:rails_use_subversion")
+    return b:rails_use_subversion
+  else
+    let b:rails_use_subversion = g:rails_subversion && 
+          \ (RailsAppPath()!="") && isdirectory(RailsAppPath()."/.svn")
+    return b:rails_use_subversion
   endif
 endfunction
 
-function! s:InitConfig()
-  call s:SetOptDefault("rails_level",2)
-  let l = g:rails_level
-  call s:SetOptDefault("rails_statusline",l>2)
-  call s:SetOptDefault("rails_syntax",l>1)
-  call s:SetOptDefault("rails_isfname",l>1)
-  call s:SetOptDefault("rails_mappings",l>2)
-  call s:SetOptDefault("rails_abbreviations",l>4)
-  call s:SetOptDefault("rails_expensive",l>2)
-  call s:SetOptDefault("rails_subversion",l>3)
-  call s:SetOptDefault("rails_default_file","README")
-  call s:SetOptDefault("rails_default_database","")
-  if l > 3
-    "call s:SetOptDefault("ruby_no_identifiers",1)
-    call s:SetOptDefault("rubycomplete_rails",1)
-  endif
-  "call s:SetOptDefault("",)
-endfunction
+" }}}1
+" Initialization {{{1
 
 function! s:InitPlugin()
   call s:InitConfig()
@@ -137,17 +126,7 @@ function! s:InitPlugin()
       autocmd BufLeave * call s:ClearGlobals()
     augroup END
   endif
-  command! -bang -nargs=* Rails :call s:NewApp(<bang>0,<f-args>)
-endfunction
-
-function! s:usesubversion()
-  if exists("b:rails_use_subversion")
-    return b:rails_use_subversion
-  else
-    let b:rails_use_subversion = g:rails_subversion && 
-          \ (RailsAppPath()!="") && isdirectory(RailsAppPath()."/.svn")
-    return b:rails_use_subversion
-  endif
+  command! -bang -nargs=* -complete=dir Rails :call s:NewApp(<bang>0,<f-args>)
 endfunction
 
 function! s:Detect(filename)
@@ -195,13 +174,13 @@ function! s:InitBuffer(path)
     if &ft == "" && ( expand("%:e") == "rjs" || expand("%:e") == "rxml" || expand("%:e") == "mab" )
       setlocal filetype=ruby
     endif
-    call s:Syntax()
-    call s:Commands()
-    call s:Mappings()
-    call s:Abbreviations()
+    call s:BufSyntax()
+    call s:BufCommands()
+    call s:BufMappings()
+    call s:BufAbbreviations()
     silent! compiler rubyunit
     let &l:makeprg='rake -f '.rp.'/Rakefile'
-    call s:SetRubyBasePath()
+    call s:SetBasePath()
     if has("balloon_eval")
       "setlocal balloonexpr=RailsUnderscore(v:beval_text,1) ballooneval
     endif
@@ -244,6 +223,7 @@ function! s:InitBuffer(path)
   return b:rails_app_path
 endfunction
 
+" }}}1
 " "Public" Interface {{{1
 function! RailsAppPath()
   if exists("b:rails_app_path")
@@ -330,9 +310,38 @@ function! RailsFileType()
 endfunction
 
 " }}}1
+" Configuration {{{1
+
+function! s:SetOptDefault(opt,val)
+  if !exists("g:".a:opt)
+    exe "let g:".a:opt." = '".a:val."'"
+  endif
+endfunction
+
+function! s:InitConfig()
+  call s:SetOptDefault("rails_level",2)
+  let l = g:rails_level
+  call s:SetOptDefault("rails_statusline",l>2)
+  call s:SetOptDefault("rails_syntax",l>1)
+  call s:SetOptDefault("rails_isfname",l>1)
+  call s:SetOptDefault("rails_mappings",l>2)
+  call s:SetOptDefault("rails_abbreviations",l>4)
+  call s:SetOptDefault("rails_expensive",l>2)
+  call s:SetOptDefault("rails_subversion",l>3)
+  call s:SetOptDefault("rails_default_file","README")
+  call s:SetOptDefault("rails_default_database","")
+  call s:SetOptDefault("rails_leader","<LocalLeader>r")
+  if l > 3
+    "call s:SetOptDefault("ruby_no_identifiers",1)
+    call s:SetOptDefault("rubycomplete_rails",1)
+  endif
+  "call s:SetOptDefault("",)
+endfunction
+
+" }}}1
 " Commands {{{1
 
-function! s:Commands()
+function! s:BufCommands()
   let rp = s:escapepath(b:rails_app_path)
 "  silent exe 'command! -buffer -complete=custom,s:ScriptComplete -nargs=+ Script :!ruby '.s:escapepath(b:rails_app_path.'/script/').'<args>'
   command! -buffer -complete=custom,s:ScriptComplete -nargs=+ Rscript :call s:Script(<bang>0,<f-args>)
@@ -479,7 +488,8 @@ function! s:NewApp(bang,...)
   else
     let dir = a:1
   endif
-  if isdirectory(fnamemodify(dir,'%:h')."/.svn") && g:rails_subversion
+  let dir = expand(dir)
+  if isdirectory(fnamemodify(dir,':h')."/.svn") && g:rails_subversion
     let append = " -c"
   else
     let append = ""
@@ -493,7 +503,7 @@ function! s:NewApp(bang,...)
   let str = ""
   let c = 1
   while c <= a:0
-    let str = str . " " . s:sub(s:quote(a:{c}),"^'\\(\\~\w*[\\/]\\)","\\1'")
+    let str = str . " " . s:quote(expand(a:{c}))
     let c = c + 1
   endwhile
   exe "!rails".str.append
@@ -583,7 +593,7 @@ endfunction
 " }}}1
 " Syntax {{{1
 
-function! s:Syntax()
+function! s:BufSyntax()
   if (!exists("g:rails_syntax") || g:rails_syntax) && (exists("g:syntax_on") || exists("g:syntax_manual"))
     let t = RailsFileType()
     if !exists("s:rails_view_helpers")
@@ -688,7 +698,7 @@ endfunction
 
 " }}}1
 " Navigation {{{1
-function! s:SetRubyBasePath()
+function! s:SetBasePath()
   let rp = s:escapepath(b:rails_app_path)
   let &l:path = '.,'.rp.",".rp."/app/controllers,".rp."/app,".rp."/app/models,".rp."/app/helpers,".rp."/components,".rp."/config,".rp."/lib,".rp."/vendor/plugins/*/lib,".rp."/vendor,".rp."/test/unit,".rp."/test/functional,".rp."/test/integration,".rp."/app/apis,"."/test,".substitute(&l:path,'^\.,','','')
 endfunction
@@ -886,9 +896,9 @@ endfunction
 function! s:Alternate()
   let f = RailsFilePath()
   let t = RailsFileType()
-  if expand("%:t") == "database.yml" || f =~ '\<config/environments/' || f == 'README'
+  if f =~ '\<config/database.yml$' || f =~ '\<config/environments/' || f == 'README'
     find environment.rb
-  elseif expand("%:t") == "environment.rb" || expand("%:t") == "schema.rb"
+  elseif f =~ '\<config/environment.rb$' || f =~ 'schema.rb$'
     find database.yml
   elseif t =~ '^view\>'
     if t =~ '\<layout\>'
@@ -901,7 +911,7 @@ function! s:Alternate()
     let helper     = fnamemodify(dest,":h:s?/views/?/helpers/?")."_helper.rb"
     let controller = fnamemodify(dest,":h:s?/views/?/controllers/?")."_controller.rb"
     let model      = fnamemodify(dest,":h:s?/views/?/models/?").".rb"
-    if filereadable(b:rails_app_path."/".helper) && 0
+    if filereadable(b:rails_app_path."/".helper)
       " Would it be better to skip the helper and go straight to the
       " controller?
       exe "find ".s:escapepath(helper)
@@ -1089,7 +1099,11 @@ endfunction
 " }}}1
 " Mappings{{{1
 
-function! s:Mappings()
+function s:leadermap(key,mapping)
+  exe "map <buffer> ".g:rails_leader.a:key." ".a:mapping
+endfunction
+
+function! s:BufMappings()
   map <buffer> <silent> <Plug>RailsAlternate :Ralternate<CR>
   map <buffer> <silent> <Plug>RailsFind      :Rfind<CR>
   map <buffer> <silent> <Plug>RailsSplitFind :Rsplitfind<CR>
@@ -1108,8 +1122,11 @@ function! s:Mappings()
     map <buffer> <LocalLeader>rf <Plug>RailsFind
     map <buffer> <LocalLeader>ra <Plug>RailsAlternate
     map <buffer> <LocalLeader>rm <Plug>RailsMagicM
+    call s:leadermap('f','<Plug>RailsFind')
+    call s:leadermap('a','<Plug>RailsAlternate')
+    call s:leadermap('m','<Plug>RailsMagicM')
     " Deprecated
-    map <buffer> <LocalLeader>rv :echoerr "Use <Lt>LocalLeader>rm instead!"<CR>
+    call s:leadermap('v',':echoerr "Use <Lt>LocalLeader>rm instead!"<CR>')
   endif
 endfunction
 
@@ -1203,7 +1220,7 @@ function! s:AddParenExpand(abbr,expn,...)
   endif
 endfunction
 
-function! s:Abbreviations()
+function! s:BufAbbreviations()
   " EXPERIMENTAL.  USE AT YOUR OWN RISK
   " Some of these were cherry picked from the TextMate snippets
   if g:rails_abbreviations
