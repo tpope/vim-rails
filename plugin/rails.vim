@@ -360,7 +360,7 @@ function! s:Commands()
   endif
 endfunction
 
-function s:Migration(bang,arg)
+function! s:Migration(bang,arg)
   if a:arg =~ '^\d$'
     let glob = '00'.a:arg.'_*.rb'
   elseif a:arg =~ '^\d\d$'
@@ -406,11 +406,11 @@ function! s:FindList(ArgLead, CmdLine, CursorPos)
   endif
 endfunction
 
-function s:rubyexestr(cmd)
+function! s:rubyexestr(cmd)
   return "ruby -C ".s:quote(RailsAppPath())." ".a:cmd
 endfunction
 
-function s:rubyexe(cmd)
+function! s:rubyexe(cmd)
   exe "!".s:rubyexestr(a:cmd)
   return v:shell_error
 endfunction
@@ -493,7 +493,7 @@ function! s:NewApp(bang,...)
   let str = ""
   let c = 1
   while c <= a:0
-    let str = str . " " . s:quote(a:{c})
+    let str = str . " " . s:sub(s:quote(a:{c}),"^'\\(\\~\w*[\\/]\\)","\\1'")
     let c = c + 1
   endwhile
   exe "!rails".str.append
@@ -975,8 +975,12 @@ function! s:MakePartial(bang,...) range abort
     "return
   endif
   if bufnr(out) > 0
-    echoerr "Partial already open in buffer ".bufnr(out)
-    return
+    if bufloaded(out)
+      echoerr "Partial already open in buffer ".bufnr(out)
+      return
+    else
+      exe "bwipeout ".bufnr(out)
+    endif
   endif
   " No tabs, they'll just complicate things
   if expand("%:e") == "rhtml"
@@ -1014,7 +1018,7 @@ function! s:MakePartial(bang,...) range abort
     let renderstr = "<%= ".renderstr." %>"
   endif
   let buf = @@
-  exe range."yank"
+  silent exe range."yank"
   let partial = @@
   let @@ = buf
   silent exe "norm :".first.",".last."change\<CR>".fspaces.renderstr."\<CR>.\<CR>"
@@ -1032,13 +1036,14 @@ function! s:MakePartial(bang,...) range abort
   exe "silent file ".s:escapepath(fnamemodify(out,':~:.'))
   let &ft = ft
   let @@ = partial
-  put
+  silent put
   0delete
   let @@ = buf
   if spaces != ""
     silent! exe '%sub/^'.spaces.'//'
   endif
   silent! exe '%sub?\%(\w\|[@:]\)\@<!'.var.'\>?'.name.'?g'
+  1
   call s:Detect(out)
   if exists("l:partial_warn")
     echohl WarningMsg
