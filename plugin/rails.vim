@@ -633,64 +633,60 @@ function! s:BufSyntax()
     let rails_view_helpers = '+\.\@<!\<\('.s:gsub(s:rails_view_helpers,'\s\+','\\|').'\)\>+'
     if &syntax == 'ruby'
       if t =~ '^api\>'
-        syn keyword railsRubyAPIMethod api_method
+        syn keyword rubyRailsAPIMethod api_method
       endif
       if t =~ '^model$' || t =~ '^model-ar\>'
-        syn keyword railsRubyARMethod acts_as_list acts_as_nested_set acts_as_tree composed_of
-        syn keyword railsRubyARAssociationMethod belongs_to has_one has_many has_and_belongs_to_many
-        syn match railsRubyARCallbackMethod '\<\(before\|after\)_\(create\|destroy\|save\|update\|validation\|validation_on_create\|validation_on_update\)\>'
-        syn keyword railsRubyARClassMethod attr_accessible attr_protected establish_connection set_inheritance_column set_locking_column set_primary_key set_sequence_name set_table_name
-        syn keyword railsRubyARValidationMethod validate validate_on_create validate_on_update validates_acceptance_of validates_associated validates_confirmation_of validates_each validates_exclusion_of validates_format_of validates_inclusion_of validates_length_of validates_numericality_of validates_presence_of validates_size_of validates_uniqueness_of
-"        syn match railsRubyARMethod +\<(acts_as_list\|acts_as_tree\|after_create\|after_destroy\|after_save\|after_update\|after_validation\|after_validation_on_create\|after_validation_on_update\|before_create\|before_destroy\|before_save\|before_update\|before_validation\|before_validation_on_create\|before_validation_on_update\|composed_of\|belongs_to\|has_one\|has_many\|has_and_belongs_to_many\|helper\|helper_method\|validate\|validate_on_create\|validates_numericality_of\|validate_on_update\|validates_acceptance_of\|validates_associated\|validates_confirmation_of\|validates_each\|validates_format_of\|validates_inclusion_of\|validates_length_of\|validates_presence_of\|validates_size_of\|validates_uniqueness_of\|attr_protected\|attr_accessible)\>+
-        "syn match railsRubyARCallbackMethod '\<after_\(find\|initialize\)\>'
+        syn keyword rubyRailsARMethod acts_as_list acts_as_nested_set acts_as_tree composed_of
+        syn keyword rubyRailsARAssociationMethod belongs_to has_one has_many has_and_belongs_to_many
+        "syn match rubyRailsARCallbackMethod '\<\(before\|after\)_\(create\|destroy\|save\|update\|validation\|validation_on_create\|validation_on_update\)\>'
+        syn keyword rubyRailsARCallbackMethod before_create before_destroy before_save before_update before_validation before_validation_on_create before_validation_on_update
+        syn keyword rubyRailsARCallbackMethod after_create after_destroy after_save after_update after_validation after_validation_on_create after_validation_on_update
+        syn keyword rubyRailsARClassMethod attr_accessible attr_protected establish_connection set_inheritance_column set_locking_column set_primary_key set_sequence_name set_table_name
+        "syn keyword rubyRailsARCallbackMethod after_find after_initialize
+        syn keyword rubyRailsARValidationMethod validate validate_on_create validate_on_update validates_acceptance_of validates_associated validates_confirmation_of validates_each validates_exclusion_of validates_format_of validates_inclusion_of validates_length_of validates_numericality_of validates_presence_of validates_size_of validates_uniqueness_of
       endif
       if t =~ '^controller\>' || t =~ '^view\>' || t=~ '^helper\>'
-        syn match railsRubyMethod '\<\%(params\|request\|response\|session\|headers\|template\|cookies\|flash\)\>'
-        syn match railsRubyError '[@:]\@<!@\%(params\|request\|response\|session\|headers\|template\|cookies\|flash\)\>'
-        syn keyword railsRubyRenderMethod render render_component
+      syn keyword rubyRailsMethod params request response session headers template cookies flash
+        syn match rubyRailsError '[@:]\@<!@\%(params\|request\|response\|session\|headers\|template\|cookies\|flash\)\>'
+        syn keyword rubyRailsRenderMethod render render_component
       endif
       if t =~ '^helper\>' || t=~ '^view\>'
-        exe "syn match railsRubyHelperMethod ".rails_view_helpers
+        exe "syn match rubyRailsHelperMethod ".rails_view_helpers
       elseif t =~ '^controller\>'
-        syn keyword railsRubyControllerHelperMethod helper helper_attr helper_method filter layout url_for scaffold
-        "syn match railsRubyControllerMethod +\<(before_filter\|skip_before_filter\|skip_after_filter\|after_filter\|filter\|layout\|require_dependency\|render\|render_action\|render_text\|render_file\|render_template\|render_nothing\|render_component\|render_without_layout\|url_for\|redirect_to\|redirect_to_path\|redirect_to_url\|helper\|helper_method\|model\|service\|observer\|serialize\|scaffold\|verify)\>+
-        syn keyword railsRubyControllerDeprecatedMethod render_action render_text render_file render_template render_nothing render_without_layout
-        syn keyword railsRubyRenderMethod render_to_string render_component_as_string redirect_to
-        syn match railsRubyFilterMethod '\<\(append_\|prepend_\|\)\(before\|around\|after\)_filter\>'
-        syn match railsRubyFilterMethod '\<skip_\(before\|after\)_filter\>'
-        syn keyword railsRubyFilterMethod verify
+        syn keyword rubyRailsControllerHelperMethod helper helper_attr helper_method filter layout url_for scaffold observer service model serialize
+        syn keyword rubyRailsControllerDeprecatedMethod render_action render_text render_file render_template render_nothing render_without_layout
+        syn keyword rubyRailsRenderMethod render_to_string render_component_as_string redirect_to
+        syn keyword rubyRailsFilterMethod before_filter append_before_filter prepend_before_filter after_filter append_after_filter prepend_after_filter around_filter append_around_filter prepend_around_filter skip_before_filter skip_after_filter
+        syn keyword rubyRailsFilterMethod verify
       endif
       if t=~ '^test\>'
-"        if !exists("s:rails_test_asserts")
-"          let s:rails_test_asserts = s:rubyeval('require %{test/unit/testcase}; puts Test::Unit::TestCase.instance_methods.grep(/^assert/).sort.uniq.join(%{ })',"assert_equal")
-"        endif
-"        let rails_test_asserts = '+\.\@<!\<\('.s:gsub(s:rails_test_asserts,'\s\+','\\|').'\)\>+'
-"        exe "syn match railsRubyTestMethod ".rails_test_asserts
-        syn match railsRubyTestMethod +\.\@<!\<\(add_assertion\|assert\|assert_block\|assert_equal\|assert_in_delta\|assert_instance_of\|assert_kind_of\|assert_match\|assert_nil\|assert_no_match\|assert_not_equal\|assert_not_nil\|assert_not_same\|assert_nothing_raised\|assert_nothing_thrown\|assert_operator\|assert_raise\|assert_respond_to\|assert_same\|assert_send\|assert_throws\|flunk\)\>+
-        syn match railsRubyTestControllerMethod +\.\@<!\<\(assert_response\|assert_redirected_to\|assert_template\|assert_recognizes\|assert_generates\|assert_routing\|assert_tag\|assert_no_tag\|assert_dom_equal\|assert_dom_not_equal\|assert_valid\)\>+
+        syn keyword rubyRailsTestMethod add_assertion assert assert_block assert_equal assert_in_delta assert_instance_of assert_kind_of assert_match assert_nil assert_no_match assert_not_equal assert_not_nil assert_not_same assert_nothing_raised assert_nothing_thrown assert_operator assert_raise assert_respond_to assert_same assert_send assert_throws flunk
+        if t !~ '^test-unit\>'
+          syn keyword rubyRailsTestControllerMethod assert_response assert_redirected_to assert_template assert_recognizes assert_generates assert_routing assert_tag assert_no_tag assert_dom_equal assert_dom_not_equal assert_valid
+        endif
       endif
-      syn keyword railsRubyMethod cattr_accessor mattr_accessor
-      syn keyword railsRubyInclude require_dependency require_gem
+      syn keyword rubyRailsMethod cattr_accessor mattr_accessor
+      syn keyword rubyRailsInclude require_dependency require_gem
     elseif &syntax == "eruby" && t =~ '^view\>'
-      syn cluster railsErubyRegions contains=erubyOneLiner,erubyBlock,erubyExpression
-      exe "syn match railsErubyHelperMethod ".rails_view_helpers." contained containedin=@railsErubyRegions"
-      syn match railsErubyMethod '\<\%(params\|request\|response\|session\|headers\|template\|cookies\|flash\)\>' contained containedin=@railsErubyRegions
-      syn match railsErubyMethod '\.\@<!\<\(h\|html_escape\|u\|url_encode\)\>' contained containedin=@railsErubyRegions
-        syn keyword railsErubyRenderMethod render render_component contained containedin=@railsErubyRegions
-      syn match railsRubyError '@\%(params\|request\|response\|session\|headers\|template\|cookies\|flash\)\>' contained containedin=@railsErubyRegions
+      syn cluster erubyRailsRegions contains=erubyOneLiner,erubyBlock,erubyExpression
+      exe "syn match erubyRailsHelperMethod ".rails_view_helpers." contained containedin=@erubyRailsRegions"
+      syn keyword erubyRailsMethod params request response session headers template cookies flash contained containedin=@erubyRailsRegions
+      syn match erubyRailsMethod '\.\@<!\<\(h\|html_escape\|u\|url_encode\)\>' contained containedin=@erubyRailsRegions
+        syn keyword erubyRailsRenderMethod render render_component contained containedin=@erubyRailsRegions
+      syn match rubyRailsError '[^@:]\@<!@\%(params\|request\|response\|session\|headers\|template\|cookies\|flash\)\>' contained containedin=@erubyRailsRegions
     elseif &syntax == "yaml"
       " Modeled after syntax/eruby.vim
       unlet b:current_syntax
       let g:main_syntax = 'eruby'
       syn include @rubyTop syntax/ruby.vim
       unlet g:main_syntax
-      syn cluster erubyRegions contains=railsYamlOneLiner,railsYamlBlock,railsYamlExpression,railsYamlComment
-      syn cluster railsErubyRegions contains=railsYamlOneLiner,railsYamlBlock,railsYamlExpression
-      syn region  railsYamlOneLiner   matchgroup=railsYamlDelimiter start="^%%\@!" end="$"  contains=@railsRubyTop	containedin=ALLBUT,@railsYamlRegions keepend oneline
-      syn region  railsYamlBlock	    matchgroup=railsYamlDelimiter start="<%%\@!" end="%>" contains=@rubyTop	containedin=ALLBUT,@railsYamlRegions
-      syn region  railsYamlExpression matchgroup=railsYamlDelimiter start="<%="    end="%>" contains=@rubyTop	    	containedin=ALLBUT,@railsYamlRegions
-      syn region  railsYamlComment    matchgroup=railsYamlDelimiter start="<%#"    end="%>" contains=rubyTodo,@Spell	containedin=ALLBUT,@railsYamlRegions keepend
-        syn match railsYamlMethod '\.\@<!\<\(h\|html_escape\|u\|url_encode\)\>' containedin=@railsErubyRegions
+      syn cluster erubyRegions contains=yamlRailsOneLiner,yamlRailsBlock,yamlRailsExpression,yamlRailsComment
+      syn cluster erubyRailsRegions contains=yamlRailsOneLiner,yamlRailsBlock,yamlRailsExpression
+      syn region  yamlRailsOneLiner   matchgroup=yamlRailsDelimiter start="^%%\@!" end="$"  contains=@rubyRailsTop	containedin=ALLBUT,@yamlRailsRegions keepend oneline
+      syn region  yamlRailsBlock	    matchgroup=yamlRailsDelimiter start="<%%\@!" end="%>" contains=@rubyTop	containedin=ALLBUT,@yamlRailsRegions
+      syn region  yamlRailsExpression matchgroup=yamlRailsDelimiter start="<%="    end="%>" contains=@rubyTop	    	containedin=ALLBUT,@yamlRailsRegions
+      syn region  yamlRailsComment    matchgroup=yamlRailsDelimiter start="<%#"    end="%>" contains=rubyTodo,@Spell	containedin=ALLBUT,@yamlRailsRegions keepend
+        syn match yamlRailsMethod '\.\@<!\<\(h\|html_escape\|u\|url_encode\)\>' containedin=@erubyRailsRegions
       let b:current_syntax = "yaml"
     endif
   endif
@@ -698,29 +694,29 @@ function! s:BufSyntax()
 endfunction
 
 function! s:HiDefaults()
-  hi def link railsRubyAPIMethod              railsRubyMethod
-  hi def link railsRubyARAssociationMethod    railsRubyARMethod
-  hi def link railsRubyARCallbackMethod       railsRubyARMethod
-  hi def link railsRubyARClassMethod          railsRubyARMethod
-  hi def link railsRubyARValidationMethod     railsRubyARMethod
-  hi def link railsRubyARMethod               railsRubyMethod
-  hi def link railsRubyRenderMethod           railsRubyMethod
-  hi def link railsRubyHelperMethod           railsRubyMethod
-  hi def link railsRubyControllerHelperMethod railsRubyMethod
-  hi def link railsRubyControllerDeprecatedMethod railsRubyError
-  hi def link railsRubyFilterMethod           railsRubyMethod
-  hi def link railsRubyTestControllerMethod   railsRubyTestMethod
-  hi def link railsRubyTestMethod             railsRubyMethod
-  hi def link railsRubyMethod                 railsMethod
-  hi def link railsRubyError                  rubyError
-  hi def link railsRubyInclude                rubyInclude
+  hi def link rubyRailsAPIMethod              rubyRailsMethod
+  hi def link rubyRailsARAssociationMethod    rubyRailsARMethod
+  hi def link rubyRailsARCallbackMethod       rubyRailsARMethod
+  hi def link rubyRailsARClassMethod          rubyRailsARMethod
+  hi def link rubyRailsARValidationMethod     rubyRailsARMethod
+  hi def link rubyRailsARMethod               rubyRailsMethod
+  hi def link rubyRailsRenderMethod           rubyRailsMethod
+  hi def link rubyRailsHelperMethod           rubyRailsMethod
+  hi def link rubyRailsControllerHelperMethod rubyRailsMethod
+  hi def link rubyRailsControllerDeprecatedMethod rubyRailsError
+  hi def link rubyRailsFilterMethod           rubyRailsMethod
+  hi def link rubyRailsTestControllerMethod   rubyRailsTestMethod
+  hi def link rubyRailsTestMethod             rubyRailsMethod
+  hi def link rubyRailsMethod                 railsMethod
+  hi def link rubyRailsError                  rubyError
+  hi def link rubyRailsInclude                rubyInclude
   hi def link railsMethod                     Function
-  hi def link railsErubyHelperMethod          railsErubyMethod
-  hi def link railsErubyRenderMethod          railsErubyMethod
-  hi def link railsErubyMethod                railsMethod
-  hi def link railsYamlDelimiter              Delimiter
-  hi def link railsYamlMethod                 railsMethod
-  hi def link railsYamlComment                Comment
+  hi def link erubyRailsHelperMethod          erubyRailsMethod
+  hi def link erubyRailsRenderMethod          erubyRailsMethod
+  hi def link erubyRailsMethod                railsMethod
+  hi def link yamlRailsDelimiter              Delimiter
+  hi def link yamlRailsMethod                 railsMethod
+  hi def link yamlRailsComment                Comment
 endfunction
 
 " }}}1
