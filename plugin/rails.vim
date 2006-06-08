@@ -96,6 +96,10 @@ function! s:controller()
     return s:sub(f,'.*\<app/apis/\(.\{-\}\)_api\.rb$','\1')
   elseif f =~ '\<test/functional/.*_controller_test\.rb$'
     return s:sub(f,'.*\<test/functional/\(.\{-\}\)_controller_test\.rb$','\1')
+  elseif f =~ '\<components/.*_controller\.rb$'
+    return s:sub(f,'.*\<components/\(.\{-\}\)_controller\.rb$','\1')
+  elseif f =~ '\<components/.*\.\(rhtml\|rxml\|rjs\|mab\)$'
+    return s:sub(f,'.*\<components/\(.\{-\}\)/\k\+\.\k\+$','\1')
   endif
   return ""
 endfunction
@@ -200,7 +204,7 @@ function! s:InitBuffer(path)
     if &filetype == "ruby"
       setlocal suffixesadd=.rb,.rhtml,.rxml,.rjs,.mab,.yml,.csv,.rake,s.rb
       setlocal define=^\\s*def\\s\\+\\(self\\.\\)\\=
-      let views = substitute(expand("%:p"),'[\/]app[\/]controllers[\/]\(.\{-\}\)_controller.rb','/app/views/\1','')
+      let views = s:sub(s:sub(expand("%:p"),'[\/]\zscontrollers\ze[\/]','views'),'_controller\.rb$','')
       if views != expand("%:p")
         let &l:path = &l:path.",".s:escapepath(views)
       endif
@@ -272,20 +276,23 @@ function! RailsFileType()
   elseif f =~ '_helper\.rb$'
     let r = "helper"
   elseif f =~ '\<app/models\>'
-    if top =~ '\<ActionMailer::Base\>' || f =~ '_mailer\.rb$'
+    let class = matchstr(top,'\<Acti\w\w[A-Z]\w\+\%(::\h\w*\)\+\>')
+    if class != ''
+      let class = s:sub(class,'::Base$','')
+      let class = tolower(s:gsub(class,'[^A-Z]',''))
+      let r = "model-".class
+    elseif f =~ '_mailer\.rb$'
       let r = "model-am"
-    elseif top =~ '\<ActionWebService::Strut\>'
-      let r = "model-aws"
-    elseif top =~ '\<ActiveRecord::Base\>' || top =~ '\<validates_\w\+_of\>'
+    elseif top =~ '\<validates_\w\+_of\>'
       let r = "model-ar"
     else
       let r = "model"
     endif
   elseif f =~ '\<app/views/layouts\>'
     let r = "view-layout-" . e
-  elseif f =~ '\<app/views/.*/_\k\+\.\k\+$'
+  elseif f =~ '\<\%(app/views\|components\)/.*/_\k\+\.\k\+$'
     let r = "view-partial-" . e
-  elseif f =~ '\<app/views\>'
+  elseif f =~ '\<app/views\>' || f =~ '\<components/.*/.*\.\(rhtml\|rxml\|rjs\|mab\)'
     let r = "view-" . e
   elseif f =~ '\<test/unit/.*_test\.rb'
     let r = "test-unit"
@@ -506,7 +513,7 @@ function! s:NewApp(bang,...)
     let str = str . " " . s:quote(expand(a:{c}))
     let c = c + 1
   endwhile
-  exe "!rails".str.append
+  exe "!rails".append.str
   if filereadable(dir."/".g:rails_default_file)
     exe "edit ".s:escapepath(dir)."/".g:rails_default_file
   endif
@@ -792,7 +799,7 @@ function! s:RailsFind()
   let res = s:sub(s:findfromview('javascript_include_tag','public/javascripts/\1'),'/defaults$','/application')
   if res != ""|return res|endif
   if RailsFileType() =~ '^controller\>'
-    let res = s:findit('\s*\<def\s\+\(\k\+\)\>(\=',s:sub(RailsFilePath(),'app/controllers/\(.\{-\}\)_controller.rb','app/views/\1').'/\1')
+    let res = s:findit('\s*\<def\s\+\(\k\+\)\>(\=',s:sub(s:sub(RailsFilePath(),'/controllers/','/views/'),'_controller\.rb$','').'/\1')
     if res != ""|return res|endif
   endif
   let isf_keep = &isfname
@@ -862,7 +869,8 @@ function! RailsUnderscore(str,...)
   elseif line =~ '\<has_\(and_belongs_to_\)\=many\s*(\=\s*'
     let str = 'models/'.s:RailsSingularize(str).'.rb'
   elseif line =~ '\<def\s\+' && expand("%:t") =~ '_controller\.rb'
-    let str = substitute(expand("%:p"),'.*[\/]app[\/]controllers[\/]\(.\{-\}\)_controller.rb','views/\1','').'/'.str
+    let str = s:sub(s:sub(RailsFilePath(),'/controllers/','/views/'),'_controller\.rb$','/'.str)
+    "let str = substitute(expand("%:p"),'.*[\/]app[\/]controllers[\/]\(.\{-\}\)_controller.rb','views/\1','').'/'.str
     if filereadable(str.".rhtml")
       let str = str . ".rhtml"
     elseif filereadable(str.".rxml")
@@ -1143,15 +1151,15 @@ function! s:magicm()
     endif
     exe "make ".s:sub(s:gsub(t,'-',':'),'unit$\|functional$','&s')." TEST=%".call
   elseif t =~ '^view\>'
-    exe "find ".substitute(RailsFilePath(),'app/views/\(.\{-\}\)/\(\k\+\)\..*','app/controllers/\1_controller|silent! djump \2','')
+    exe "find ".s:sub(s:sub(RailsFilePath(),'/views/','/controllers/'),'/\(\k\+\)\..*$','_controller|silent! djump \1')
   elseif t =~ '^controller-api\>'
-    exe "find ".substitute(substitute(RailsFilePath(),'/controllers/','/apis/',''),'_controller\.rb$','_api.rb','')
+    exe "find ".s:sub(s:sub(RailsFilePath(),'/controllers/','/apis/'),'_controller\.rb$','_api.rb')
   elseif t =~ '^controller\>'
-    exe "find ".substitute(RailsFilePath(),'app/controllers/\(.\{-\}\)_controller\.rb','app/views/\1/'.s:lastmethod(),'')
+    exe "find ".s:sub(s:sub(RailsFilePath(),'/controllers/','/views/'),'_controller\.rb$','/'.s:lastmethod())
   elseif t =~ '^model-ar\>'
     call s:Migration(0,'create_'.s:sub(expand('%:t:r'),'y$','ie$').'s')
   elseif t =~ '^api\>'
-    exe "find ".substitute(RailsFilePath(),'app/apis/\(.\{-\}\)_api\.rb$','app/controllers/\1_controller','')
+    exe "find ".s:sub(s:sub(RailsFilePath(),'/apis/','/controllers/'),'_api\.rb$','_controller.rb')
   endif
 endfunction
 
@@ -1165,7 +1173,8 @@ function! s:RailsSelectiveExpand(pat,good,default,...)
     let nd = ""
   endif
   let c = nr2char(getchar(0))
-  let good = s:gsub(a:good,'\\<Esc>',"\<Esc>")
+  "let good = s:gsub(a:good,'\\<Esc>',"\<Esc>")
+  let good = a:good
   if c == "" || c == "\t"
     return good.(a:0 ? " ".a:1 : '')
   elseif c =~ a:pat
@@ -1197,7 +1206,8 @@ endfunction
 
 function! s:AddSelectiveExpand(abbr,pat,expn,...)
   let pat = s:gsub(a:pat,"'","'.\"'\".'")
-  exe "iabbr <buffer> <silent> ".a:abbr." <C-R>=<SID>RailsSelectiveExpand('".pat."','".a:expn."','".a:abbr.(a:0 ? "','".a:1 : '')."')<CR>"
+  let expn = s:gsub(s:gsub(a:expn,'["|]','\\&'),'<','<Lt>')
+  exe "iabbr <buffer> <silent> ".a:abbr." <C-R>=<SID>RailsSelectiveExpand('".pat."',\"".expn."\",'".a:abbr.(a:0 ? "','".a:1 : '')."')<CR>"
 endfunction
 
 function! s:AddTabExpand(abbr,expn)
@@ -1243,13 +1253,13 @@ function! s:BufAbbreviations()
       call s:AddParenExpand('ra','render',':action => ')
       call s:AddParenExpand('rc','render',':controller => ')
       call s:AddParenExpand('rf','render',':file => ')
-      iabbr render_partial render :partial =>
-      iabbr render_action render :action =>
-      iabbr render_text render :text =>
-      iabbr render_file render :file =>
-      iabbr render_template render :template =>
-      iabbr <silent> render_nothing render :nothing => true<C-R>=<SID>DiscretionaryComma()<CR>
-      iabbr <silent> render_without_layout render :layout => false<C-R>=<SID>DiscretionaryComma()<CR>
+      iabbr <buffer> render_partial render :partial =>
+      iabbr <buffer> render_action render :action =>
+      iabbr <buffer> render_text render :text =>
+      iabbr <buffer> render_file render :file =>
+      iabbr <buffer> render_template render :template =>
+      iabbr <buffer> <silent> render_nothing render :nothing => true<C-R>=<SID>DiscretionaryComma()<CR>
+      iabbr <buffer> <silent> render_without_layout render :layout => false<C-R>=<SID>DiscretionaryComma()<CR>
     endif
     if RailsFileType() =~ '^view\>'
       call s:AddTabExpand('dotiw','distance_of_time_in_words ')
@@ -1284,9 +1294,9 @@ function! s:BufAbbreviations()
       call s:AddParenExpand('mac','add_column','')
       call s:AddParenExpand('mdt','drop_table','')
       call s:AddParenExpand('mrc','remove_column','')
-      call s:AddParenExpand('mct','create_table','')
+      "call s:AddParenExpand('mct','create_table','')
       " ugh, stupid POS
-      " call s:AddTabExpand('mct','create_table "" do <Bar>t<Bar>\<Lt>Esc>7hi')
+      call s:AddTabExpand('mct','create_table "" do \<Bar>t\<Bar>\<Esc>7hi')
     endif
     if RailsFileType() =~ '^test\>'
       call s:AddParenExpand('ae','assert_equal','')
