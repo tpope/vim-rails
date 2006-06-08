@@ -211,6 +211,9 @@ function! s:BufInit(path)
       " set include=\\<\\zs\\u\\f*\\l\\f*\\ze\\>\\\|^\\s*\\(require\\\|load\\)\\s\\+['\"]\\zs\\f\\+\\ze
       set include=\\<\\zsAct\\f*::Base\\ze\\>\\\|^\\s*\\(require\\\|load\\)\\s\\+['\"]\\zs\\f\\+\\ze
       setlocal includeexpr=RailsIncludeexpr()
+      if g:rails_level > 3 && exists('+completefunc') && &completefunc == ''
+        set completefunc=syntaxcomplete#Complete
+      endif
     else
       " Does this cause problems in any filetypes?
       setlocal includeexpr=RailsIncludeexpr()
@@ -651,7 +654,9 @@ function! s:BufSyntax()
         syn keyword rubyRailsRenderMethod render render_component
       endif
       if t =~ '^helper\>' || t=~ '^view\>'
-        exe "syn match rubyRailsHelperMethod ".rails_view_helpers
+        "exe "syn match rubyRailsHelperMethod ".rails_view_helpers
+        exe "syn keyword rubyRailsHelperMethod ".s:sub(s:rails_view_helpers,'\<select\s\+','')
+        syn match rubyRailsHelperMethod '\<select\>\%(\s*{\)\@!'
       elseif t =~ '^controller\>'
         syn keyword rubyRailsControllerHelperMethod helper helper_attr helper_method filter layout url_for scaffold observer service model serialize
         syn keyword rubyRailsControllerDeprecatedMethod render_action render_text render_file render_template render_nothing render_without_layout
@@ -669,7 +674,9 @@ function! s:BufSyntax()
       syn keyword rubyRailsInclude require_dependency require_gem
     elseif &syntax == "eruby" && t =~ '^view\>'
       syn cluster erubyRailsRegions contains=erubyOneLiner,erubyBlock,erubyExpression
-      exe "syn match erubyRailsHelperMethod ".rails_view_helpers." contained containedin=@erubyRailsRegions"
+      "exe "syn match erubyRailsHelperMethod ".rails_view_helpers." contained containedin=@erubyRailsRegions"
+        exe "syn keyword erubyRailsHelperMethod ".s:sub(s:rails_view_helpers,'\<select\s\+','')." contained containedin=@erubyRailsRegions"
+        syn match erubyRailsHelperMethod '\<select\>\%(\s*{\)\@!' contained containedin=@erubyRailsRegions
       syn keyword erubyRailsMethod params request response session headers template cookies flash contained containedin=@erubyRailsRegions
       syn match erubyRailsMethod '\.\@<!\<\(h\|html_escape\|u\|url_encode\)\>' contained containedin=@erubyRailsRegions
         syn keyword erubyRailsRenderMethod render render_component contained containedin=@erubyRailsRegions
