@@ -31,7 +31,7 @@ function! s:gsub(str,pat,rep)
   return substitute(a:str,'\C'.a:pat,a:rep,'g')
 endfunction
 
-function! s:quote(str)
+function! s:rquote(str)
   " Imperfect but adequate for Ruby arguments
   if a:str =~ '^[A-Za-z0-9_/.-]\+$'
     return a:str
@@ -109,9 +109,23 @@ function! s:usesubversion()
     return b:rails_use_subversion
   else
     let b:rails_use_subversion = g:rails_subversion && 
-          \ (RailsAppPath()!="") && isdirectory(RailsAppPath()."/.svn")
+          \ (RailsRoot()!="") && isdirectory(RailsRoot()."/.svn")
     return b:rails_use_subversion
   endif
+endfunction
+
+function! s:warn(str)
+  echohl WarningMsg
+  echomsg a:str
+  echohl None
+  let v:warningmsg = a:str
+endfunction
+
+function! s:error(str)
+  echohl ErrorMsg
+  echomsg a:str
+  echohl None
+  let v:errmsg = a:str
 endfunction
 
 " }}}1
@@ -143,7 +157,7 @@ function! s:Detect(filename)
   let ofn = ""
   while fn != ofn
     if filereadable(fn . "/config/environment.rb")
-      return s:InitBuffer(fn)
+      return s:BufInit(fn)
     endif
     let ofn = fn
     let fn = fnamemodify(ofn,':s?\(.*\)[\/]\(app\|components\|config\|db\|doc\|lib\|log\|public\|script\|test\|tmp\|vendor\)\($\|[\/].*$\)?\1?')
@@ -152,7 +166,7 @@ function! s:Detect(filename)
 endfunction
 
 function! s:SetGlobals()
-  if exists("b:rails_app_path")
+  if exists("b:rails_root")
     if !exists("g:rails_isfname") || g:rails_isfname
       let b:rails_restore_isfname=&isfname
       set isfname=@,48-57,/,-,_,\",',:
@@ -167,10 +181,11 @@ function! s:ClearGlobals()
   endif
 endfunction
 
-function! s:InitBuffer(path)
+function! s:BufInit(path)
   call s:InitRuby()
-  let b:rails_app_path = a:path
-  let rp = s:escapepath(b:rails_app_path)
+  let b:rails_root = a:path
+  let b:rails_app_path = b:rails_root
+  let rp = s:escapepath(b:rails_root)
   if g:rails_level > 0
     if &ft == "mason"
       setlocal filetype=eruby
@@ -185,9 +200,9 @@ function! s:InitBuffer(path)
     silent! compiler rubyunit
     let &l:makeprg='rake -f '.rp.'/Rakefile'
     call s:SetBasePath()
-    if has("balloon_eval")
+    "if has("balloon_eval")
       "setlocal balloonexpr=RailsUnderscore(v:beval_text,1) ballooneval
-    endif
+    "endif
     if &ft == "ruby" || &ft == "eruby" || &ft == "rjs" || &ft == "rxml"
       " This is a strong convention in Rails, so we'll break the usual rule
       " of considering shiftwidth to be a personal preference
@@ -221,38 +236,44 @@ function! s:InitBuffer(path)
     let t = "-".t
   endif
   exe "silent doautocmd User Rails".t."-"
-  if filereadable(b:rails_app_path."/config/rails.vim")
+  if filereadable(b:rails_root."/config/rails.vim")
     sandbox exe "source ".rp."/config/rails.vim"
   endif
-  return b:rails_app_path
+  return b:rails_root
 endfunction
 
 " }}}1
 " "Public" Interface {{{1
-function! RailsAppPath()
-  if exists("b:rails_app_path")
-    return b:rails_app_path
+
+function! RailsRoot()
+  if exists("b:rails_root")
+    return b:rails_root
   else
     return ""
   endif
 endfunction
 
+function! RailsAppPath()
+  " Deprecated
+  return RailsRoot()
+endfunction
+
 function! RailsFilePath()
-  if !exists("b:rails_app_path")
+  if !exists("b:rails_root")
     return ""
   elseif exists("b:rails_file_path")
     return b:rails_file_path
   endif
   let f = s:gsub(expand("%:p"),'\\ \@!','/')
-  if s:gsub(b:rails_app_path,'\\ \@!','/') == strpart(f,0,strlen(b:rails_app_path))
-    return strpart(f,strlen(b:rails_app_path)+1)
+  if s:gsub(b:rails_root,'\\ \@!','/') == strpart(f,0,strlen(b:rails_root))
+    return strpart(f,strlen(b:rails_root)+1)
   else
     return f
   endif
 endfunction
 
 function! RailsFileType()
-  if !exists("b:rails_app_path")
+  if !exists("b:rails_root")
     return ""
   elseif exists("b:rails_file_type")
     return b:rails_file_type
@@ -349,8 +370,8 @@ endfunction
 " Commands {{{1
 
 function! s:BufCommands()
-  let rp = s:escapepath(b:rails_app_path)
-"  silent exe 'command! -buffer -complete=custom,s:ScriptComplete -nargs=+ Script :!ruby '.s:escapepath(b:rails_app_path.'/script/').'<args>'
+  let rp = s:escapepath(b:rails_root)
+"  silent exe 'command! -buffer -complete=custom,s:ScriptComplete -nargs=+ Script :!ruby '.s:escapepath(b:rails_root.'/script/').'<args>'
   command! -buffer -complete=custom,s:ScriptComplete -nargs=+ Rscript :call s:Script(<bang>0,<f-args>)
   command! -buffer -complete=custom,s:ScriptComplete -nargs=+ Script :Script<bang> <args>
   command! -buffer -complete=custom,s:GenerateComplete -nargs=* Rgenerate :call s:Generate(<bang>0,<f-args>)
@@ -369,7 +390,7 @@ function! s:BufCommands()
   command! -buffer -complete=custom,s:FindList -nargs=* -count=1 Rtabfind :call s:Find(<bang>0,<count>,"tab",<f-args>)
   let ext = expand("%:e")
   command! -buffer -nargs=0 Ralternate :call s:Alternate()
-  command! -buffer -nargs=0 Alternate :Ralternate
+  command! -buffer -nargs=0 Alternate :echoerr Use :Ralternate instead
   if ext == "rhtml" || ext == "rxml" || ext == "rjs"
     command! -buffer -nargs=? -range Rpartial :<line1>,<line2>call s:MakePartial(<bang>0,<f-args>)
     command! -buffer -bang -nargs=? -range Partial :<line1>,<line2>Rpartial<bang> <args>
@@ -388,12 +409,11 @@ function! s:Migration(bang,arg)
   else
     let glob = '*'.a:arg.'*.rb'
   endif
-  let migr = s:sub(glob(RailsAppPath().'/db/migrate/'.glob),'.*\n','')
+  let migr = s:sub(glob(RailsRoot().'/db/migrate/'.glob),'.*\n','')
   if migr != ''
     exe "edit ".s:escapepath(migr)
   else
-    echoerr "Migration not found".(a:arg=='' ? '' : ': '.a:arg)
-    return
+    return s:error("Migration not found".(a:arg=='' ? '' : ': '.a:arg))
   endif
 endfunction
 
@@ -423,7 +443,7 @@ function! s:FindList(ArgLead, CmdLine, CursorPos)
 endfunction
 
 function! s:rubyexestr(cmd)
-  return "ruby -C ".s:quote(RailsAppPath())." ".a:cmd
+  return "ruby -C ".s:rquote(RailsRoot())." ".a:cmd
 endfunction
 
 function! s:rubyexe(cmd)
@@ -435,20 +455,20 @@ function! s:Script(bang,cmd,...)
   let str = ""
   let c = 1
   while c <= a:0
-    let str = str . " " . s:quote(a:{c})
+    let str = str . " " . s:rquote(a:{c})
     let c = c + 1
   endwhile
-  call s:rubyexe(s:quote("script/".a:cmd).str)
+  call s:rubyexe(s:rquote("script/".a:cmd).str)
 endfunction
 
 function! s:Destroy(bang,...)
   let str = ""
   let c = 1
   while c <= a:0
-    let str = str . " " . s:quote(a:{c})
+    let str = str . " " . s:rquote(a:{c})
     let c = c + 1
   endwhile
-  call s:rubyexe(s:quote("script/destroy").str.(s:usesubversion()?' -c':''))
+  call s:rubyexe(s:rquote("script/destroy").str.(s:usesubversion()?' -c':''))
 endfunction
 
 function! s:Generate(bang,...)
@@ -456,14 +476,14 @@ function! s:Generate(bang,...)
     call s:rubyexe("script/generate")
     return
   elseif a:0 == 1
-    call s:rubyexe("script/generate ".s:quote(a:1))
+    call s:rubyexe("script/generate ".s:rquote(a:1))
     return
   endif
-  let target = s:quote(a:1)
+  let target = s:rquote(a:1)
   let str = ""
   let c = 2
   while c <= a:0
-    let str = str . " " . s:quote(a:{c})
+    let str = str . " " . s:rquote(a:{c})
     let c = c + 1
   endwhile
   if str !~ '-p\>'
@@ -478,7 +498,7 @@ function! s:Generate(bang,...)
     let file = ""
   endif
   if !s:rubyexe("script/generate ".target.(s:usesubversion()?' -c':'').str) && file != ""
-    exe "edit ".s:escapepath(RailsAppPath())."/".file
+    exe "edit ".s:escapepath(RailsRoot())."/".file
   endif
 endfunction
 
@@ -510,7 +530,7 @@ function! s:NewApp(bang,...)
   let str = ""
   let c = 1
   while c <= a:0
-    let str = str . " " . s:quote(expand(a:{c}))
+    let str = str . " " . s:rquote(expand(a:{c}))
     let c = c + 1
   endwhile
   exe "!rails".append.str
@@ -520,7 +540,7 @@ function! s:NewApp(bang,...)
 endfunction
 
 function! s:ScriptComplete(ArgLead,CmdLine,P)
-  "  return s:gsub(glob(RailsAppPath()."/script/**"),'\%(.\%(\n\)\@<!\)*[\/]script[\/]','')
+  "  return s:gsub(glob(RailsRoot()."/script/**"),'\%(.\%(\n\)\@<!\)*[\/]script[\/]','')
   let cmd = s:sub(a:CmdLine,'^\u\w*\s\+','')
 "  let g:A = a:ArgLead
 "  let g:L = cmd
@@ -538,7 +558,7 @@ function! s:ScriptComplete(ArgLead,CmdLine,P)
     return "discover\nlist\ninstall\nupdate\nremove\nsource\nunsource\nsources"
   endif
   return ""
-"  return s:RealMansGlob(RailsAppPath()."/script",a:ArgLead."*")
+"  return s:RealMansGlob(RailsRoot()."/script",a:ArgLead."*")
 endfunction
 
 function! s:CustomComplete(A,L,P,cmd)
@@ -566,10 +586,9 @@ function! s:ControllerFunc(bang,prefix,suffix,...)
     let c = s:controller()
   endif
   if c == ""
-    echoerr "No controller name given"
-    return
+    return s:error("No controller name given")
   endif
-  let cmd = "edit".(a:bang?"! ":' ').s:escapepath(RailsAppPath()).'/'.a:prefix.c.a:suffix
+  let cmd = "edit".(a:bang?"! ":' ').s:escapepath(RailsRoot()).'/'.a:prefix.c.a:suffix
   exe cmd
   if a:0 > 1
     exe "silent! djump ".a:2
@@ -705,9 +724,10 @@ endfunction
 
 " }}}1
 " Navigation {{{1
+
 function! s:SetBasePath()
-  let rp = s:escapepath(b:rails_app_path)
-  let &l:path = '.,'.rp.",".rp."/app/controllers,".rp."/app,".rp."/app/models,".rp."/app/helpers,".rp."/components,".rp."/config,".rp."/lib,".rp."/vendor/plugins/*/lib,".rp."/vendor,".rp."/test/unit,".rp."/test/functional,".rp."/test/integration,".rp."/app/apis,"."/test,".substitute(&l:path,'^\.,','','')
+  let rp = s:escapepath(b:rails_root)
+  let &l:path = '.,'.rp.",".rp."/app/controllers,".rp."/app,".rp."/app/models,".rp."/app/helpers,".rp."/components,".rp."/config,".rp."/lib,".rp."/vendor/plugins/*/lib,".rp."/vendor,".rp."/test/unit,".rp."/test/functional,".rp."/test/integration,".rp."/app/apis,"."/test,".s:sub(&l:path,'^\.,','')
 endfunction
 
 function! s:InitRuby()
@@ -728,7 +748,7 @@ function! RailsIncludeexpr()
   endif
 endfunction
 
-function! s:LinePeak()
+function! s:linepeak()
   let line = getline(line("."))
   let line = s:sub(line,'^\(.\{'.col(".").'\}\).*','\1')
   let line = s:sub(line,'\([:"'."'".']\|%[qQ]\=[[({<]\)\=\f*$','')
@@ -822,7 +842,7 @@ function! RailsUnderscore(str,...)
   if a:0 == 1
     " Get the text before the filename under the cursor.
     " We'll cheat and peak at this in a bit
-    let line = s:LinePeak()
+    let line = s:linepeak()
     let line = substitute(line,'\([:"'."'".']\|%[qQ]\=[[({<]\)\=\f*$','','')
   else
     let line = ""
@@ -919,15 +939,15 @@ function! s:Alternate()
     let helper     = fnamemodify(dest,":h:s?/views/?/helpers/?")."_helper.rb"
     let controller = fnamemodify(dest,":h:s?/views/?/controllers/?")."_controller.rb"
     let model      = fnamemodify(dest,":h:s?/views/?/models/?").".rb"
-    if filereadable(b:rails_app_path."/".helper)
+    if filereadable(b:rails_root."/".helper)
       " Would it be better to skip the helper and go straight to the
       " controller?
       exe "find ".s:escapepath(helper)
-    elseif filereadable(b:rails_app_path."/".controller)
+    elseif filereadable(b:rails_root."/".controller)
       let jumpto = expand("%:t:r")
       exe "find ".s:escapepath(controller)
       exe "silent! djump ".jumpto
-    elseif filereadable(b:rails_app_path."/".model)
+    elseif filereadable(b:rails_root."/".model)
       exe "find ".s:escapepath(model)
     else
       exe "find ".s:escapepath(controller)
@@ -956,12 +976,10 @@ endfunction
 
 function! s:MakePartial(bang,...) range abort
   if a:0 == 0 || a:0 > 1
-    echoerr "Incorrect number of arguments"
-    return
+    return s:error("Incorrect number of arguments")
   endif
   if a:1 =~ '[^a-z0-9_/]'
-    echoerr "Invalid partial name"
-    return
+    return s:error("Invalid partial name")
   endif
   let file = a:1
   let first = a:firstline
@@ -979,13 +997,13 @@ function! s:MakePartial(bang,...) range abort
   let var = "@".name
   let collection = ""
   if dir =~ '^/'
-    let out = (b:rails_app_path).dir."/_".fname
+    let out = (b:rails_root).dir."/_".fname
   elseif dir == ""
     let out = (curdir)."/_".fname
   elseif isdirectory(curdir."/".dir)
     let out = (curdir)."/".dir."/_".fname
   else
-    let out = (b:rails_app_path)."/app/views/".dir."/_".fname
+    let out = (b:rails_root)."/app/views/".dir."/_".fname
   endif
   if filereadable(out)
     let partial_warn = 1
@@ -994,8 +1012,7 @@ function! s:MakePartial(bang,...) range abort
   endif
   if bufnr(out) > 0
     if bufloaded(out)
-      echoerr "Partial already open in buffer ".bufnr(out)
-      return
+      return s:error("Partial already open in buffer ".bufnr(out))
     else
       exe "bwipeout ".bufnr(out)
     endif
@@ -1064,9 +1081,7 @@ function! s:MakePartial(bang,...) range abort
   1
   call s:Detect(out)
   if exists("l:partial_warn")
-    echohl WarningMsg
-    echo "Warning: partial exists!"
-    echohl None
+    call s:warn("Warning: partial exists!")
   endif
 endfunction
 
@@ -1080,7 +1095,7 @@ function! s:InitStatusline()
 endfunction
 
 function! RailsStatusline()
-  if exists("b:rails_app_path")
+  if exists("b:rails_root")
     let t = RailsFileType()
     if t != ""
       return "[Rails-".t."]"
@@ -1093,7 +1108,7 @@ function! RailsStatusline()
 endfunction
 
 function! RailsSTATUSLINE()
-  if exists("b:rails_app_path")
+  if exists("b:rails_root")
     let t = RailsFileType()
     if t != ""
       return ",RAILS-".toupper(t)
@@ -1105,7 +1120,7 @@ function! RailsSTATUSLINE()
   endif
 endfunction
 " }}}1
-" Mappings{{{1
+" Mappings {{{1
 
 function s:leadermap(key,mapping)
   exe "map <buffer> ".g:rails_leader.a:key." ".a:mapping
@@ -1194,10 +1209,10 @@ function! s:DiscretionaryComma()
 endfunction
 
 function! s:TheMagicC()
-  let l = s:LinePeak()
+  let l = s:linepeak()
   if l =~ '\<find\s*\((\|:first,\|:all,\)'
     return <SID>RailsSelectiveExpand('..',':conditions => ',':c')
-  elseif l =~ '\<render\s\+:partial\s\+=>\s*'
+  elseif l =~ '\<render\s*(\=\s*:partial\s\+=>\s*'
     return <SID>RailsSelectiveExpand('..',':collection => ',':c')
   else
     return <SID>RailsSelectiveExpand('..',':controller => ',':c')
