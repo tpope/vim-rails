@@ -21,6 +21,7 @@ let g:loaded_rails = 1
 
 let cpo_save = &cpo
 set cpo&vim
+
 " Utility Functions {{{1
 
 function! s:sub(str,pat,rep)
@@ -144,7 +145,7 @@ function! s:InitPlugin()
       autocmd BufLeave * call s:ClearGlobals()
     augroup END
   endif
-  command! -bang -nargs=* -complete=dir Rails :call s:NewApp(<bang>0,<f-args>)
+  command! -bar -bang -nargs=* -complete=dir Rails :call s:NewApp(<bang>0,<f-args>)
 endfunction
 
 function! s:Detect(filename)
@@ -167,7 +168,7 @@ endfunction
 
 function! s:SetGlobals()
   if exists("b:rails_root")
-    if !exists("g:rails_isfname") || g:rails_isfname
+    if g:rails_isfname
       let b:rails_restore_isfname=&isfname
       set isfname=@,48-57,/,-,_,\",',:
     endif
@@ -358,6 +359,7 @@ function! s:InitConfig()
   call s:SetOptDefault("rails_mappings",l>2)
   call s:SetOptDefault("rails_abbreviations",l>4)
   call s:SetOptDefault("rails_expensive",l>2)
+  call s:SetOptDefault("rails_avim_commands",l>3)
   call s:SetOptDefault("rails_subversion",l>3)
   call s:SetOptDefault("rails_default_file","README")
   call s:SetOptDefault("rails_default_database","")
@@ -374,31 +376,38 @@ endfunction
 
 function! s:BufCommands()
   let rp = s:escapepath(b:rails_root)
-"  silent exe 'command! -buffer -complete=custom,s:ScriptComplete -nargs=+ Script :!ruby '.s:escapepath(b:rails_root.'/script/').'<args>'
-  command! -buffer -complete=custom,s:ScriptComplete -nargs=+ Rscript :call s:Script(<bang>0,<f-args>)
-  command! -buffer -complete=custom,s:ScriptComplete -nargs=+ Script :Rscript<bang> <args>
-  command! -buffer -complete=custom,s:GenerateComplete -nargs=* Rgenerate :call s:Generate(<bang>0,<f-args>)
-  command! -buffer -complete=custom,s:ConsoleComplete -nargs=* Rconsole :Rscript console <args>
-  command! -buffer -complete=custom,s:DestroyComplete -nargs=* Rdestroy :call s:Destroy(<bang>0,<f-args>)
-  command! -buffer -complete=custom,s:RakeComplete -nargs=? Rake :call s:Rake(<bang>0,<q-args>)
-  command! -buffer -complete=custom,s:PreviewComplete -nargs=? Rpreview :call s:Preview(<bang>0,<q-args>)
+  "  silent exe 'command! -buffer -complete=custom,s:ScriptComplete -nargs=+ Script :!ruby '.s:escapepath(b:rails_root.'/script/').'<args>'
+  command! -buffer -bar -complete=custom,s:ScriptComplete -nargs=+ Rscript :call s:Script(<bang>0,<f-args>)
+  command! -buffer -bar -complete=custom,s:ScriptComplete -nargs=+ Script :Rscript<bang> <args>
+  command! -buffer -bar -complete=custom,s:GenerateComplete -nargs=* Rgenerate :call s:Generate(<bang>0,<f-args>)
+  command! -buffer -bar -complete=custom,s:ConsoleComplete -nargs=* Rconsole :Rscript console <args>
+  command! -buffer -bar -complete=custom,s:DestroyComplete -nargs=* Rdestroy :call s:Destroy(<bang>0,<f-args>)
+  command! -buffer -bar -complete=custom,s:RakeComplete -nargs=? Rake :call s:Rake(<bang>0,<q-args>)
+  command! -buffer -bar -complete=custom,s:PreviewComplete -nargs=? Rpreview :call s:Preview(<bang>0,<q-args>)
   command! -buffer -nargs=1 Rrunner :call s:Script(<bang>0,"runner",<f-args>)
-  command! -buffer -nargs=? Rmigration :call s:Migration(<bang>0,<q-args>)
-  command! -buffer -nargs=* Rcontroller :call s:ControllerFunc(<bang>0,"app/controllers/","_controller.rb",<f-args>)
-  command! -buffer -nargs=* Rhelper :call s:ControllerFunc(<bang>0,"app/helpers/","_helper.rb",<f-args>)
+  command! -buffer -bar -nargs=? Rmigration :call s:Migration(<bang>0,<q-args>)
+  command! -buffer -bar -nargs=* Rcontroller :call s:ControllerFunc(<bang>0,"app/controllers/","_controller.rb",<f-args>)
+  command! -buffer -bar -nargs=* Rhelper :call s:ControllerFunc(<bang>0,"app/helpers/","_helper.rb",<f-args>)
   silent exe "command! -buffer -nargs=? Rcd :cd ".rp."/<args>"
   silent exe "command! -buffer -nargs=? Rlcd :lcd ".rp."/<args>"
-  command! -buffer -nargs=? Cd :Rcd <args>
-  command! -buffer -nargs=? Lcd :Rlcd <args>
-  command! -buffer -complete=custom,s:FindList -nargs=* -count=1 Rfind :call s:Find(<bang>0,<count>,"",<f-args>)
-  command! -buffer -complete=custom,s:FindList -nargs=* -count=1 Rsplitfind :call s:Find(<bang>0,<count>,"split",<f-args>)
-  command! -buffer -complete=custom,s:FindList -nargs=* -count=1 Rtabfind :call s:Find(<bang>0,<count>,"tab",<f-args>)
+  command! -buffer -bar -nargs=? Cd :Rcd <args>
+  command! -buffer -bar -nargs=? Lcd :Rlcd <args>
+  command! -buffer -bar -complete=custom,s:FindList -nargs=* -count=1 Rfind :call s:Find(<bang>0,<count>,"",<f-args>)
+  command! -buffer -bar -complete=custom,s:FindList -nargs=* -count=1 Rsplitfind :call s:Find(<bang>0,<count>,"split",<f-args>)
+  command! -buffer -bar -complete=custom,s:FindList -nargs=* -count=1 Rvsplitfind :call s:Find(<bang>0,<count>,"vert split",<f-args>)
+  command! -buffer -bar -complete=custom,s:FindList -nargs=* -count=1 Rtabfind :call s:Find(<bang>0,<count>,"tab",<f-args>)
+  command! -buffer -bar -nargs=0 Alternate :echoerr Use :Ralternate instead
+  command! -buffer -bar -nargs=0 Ralternate :call s:Alternate(<bang>0,"find")
+  if g:rails_avim_commands
+    command! -buffer -bar -nargs=0 A  :call s:Alternate(<bang>0,"find")
+    command! -buffer -bar -nargs=0 AS :call s:Alternate(<bang>0,"sfind")
+    command! -buffer -bar -nargs=0 AV :call s:Alternate(<bang>0,"vert sfind")
+    command! -buffer -bar -nargs=0 AT :call s:Alternate(<bang>0,"tabfind")
+  endif
   let ext = expand("%:e")
-  command! -buffer -nargs=0 Ralternate :call s:Alternate()
-  command! -buffer -nargs=0 Alternate :echoerr Use :Ralternate instead
-  if ext == "rhtml" || ext == "rxml" || ext == "rjs"
-    command! -buffer -nargs=? -range Rpartial :<line1>,<line2>call s:MakePartial(<bang>0,<f-args>)
-    command! -buffer -bang -nargs=? -range Partial :<line1>,<line2>Rpartial<bang> <args>
+  if ext == "rhtml" || ext == "rxml" || ext == "rjs" || ext == "mab"
+    command! -buffer -bar -nargs=? -range Partial :echoerr Use :Rpartial instead
+    command! -buffer -bar -nargs=? -range Rpartial :<line1>,<line2>call s:MakePartial(<bang>0,<f-args>)
   endif
 endfunction
 
@@ -997,7 +1006,8 @@ function! s:RailsSingularize(word)
   return word
 endfunction
 
-function! s:Alternate()
+function! s:Alternate(bang,cmd)
+  let cmd = a:cmd.(a:bang?"!":"")
   let f = RailsFilePath()
   let t = RailsFileType()
   if f =~ '\<config/database.yml$' || f =~ '\<config/environments/' || f == 'README'
@@ -1018,31 +1028,31 @@ function! s:Alternate()
     if filereadable(b:rails_root."/".helper)
       " Would it be better to skip the helper and go straight to the
       " controller?
-      exe "find ".s:escapepath(helper)
+      exe cmd." ".s:escapepath(helper)
     elseif filereadable(b:rails_root."/".controller)
       let jumpto = expand("%:t:r")
-      exe "find ".s:escapepath(controller)
+      exe cmd." ".s:escapepath(controller)
       exe "silent! djump ".jumpto
     elseif filereadable(b:rails_root."/".model)
-      exe "find ".s:escapepath(model)
+      exe cmd." ".s:escapepath(model)
     else
-      exe "find ".s:escapepath(controller)
+      exe cmd." ".s:escapepath(controller)
     endif
   elseif t =~ '^controller-api\>'
     let api = substitute(substitute(f,'/controllers/','/apis/',''),'_controller\.rb$','_api.rb','')
-    exe "find ".s:escapepath(api)
+    exe cmd." ".s:escapepath(api)
   elseif t =~ '^helper\>'
     let controller = substitute(substitute(f,'/helpers/','/controllers/',''),'_helper\.rb$','_controller.rb','')
-    exe "find ".s:escapepath(controller)
+    exe cmd." ".s:escapepath(controller)
   elseif t =~ '\<fixtures\>'
     let file = s:RailsSingularize(expand("%:t:r")).'_test'
-    exe "find ".s:escapepath(file)
+    exe cmd." ".s:escapepath(file)
   else
     let file = fnamemodify(f,":t:r")
     if file =~ '_test$'
-      exe "find ".s:escapepath(substitute(file,'_test$','',''))
+      exe cmd." ".s:escapepath(substitute(file,'_test$','',''))
     else
-      exe "find ".s:escapepath(file).'_test'
+      exe cmd." ".s:escapepath(file).'_test'
     endif
   endif
 endfunction
@@ -1206,6 +1216,7 @@ function! s:BufMappings()
   map <buffer> <silent> <Plug>RailsAlternate :Ralternate<CR>
   map <buffer> <silent> <Plug>RailsFind      :Rfind<CR>
   map <buffer> <silent> <Plug>RailsSplitFind :Rsplitfind<CR>
+  map <buffer> <silent> <Plug>RailsVSplitFind :Rvsplitfind<CR>
   map <buffer> <silent> <Plug>RailsTabFind   :Rtabfind<CR>
   map <buffer> <silent> <Plug>RailsMagicM    :call <SID>magicm()<CR>
   if g:rails_mappings

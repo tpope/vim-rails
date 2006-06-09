@@ -80,8 +80,8 @@ Little configuration should need to be done; this plugin automatically detects
 and adjusts Vim sensibly and subtly.  If you would like to set your own custom
 Vim settings when ever a Rails file is loaded, you can use an autocmd like the
 following in your vimrc: >
-	autocmd User Rails* Lcd
-	autocmd User Rails* map <buffer> <M-6> <Plug>RailsAlternate
+	autocmd User Rails* Rlcd
+	autocmd User Rails* iabbr habtm has_and_belongs_to_many
 Note the use of an asterisk; this is required to allow for future expansion.
 
 A few global variables control the behavior of this plugin.  In general, they
@@ -102,39 +102,53 @@ value	meaning ~
 1	Minimal features; mainly option management.
 2	Default.
 3	Adds a few niceties like mappings and the statusline.  Recommended.
-4	Enables recommended features in other plugins too (like
-	omnicompletion).  Author's choice.
+4	Enables all normal features.  Author's choice.
 5+	Experimental features.
 
-						*g:rails_loaded*  >
-	let g:rails_loaded=1
+						*g:loaded_rails*  >
+	let g:loaded_rails=1
 Do not load the plugin. For emergency use only.
 
-						*g:rails_mappings*  >
-	let g:rails_mappings=1
-Enables a few <LocalLeader> mappings.  See |rails-mappings|. Enabled when
-|g:rails_level| >= 3.
+						*g:rails_avim_commands*  >
+	let g:rails_avim_commands=1
+Adds some a.vim compatible aliases for |:Ralternate|, like :A, :AS, :AV, and
+:AT.  This does not require a.vim.  (a.vim is a plugin for easily alternating
+between, for example, foo.c and foo.h.  If it's installed, you can see
+|alternate.txt| for more information.)  Enabled when |g:rails_level| >= 4.
 
-						*g:rails_leader*  >
-	let g:rails_leader='<LocalLeader>r'
-Prefix for mappings.  See |rails-mappings|.
+						*g:rails_default_file*  >
+	let g:rails_default_file='config/database.yml'
+File to load when a new Rails application is created.  Defaults to the README.
 
+						*g:rails_default_database*  >
+	let g:rails_default_database='sqlite3'
+Database to use for new applications.  Defaults to letting Rails decide.
+ 
 						*g:rails_expensive*  >
 	let g:rails_expensive=1
 Enables or disables expensive (slow) features (typically involving calls to
 the Ruby interpreter).  Recommended for moderately fast computers.  Enabled
 when |g:rails_level| >= 3.
 
+						*g:rails_isfname*  >
+	let g:rails_isfname=1
+Enables changes to the 'isfname' option.  Enabled when |g:rails_level| >= 2.
+See |rails-'isfname'|.
+
+						*g:rails_leader*  >
+	let g:rails_leader='<LocalLeader>r'
+Prefix for mappings.  See |rails-mappings|.
+
+						*g:rails_mappings*  >
+	let g:rails_mappings=1
+Enables a few <LocalLeader> mappings.  See |rails-mappings|. Enabled when
+|g:rails_level| >= 3.
+
 						*g:rails_statusline*  >
 	let g:rails_statusline=1
 Give a clue in the statusline when this plugin is enabled.  This requires that
 the current filetype is in your existing 'statusline'.  Enabled when
 |g:rails_level| >= 3.
-
-						*g:rails_isfname*  >
-	let g:rails_isfname=1
-Enables changes to the 'isfname' option.  Enabled when |g:rails_level| >= 2.
-See |rails-'isfname'|.
 
 						*g:rails_syntax*  >
 	let g:rails_syntax=1
@@ -145,14 +159,6 @@ When g:rails_syntax is enabled, you may find your Ruby files to be a bit heavy
 on the cyan (or however your Identifiers are highlighted).  You may want to
 enable g:ruby_no_identifiers, as explained in |ft-ruby-syntax|.
 
-						*g:rails_default_file*  >
-	let g:rails_default_file='config/database.yml'
-File to load when a new Rails application is created.  Defaults to the README.
-
-						*g:rails_default_database*  >
-	let g:rails_default_database='sqlite3'
-Database to use for new applications.  Defaults to letting Rails decide.
- 
 ==============================================================================
 MANAGED VIM OPTIONS			*rails-options*
 
@@ -208,7 +214,8 @@ The 'path' has been modified to include all the best places to be.
 <
 						*rails-gf*
 Use |gf|, |CTRL-W_f|, and |CTRL-W_gf| liberally, as 'includeexpr' has been
-hacked to make them quite intelligent.
+hacked to make them quite intelligent (if |g:rails_mappings| is enabled,
+they are actually mapped instead, for even more magic).
 
 Example uses of |gf|, and where they might lead.
 (* indicates cursor position)
@@ -252,9 +259,9 @@ MAPPINGS					*rails-mappings*
 <Plug> mappings are always available (if the plugin is loaded) and can be
 manually mapped to the key sequence of your choice.  <LocalLeader>r mappings
 are available if |g:rails_mappings| is enabled or |g:rails_level| >= 3.  (The
-<LocalLeader>r prefix can be customized with g:rails_leader.)  These mappings
-are still under development, and it would not be unrealistic for them to
-change.
+<LocalLeader>r prefix can be customized with |g:rails_leader|.)  These
+mappings are still under development, and it would not be unrealistic for them
+to change.
 
 						*<Plug>RailsAlternate*
 <Plug>RailsAlternate	Switch to the "alternate" file.  Typically this just
@@ -276,6 +283,12 @@ COMMANDS					*rails-commands*
 						*rails-:Rails*
 :Rails {directory}	The only global command.  Creates a new Rails
 			application in {directory}, and loads the README.
+
+						*rails-:Rake*
+:Rake {targets}		Like calling |:make| {targets} (with 'makeprg' being
+			rake).  However, in some contexts, if {targets} are
+			omitted, :Rake defaults to something sensible (like
+			db:migrate in a migration, or your current test).
 
 						*rails-:Rcd*
 :Rcd [{directory}]	|:cd| to /path/to/railsapp/{directory}.
@@ -303,6 +316,12 @@ COMMANDS					*rails-commands*
 						*rails-:Ralternate*
 :Ralternate		Load the "alternate" file.  See
 			|<Plug>RailsAlternate|.  (deprecated)
+
+			*rails-:A* *rails-:AS* *rails-:AV* *:rails-:AT*
+:A			These are compatible with Michael Sharpe's a.vim (but
+:AS			do not make use of that plugin).  Briefly, they edit,
+:AV			split, vertical split, and tabify the "alternate"
+:AT			file.  |g:rails_avim_commands| must be enabled.
 
 						*rails-:Rpartial*
 :[range]Rpartial [{controller}/]{name}	
