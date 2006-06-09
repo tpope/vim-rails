@@ -871,8 +871,8 @@ function! s:RailsFind()
   let res = s:findamethod('belongs_to\|has_one\|composed_of','app/models/\1')
   if res != ""|return res|endif
   let res = s:RailsSingularize(s:findamethod('has_many\|has_and_belongs_to_many','app/models/\1'))
-  let res = s:RailsSingularize(s:findasymbol('through','app/models/\1'))
   if res != ""|return res|endif
+  let res = s:RailsSingularize(s:findasymbol('through','app/models/\1'))
   if res != ""|return res|endif
   let res = s:findamethod('fixtures','test/fixtures/\1')
   if res != ""|return res|endif
