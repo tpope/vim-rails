@@ -376,10 +376,12 @@ function! s:BufCommands()
   let rp = s:escapepath(b:rails_root)
 "  silent exe 'command! -buffer -complete=custom,s:ScriptComplete -nargs=+ Script :!ruby '.s:escapepath(b:rails_root.'/script/').'<args>'
   command! -buffer -complete=custom,s:ScriptComplete -nargs=+ Rscript :call s:Script(<bang>0,<f-args>)
-  command! -buffer -complete=custom,s:ScriptComplete -nargs=+ Script :Script<bang> <args>
+  command! -buffer -complete=custom,s:ScriptComplete -nargs=+ Script :Rscript<bang> <args>
   command! -buffer -complete=custom,s:GenerateComplete -nargs=* Rgenerate :call s:Generate(<bang>0,<f-args>)
   command! -buffer -complete=custom,s:ConsoleComplete -nargs=* Rconsole :Rscript console <args>
   command! -buffer -complete=custom,s:DestroyComplete -nargs=* Rdestroy :call s:Destroy(<bang>0,<f-args>)
+  command! -buffer -complete=custom,s:RakeComplete -nargs=? Rake :call s:Rake(<bang>0,<q-args>)
+  command! -buffer -complete=custom,s:PreviewComplete -nargs=? Rpreview :call s:Preview(<bang>0,<q-args>)
   command! -buffer -nargs=1 Rrunner :call s:Script(<bang>0,"runner",<f-args>)
   command! -buffer -nargs=? Rmigration :call s:Migration(<bang>0,<q-args>)
   command! -buffer -nargs=* Rcontroller :call s:ControllerFunc(<bang>0,"app/controllers/","_controller.rb",<f-args>)
@@ -398,6 +400,75 @@ function! s:BufCommands()
     command! -buffer -nargs=? -range Rpartial :<line1>,<line2>call s:MakePartial(<bang>0,<f-args>)
     command! -buffer -bang -nargs=? -range Partial :<line1>,<line2>Rpartial<bang> <args>
   endif
+endfunction
+
+function! s:Rake(bang,arg)
+  let t = RailsFileType()
+  if a:arg != ''
+    exe 'make '.a:arg
+    return
+  elseif t =~ '^test\>'
+    let meth = s:lastmethod()
+    if meth =~ '^test_'
+      let call = " TESTOPTS=-n/".meth."/"
+    else
+      let call = ""
+    endif
+    exe "make ".s:sub(s:gsub(t,'-',':'),'unit$\|functional$','&s')." TEST=%".call
+  elseif t=~ '^migration\>'
+    make db:migrate
+  elseif t=~ '^model\>'
+    make test:units TEST=%:p:r:s?[\/]app[\/]models[\/]?/test/unit/?_test.rb
+  elseif t=~ '^\<\%(controller\|helper\|view\)\>'
+    make test:functionals
+  else
+    make
+  endif
+endfunction
+
+function s:RakeComplete(A,L,P)
+  return "db:fixtures:load\ndb:migrate\ndb:schema:dump\ndb:schema:load\ndb:sessions:clear\ndb:sessions:create\ndb:structure:dump\ndb:test:clone\ndb:test:clone_structure\ndb:test:prepare\ndb:test:purge\ndoc:app\ndoc:clobber_app\ndoc:clobber_plugins\ndoc:clobber_rails\ndoc:plugins\ndoc:rails\ndoc:reapp\ndoc:rerails\nlog:clear\nrails:freeze:edge\nrails:freeze:gems\nrails:unfreeze\nrails:update\nrails:update:configs\nrails:update:javascripts\nrails:update:scripts\nstats\ntest\ntest:functionals\ntest:integration\ntest:plugins\ntest:recent\ntest:uncommitted\ntest:units\ntmp:cache:clear\ntmp:clear\ntmp:create\ntmp:sessions:clear\ntmp:sockets:clear"
+endfunction
+
+function s:Preview(bang,arg)
+  if a:arg =~ '://'
+    let uri = a:arg
+  elseif a:arg != ''
+    let uri = 'http://localhost:3000/'.s:sub(a:arg,'^/','')
+  else
+    let uri = 'http://localhost:3000/'
+    if s:controller() != '' && s:controller() != 'application'
+      let uri = uri.s:controller().'/'
+      if RailsFileType() =~ '^view\%(-partial\|-layout\)\@!'
+        let uri = uri.expand('%:t:r').'/'
+      elseif RailsFileType() =~ '^controller\>' && s:lastmethod() != ''
+        let uri = uri.s:lastmethod().'/'
+      endif
+    endif
+  endif
+  if exists(':OpenURL')
+    exe 'OpenURL '.uri
+  else
+    exe 'pedit '.uri.(uri =~ '?' ? '' : '?')
+    wincmd w
+    if &filetype == ''
+      setlocal filetype=xhtml
+    endif
+    wincmd w
+  endif
+endfunction
+
+function s:PreviewComplete(A,L,P)
+  let ret = ''
+  if s:controller() != '' && s:controller() != 'application'
+    let ret = s:controller().'/'
+    if RailsFileType() =~ '^view\%(-partial\|-layout\)\@!'
+      let ret = ret.expand('%:t:r').'/'
+    elseif RailsFileType() =~ '^controller\>' && s:lastmethod() != ''
+      let ret = ret.s:lastmethod().'/'
+    endif
+  endif
+  return ret
 endfunction
 
 function! s:Migration(bang,arg)
@@ -651,15 +722,16 @@ function! s:BufSyntax()
       if t =~ '^controller\>' || t =~ '^view\>' || t=~ '^helper\>'
       syn keyword rubyRailsMethod params request response session headers template cookies flash
         syn match rubyRailsError '[@:]\@<!@\%(params\|request\|response\|session\|headers\|template\|cookies\|flash\)\>'
+        syn match rubyRailsError '\<render_partial\>'
         syn keyword rubyRailsRenderMethod render render_component
       endif
       if t =~ '^helper\>' || t=~ '^view\>'
         "exe "syn match rubyRailsHelperMethod ".rails_view_helpers
         exe "syn keyword rubyRailsHelperMethod ".s:sub(s:rails_view_helpers,'\<select\s\+','')
-        syn match rubyRailsHelperMethod '\<select\>\%(\s*{\)\@!'
+        syn match rubyRailsHelperMethod '\<select\>\%(\s*{\|\s*do\>\|\s*(\=\s*&\)\@!'
       elseif t =~ '^controller\>'
         syn keyword rubyRailsControllerHelperMethod helper helper_attr helper_method filter layout url_for scaffold observer service model serialize
-        syn keyword rubyRailsControllerDeprecatedMethod render_action render_text render_file render_template render_nothing render_without_layout
+        syn match rubyRailsControllerDeprecatedMethod '\<render_\%(action\|text\|file\|template\|nothing\|without_layout\)\>'
         syn keyword rubyRailsRenderMethod render_to_string render_component_as_string redirect_to
         syn keyword rubyRailsFilterMethod before_filter append_before_filter prepend_before_filter after_filter append_after_filter prepend_after_filter around_filter append_around_filter prepend_around_filter skip_before_filter skip_after_filter
         syn keyword rubyRailsFilterMethod verify
@@ -676,7 +748,7 @@ function! s:BufSyntax()
       syn cluster erubyRailsRegions contains=erubyOneLiner,erubyBlock,erubyExpression
       "exe "syn match erubyRailsHelperMethod ".rails_view_helpers." contained containedin=@erubyRailsRegions"
         exe "syn keyword erubyRailsHelperMethod ".s:sub(s:rails_view_helpers,'\<select\s\+','')." contained containedin=@erubyRailsRegions"
-        syn match erubyRailsHelperMethod '\<select\>\%(\s*{\)\@!' contained containedin=@erubyRailsRegions
+        syn match erubyRailsHelperMethod '\<select\>\%(\s*{\|\s*do\>\|\s*(\=\s*&\)\@!' contained containedin=@erubyRailsRegions
       syn keyword erubyRailsMethod params request response session headers template cookies flash contained containedin=@erubyRailsRegions
       syn match erubyRailsMethod '\.\@<!\<\(h\|html_escape\|u\|url_encode\)\>' contained containedin=@erubyRailsRegions
         syn keyword erubyRailsRenderMethod render render_component contained containedin=@erubyRailsRegions
@@ -1162,13 +1234,8 @@ function! s:magicm()
   if RailsFilePath() == 'README'
     find config/database.yml
   elseif t =~ '^test\>'
-    let meth = s:lastmethod()
-    if meth =~ '^test_'
-      let call = " TESTOPTS=-n/".meth."/"
-    else
-      let call = ""
-    endif
-    exe "make ".s:sub(s:gsub(t,'-',':'),'unit$\|functional$','&s')." TEST=%".call
+    call s:warn('In the future, use :Rake instead')
+    Rake
   elseif t =~ '^view\>'
     exe "find ".s:sub(s:sub(RailsFilePath(),'/views/','/controllers/'),'/\(\k\+\)\..*$','_controller|silent! djump \1')
   elseif t =~ '^controller-api\>'
