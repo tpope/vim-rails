@@ -227,6 +227,9 @@ function! s:BufInit(path)
       if views != expand("%:p")
         let &l:path = &l:path.",".s:escapepath(views)
       endif
+      if expand('%:e') =~ '^\%(rjs\|rxml\|mab\)$'
+        let &l:path = rp."/app/views,".&l:path.",".rp."/public"
+      endif
     elseif &filetype == "eruby"
       set include=\\<\\zsAct\\f*::Base\\ze\\>\\\|^\\s*\\(require\\\|load\\)\\s\\+['\"]\\zs\\f\\+\\ze\\\|\\zs<%=\\ze
       setlocal suffixesadd=.rhtml,.rxml,.rjs,.mab,.rb,.css,.js
