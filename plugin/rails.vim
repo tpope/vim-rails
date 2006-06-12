@@ -198,19 +198,17 @@ function! s:BufInit(path)
     call s:BufCommands()
     call s:BufMappings()
     call s:BufAbbreviations()
+    call s:SetBasePath()
     silent! compiler rubyunit
     let &l:makeprg='rake -f '.rp.'/Rakefile'
-    call s:SetBasePath()
-    "if has("balloon_eval")
-      "setlocal balloonexpr=RailsUnderscore(v:beval_text,1) ballooneval
-    "endif
+    if has("balloon_eval") && executable('ri')
+      setlocal balloonexpr=RailsBalloonexpr()
+    endif
     if &ft == "ruby" || &ft == "eruby" || &ft == "rjs" || &ft == "rxml"
       " This is a strong convention in Rails, so we'll break the usual rule
       " of considering shiftwidth to be a personal preference
       setlocal sw=2 sts=2 et
-      " It would be nice if we could do this without pulling in half of Rails
-      " set include=\\<\\zs\\u\\f*\\l\\f*\\ze\\>\\\|^\\s*\\(require\\\|load\\)\\s\\+['\"]\\zs\\f\\+\\ze
-      set include=\\<\\zsAct\\f*::Base\\ze\\>\\\|^\\s*\\(require\\\|load\\)\\s\\+['\"]\\zs\\f\\+\\ze
+      "set include=\\<\\zsAct\\f*::Base\\ze\\>\\\|^\\s*\\(require\\\|load\\)\\s\\+['\"]\\zs\\f\\+\\ze
       setlocal includeexpr=RailsIncludeexpr()
       if g:rails_level > 3 && exists('+completefunc') && &completefunc == ''
         set completefunc=syntaxcomplete#Complete
@@ -218,25 +216,15 @@ function! s:BufInit(path)
     else
       " Does this cause problems in any filetypes?
       setlocal includeexpr=RailsIncludeexpr()
-      setlocal suffixesadd=.rb,.rhtml,.rxml,.rjs,.css,.js,.yml,.csv,.rake,.sql,.html,.mab
+      setlocal suffixesadd=.rb,.rhtml,.rxml,.rjs,.mab,.css,.js,.yml,.csv,.rake,.sql,.html
     endif
     if &filetype == "ruby"
       setlocal suffixesadd=.rb,.rhtml,.rxml,.rjs,.mab,.yml,.csv,.rake,s.rb
       setlocal define=^\\s*def\\s\\+\\(self\\.\\)\\=
-      let views = s:sub(s:sub(expand("%:p"),'[\/]\zscontrollers\ze[\/]','views'),'_controller\.rb$','')
-      if views != expand("%:p")
-        let &l:path = &l:path.",".s:escapepath(views)
-      endif
-      if expand('%:e') =~ '^\%(rjs\|rxml\|mab\)$'
-        let &l:path = rp."/app/views,".&l:path.",".rp."/public"
-      endif
     elseif &filetype == "eruby"
-      set include=\\<\\zsAct\\f*::Base\\ze\\>\\\|^\\s*\\(require\\\|load\\)\\s\\+['\"]\\zs\\f\\+\\ze\\\|\\zs<%=\\ze
-      setlocal suffixesadd=.rhtml,.rxml,.rjs,.mab,.rb,.css,.js
-      let &l:path = rp."/app/views,".&l:path.",".rp."/public"
+      "set include=\\<\\zsAct\\f*::Base\\ze\\>\\\|^\\s*\\(require\\\|load\\)\\s\\+['\"]\\zs\\f\\+\\ze\\\|\\zs<%=\\ze
+      setlocal suffixesadd=.rhtml,.rxml,.rjs,.mab,.rb,.css,.js,.html
     endif
-    " Since so many generated files are malformed...
-    set endofline
   endif
   let t = RailsFileType()
   if t != ""
@@ -815,7 +803,17 @@ endfunction
 
 function! s:SetBasePath()
   let rp = s:escapepath(b:rails_root)
-  let &l:path = '.,'.rp.",".rp."/app/controllers,".rp."/app,".rp."/app/models,".rp."/app/helpers,".rp."/components,".rp."/config,".rp."/lib,".rp."/vendor/plugins/*/lib,".rp."/vendor,".rp."/test/unit,".rp."/test/functional,".rp."/test/integration,".rp."/app/apis,"."/test,".s:sub(&l:path,'^\.,','')
+  let t = RailsFileType()
+  let oldpath = s:sub(&l:path,'^\.,','')
+  let &l:path = '.,'.rp.",".rp."/app/controllers,".rp."/app,".rp."/app/models,".rp."/app/helpers,".rp."/components,".rp."/config,".rp."/lib,".rp."/vendor/plugins/*/lib,".rp."/vendor,".rp."/test/unit,".rp."/test/functional,".rp."/test/integration,".rp."/app/apis,"."/test,"
+  if s:controller() != ''
+    if RailsFilePath() =~ '\<components/'
+      let &l:path = &l:path . rp . '/components/' . s:controller() . ','
+    else
+      let &l:path = &l:path . rp . '/app/views/' . s:controller() . ',' . rp . '/app/views,' . rp . '/public,'
+    endif
+  endif
+  let &l:path = &l:path . oldpath
 endfunction
 
 function! s:InitRuby()
@@ -824,6 +822,51 @@ function! s:InitRuby()
     " Is there a drawback to doing this?
     "        ruby require "rubygems" rescue nil
     "        ruby require "active_support" rescue nil
+  endif
+endfunction
+
+function! RailsBalloonexpr()
+  if executable('ri')
+    let line = getline(v:beval_lnum)
+    let b = matchstr(strpart(line,0,v:beval_col),'\%(\w\|[:.]\)*$')
+    let a = s:gsub(matchstr(strpart(line,v:beval_col),'^\w*\%([?!]\|\s*=\)\?'),'\s\+','')
+    let str = b.a
+    let before = strpart(line,0,v:beval_col-strlen(b))
+    let after  = strpart(line,v:beval_col+strlen(a))
+    if str =~ '^\.'
+      let str = s:gsub(str,'^\.','#')
+      if before =~ '\]\s*$'
+        let str = 'Array'.str
+      elseif before =~ '}\s*$'
+        let str = 'Hash'.str
+      elseif before =~ "[\"'`]\\s*$" || before =~ '\$\d\+\s*$'
+        let str = 'String'.str
+      elseif before =~ '\$\d\+\.\d\+\s*$'
+        let str = 'Float'.str
+      elseif before =~ '\$\d\+\s*$'
+        let str = 'Integer'.str
+      elseif before =~ '/\s*$'
+        let str = 'Regexp'.str
+      else
+        let str = s:sub(str,'^#','.')
+      endif
+    endif
+    let str = s:sub(str,'.*\.\s*to_f\s*\.\s*','Float#')
+    let str = s:sub(str,'.*\.\s*to_i\%(nt\)\=\s*\.\s*','Integer#')
+    let str = s:sub(str,'.*\.\s*to_s\%(tr\)\=\s*\.\s*','String#')
+    let str = s:sub(str,'.*\.\s*to_sym\s*\.\s*','Symbol#')
+    let str = s:sub(str,'.*\.\s*to_a\%(ry\)\=\s*\.\s*','Array#')
+    let str = s:sub(str,'.*\.\s*to_proc\s*\.\s*','Proc#')
+    if str !~ '^\u'
+      return ""
+    endif
+    let res = s:sub(system("ri ".s:rquote(str)),'\n$','')
+    if res =~ '^Nothing known about'
+      return ''
+    endif
+    return res
+  else
+    return ""
   endif
 endfunction
 
