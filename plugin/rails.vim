@@ -918,7 +918,7 @@ function! s:findasymbol(sym,repl)
 endfunction
 
 function! s:findfromview(func,repl)
-  return s:findit('\s*\%(<%=\=\)=\s*\<\%('.a:func.'\)\s*(\=\s*[:'."'".'"]\(\f\+\)\>['."'".'"]\=\s*\%(%>\s*\)\=',a:repl)
+  return s:findit('\s*\%(<%=\=\)\=\s*\<\%('.a:func.'\)\s*(\=\s*[:'."'".'"]\(\f\+\)\>['."'".'"]\=\s*\%(%>\s*\)\=',a:repl)
 endfunction
 
 function! s:RailsFind()
@@ -944,6 +944,10 @@ function! s:RailsFind()
   let res = s:sub(s:findasymbol('partial','\1'),'\k\+$','_&')
   if res != ""|return res|endif
   let res = s:sub(s:findfromview('render\s*(\=\s*:partial\s\+=>\s*','\1'),'\k\+$','_&')
+  if res != ""|return res|endif
+  let res = s:findamethod('render\s*:\%(template\|action\)\s\+=>\s*','\1')
+  if res != ""|return res|endif
+  let res = s:findamethod('redirect_to\s*(\=\s*:action\s\+=>\s*','\1')
   if res != ""|return res|endif
   let res = s:findfromview('stylesheet_link_tag','public/stylesheets/\1')
   if res != ""|return res|endif
