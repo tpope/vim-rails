@@ -321,6 +321,10 @@ COMMANDS					*rails-commands*
 
 :Rdestroy {options}	Calls script/destroy {options}.
 
+:Rlog [{logfile}]	Split window and open {logfile} ($RAILS_ENV or
+			development by default).  The control characters used
+			for highlighting are removed.
+
 						*rails-:Ralternate*
 :Ralternate		Load the "alternate" file.  See
 			|<Plug>RailsAlternate|.  (deprecated)
