@@ -316,11 +316,14 @@ COMMANDS					*rails-commands*
 			:Rscript runner {code} in that code is passed as one
 			argument.
 
+						*rails-:Rgenerate*
 :Rgenerate {options}	Calls script/generate {options}, and then edits the
 			first file generated.
 
+						*rails-:Rdestroy*
 :Rdestroy {options}	Calls script/destroy {options}.
 
+						*rails-:Rlog*
 :Rlog [{logfile}]	Split window and open {logfile} ($RAILS_ENV or
 			development by default).  The control characters used
 			for highlighting are removed.
