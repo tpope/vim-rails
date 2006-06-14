@@ -115,6 +115,18 @@ function! s:usesubversion()
   endif
 endfunction
 
+function! s:environment()
+  if exists('$RAILS_ENV')
+    return $RAILS_ENV
+  else
+    return "development"
+  endif
+endfunction
+
+function! s:environments(...)
+  return "development\ntest\nproduction"
+endfunction
+
 function! s:warn(str)
   echohl WarningMsg
   echomsg a:str
@@ -193,6 +205,12 @@ function! s:BufInit(path)
     endif
     if &ft == "" && ( expand("%:e") == "rjs" || expand("%:e") == "rxml" || expand("%:e") == "mab" )
       setlocal filetype=ruby
+    endif
+    if expand("%:e") == "log"
+      setlocal modifiable filetype=
+      silent! exe "%s/\e\\[[0-9;]*m//g"
+      setlocal readonly nomodifiable autoread
+      $
     endif
     call s:BufSyntax()
     call s:BufCommands()
@@ -326,6 +344,8 @@ function! RailsFileType()
     let r = "migration"
   elseif f =~ '\<lib/tasks\>' || f=~ '\<Rakefile$'
     let r = "task"
+  elseif f =~ '\<log/.*\.log$'
+    let r = "log"
   elseif e == "css" || e == "js" || e == "html"
     let r = e
   endif
@@ -375,6 +395,7 @@ function! s:BufCommands()
   command! -buffer -bar -complete=custom,s:DestroyComplete -nargs=* Rdestroy :call s:Destroy(<bang>0,<f-args>)
   command! -buffer -bar -complete=custom,s:RakeComplete -nargs=? Rake :call s:Rake(<bang>0,<q-args>)
   command! -buffer -bar -complete=custom,s:PreviewComplete -nargs=? Rpreview :call s:Preview(<bang>0,<q-args>)
+  command! -buffer -bar -complete=custom,s:environments -nargs=? Rlog :call s:Log(<bang>0,<q-args>)
   command! -buffer -nargs=1 Rrunner :call s:Script(<bang>0,"runner",<f-args>)
   command! -buffer -bar -nargs=? Rmigration :call s:Migration(<bang>0,<q-args>)
   command! -buffer -bar -nargs=* Rcontroller :call s:ControllerFunc(<bang>0,"app/controllers/","_controller.rb",<f-args>)
@@ -469,6 +490,15 @@ function s:PreviewComplete(A,L,P)
     endif
   endif
   return ret
+endfunction
+
+function! s:Log(bang,arg)
+  if a:arg == ""
+    exe "sfind log/".s:environment().".log"
+    "exe "pedit ".s:escapepath(RailsRoot())."/log/".s:environment().".log"
+  else
+    exe "sfind log/".a:arg.".log"
+  endif
 endfunction
 
 function! s:Migration(bang,arg)
@@ -627,7 +657,7 @@ function! s:ScriptComplete(ArgLead,CmdLine,P)
   elseif cmd =~ '^\%(generate\|destroy\)\s\+'.a:ArgLead."$"
     return "controller\nintegration_test\nmailer\nmigration\nmodel\nplugin\nscaffold\nsession_migration\nweb_service"
   elseif cmd =~ '^\%(console\)\s\+\(--\=\w\+\s\+\)\='.a:ArgLead."$"
-    return "development\ntest\nproduction\n-s\n--sandbox"
+    return s:environments()."\n-s\n--sandbox"
   elseif cmd =~ '^\%(plugin\)\s\+'.a:ArgLead."$"
     return "discover\nlist\ninstall\nupdate\nremove\nsource\nunsource\nsources"
   endif
