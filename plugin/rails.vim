@@ -210,7 +210,7 @@ function! s:BufInit(path)
       setlocal sw=2 sts=2 et
       "set include=\\<\\zsAct\\f*::Base\\ze\\>\\\|^\\s*\\(require\\\|load\\)\\s\\+['\"]\\zs\\f\\+\\ze
       setlocal includeexpr=RailsIncludeexpr()
-      if g:rails_level > 3 && exists('+completefunc') && &completefunc == ''
+      if exists('+completefunc') && &completefunc == ''
         set completefunc=syntaxcomplete#Complete
       endif
     else
@@ -350,7 +350,7 @@ function! s:InitConfig()
   call s:SetOptDefault("rails_mappings",l>2)
   call s:SetOptDefault("rails_abbreviations",l>4)
   call s:SetOptDefault("rails_expensive",l>2)
-  call s:SetOptDefault("rails_avim_commands",l>3)
+  call s:SetOptDefault("rails_avim_commands",l>2)
   call s:SetOptDefault("rails_subversion",l>3)
   call s:SetOptDefault("rails_default_file","README")
   call s:SetOptDefault("rails_default_database","")

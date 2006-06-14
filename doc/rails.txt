@@ -114,7 +114,7 @@ Do not load the plugin. For emergency use only.
 Adds some a.vim compatible aliases for |:Ralternate|, like :A, :AS, :AV, and
 :AT.  This does not require a.vim.  (a.vim is a plugin for easily alternating
 between, for example, foo.c and foo.h.  If it's installed, you can see
-|alternate.txt| for more information.)  Enabled when |g:rails_level| >= 4.
+|alternate.txt| for more information.)  Enabled when |g:rails_level| >= 3.
 
 						*g:rails_default_file*  >
 	let g:rails_default_file='config/database.yml'
@@ -203,6 +203,10 @@ The 'filetype' is sometimes adjusted for Rails files.  Most notably, *.rxml
 and *.rjs are treated as Ruby files, and files that have been falsely
 identified as Mason sources are changed back to ERuby files (but only when
 they are part of a Rails application).
+
+					*rails-'completefunc'*	*rails-'cfu'*
+A 'completefunc' is provided (if not already set).  It is pretty simple, as it
+uses syntax highlighting to make its guess.  See |i_CTRL-X_CTRL-U|.
 
 					*rails-'balloonexpr'*  *rails-'bexpr'*
 If ri is installed, 'balloonexpr' is set up to call it.  In order to use it,
