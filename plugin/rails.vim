@@ -155,6 +155,7 @@ function! s:InitPlugin()
       autocmd BufNewFile,BufRead * call s:Detect(expand("<afile>:p"))
       autocmd BufEnter * call s:SetGlobals()
       autocmd BufLeave * call s:ClearGlobals()
+      autocmd FileType railslog call s:RailslogSyntax()
     augroup END
   endif
   command! -bar -bang -nargs=* -complete=dir Rails :call s:NewApp(<bang>0,<f-args>)
@@ -207,9 +208,10 @@ function! s:BufInit(path)
       setlocal filetype=ruby
     endif
     if expand("%:e") == "log"
-      setlocal modifiable filetype=
+      setlocal modifiable filetype=railslog
       silent! exe "%s/\e\\[[0-9;]*m//g"
-      setlocal readonly nomodifiable autoread
+      silent! exe "%s/\r$//"
+      setlocal readonly nomodifiable autoread foldmethod=syntax
       $
     endif
     call s:BufSyntax()
@@ -310,7 +312,7 @@ function! RailsFileType()
   elseif f =~ '_helper\.rb$'
     let r = "helper"
   elseif f =~ '\<app/models\>'
-    let class = matchstr(top,'\<Acti\w\w[A-Z]\w\+\%(::\h\w*\)\+\>')
+    let class = matchstr(top,'\<Acti\w\w\u\w\+\%(::\h\w*\)\+\>')
     if class != ''
       let class = s:sub(class,'::Base$','')
       let class = tolower(s:gsub(class,'[^A-Z]',''))
@@ -826,6 +828,40 @@ function! s:HiDefaults()
   hi def link yamlRailsDelimiter              Delimiter
   hi def link yamlRailsMethod                 railsMethod
   hi def link yamlRailsComment                Comment
+endfunction
+
+function s:RailslogSyntax()
+  syn match   railslogRender      '^\s*\<\%(Processing\|Rendering\|Rendered\|Redirected\|Completed\)\>'
+  syn match   railslogComment     '^\s*# .*'
+  syn match   railslogModel       '^\s*\u\w* \%(Load\|Columns\)\>' skipwhite nextgroup=railslogModelNum
+  syn match   railslogModel       '^\s*SQL\>' skipwhite nextgroup=railslogModelNum
+  syn region  railslogModelNum    start='(' end=')' contains=railslogNumber contained skipwhite nextgroup=railslogSQL
+  syn match   railslogSQL         '\u.*$' contained
+  syn match   railslogNumber      '\<\d\+\>%'
+  syn match   railslogNumber      '[ (]\@<=\<\d\+\.\d\+\>'
+  syn region  railslogString      start='"' skip='\\"' end='"' oneline contained
+  syn region  railslogHash        start='{' end='}' oneline contains=railslogHash,railslogString
+  syn match   railslogIP          '\<\d\{1,3\}\%(\.\d\{1,3}\)\{3\}\>'
+  syn match   railslogTimestamp   '\<\d\d\d\d-\d\d-\d\d \d\d:\d\d:\d\d\>'
+  syn match   railslogSessionID   '\<\x\{32\}\>'
+  syn match   railslogIdentifier  '^\s*\%(Session ID\|Parameters\)\ze:'
+  syn match   railslogSuccess     '\<2\d\d \u[A-Za-z0-9 ]*\>'
+  syn match   railslogRedirect    '\<3\d\d \u[A-Za-z0-9 ]*\>'
+  syn match   railslogError       '\<[45]\d\d \u[A-Za-z0-9 ]*\>'
+  syn keyword railslogHTTP        OPTIONS GET HEAD POST PUT DELETE TRACE CONNECT
+  syn region  railslogStackTrace  start=":\d\+:in `\w\+'$" end="^\s*$" keepend fold
+  hi def link railslogComment     Comment
+  hi def link railslogRender      Keyword
+  hi def link railslogModel       Type
+  hi def link railslogSQL         PreProc
+  hi def link railslogNumber      Number
+  hi def link railslogString      String
+  hi def link railslogSessionID   Constant
+  hi def link railslogIdentifier  Identifier
+  hi def link railslogSuccess     Special
+  hi def link railslogRedirect    railslogSuccess
+  hi def link railslogError       Error
+  hi def link railslogHTTP        Special
 endfunction
 
 " }}}1
