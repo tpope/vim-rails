@@ -163,6 +163,9 @@ endfunction
 
 function! s:Detect(filename)
   let fn = fnamemodify(a:filename,":p")
+  if fn =~ '[\/]config[\/]environment\.rb$'
+    return s:BufInit(strpart(fn,0,strlen(fn)-22))
+  endif
   if isdirectory(fn)
     let fn = fnamemodify(fn,":s?[\/]$??")
   else
@@ -631,9 +634,9 @@ function! s:Find(bang,count,arg,...)
       let str = str . s:escapepath(a:{i}) . " "
       let i = i + 1
     endwhile
-    let file = s:escapepath(RailsUnderscore(a:{i},1))
+    let file = s:escapepath(RailsIncludefind(a:{i},1))
   else
-    "let file = RailsUnderscore(expand("<cfile>"),1)
+    "let file = RailsIncludefind(expand("<cfile>"),1)
     let file = s:RailsFind()
   endif
 "  echo a:count.a:arg."find ".str.s:escapepath(file)
@@ -642,7 +645,7 @@ endfunction
 
 function! s:FindList(ArgLead, CmdLine, CursorPos)
   if exists("*UserFileComplete") " genutils.vim
-    return UserFileComplete(RailsUnderscore(a:ArgLead), a:CmdLine, a:CursorPos, 1, &path)
+    return UserFileComplete(RailsIncludefind(a:ArgLead), a:CmdLine, a:CursorPos, 1, &path)
   else
     return ""
   endif
@@ -787,7 +790,7 @@ endfunction
 
 function! s:ControllerFunc(bang,prefix,suffix,...)
   if a:0
-    let c = s:sub(RailsUnderscore(a:1),'\.rb$','')
+    let c = s:sub(RailsIncludefind(a:1),'\.rb$','')
   else
     let c = s:controller()
   endif
@@ -1039,9 +1042,9 @@ endfunction
 function! RailsIncludeexpr()
   " Is this foolproof?
   if mode() =~ '[iR]' || expand("<cfile>") != v:fname
-    return RailsUnderscore(v:fname)
+    return RailsIncludefind(v:fname)
   else
-    return RailsUnderscore(v:fname,1)
+    return RailsIncludefind(v:fname,1)
   endif
 endfunction
 
@@ -1091,9 +1094,9 @@ function! s:RailsFind()
   " UGH
   let res = s:findamethod('belongs_to\|has_one\|composed_of','app/models/\1')
   if res != ""|return res|endif
-  let res = s:RailsSingularize(s:findamethod('has_many\|has_and_belongs_to_many','app/models/\1'))
+  let res = s:singularize(s:findamethod('has_many\|has_and_belongs_to_many','app/models/\1'))
   if res != ""|return res|endif
-  let res = s:RailsSingularize(s:findasymbol('through','app/models/\1'))
+  let res = s:singularize(s:findasymbol('through','app/models/\1'))
   if res != ""|return res|endif
   let res = s:findamethod('fixtures','test/fixtures/\1')
   if res != ""|return res|endif
@@ -1126,12 +1129,21 @@ function! s:RailsFind()
   let isf_keep = &isfname
   set isfname=@,48-57,/,-,_,: ",\",'
   let cfile = expand("<cfile>")
-  let res = RailsUnderscore(cfile,1)
+  let res = RailsIncludefind(cfile,1)
   let &isfname = isf_keep
   return res
 endfunction
 
-function! RailsUnderscore(str,...)
+function! s:underscore(str)
+  let str = s:gsub(a:str,'::','/')
+  let str = s:gsub(str,'\(\u\+\)\(\u\l\)','\1_\2')
+  let str = s:gsub(str,'\(\l\|\d\)\(\u\)','\1_\2')
+  let str = s:gsub(str,'-','_')
+  let str = tolower(str)
+  return str
+endfunction
+
+function! RailsIncludefind(str,...)
   if a:str == "ApplicationController"
     return "controllers/application.rb"
   elseif a:str == "<%="
@@ -1151,16 +1163,12 @@ function! RailsUnderscore(str,...)
   let str = substitute(str,'^\s*','','')
   let str = substitute(str,'\s*$','','')
   let str = substitute(str,'^[:@]','','')
-  "    let str = substitute(str,"\\([\"']\\)\\(.*\\)\\1",'\2','')
+  "let str = substitute(str,"\\([\"']\\)\\(.*\\)\\1",'\2','')
   let str = s:gsub(str,"[\"']",'')
   if line =~ '\<\(require\|load\)\s*(\s*$'
     return str
   endif
-  let str = s:gsub(str,'::','/')
-  let str = s:gsub(str,'\(\u\+\)\(\u\l\)','\1_\2')
-  let str = s:gsub(str,'\(\l\|\d\)\(\u\)','\1_\2')
-  let str = s:gsub(str,'-','_')
-  let str = tolower(str)
+  let str = s:underscore(str)
   let fpat = '\(\s*\%("\f*"\|:\f*\|'."'\\f*'".'\)\s*,\s*\)*'
   if a:str =~ '\u'
     " Classes should always be in .rb files
@@ -1188,7 +1196,7 @@ function! RailsUnderscore(str,...)
   elseif line =~ '\<\(has_one\|belongs_to\)\s*(\=\s*'
     let str = 'models/'.str.'.rb'
   elseif line =~ '\<has_\(and_belongs_to_\)\=many\s*(\=\s*'
-    let str = 'models/'.s:RailsSingularize(str).'.rb'
+    let str = 'models/'.s:singularize(str).'.rb'
   elseif line =~ '\<def\s\+' && expand("%:t") =~ '_controller\.rb'
     let str = s:sub(s:sub(RailsFilePath(),'/controllers/','/views/'),'_controller\.rb$','/'.str)
     "let str = substitute(expand("%:p"),'.*[\/]app[\/]controllers[\/]\(.\{-\}\)_controller.rb','views/\1','').'/'.str
@@ -1201,7 +1209,7 @@ function! RailsUnderscore(str,...)
     endif
   else
     " If we made it this far, we'll risk making it singular.
-    let str = s:RailsSingularize(str)
+    let str = s:singularize(str)
     let str = substitute(str,'_id$','','')
   endif
   if str =~ '^/' && !filereadable(str)
@@ -1210,7 +1218,7 @@ function! RailsUnderscore(str,...)
   return str
 endfunction
 
-function! s:RailsSingularize(word)
+function! s:singularize(word)
   " Probably not worth it to be as comprehensive as Rails but we can
   " still hit the common cases.
   let word = a:word
@@ -1227,9 +1235,9 @@ function! s:Alternate(bang,cmd)
   let f = RailsFilePath()
   let t = RailsFileType()
   if f =~ '\<config/database.yml$' || f =~ '\<config/environments/' || f == 'README'
-    find environment.rb
-  elseif f =~ '\<config/environment.rb$' || f =~ 'schema.rb$'
-    find database.yml
+    exe cmd." environment.rb"
+  elseif f =~ '\<config/environment\.rb$' || f =~ '\<db/schema\.rb$'
+    exe cmd." database.yml"
   elseif t =~ '^view\>'
     if t =~ '\<layout\>'
       let dest = fnamemodify(f,':r:s?/layouts\>??').'/layout'
@@ -1252,7 +1260,7 @@ function! s:Alternate(bang,cmd)
     elseif filereadable(b:rails_root."/".model)
       exe cmd." ".s:escapepath(model)
     else
-      exe cmd." ".s:escapepath(controller)
+      exe cmd." ".s:escapepath(helper)
     endif
   elseif t =~ '^controller-api\>'
     let api = substitute(substitute(f,'/controllers/','/apis/',''),'_controller\.rb$','_api.rb','')
@@ -1261,7 +1269,7 @@ function! s:Alternate(bang,cmd)
     let controller = substitute(substitute(f,'/helpers/','/controllers/',''),'_helper\.rb$','_controller.rb','')
     exe cmd." ".s:escapepath(controller)
   elseif t =~ '\<fixtures\>'
-    let file = s:RailsSingularize(expand("%:t:r")).'_test'
+    let file = s:singularize(expand("%:t:r")).'_test'
     exe cmd." ".s:escapepath(file)
   else
     let file = fnamemodify(f,":t:r")

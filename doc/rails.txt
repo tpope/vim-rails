@@ -326,7 +326,10 @@ COMMANDS					*rails-commands*
 						*rails-:Rlog*
 :Rlog [{logfile}]	Split window and open {logfile} ($RAILS_ENV or
 			development by default).  The control characters used
-			for highlighting are removed.
+			for highlighting are removed.  The usefulness of this
+			command is somewhat limited by the current failure to
+			reload the file on change  (you might try
+			TailMinusF.vim from vim.org).
 
 						*rails-:Ralternate*
 :Ralternate		Load the "alternate" file.  See
@@ -340,9 +343,11 @@ COMMANDS					*rails-commands*
 
 						*rails-:Rproject*
 :Rproject [{file}]	This command is only provided when the |project|
-			plugin is installed.  Invoke :Project, and search for
-			the root of the current Rails application.  If it is
-			not found, create a new project.
+			plugin is installed.  Invoke :Project (typically
+			without an argument), and search for the root of the
+			current Rails application.  If it is not found, create
+			a new project, with appropriate directories (app,
+			etc., but not vendor).
 
 						*rails-:Rpartial*
 :[range]Rpartial [{controller}/]{name}	
