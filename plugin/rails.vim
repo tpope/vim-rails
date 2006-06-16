@@ -506,7 +506,101 @@ function! s:Log(bang,arg)
 endfunction
 
 function! s:Project(bang,arg)
-  return s:warn("Coming soon!")
+  let rr = RailsRoot()
+  exe "Project".(a:bang ? '!' : '').' '.a:arg
+  let line = search('^[^ =]*="'.s:gsub(rr,'[\/]','[\/]').'"')
+  if !line
+    $
+    if line('.') > 1
+      append
+
+.
+    endif
+    let line = line('.')+1
+    call s:NewProject(rr)
+  endif
+  normal! zMzo
+  if search("^ app=app {","W",line+10)
+    normal! zo
+    exe line
+  endif
+  normal! 0zt
+endfunction
+
+function! s:NewProject(rr)
+    let projname = s:gsub(fnamemodify(a:rr,':t'),'=','-').'_on_rails'
+    let line = line('.')+1
+    exe "norm! o".projname.'="'.a:rr.'" CD=. filter="*" {'."\<Esc>"
+    append
+ app=app {
+.
+    if isdirectory(a:rr.'/app/apis')
+      append
+  apis=apis {
+  }
+.
+    endif
+    append
+  controllers=controllers filter="**" {
+  }
+  helpers=helpers filter="**" {
+  }
+  models=models filter="**" {
+  }
+  views=views filter="**" {
+  }
+ }
+ components=components filter="**" {
+ }
+ config=config {
+  environments=environments {
+  }
+ }
+ db=db {
+.
+    if isdirectory(a:rr.'/db/migrate')
+      append
+  migrate=migrate {
+  }
+.
+    endif
+    append
+ }
+ lib=lib {
+  tasks=tasks {
+  }
+ }
+ public=public {
+  images=images {
+  }
+  javascripts=javascripts {
+  }
+  stylesheets=stylesheets {
+  }
+ }
+ test=test {
+  fixtures=fixtures filter="**"{
+  }
+  functional=functional filter="**" {
+  }
+  integration=integration filter="**" {
+  }
+  mocks=mocks filter="**" {
+  }
+  unit=unit filter="**" {
+  }
+ }
+}
+.
+    exe line
+    " UGH. how else can I force detecting folds?
+    setlocal foldmethod=manual
+    setlocal foldmethod=marker
+    setlocal nomodified
+    " FIXME: make undo stop here
+    if !exists("maplocalleader") " FIXME
+      silent! normal \R
+    endif
 endfunction
 
 function! s:Migration(bang,arg)
