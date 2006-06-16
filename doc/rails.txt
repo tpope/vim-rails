@@ -274,9 +274,9 @@ to change.
 						*<Plug>RailsAlternate*
 <Plug>RailsAlternate	Switch to the "alternate" file.  Typically this just
 <LocalLeader>ra		adds or removes "_test" from the filename, but try it
-			in lots of places; you may be surprised. >
-				:map <Leader>ra <Plug>RailsAlternate
-<
+			in lots of places; you may be surprised.  This
+			might be replaced by |rails-:A| and friends.
+
 						*<Plug>RailsMagicM*
 <Plug>RailsMagicM	Magic.  Maybe it will execute the current test Method,
 <LocalLeader>rm		or Make all test Methods in the current test run.
@@ -284,6 +284,11 @@ to change.
 			current Model.  Or Maybe it will find the controller
 			Method for your view, or vice versa.  You Might find
 			it easiest to try it yourself.
+
+						*<Plug>RailsFind*
+<Plug>RailsFind		Find the file under the cursor, taking into account
+<LocalLeader>rf		context.  This command is quite intelligent:  See
+gf			|rails-gf| for details.
 
 ==============================================================================
 COMMANDS					*rails-commands*
@@ -330,6 +335,20 @@ COMMANDS					*rails-commands*
 			command is somewhat limited by the current failure to
 			reload the file on change  (you might try
 			TailMinusF.vim from vim.org).
+
+						*rails-:Rpreview*
+:Rpreview [{path}]	Highly experimental command.  Creates a URL from
+			http://localhost:3000/ and the {path} given.  If
+			{path} is omitted, a sensible default is used.  The
+			not too useful default is to then edit this URL using
+			Vim itself, allowing |netrw| to download it.  More
+			useful is to define a :OpenURL command, which will be
+			used instead.  An example command on a Mac might be: >
+		:command -bar -nargs=1 OpenURL :!open <args>
+<			The following appears to work on Windows: >
+		:command -bar -nargs=1 OpenURL :!start cmd /cstart /b <args>
+<			Other operating systems are left as an exercise to the
+			reader.
 
 						*rails-:Ralternate*
 :Ralternate		Load the "alternate" file.  See

@@ -380,6 +380,7 @@ function! s:InitConfig()
   call s:SetOptDefault("rails_default_file","README")
   call s:SetOptDefault("rails_default_database","")
   call s:SetOptDefault("rails_leader","<LocalLeader>r")
+  call s:SetOptDefault("rails_root_url",'http://localhost:3000/')
   if l > 3
     "call s:SetOptDefault("ruby_no_identifiers",1)
     call s:SetOptDefault("rubycomplete_rails",1)
@@ -459,12 +460,14 @@ function s:RakeComplete(A,L,P)
 endfunction
 
 function s:Preview(bang,arg)
+  let root = exists("b:rails_root_url") ? b:rails_root_url : g:rails_root_url
+  let root = s:sub(root,'/$','')
   if a:arg =~ '://'
     let uri = a:arg
   elseif a:arg != ''
-    let uri = 'http://localhost:3000/'.s:sub(a:arg,'^/','')
+    let uri = root.'/'.s:sub(a:arg,'^/','')
   else
-    let uri = 'http://localhost:3000/'
+    let uri = root.'/'
     if s:controller() != '' && s:controller() != 'application'
       let uri = uri.s:controller().'/'
       if RailsFileType() =~ '^view\%(-partial\|-layout\)\@!'
