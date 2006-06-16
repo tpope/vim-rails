@@ -95,7 +95,8 @@ specification.
 						*config/rails.vim*
 If you have settings particular to a specific project, they can be put in a
 config/rails.vim file in the root directory of that application.  The file is
-sourced in the |sandbox| for security reasons.
+sourced in the |sandbox| for security reasons.  This only works in Vim 7 or
+newer.
 
 A few global variables control the behavior of this plugin.  In general, they
 can be enabled by setting them to 1 in your vimrc, and disabled by setting
@@ -141,12 +142,13 @@ Database to use for new applications.  Defaults to letting Rails decide.
 	let g:rails_expensive=1
 Enables or disables expensive (slow) features (typically involving calls to
 the Ruby interpreter).  Recommended for moderately fast computers.  Enabled
-when |g:rails_level| >= 3.
+when |g:rails_level| >= 3 (>= 4 on Windows, which is decidedly slower in the
+author's experience).
 
 						*g:rails_isfname*  >
 	let g:rails_isfname=1
 Enables changes to the 'isfname' option.  Enabled when |g:rails_level| >= 4.
-See |rails-'isfname'|.
+See |rails-'isfname'|.  Should no longer be necessary.
 
 						*g:rails_leader*  >
 	let g:rails_leader='<LocalLeader>r'

@@ -254,7 +254,7 @@ function! s:BufInit(path)
     let t = "-".t
   endif
   exe "silent doautocmd User Rails".t."-"
-  if filereadable(b:rails_root."/config/rails.vim")
+  if filereadable(b:rails_root."/config/rails.vim") && exists(":sandbox")
     sandbox exe "source ".rp."/config/rails.vim"
   endif
   return b:rails_root
@@ -374,7 +374,7 @@ function! s:InitConfig()
   call s:SetOptDefault("rails_isfname",l>3)
   call s:SetOptDefault("rails_mappings",l>2)
   call s:SetOptDefault("rails_abbreviations",l>4)
-  call s:SetOptDefault("rails_expensive",l>2)
+  call s:SetOptDefault("rails_expensive",l>(2+(has("win32")||has("win32unix"))))
   call s:SetOptDefault("rails_avim_commands",l>2)
   call s:SetOptDefault("rails_subversion",l>3)
   call s:SetOptDefault("rails_default_file","README")
