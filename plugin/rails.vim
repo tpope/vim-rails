@@ -423,7 +423,7 @@ function! s:BufCommands()
     command! -buffer -bar -nargs=0 AT :call s:Alternate(<bang>0,"tabfind")
   endif
   if exists(":Project")
-    command! -buffer -bar -nargs=? Rproject :call s:Project(<bang>0,<q-args>)
+    command! -buffer -bar -bang -nargs=? Rproject :call s:Project(<bang>0,<q-args>)
   endif
   let ext = expand("%:e")
   if ext == "rhtml" || ext == "rxml" || ext == "rjs" || ext == "mab"
@@ -513,17 +513,32 @@ endfunction
 
 function! s:Project(bang,arg)
   let rr = RailsRoot()
-  exe "Project".(a:bang ? '!' : '').' '.a:arg
+  exe "Project ".a:arg
   let line = search('^[^ =]*="'.s:gsub(rr,'[\/]','[\/]').'"')
-  if !line
+  let projname = s:gsub(fnamemodify(rr,':t'),'=','-') " .'_on_rails'
+  if line && a:bang
+    let projname = matchstr(getline('.'),'^[^=]*')
+    " Most of this would be unnecessary if the project.vim author had just put
+    " the newlines AFTER each project rather than before.  Ugh.
+    norm zR0"_d%
+    if getline('.') > 2
+      delete _
+    endif
+    if getline('.') != getline('$')
+      .-2
+    endif
+    let line = 0
+  elseif !line
     $
+  endif
+  if !line
     if line('.') > 1
       append
 
 .
     endif
     let line = line('.')+1
-    call s:NewProject(rr)
+    call s:NewProject(projname,rr,a:bang)
   endif
   normal! zMzo
   if search("^ app=app {","W",line+10)
@@ -533,80 +548,59 @@ function! s:Project(bang,arg)
   normal! 0zt
 endfunction
 
-function! s:NewProject(rr)
-    let projname = s:gsub(fnamemodify(a:rr,':t'),'=','-') " .'_on_rails'
+function s:NewProject(proj,rr,fancy)
     let line = line('.')+1
-    exe "norm! o".projname.'="'.a:rr.'" CD=. filter="*" {'."\<Esc>"
-    append
- app=app {
-.
-    if isdirectory(a:rr.'/app/apis')
-      append
-  apis=apis {
-  }
-.
-    endif
-    append
-  controllers=controllers filter="**" {
-  }
-  helpers=helpers filter="**" {
-  }
-  models=models filter="**" {
-  }
-  views=views filter="**" {
-  }
- }
- components=components filter="**" {
- }
- config=config {
-  environments=environments {
-  }
- }
- db=db {
-.
-    if isdirectory(a:rr.'/db/migrate')
-      append
-  migrate=migrate {
-  }
-.
-    endif
-    append
- }
- lib=lib {
-  tasks=tasks {
-  }
- }
- public=public {
-  images=images {
-  }
-  javascripts=javascripts {
-  }
-  stylesheets=stylesheets {
-  }
- }
- test=test {
-  fixtures=fixtures filter="**"{
-  }
-  functional=functional filter="**" {
-  }
-  integration=integration filter="**" {
-  }
-  mocks=mocks filter="**" {
-  }
-  unit=unit filter="**" {
-  }
- }
-}
-.
+    let template = s:NewProjectTemplate(a:proj,a:rr,a:fancy)
+    silent put =template
     exe line
-    " UGH. how else can I force detecting folds?
+    " Ugh. how else can I force detecting folds?
     setlocal foldmethod=manual
     setlocal foldmethod=marker
     setlocal nomodified
     " FIXME: make undo stop here
-    if !exists("maplocalleader") " FIXME
+    if !exists("g:maplocalleader")
       silent! normal \R
+    else " Needs to be tested
+      exe 'silent! normal '.g:maplocalleader.'R'
     endif
+endfunction
+
+function! s:NewProjectTemplate(proj,rr,fancy)
+  let str = a:proj.'="'.a:rr."\" CD=. filter=\"*\" {\n"
+  let str = str." app=app {\n"
+  if isdirectory(a:rr.'/app/apis')
+    let str = str."  apis=apis {\n  }\n"
+  endif
+  let str = str."  controllers=controllers filter=\"**\" {\n  }\n"
+  let str = str."  helpers=helpers filter=\"**\" {\n  }\n"
+  let str = str."  models=models filter=\"**\" {\n  }\n"
+  if a:fancy
+    let str = str."  views=views {\n"
+    let views = s:RealMansGlob(a:rr.'/app/views','*')."\n"
+    while views != ''
+      let dir = matchstr(views,'^.\{-\}\ze\n')
+      let views = s:sub(views,'^.\{-\}\n','')
+      let str = str."   ".dir."=".dir.' glob="**" {'."\n   }\n"
+    endwhile
+    let str = str."  }\n"
+  else
+    let str = str."  views=views filter=\"**\" {\n  }\n"
+  endif
+  let str = str . " }\n components=components filter=\"**\" {\n }\n"
+  let str = str . " config=config {\n  environments=environments {\n  }\n }\n"
+  let str = str . " db=db {\n"
+  if isdirectory(a:rr.'/db/migrate')
+    let str = str . "  migrate=migrate {\n  }\n"
+  endif
+  let str = str . " }\n"
+  let str = str . " lib=lib {\n  tasks=tasks {\n  }\n }\n"
+  let str = str . " public=public {\n  images=images {\n  }\n  javascripts=javascripts {\n  }\n  stylesheets=stylesheets {\n  }\n }\n"
+  let str = str . " test=test {\n  fixtures=fixtures filter=\"**\" {\n  }\n  functional=functional filter=\"**\" {\n  }\n"
+  if isdirectory(a:rr.'/test/integration')
+    let str = str . "  integration=integration filter=\"**\" {\n  }\n"
+  endif
+  let str = str . "  mocks=mocks filter=\"**\" {\n  }\n  unit=unit filter=\"**\" {\n  }\n }\n}\n"
+  return str
 endfunction
 
 function! s:Migration(bang,arg)
