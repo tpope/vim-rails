@@ -514,17 +514,17 @@ endfunction
 function! s:Project(bang,arg)
   let rr = RailsRoot()
   exe "Project ".a:arg
-  let line = search('^[^ =]*="'.s:gsub(rr,'[\/]','[\/]').'"')
+  let line = search('^[^ =]*="'.s:gsub(rr,'[\/]','[\\/]').'"')
   let projname = s:gsub(fnamemodify(rr,':t'),'=','-') " .'_on_rails'
   if line && a:bang
     let projname = matchstr(getline('.'),'^[^=]*')
     " Most of this would be unnecessary if the project.vim author had just put
     " the newlines AFTER each project rather than before.  Ugh.
     norm zR0"_d%
-    if getline('.') > 2
+    if line('.') > 2
       delete _
     endif
-    if getline('.') != getline('$')
+    if line('.') != line('$')
       .-2
     endif
     let line = 0
