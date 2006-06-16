@@ -211,7 +211,7 @@ function! s:BufInit(path)
       setlocal modifiable filetype=railslog
       silent! exe "%s/\e\\[[0-9;]*m//g"
       silent! exe "%s/\r$//"
-      setlocal readonly nomodifiable autoread foldmethod=syntax
+      setlocal readonly nomodifiable noswapfile autoread foldmethod=syntax
       $
     endif
     call s:BufSyntax()
@@ -418,9 +418,11 @@ function! s:BufCommands()
     command! -buffer -bar -nargs=0 AV :call s:Alternate(<bang>0,"vert sfind")
     command! -buffer -bar -nargs=0 AT :call s:Alternate(<bang>0,"tabfind")
   endif
+  if exists(":Project")
+    command! -buffer -bar -nargs=? Rproject :call s:Project(<bang>0,<q-args>)
+  endif
   let ext = expand("%:e")
   if ext == "rhtml" || ext == "rxml" || ext == "rjs" || ext == "mab"
-    command! -buffer -bar -nargs=? -range Partial :echoerr Use :Rpartial instead
     command! -buffer -bar -nargs=? -range Rpartial :<line1>,<line2>call s:MakePartial(<bang>0,<f-args>)
   endif
 endfunction
@@ -501,6 +503,10 @@ function! s:Log(bang,arg)
   else
     exe "sfind log/".a:arg.".log"
   endif
+endfunction
+
+function! s:Project(bang,arg)
+  return s:warn("Coming soon!")
 endfunction
 
 function! s:Migration(bang,arg)
@@ -858,8 +864,8 @@ function s:RailslogSyntax()
   hi def link railslogString      String
   hi def link railslogSessionID   Constant
   hi def link railslogIdentifier  Identifier
-  hi def link railslogSuccess     Special
   hi def link railslogRedirect    railslogSuccess
+  hi def link railslogSuccess     Special
   hi def link railslogError       Error
   hi def link railslogHTTP        Special
 endfunction
