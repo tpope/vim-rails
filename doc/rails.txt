@@ -86,9 +86,9 @@ loaded, you can use an autocommand like the following in your vimrc: >
 You can also have autocommands that only apply to certain types of files.
 These are based off the information shown in the statusline (see
 |rails-'statusline'|), with hyphens changed to asterisks. A few examples: >
-	autocmd User Rails*test*	iabbr ae assert_equal
-	autocmd User Rails*view*rhtml*	nmap <C-T> <Plug>RailsMagicM
-	autocmd User Rails*model*ar*	iabbr habtm has_and_belongs_to_many
+	autocmd User Rails*test*	iabbr <buffer> ae assert_equal
+	autocmd User Rails*view*rhtml*	nmap  <buffer> <C-T> <Plug>RailsMagicM
+	autocmd User Rails*model*ar*	iabbr <buffer> vfo validates_format_of
 End all Rails autocommands with asterisks, even if you have an exact
 specification.
 
@@ -113,9 +113,9 @@ value	meaning ~
 -1	Completely disabled.
 0	User level autocommands only.
 1	Minimal features; mainly option management.
-2	Default.
-3	Adds a few niceties like mappings and the statusline.  Recommended.
-4	Enables all normal features.  Author's choice.
+2	Default, minus a few niceties like mappings and the statusline.
+3	Default.  Includes all but a few possibly disruptive features.
+4	Enables all normal features.  Recommended.
 5+	Experimental features.
 
 						*g:loaded_rails*  >
@@ -137,7 +137,7 @@ File to load when a new Rails application is created.  Defaults to the README.
 	let g:rails_default_database='sqlite3'
 Database to use for new applications.  Defaults to letting Rails decide.
  
-						*g:rails_expensive*  >
+					*rails-slow* *g:rails_expensive*  >
 	let g:rails_expensive=1
 Enables or disables expensive (slow) features (typically involving calls to
 the Ruby interpreter).  Recommended for moderately fast computers.  Enabled
@@ -167,6 +167,12 @@ the current filetype is in your existing 'statusline'.  Enabled when
 	let g:rails_syntax=1
 When enabled, this tweaks the syntax highlighting to be more Rails friendly.
 Enabled when |g:rails_level| >= 2.
+
+						*g:rails_subversion*  >
+	let g:rails_subversion=1
+Automatically add/remove files to the subversion repository for commands like
+|:Rgenerate| and |:Rdestroy|.  Ignored when the application is not part of a
+subversion repository.  Enabled with |g:rails_level| >= 3.
 
 						*g:rails_root_url*  >
 	let g:rails_root_url='http://localhost:3000/'

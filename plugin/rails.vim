@@ -367,7 +367,7 @@ function! s:SetOptDefault(opt,val)
 endfunction
 
 function! s:InitConfig()
-  call s:SetOptDefault("rails_level",2)
+  call s:SetOptDefault("rails_level",3)
   let l = g:rails_level
   call s:SetOptDefault("rails_statusline",l>2)
   call s:SetOptDefault("rails_syntax",l>1)
