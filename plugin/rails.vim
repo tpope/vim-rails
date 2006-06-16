@@ -371,7 +371,7 @@ function! s:InitConfig()
   let l = g:rails_level
   call s:SetOptDefault("rails_statusline",l>2)
   call s:SetOptDefault("rails_syntax",l>1)
-  call s:SetOptDefault("rails_isfname",l>1)
+  call s:SetOptDefault("rails_isfname",l>3)
   call s:SetOptDefault("rails_mappings",l>2)
   call s:SetOptDefault("rails_abbreviations",l>4)
   call s:SetOptDefault("rails_expensive",l>2)

@@ -132,7 +132,7 @@ when |g:rails_level| >= 3.
 
 						*g:rails_isfname*  >
 	let g:rails_isfname=1
-Enables changes to the 'isfname' option.  Enabled when |g:rails_level| >= 2.
+Enables changes to the 'isfname' option.  Enabled when |g:rails_level| >= 4.
 See |rails-'isfname'|.
 
 						*g:rails_leader*  >
@@ -189,8 +189,8 @@ in |rails-gf|.
 The |rails-gf| feature is further enhanced by changing 'isfname'.
 Unfortunately, this is a global option.  To compensate, the plugin attempts to
 restore this option upon changing buffers.  If this causes problems for you,
-disable the |g:rails_isfname| setting.  Also, please explain your problem to
-the |rails-plugin-author|, so that it might be addressed in a future release.
+disable the |g:rails_isfname| setting.  This is deprecated, as the feature is
+now accomplished by remapping gf.
 
 					*rails-'makeprg'*	*rails-'mp'*
 					*rails-'errorformat'*	*rails-'efm'*
@@ -339,7 +339,9 @@ COMMANDS					*rails-commands*
 :A			These are compatible with Michael Sharpe's a.vim (but
 :AS			do not make use of that plugin).  Briefly, they edit,
 :AV			split, vertical split, and tabify the "alternate"
-:AT			file.  |g:rails_avim_commands| must be enabled.
+:AT			file.  |g:rails_avim_commands| must be enabled.  This
+			is likely to become the preferred interface in the
+			future.
 
 						*rails-:Rproject*
 :Rproject [{file}]	This command is only provided when the |project|
