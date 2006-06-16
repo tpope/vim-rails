@@ -76,13 +76,26 @@ buffer-specific commands.
 ==============================================================================
 CONFIGURATION					*rails-configuration*
 
-Little configuration should need to be done; this plugin automatically detects
-and adjusts Vim sensibly and subtly.  If you would like to set your own custom
-Vim settings when ever a Rails file is loaded, you can use an autocmd like the
-following in your vimrc: >
-	autocmd User Rails* Rlcd
-	autocmd User Rails* iabbr habtm has_and_belongs_to_many
-Note the use of an asterisk; this is required to allow for future expansion.
+Very little configuration is actually required; this plugin automatically
+detects and adjusts Vim sensibly and subtly.
+
+					*rails-:autocmd* *rails-autocommands*
+If you would like to set your own custom Vim settings whenever a Rails file is
+loaded, you can use an autocommand like the following in your vimrc: >
+	autocmd User Rails*		silent! Rlcd
+You can also have autocommands that only apply to certain types of files.
+These are based off the information shown in the statusline (see
+|rails-'statusline'|), with hyphens changed to asterisks. A few examples: >
+	autocmd User Rails*test*	iabbr ae assert_equal
+	autocmd User Rails*view*rhtml*	nmap <C-T> <Plug>RailsMagicM
+	autocmd User Rails*model*ar*	iabbr habtm has_and_belongs_to_many
+End all Rails autocommands with asterisks, even if you have an exact
+specification.
+
+						*config/rails.vim*
+If you have settings particular to a specific project, they can be put in a
+config/rails.vim file in the root directory of that application.  The file is
+sourced in the |sandbox| for security reasons.
 
 A few global variables control the behavior of this plugin.  In general, they
 can be enabled by setting them to 1 in your vimrc, and disabled by setting
@@ -155,6 +168,11 @@ the current filetype is in your existing 'statusline'.  Enabled when
 When enabled, this tweaks the syntax highlighting to be more Rails friendly.
 Enabled when |g:rails_level| >= 2.
 
+						*g:rails_root_url*  >
+	let g:rails_root_url='http://localhost:3000/'
+Used for the |:Rpreview| command.  Default is as shown above.  Overridden by
+b:rails_root_url.
+
 When g:rails_syntax is enabled, you may find your Ruby files to be a bit heavy
 on the cyan (or however your Identifiers are highlighted).  You may want to
 enable g:ruby_no_identifiers, as explained in |ft-ruby-syntax|.
@@ -191,6 +209,12 @@ Unfortunately, this is a global option.  To compensate, the plugin attempts to
 restore this option upon changing buffers.  If this causes problems for you,
 disable the |g:rails_isfname| setting.  This is deprecated, as the feature is
 now accomplished by remapping gf.
+
+					*rails-'statusline'*	*rails-'stl'*
+Useful information is added to the 'statusline', but only when the existing
+statusline contains the file type (this is not the default) and
+|g:rails_statusline| is enabled.  This option is set globally because it
+appears to have no side effects.
 
 					*rails-'makeprg'*	*rails-'mp'*
 					*rails-'errorformat'*	*rails-'efm'*
@@ -390,7 +414,7 @@ If this is your file, in app/views/blog/show.rhtml: >
 
 And you issue this command: >
 
-	:2,3Partial post
+	:2,3Rpartial post
 
 Your file will change to this: >
 
@@ -416,7 +440,7 @@ The end result would have been this: >
 <
 The easiest way to choose what to extract is to use |linewise-visual| mode.
 Then, a simple >
-	:'<,'>Partial blog/post
+	:'<,'>Rpartial blog/post
 will suffice. (Note the use of a controller name in this example.)
 
 ==============================================================================
@@ -424,6 +448,11 @@ TODO						*rails-todo*
 
 Abbrevations.  You can enable some experimental ones with
 |g:rails_abbreviations| (but don't tell anyone).  Try pa[ and rp<Tab>.
+
+Create and maintain some sort of changelog.
+
+Include a note instructing users to contact the |rails-plugin-author| with all
+comments, compliments, and complaints.  Oh, I guess I just did.
 
 ==============================================================================
 vim:tw=78:ts=8:ft=help:norl:
