@@ -534,7 +534,7 @@ function! s:Project(bang,arg)
 endfunction
 
 function! s:NewProject(rr)
-    let projname = s:gsub(fnamemodify(a:rr,':t'),'=','-').'_on_rails'
+    let projname = s:gsub(fnamemodify(a:rr,':t'),'=','-') " .'_on_rails'
     let line = line('.')+1
     exe "norm! o".projname.'="'.a:rr.'" CD=. filter="*" {'."\<Esc>"
     append
@@ -1159,14 +1159,14 @@ function! RailsIncludefind(str,...)
     " Get the text before the filename under the cursor.
     " We'll cheat and peak at this in a bit
     let line = s:linepeak()
-    let line = substitute(line,'\([:"'."'".']\|%[qQ]\=[[({<]\)\=\f*$','','')
+    let line = s:sub(line,'\([:"'."'".']\|%[qQ]\=[[({<]\)\=\f*$','')
   else
     let line = ""
   endif
-  let str = substitute(str,'^\s*','','')
-  let str = substitute(str,'\s*$','','')
-  let str = substitute(str,'^[:@]','','')
-  "let str = substitute(str,"\\([\"']\\)\\(.*\\)\\1",'\2','')
+  let str = s:sub(str,'^\s*','')
+  let str = s:sub(str,'\s*$','')
+  let str = s:sub(str,'^[:@]','')
+  "let str = s:sub(str,"\\([\"']\\)\\(.*\\)\\1",'\2')
   let str = s:gsub(str,"[\"']",'')
   if line =~ '\<\(require\|load\)\s*(\s*$'
     return str
@@ -1177,32 +1177,32 @@ function! RailsIncludefind(str,...)
     " Classes should always be in .rb files
     let str = str . '.rb'
   elseif line =~ '\(:partial\|"partial"\|'."'partial'".'\)\s*=>\s*'
-    let str = substitute(str,'\([^/]\+\)$','_\1','')
-    let str = substitute(str,'^/','views/','')
+    let str = s:sub(str,'\([^/]\+\)$','_\1')
+    let str = s:sub(str,'^/','views/')
   elseif line =~ '\<layout\s*(\=\s*' || line =~ '\(:layout\|"layout"\|'."'layout'".'\)\s*=>\s*'
-    let str = substitute(str,'^/\=','views/layouts/','')
+    let str = s:sub(str,'^/\=','views/layouts/')
   elseif line =~ '\(:controller\|"controller"\|'."'controller'".'\)\s*=>\s*'
     let str = 'controllers/'.str.'_controller.rb'
   elseif line =~ '\<helper\s*(\=\s*'
     let str = 'helpers/'.str.'_helper.rb'
   elseif line =~ '\<fixtures\s*(\='.fpat
-    let str = substitute(str,'^/\@!','test/fixtures/','')
+    let str = s:sub(str,'^/\@!','test/fixtures/')
   elseif line =~ '\<stylesheet_\(link_tag\|path\)\s*(\='.fpat
-    let str = substitute(str,'^/\@!','/stylesheets/','')
-    let str = 'public'.substitute(str,'^[^.]*$','&.css','')
+    let str = s:sub(str,'^/\@!','/stylesheets/')
+    let str = 'public'.s:sub(str,'^[^.]*$','&.css')
   elseif line =~ '\<javascript_\(include_tag\|path\)\s*(\='.fpat
     if str == "defaults"
       let str = "application"
     endif
-    let str = substitute(str,'^/\@!','/javascripts/','')
-    let str = 'public'.substitute(str,'^[^.]*$','&.js','')
+    let str = s:sub(str,'^/\@!','/javascripts/')
+    let str = 'public'.s:sub(str,'^[^.]*$','&.js')
   elseif line =~ '\<\(has_one\|belongs_to\)\s*(\=\s*'
     let str = 'models/'.str.'.rb'
   elseif line =~ '\<has_\(and_belongs_to_\)\=many\s*(\=\s*'
     let str = 'models/'.s:singularize(str).'.rb'
   elseif line =~ '\<def\s\+' && expand("%:t") =~ '_controller\.rb'
     let str = s:sub(s:sub(RailsFilePath(),'/controllers/','/views/'),'_controller\.rb$','/'.str)
-    "let str = substitute(expand("%:p"),'.*[\/]app[\/]controllers[\/]\(.\{-\}\)_controller.rb','views/\1','').'/'.str
+    "let str = s:sub(expand("%:p"),'.*[\/]app[\/]controllers[\/]\(.\{-\}\)_controller.rb','views/\1').'/'.str
     if filereadable(str.".rhtml")
       let str = str . ".rhtml"
     elseif filereadable(str.".rxml")
@@ -1213,10 +1213,10 @@ function! RailsIncludefind(str,...)
   else
     " If we made it this far, we'll risk making it singular.
     let str = s:singularize(str)
-    let str = substitute(str,'_id$','','')
+    let str = s:sub(str,'_id$','')
   endif
   if str =~ '^/' && !filereadable(str)
-    let str = substitute(str,'^/','','')
+    let str = s:sub(str,'^/','')
   endif
   return str
 endfunction
@@ -1225,11 +1225,11 @@ function! s:singularize(word)
   " Probably not worth it to be as comprehensive as Rails but we can
   " still hit the common cases.
   let word = a:word
-  let word = substitute(word,'eople$','erson','')
-  let word = substitute(word,'[aeio]\@<!ies$','ys','')
-  let word = substitute(word,'xe[ns]$','xs','')
-  let word = substitute(word,'ves$','fs','')
-  let word = substitute(word,'s\@<!s$','','')
+  let word = s:sub(word,'eople$','erson')
+  let word = s:sub(word,'[aeio]\@<!ies$','ys')
+  let word = s:sub(word,'xe[ns]$','xs')
+  let word = s:sub(word,'ves$','fs')
+  let word = s:sub(word,'s\@<!s$','')
   return word
 endfunction
 
@@ -1266,10 +1266,10 @@ function! s:Alternate(bang,cmd)
       exe cmd." ".s:escapepath(helper)
     endif
   elseif t =~ '^controller-api\>'
-    let api = substitute(substitute(f,'/controllers/','/apis/',''),'_controller\.rb$','_api.rb','')
+    let api = s:sub(s:sub(f,'/controllers/','/apis/'),'_controller\.rb$','_api.rb')
     exe cmd." ".s:escapepath(api)
   elseif t =~ '^helper\>'
-    let controller = substitute(substitute(f,'/helpers/','/controllers/',''),'_helper\.rb$','_controller.rb','')
+    let controller = s:sub(s:sub(f,'/helpers/','/controllers/'),'_helper\.rb$','_controller.rb')
     exe cmd." ".s:escapepath(controller)
   elseif t =~ '\<fixtures\>'
     let file = s:singularize(expand("%:t:r")).'_test'
@@ -1277,7 +1277,7 @@ function! s:Alternate(bang,cmd)
   else
     let file = fnamemodify(f,":t:r")
     if file =~ '_test$'
-      exe cmd." ".s:escapepath(substitute(file,'_test$','',''))
+      exe cmd." ".s:escapepath(s:sub(file,'_test$',''))
     else
       exe cmd." ".s:escapepath(file).'_test'
     endif
