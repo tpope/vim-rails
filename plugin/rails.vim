@@ -253,7 +253,7 @@ function! s:BufInit(path)
   if t != ""
     let t = "-".t
   endif
-  exe "silent doautocmd User Rails".t."-"
+  exe "silent doautocmd User Rails".s:gsub(t,'-','.')."."
   if filereadable(b:rails_root."/config/rails.vim") && exists(":sandbox")
     sandbox exe "source ".rp."/config/rails.vim"
   endif
@@ -416,7 +416,7 @@ function! s:BufCommands()
   command! -buffer -bar -complete=custom,s:FindList -nargs=* -count=1 Rsplitfind :call s:Find(<bang>0,<count>,"split",<f-args>)
   command! -buffer -bar -complete=custom,s:FindList -nargs=* -count=1 Rvsplitfind :call s:Find(<bang>0,<count>,"vert split",<f-args>)
   command! -buffer -bar -complete=custom,s:FindList -nargs=* -count=1 Rtabfind :call s:Find(<bang>0,<count>,"tab",<f-args>)
-  command! -buffer -bar -nargs=0 Alternate :echoerr Use :Ralternate instead
+  command! -buffer -bar -nargs=0 Alternate :echoerr Use :A instead
   command! -buffer -bar -nargs=0 Ralternate :call s:Alternate(<bang>0,"find")
   if g:rails_avim_commands
     command! -buffer -bar -nargs=0 A  :call s:Alternate(<bang>0,"find")
