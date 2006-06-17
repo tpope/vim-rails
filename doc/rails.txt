@@ -147,8 +147,7 @@ author's experience).
 
 						*g:rails_isfname*  >
 	let g:rails_isfname=1
-Enables changes to the 'isfname' option.  Enabled when |g:rails_level| >= 4.
-See |rails-'isfname'|.  Should no longer be necessary.
+Enables changes to the 'isfname' option.  Should no longer be necessary.
 
 						*g:rails_leader*  >
 	let g:rails_leader='<LocalLeader>r'
@@ -173,8 +172,9 @@ Enabled when |g:rails_level| >= 2.
 						*g:rails_subversion*  >
 	let g:rails_subversion=1
 Automatically add/remove files to the subversion repository for commands like
-|:Rgenerate| and |:Rdestroy|.  Ignored when the application is not part of a
-subversion repository.  Enabled with |g:rails_level| >= 3.
+|:Rgenerate| and |:Rdestroy| (but not |:Rscript|).  Ignored when the
+application is not part of a subversion repository.  Enabled with
+|g:rails_level| >= 3.
 
 						*g:rails_root_url*  >
 	let g:rails_root_url='http://localhost:3000/'
@@ -210,13 +210,6 @@ others.  This allows shortening the above example: >
 					*rails-'includeexpr'*	*rails-'inex'*
 The 'include' and 'includeexpr' options are set to enable the magic described
 in |rails-gf|.
-
-					*rails-'isfname'*	*rails-'isf'*
-The |rails-gf| feature is further enhanced by changing 'isfname'.
-Unfortunately, this is a global option.  To compensate, the plugin attempts to
-restore this option upon changing buffers.  If this causes problems for you,
-disable the |g:rails_isfname| setting.  This is deprecated, as the feature is
-now accomplished by remapping gf.
 
 					*rails-'statusline'*	*rails-'stl'*
 Useful information is added to the 'statusline', but only when the existing
@@ -384,7 +377,7 @@ COMMANDS					*rails-commands*
 
 						*rails-:Ralternate*
 :Ralternate		Load the "alternate" file.  See
-			|<Plug>RailsAlternate|.  (deprecated)
+			|<Plug>RailsAlternate|.
 
 			*rails-:A* *rails-:AS* *rails-:AV* *:rails-:AT*
 :A			These are compatible with Michael Sharpe's a.vim (but
@@ -393,6 +386,13 @@ COMMANDS					*rails-commands*
 :AT			file.  |g:rails_avim_commands| must be enabled.  This
 			is likely to become the preferred interface in the
 			future.
+
+			*rails-:R* *rails-:RS* *rails-:RV* *:rails-:RT*
+:R			These are just like |rails-:A| and friends above, only
+:RS			they correspond to |<LocalLeader>RailsMagicM| instead
+:RV			of |<LocalLeader>RailsAlternate|.  (Confusing, I
+:RT			know).  The same caveats apply.
+
 
 						*rails-:Rproject*
 :Rproject [{file}]	This command is only provided when the |project|

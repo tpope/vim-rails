@@ -371,7 +371,7 @@ function! s:InitConfig()
   let l = g:rails_level
   call s:SetOptDefault("rails_statusline",l>2)
   call s:SetOptDefault("rails_syntax",l>1)
-  call s:SetOptDefault("rails_isfname",l>3)
+  call s:SetOptDefault("rails_isfname",0)
   call s:SetOptDefault("rails_mappings",l>2)
   call s:SetOptDefault("rails_abbreviations",l>4)
   call s:SetOptDefault("rails_expensive",l>(2+(has("win32")||has("win32unix"))))
@@ -396,12 +396,14 @@ function! s:BufCommands()
   "  silent exe 'command! -buffer -complete=custom,s:ScriptComplete -nargs=+ Script :!ruby '.s:escapepath(b:rails_root.'/script/').'<args>'
   command! -buffer -bar -complete=custom,s:ScriptComplete -nargs=+ Rscript :call s:Script(<bang>0,<f-args>)
   command! -buffer -bar -complete=custom,s:ScriptComplete -nargs=+ Script :Rscript<bang> <args>
-  command! -buffer -bar -complete=custom,s:GenerateComplete -nargs=* Rgenerate :call s:Generate(<bang>0,<f-args>)
   command! -buffer -bar -complete=custom,s:ConsoleComplete -nargs=* Rconsole :Rscript console <args>
+  command! -buffer -bar -complete=custom,s:GenerateComplete -nargs=* Rgenerate :call s:Generate(<bang>0,<f-args>)
   command! -buffer -bar -complete=custom,s:DestroyComplete -nargs=* Rdestroy :call s:Destroy(<bang>0,<f-args>)
+  command! -buffer -bar -complete=custom,s:PluginComplete -nargs=* Rplugin :call s:Plugin(<bang>0,<f-args>)
   command! -buffer -bar -complete=custom,s:RakeComplete -nargs=? Rake :call s:Rake(<bang>0,<q-args>)
   command! -buffer -bar -complete=custom,s:PreviewComplete -nargs=? Rpreview :call s:Preview(<bang>0,<q-args>)
   command! -buffer -bar -complete=custom,s:environments -nargs=? Rlog :call s:Log(<bang>0,<q-args>)
+  command! -buffer -bar -complete=custom,s:environments -nargs=* Rserver :Rscript server --daemon
   command! -buffer -nargs=1 Rrunner :call s:Script(<bang>0,"runner",<f-args>)
   command! -buffer -bar -nargs=? Rmigration :call s:Migration(<bang>0,<q-args>)
   command! -buffer -bar -nargs=* Rcontroller :call s:ControllerFunc(<bang>0,"app/controllers/","_controller.rb",<f-args>)
@@ -421,6 +423,12 @@ function! s:BufCommands()
     command! -buffer -bar -nargs=0 AS :call s:Alternate(<bang>0,"sfind")
     command! -buffer -bar -nargs=0 AV :call s:Alternate(<bang>0,"vert sfind")
     command! -buffer -bar -nargs=0 AT :call s:Alternate(<bang>0,"tabfind")
+    command! -buffer -bar -nargs=0 AN :call s:MagicM(<bang>0,"find")
+    command! -buffer -bar -nargs=0 R  :call s:MagicM(<bang>0,"find")
+    command! -buffer -bar -nargs=0 RS :call s:MagicM(<bang>0,"sfind")
+    command! -buffer -bar -nargs=0 RV :call s:MagicM(<bang>0,"vert sfind")
+    command! -buffer -bar -nargs=0 RT :call s:MagicM(<bang>0,"tabfind")
+    command! -buffer -bar -nargs=0 RN :call s:Alternate(<bang>0,"find")
   endif
   if exists(":Project")
     command! -buffer -bar -bang -nargs=? Rproject :call s:Project(<bang>0,<q-args>)
@@ -667,6 +675,20 @@ function! s:Script(bang,cmd,...)
   call s:rubyexe(s:rquote("script/".a:cmd).str)
 endfunction
 
+function! s:Plugin(bang,...)
+  let str = ""
+  let c = 1
+  while c <= a:0
+    let str = str . " " . s:rquote(a:{c})
+    let c = c + 1
+  endwhile
+  if s:usesubversion() && a:0 && a:1 == 'install'
+    call s:rubyexe(s:rquote("script/plugin").str.' -x')
+  else
+    call s:rubyexe(s:rquote("script/plugin").str)
+  endif
+endfunction
+
 function! s:Destroy(bang,...)
   let str = ""
   let c = 1
@@ -708,43 +730,6 @@ function! s:Generate(bang,...)
   endif
 endfunction
 
-function! s:NewApp(bang,...)
-  if a:0 == 0
-    !rails
-    return
-  endif
-  let dir = ""
-  if a:1 !~ '^-'
-    let dir = a:1
-  elseif a:{a:0} =~ '[\/]'
-    let dir = a:{a:0}
-  else
-    let dir = a:1
-  endif
-  let dir = expand(dir)
-  if isdirectory(fnamemodify(dir,':h')."/.svn") && g:rails_subversion
-    let append = " -c"
-  else
-    let append = ""
-  endif
-  if g:rails_default_database != ""
-    let append = append." -d ".g:rails_default_database
-  endif
-  if a:bang
-    let append = append." --force"
-  endif
-  let str = ""
-  let c = 1
-  while c <= a:0
-    let str = str . " " . s:rquote(expand(a:{c}))
-    let c = c + 1
-  endwhile
-  exe "!rails".append.str
-  if filereadable(dir."/".g:rails_default_file)
-    exe "edit ".s:escapepath(dir)."/".g:rails_default_file
-  endif
-endfunction
-
 function! s:ScriptComplete(ArgLead,CmdLine,P)
   "  return s:gsub(glob(RailsRoot()."/script/**"),'\%(.\%(\n\)\@<!\)*[\/]script[\/]','')
   let cmd = s:sub(a:CmdLine,'^\u\w*\s\+','')
@@ -783,6 +768,47 @@ endfunction
 
 function! s:DestroyComplete(A,L,P)
   return s:CustomComplete(a:A,a:L,a:P,"destroy")
+endfunction
+
+function! s:PluginComplete(A,L,P)
+  return s:CustomComplete(a:A,a:L,a:P,"plugin")
+endfunction
+
+function! s:NewApp(bang,...)
+  if a:0 == 0
+    !rails
+    return
+  endif
+  let dir = ""
+  if a:1 !~ '^-'
+    let dir = a:1
+  elseif a:{a:0} =~ '[\/]'
+    let dir = a:{a:0}
+  else
+    let dir = a:1
+  endif
+  let dir = expand(dir)
+  if isdirectory(fnamemodify(dir,':h')."/.svn") && g:rails_subversion
+    let append = " -c"
+  else
+    let append = ""
+  endif
+  if g:rails_default_database != ""
+    let append = append." -d ".g:rails_default_database
+  endif
+  if a:bang
+    let append = append." --force"
+  endif
+  let str = ""
+  let c = 1
+  while c <= a:0
+    let str = str . " " . s:rquote(expand(a:{c}))
+    let c = c + 1
+  endwhile
+  exe "!rails".append.str
+  if filereadable(dir."/".g:rails_default_file)
+    exe "edit ".s:escapepath(dir)."/".g:rails_default_file
+  endif
 endfunction
 
 function! s:ControllerFunc(bang,prefix,suffix,...)
@@ -869,7 +895,7 @@ function! s:BufSyntax()
         syn keyword rubyRailsFilterMethod verify
       endif
       if t=~ '^test\>'
-        syn keyword rubyRailsTestMethod add_assertion assert assert_block assert_equal assert_in_delta assert_instance_of assert_kind_of assert_match assert_nil assert_no_match assert_not_equal assert_not_nil assert_not_same assert_nothing_raised assert_nothing_thrown assert_operator assert_raise assert_respond_to assert_same assert_send assert_throws flunk
+        syn keyword rubyRailsTestMethod add_assertion assert assert_block assert_equal assert_in_delta assert_instance_of assert_kind_of assert_match assert_nil assert_no_match assert_not_equal assert_not_nil assert_not_same assert_nothing_raised assert_nothing_thrown assert_operator assert_raise assert_respond_to assert_same assert_send assert_throws flunk fixtures use_transactional_fixtures use_instantiated_fixtures
         if t !~ '^test-unit\>'
           syn keyword rubyRailsTestControllerMethod assert_response assert_redirected_to assert_template assert_recognizes assert_generates assert_routing assert_tag assert_no_tag assert_dom_equal assert_dom_not_equal assert_valid
         endif
@@ -1278,6 +1304,27 @@ function! s:Alternate(bang,cmd)
   endif
 endfunction
 
+function! s:MagicM(bang,cmd)
+  let cmd = a:cmd.(a:bang ? '!' : '')
+  let t = RailsFileType()
+  if RailsFilePath() == 'README'
+    find config/database.yml
+  elseif t =~ '^test\>'
+    call s:warn('In the future, use :Rake instead')
+    Rake
+  elseif t =~ '^view\>'
+    exe cmd." ".s:sub(s:sub(RailsFilePath(),'/views/','/controllers/'),'/\(\k\+\)\..*$','_controller|silent! djump \1')
+  elseif t =~ '^controller-api\>'
+    exe cmd." ".s:sub(s:sub(RailsFilePath(),'/controllers/','/apis/'),'_controller\.rb$','_api.rb')
+  elseif t =~ '^controller\>'
+    exe cmd." ".s:sub(s:sub(RailsFilePath(),'/controllers/','/views/'),'_controller\.rb$','/'.s:lastmethod())
+  elseif t =~ '^model-ar\>'
+    call s:Migration(0,'create_'.s:sub(expand('%:t:r'),'y$','ie$').'s')
+  elseif t =~ '^api\>'
+    exe cmd." ".s:sub(s:sub(RailsFilePath(),'/apis/','/controllers/'),'_api\.rb$','_controller.rb')
+  endif
+endfunction
+
 " }}}1
 " Partials {{{1
 
@@ -1439,7 +1486,7 @@ function! s:BufMappings()
   map <buffer> <silent> <Plug>RailsSplitFind :Rsplitfind<CR>
   map <buffer> <silent> <Plug>RailsVSplitFind :Rvsplitfind<CR>
   map <buffer> <silent> <Plug>RailsTabFind   :Rtabfind<CR>
-  map <buffer> <silent> <Plug>RailsMagicM    :call <SID>magicm()<CR>
+  map <buffer> <silent> <Plug>RailsMagicM    :call <SID>MagicM(0,"find")<CR>
   if g:rails_mappings
     if !hasmapto("<Plug>RailsFind")
       map <buffer> gf              <Plug>RailsFind
@@ -1458,26 +1505,6 @@ function! s:BufMappings()
     call s:leadermap('m','<Plug>RailsMagicM')
     " Deprecated
     call s:leadermap('v',':echoerr "Use <Lt>LocalLeader>rm instead!"<CR>')
-  endif
-endfunction
-
-function! s:magicm()
-  let t = RailsFileType()
-  if RailsFilePath() == 'README'
-    find config/database.yml
-  elseif t =~ '^test\>'
-    call s:warn('In the future, use :Rake instead')
-    Rake
-  elseif t =~ '^view\>'
-    exe "find ".s:sub(s:sub(RailsFilePath(),'/views/','/controllers/'),'/\(\k\+\)\..*$','_controller|silent! djump \1')
-  elseif t =~ '^controller-api\>'
-    exe "find ".s:sub(s:sub(RailsFilePath(),'/controllers/','/apis/'),'_controller\.rb$','_api.rb')
-  elseif t =~ '^controller\>'
-    exe "find ".s:sub(s:sub(RailsFilePath(),'/controllers/','/views/'),'_controller\.rb$','/'.s:lastmethod())
-  elseif t =~ '^model-ar\>'
-    call s:Migration(0,'create_'.s:sub(expand('%:t:r'),'y$','ie$').'s')
-  elseif t =~ '^api\>'
-    exe "find ".s:sub(s:sub(RailsFilePath(),'/apis/','/controllers/'),'_api\.rb$','_controller.rb')
   endif
 endfunction
 
