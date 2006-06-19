@@ -348,10 +348,25 @@ COMMANDS					*rails-commands*
 
 						*rails-:Rgenerate*
 :Rgenerate {options}	Calls script/generate {options}, and then edits the
-			first file generated.
+			first file generated.  Respects |g:rails_subversion|.
 
 						*rails-:Rdestroy*
-:Rdestroy {options}	Calls script/destroy {options}.
+:Rdestroy {options}	Calls script/destroy {options}.  Respects
+			|g:rails_subversion|.
+
+						*rails-:Rplugin*
+:Rplugin {options}	Calls script/plugin {options}.  Respects
+			|g:rails_subversion|.
+
+						*rails-:Rserver*
+:Rserver {options}	Launches script/server {options} in the background.
+			On win32, this means |!start|.  On other systems, this
+			uses the --daemon option.
+
+						*rails-:Rserver!*
+:Rserver! {options}	Same as |:Rserver|, only first attempts to kill any
+			other server using the same port.  On non-win32
+			systems, lsof must be installed for this to work.
 
 						*rails-:Rlog*
 :Rlog [{logfile}]	Split window and open {logfile} ($RAILS_ENV or
@@ -374,25 +389,6 @@ COMMANDS					*rails-commands*
 		:command -bar -nargs=1 OpenURL :!start cmd /cstart /b <args>
 <			Other operating systems are left as an exercise to the
 			reader.
-
-						*rails-:Ralternate*
-:Ralternate		Load the "alternate" file.  See
-			|<Plug>RailsAlternate|.
-
-			*rails-:A* *rails-:AS* *rails-:AV* *:rails-:AT*
-:A			These are compatible with Michael Sharpe's a.vim (but
-:AS			do not make use of that plugin).  Briefly, they edit,
-:AV			split, vertical split, and tabify the "alternate"
-:AT			file.  |g:rails_avim_commands| must be enabled.  This
-			is likely to become the preferred interface in the
-			future.
-
-			*rails-:R* *rails-:RS* *rails-:RV* *:rails-:RT*
-:R			These are just like |rails-:A| and friends above, only
-:RS			they correspond to |<LocalLeader>RailsMagicM| instead
-:RV			of |<LocalLeader>RailsAlternate|.  (Confusing, I
-:RT			know).  The same caveats apply.
-
 
 						*rails-:Rproject*
 :Rproject [{file}]	This command is only provided when the |project|
@@ -419,6 +415,24 @@ COMMANDS					*rails-commands*
 :[range]Rpartial [{controller}/]{name}	
 			Create a {name} partial from [range] lines (default:
 			current line).  See |rails-partials|.
+
+						*rails-:Ralternate*
+:Ralternate		Load the "alternate" file.  See
+			|<Plug>RailsAlternate|.
+
+			*rails-:A* *rails-:AS* *rails-:AV* *:rails-:AT*
+:A			These are compatible with Michael Sharpe's a.vim (but
+:AS			do not make use of that plugin).  Briefly, they edit,
+:AV			split, vertical split, and tabify the "alternate"
+:AT			file.  |g:rails_avim_commands| must be enabled.  This
+			is likely to become the preferred interface in the
+			future.
+
+			*rails-:R* *rails-:RS* *rails-:RV* *:rails-:RT*
+:R			These are just like |rails-:A| and friends above, only
+:RS			they correspond to |<LocalLeader>RailsMagicM| instead
+:RV			of |<LocalLeader>RailsAlternate|.  (Confusing, I
+:RT			know).  The same caveats apply.
 
 
 ==============================================================================

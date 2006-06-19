@@ -403,7 +403,7 @@ function! s:BufCommands()
   command! -buffer -bar -complete=custom,s:RakeComplete -nargs=? Rake :call s:Rake(<bang>0,<q-args>)
   command! -buffer -bar -complete=custom,s:PreviewComplete -nargs=? Rpreview :call s:Preview(<bang>0,<q-args>)
   command! -buffer -bar -complete=custom,s:environments -nargs=? Rlog :call s:Log(<bang>0,<q-args>)
-  command! -buffer -bar -complete=custom,s:environments -nargs=* Rserver :Rscript server --daemon
+  command! -buffer -bar -complete=custom,s:environments -nargs=? -bang Rserver :call s:Server(<bang>0,<q-args>)
   command! -buffer -nargs=1 Rrunner :call s:Script(<bang>0,"runner",<f-args>)
   command! -buffer -bar -nargs=? Rmigration :call s:Migration(<bang>0,<q-args>)
   command! -buffer -bar -nargs=* Rcontroller :call s:ControllerFunc(<bang>0,"app/controllers/","_controller.rb",<f-args>)
@@ -673,6 +673,39 @@ function! s:Script(bang,cmd,...)
     let c = c + 1
   endwhile
   call s:rubyexe(s:rquote("script/".a:cmd).str)
+endfunction
+
+function! s:Server(bang,arg)
+  let bind = "0.0.0.0"
+  let port = "3000"
+  if a:bang && executable("ruby")
+    if has("win32") || has("win64")
+      let netstat = system("netstat -anop tcp")
+      let pid = matchstr(netstat,'\<'.bind.':'.port.'\>.\{-\}LISTENING\s\+\zs\d\+')
+    elseif executable('lsof')
+      let pid = system("lsof -ti 4tcp@".bind.":".port)
+      let pid = s:sub(pid,'\n','')
+    else
+      let pid = ""
+    endif
+    if pid =~ '^\d\+$'
+      echo "Killing server with pid ".pid
+      if has("win32") || has("win64")
+        call system("ruby -e 'Process.kill(9,".pid.")'")
+      else
+        call system("ruby -e 'Process.kill(:TERM,".pid.")'")
+      endif
+      sleep 100m
+    endif
+    if a:arg == "-"
+      return
+    endif
+  endif
+  if has("win32") || has("win64")
+    exe "!start ".s:rubyexestr(s:rquote("script/server")." ".a:arg)
+  else
+    call s:rubyexe(s:rquote("script/server")." ".a:arg." --daemon")
+  endif
 endfunction
 
 function! s:Plugin(bang,...)
