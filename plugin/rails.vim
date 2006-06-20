@@ -188,6 +188,13 @@ function! s:SetGlobals()
       let b:rails_restore_isfname=&isfname
       set isfname=@,48-57,/,-,_,\",',:
     endif
+    if exists("+completefunc") && &completefunc == 'syntaxcomplete#Complete'
+      if exists("g:loaded_syntax_completion")
+        " Ugly but necessary, until we have our own completion
+        unlet g:loaded_syntax_completion
+        silent! delfunction syntaxcomplete#Complete
+      endif
+    endif
   endif
 endfunction
 
@@ -223,24 +230,28 @@ function! s:BufInit(path)
     call s:BufAbbreviations()
     call s:SetBasePath()
     "silent compiler rubyunit
-    " From compiler/rubyunit.vim
     setlocal errorformat=\%W\ %\\+%\\d%\\+)\ Failure:,
-			\%C%m\ [%f:%l]:,
-			\%E\ %\\+%\\d%\\+)\ Error:,
-			\%C%m:,
-			\%C\ %\\+On\ line\ #%l\ of\ %f,
-			\%E\ %\\+%\\d%\\+)\ Error:,
-			\%C%m:,
-			\%C\ \ \ \ %f:%l:%.%#,
-			\%C%m,
-			\%Z\ %#,
-			\%-G%.%#
-    "let &l:makeprg='rake -f '.rp.'/Rakefile $*\|ruby -pe '."'$_.gsub!(/[\\#][{]RAILS_ROOT[}]/,\\%q{".RailsRoot()."})'"
+                        \%C%.%#\ [%f:%l]:,
+                        \%E\ %\\+%\\d%\\+)\ Error:,
+                        \%CActionView::TemplateError:\ compile\ error,
+                        \%Z%f:%l:\ syntax\ error\\,\ %m,
+                        \%Z%f:%l:\ %m,
+                        \%C\ %\\+On\ line\ #%l\ of\ %f,
+                        \%C\ \ \ \ %f:%l:%.%#,
+                        \%Ctest_%.%#:,
+                        \%CActionView::TemplateError:\ %f:%l:in\ `%.%#':\ %m,
+                        \%CActionView::TemplateError:\ You\ have\ a\ %m!,
+                        \%CNoMethodError:\ You\ have\ a\ %m!,
+                        \%CActionView::TemplateError:\ %m,
+                        \%CThe\ error\ occured\ while\ %m,
+                        \%C%m,
+                        \%Z\ %#,
+                        \%-G%.%#
     let &l:makeprg='rake -f '.rp.'/Rakefile $*'
     if has("balloon_eval") && executable('ri')
       setlocal balloonexpr=RailsBalloonexpr()
     endif
-    if &ft == "ruby" || &ft == "eruby" || &ft == "rjs" || &ft == "rxml"
+    if &ft == "ruby" || &ft == "eruby" || &ft == "rjs" || &ft == "rxml" || &ft == "yaml"
       " This is a strong convention in Rails, so we'll break the usual rule
       " of considering shiftwidth to be a personal preference
       setlocal sw=2 sts=2 et
@@ -251,11 +262,6 @@ function! s:BufInit(path)
           set completefunc=syntaxcomplete#Complete
         endif
         if &completefunc == 'syntaxcomplete#Complete'
-          if exists("g:loaded_syntax_completion")
-            " Ugly but necessary, until we have our own completion
-            unlet g:loaded_syntax_completion
-            delfunction syntaxcomplete#Complete
-          endif
         endif
       endif
     else
