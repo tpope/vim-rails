@@ -228,6 +228,9 @@ function! s:BufInit(path)
 			\%C%m\ [%f:%l]:,
 			\%E\ %\\+%\\d%\\+)\ Error:,
 			\%C%m:,
+			\%C\ %\\+On\ line\ #%l\ of\ %f,
+			\%E\ %\\+%\\d%\\+)\ Error:,
+			\%C%m:,
 			\%C\ \ \ \ %f:%l:%.%#,
 			\%C%m,
 			\%Z\ %#,
@@ -424,7 +427,7 @@ function! s:BufCommands()
   command! -buffer -bar -complete=custom,s:environments -nargs=? Rlog :call s:Log(<bang>0,<q-args>)
   command! -buffer -bar -complete=custom,s:environments -nargs=? -bang Rserver :call s:Server(<bang>0,<q-args>)
   command! -buffer -nargs=1 Rrunner :call s:Script(<bang>0,"runner",<f-args>)
-  command! -buffer -bar -nargs=? Rmigration :call s:Migration(<bang>0,<q-args>)
+  command! -buffer -bar -nargs=? Rmigration :call s:Migration(<bang>0,"edit",<q-args>)
   command! -buffer -bar -nargs=* Rcontroller :call s:ControllerFunc(<bang>0,"app/controllers/","_controller.rb",<f-args>)
   command! -buffer -bar -nargs=* Rhelper :call s:ControllerFunc(<bang>0,"app/helpers/","_helper.rb",<f-args>)
   silent exe "command! -buffer -nargs=? Rcd :cd ".rp."/<args>"
@@ -432,8 +435,10 @@ function! s:BufCommands()
   command! -buffer -bar -nargs=? Cd :Rcd <args>
   command! -buffer -bar -nargs=? Lcd :Rlcd <args>
   command! -buffer -bar -complete=custom,s:FindList -nargs=* -count=1 Rfind :call s:Find(<bang>0,<count>,"",<f-args>)
-  command! -buffer -bar -complete=custom,s:FindList -nargs=* -count=1 Rsplitfind :call s:Find(<bang>0,<count>,"split",<f-args>)
-  command! -buffer -bar -complete=custom,s:FindList -nargs=* -count=1 Rvsplitfind :call s:Find(<bang>0,<count>,"vert split",<f-args>)
+  command! -buffer -bar -complete=custom,s:FindList -nargs=* -count=1 Rsfind :call s:Find(<bang>0,<count>,"s",<f-args>)
+  command! -buffer -bar -complete=custom,s:FindList -nargs=* -count=1 Rsplitfind :call s:Find(<bang>0,<count>,"s",<f-args>)
+  command! -buffer -bar -complete=custom,s:FindList -nargs=* -count=1 Rvsfind :call s:Find(<bang>0,<count>,"vert s",<f-args>)
+  command! -buffer -bar -complete=custom,s:FindList -nargs=* -count=1 Rvsplitfind :call s:Find(<bang>0,<count>,"vert s",<f-args>)
   command! -buffer -bar -complete=custom,s:FindList -nargs=* -count=1 Rtabfind :call s:Find(<bang>0,<count>,"tab",<f-args>)
   command! -buffer -bar -nargs=0 Alternate :echoerr Use :A instead
   command! -buffer -bar -nargs=0 Ralternate :call s:Alternate(<bang>0,"find")
@@ -630,7 +635,7 @@ function! s:NewProjectTemplate(proj,rr,fancy)
   return str
 endfunction
 
-function! s:Migration(bang,arg)
+function! s:Migration(bang,cmd,arg)
   if a:arg =~ '^\d$'
     let glob = '00'.a:arg.'_*.rb'
   elseif a:arg =~ '^\d\d$'
@@ -644,7 +649,7 @@ function! s:Migration(bang,arg)
   endif
   let migr = s:sub(glob(RailsRoot().'/db/migrate/'.glob),'.*\n','')
   if migr != ''
-    exe "edit ".s:escapepath(migr)
+    exe a:cmd." ".s:escapepath(migr)
   else
     return s:error("Migration not found".(a:arg=='' ? '' : ': '.a:arg))
   endif
@@ -663,8 +668,7 @@ function! s:Find(bang,count,arg,...)
     "let file = RailsIncludefind(expand("<cfile>"),1)
     let file = s:RailsFind()
   endif
-"  echo a:count.a:arg."find ".str.s:escapepath(file)
-  exe a:count.a:arg."find ".str.s:escapepath(file)
+  exe (a:count==1?'' : a:count).a:arg."find ".str.s:escapepath(file)
 endfunction
 
 function! s:FindList(ArgLead, CmdLine, CursorPos)
@@ -1317,6 +1321,9 @@ function! s:Alternate(bang,cmd)
     exe cmd." environment.rb"
   elseif f =~ '\<config/environment\.rb$' || f =~ '\<db/schema\.rb$'
     exe cmd." database.yml"
+  elseif f =~ '\<db/migrate/\d\d\d_'
+    let num = matchstr(f,'\<db/migrate/0*\zs\d\+\ze_')+1
+    call s:Migration(0,cmd,num)
   elseif t =~ '^view\>'
     if t =~ '\<layout\>'
       let dest = fnamemodify(f,':r:s?/layouts\>??').'/layout'
@@ -1348,12 +1355,12 @@ function! s:Alternate(bang,cmd)
     let controller = s:sub(s:sub(f,'/helpers/','/controllers/'),'_helper\.rb$','_controller.rb')
     exe cmd." ".s:escapepath(controller)
   elseif t =~ '\<fixtures\>'
-    let file = s:singularize(expand("%:t:r")).'_test'
+    let file = s:singularize(expand("%:t:r")).'_test.rb'
     exe cmd." ".s:escapepath(file)
   else
     let file = fnamemodify(f,":t:r")
     if file =~ '_test$'
-      exe cmd." ".s:escapepath(s:sub(file,'_test$',''))
+      exe cmd." ".s:escapepath(s:sub(file,'_test$','.rb'))
     else
       exe cmd." ".s:escapepath(file).'_test'
     endif
@@ -1375,7 +1382,7 @@ function! s:MagicM(bang,cmd)
   elseif t =~ '^controller\>'
     exe cmd." ".s:sub(s:sub(RailsFilePath(),'/controllers/','/views/'),'_controller\.rb$','/'.s:lastmethod())
   elseif t =~ '^model-ar\>'
-    call s:Migration(0,'create_'.s:sub(expand('%:t:r'),'y$','ie$').'s')
+    call s:Migration(0,cmd,'create_'.s:sub(expand('%:t:r'),'y$','ie$').'s')
   elseif t =~ '^api\>'
     exe cmd." ".s:sub(s:sub(RailsFilePath(),'/apis/','/controllers/'),'_api\.rb$','_controller.rb')
   endif
@@ -1539,8 +1546,8 @@ endfunction
 function! s:BufMappings()
   map <buffer> <silent> <Plug>RailsAlternate :Ralternate<CR>
   map <buffer> <silent> <Plug>RailsFind      :Rfind<CR>
-  map <buffer> <silent> <Plug>RailsSplitFind :Rsplitfind<CR>
-  map <buffer> <silent> <Plug>RailsVSplitFind :Rvsplitfind<CR>
+  map <buffer> <silent> <Plug>RailsSplitFind :Rsfind<CR>
+  map <buffer> <silent> <Plug>RailsVSplitFind :Rvsfind<CR>
   map <buffer> <silent> <Plug>RailsTabFind   :Rtabfind<CR>
   map <buffer> <silent> <Plug>RailsMagicM    :call <SID>MagicM(0,"find")<CR>
   if g:rails_mappings
