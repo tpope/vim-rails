@@ -222,8 +222,18 @@ function! s:BufInit(path)
     call s:BufMappings()
     call s:BufAbbreviations()
     call s:SetBasePath()
-    silent! compiler rubyunit
-    let &l:makeprg='rake -f '.rp.'/Rakefile'
+    "silent compiler rubyunit
+    " From compiler/rubyunit.vim
+    setlocal errorformat=\%W\ %\\+%\\d%\\+)\ Failure:,
+			\%C%m\ [%f:%l]:,
+			\%E\ %\\+%\\d%\\+)\ Error:,
+			\%C%m:,
+			\%C\ \ \ \ %f:%l:%.%#,
+			\%C%m,
+			\%Z\ %#,
+			\%-G%.%#
+    "let &l:makeprg='rake -f '.rp.'/Rakefile $*\|ruby -pe '."'$_.gsub!(/[\\#][{]RAILS_ROOT[}]/,\\%q{".RailsRoot()."})'"
+    let &l:makeprg='rake -f '.rp.'/Rakefile $*'
     if has("balloon_eval") && executable('ri')
       setlocal balloonexpr=RailsBalloonexpr()
     endif
@@ -233,8 +243,17 @@ function! s:BufInit(path)
       setlocal sw=2 sts=2 et
       "set include=\\<\\zsAct\\f*::Base\\ze\\>\\\|^\\s*\\(require\\\|load\\)\\s\\+['\"]\\zs\\f\\+\\ze
       setlocal includeexpr=RailsIncludeexpr()
-      if exists('+completefunc') && &completefunc == ''
-        set completefunc=syntaxcomplete#Complete
+      if exists('+completefunc')
+        if &completefunc == ''
+          set completefunc=syntaxcomplete#Complete
+        endif
+        if &completefunc == 'syntaxcomplete#Complete'
+          if exists("g:loaded_syntax_completion")
+            " Ugly but necessary, until we have our own completion
+            unlet g:loaded_syntax_completion
+            delfunction syntaxcomplete#Complete
+          endif
+        endif
       endif
     else
       " Does this cause problems in any filetypes?
@@ -927,7 +946,10 @@ function! s:BufSyntax()
         syn keyword rubyRailsFilterMethod before_filter append_before_filter prepend_before_filter after_filter append_after_filter prepend_after_filter around_filter append_around_filter prepend_around_filter skip_before_filter skip_after_filter
         syn keyword rubyRailsFilterMethod verify
       endif
-      if t=~ '^test\>'
+      if t =~ '^migration\>'
+        syn keyword rubyRailsMigrationMethod create_table drop_table rename_table add_column rename_column change_column remove_column add_index remove_index
+      endif
+      if t =~ '^test\>'
         syn keyword rubyRailsTestMethod add_assertion assert assert_block assert_equal assert_in_delta assert_instance_of assert_kind_of assert_match assert_nil assert_no_match assert_not_equal assert_not_nil assert_not_same assert_nothing_raised assert_nothing_thrown assert_operator assert_raise assert_respond_to assert_same assert_send assert_throws flunk fixtures use_transactional_fixtures use_instantiated_fixtures
         if t !~ '^test-unit\>'
           syn keyword rubyRailsTestControllerMethod assert_response assert_redirected_to assert_template assert_recognizes assert_generates assert_routing assert_tag assert_no_tag assert_dom_equal assert_dom_not_equal assert_valid
@@ -972,6 +994,7 @@ function! s:HiDefaults()
   hi def link rubyRailsARMethod               rubyRailsMethod
   hi def link rubyRailsRenderMethod           rubyRailsMethod
   hi def link rubyRailsHelperMethod           rubyRailsMethod
+  hi def link rubyRailsMigrationMethod        rubyRailsMethod
   hi def link rubyRailsControllerHelperMethod rubyRailsMethod
   hi def link rubyRailsControllerDeprecatedMethod rubyRailsError
   hi def link rubyRailsFilterMethod           rubyRailsMethod
