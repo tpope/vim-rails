@@ -169,6 +169,10 @@ the current filetype is in your existing 'statusline'.  Enabled when
 When enabled, this tweaks the syntax highlighting to be more Rails friendly.
 Enabled when |g:rails_level| >= 2.
 
+When g:rails_syntax is enabled, you may find your Ruby files to be a bit heavy
+on the cyan (or however your Identifiers are highlighted).  You may want to
+enable g:ruby_no_identifiers, as explained in |ft-ruby-syntax|.
+
 						*g:rails_subversion*  >
 	let g:rails_subversion=1
 Automatically add/remove files to the subversion repository for commands like
@@ -180,10 +184,6 @@ application is not part of a subversion repository.  Enabled with
 	let g:rails_root_url='http://localhost:3000/'
 Used for the |:Rpreview| command.  Default is as shown above.  Overridden by
 b:rails_root_url.
-
-When g:rails_syntax is enabled, you may find your Ruby files to be a bit heavy
-on the cyan (or however your Identifiers are highlighted).  You may want to
-enable g:ruby_no_identifiers, as explained in |ft-ruby-syntax|.
 
 ==============================================================================
 MANAGED VIM OPTIONS			*rails-options*

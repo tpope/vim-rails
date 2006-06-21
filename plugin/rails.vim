@@ -155,6 +155,8 @@ function! s:InitPlugin()
       autocmd BufNewFile,BufRead * call s:Detect(expand("<afile>:p"))
       autocmd BufEnter * call s:SetGlobals()
       autocmd BufLeave * call s:ClearGlobals()
+      autocmd QuickFixCmdPre  make* call s:QuickFixCmdPre()
+      autocmd QuickFixCmdPost make* call s:QuickFixCmdPost()
       autocmd FileType railslog call s:RailslogSyntax()
     augroup END
   endif
@@ -206,6 +208,8 @@ function! s:ClearGlobals()
 endfunction
 
 function! s:BufInit(path)
+  let cpo_save = &cpo
+  set cpo&vim
   call s:InitRuby()
   let b:rails_root = a:path
   let b:rails_app_path = b:rails_root
@@ -230,24 +234,28 @@ function! s:BufInit(path)
     call s:BufAbbreviations()
     call s:SetBasePath()
     "silent compiler rubyunit
-    setlocal errorformat=\%W\ %\\+%\\d%\\+)\ Failure:,
-                        \%C%.%#\ [%f:%l]:,
-                        \%E\ %\\+%\\d%\\+)\ Error:,
-                        \%CActionView::TemplateError:\ compile\ error,
-                        \%Z%f:%l:\ syntax\ error\\,\ %m,
-                        \%Z%f:%l:\ %m,
-                        \%C\ %\\+On\ line\ #%l\ of\ %f,
-                        \%C\ \ \ \ %f:%l:%.%#,
-                        \%Ctest_%.%#:,
-                        \%CActionView::TemplateError:\ %f:%l:in\ `%.%#':\ %m,
-                        \%CActionView::TemplateError:\ You\ have\ a\ %m!,
-                        \%CNoMethodError:\ You\ have\ a\ %m!,
-                        \%CActionView::TemplateError:\ %m,
-                        \%CThe\ error\ occured\ while\ %m,
-                        \%C%m,
-                        \%Z\ %#,
-                        \%-G%.%#
-    let &l:makeprg='rake -f '.rp.'/Rakefile $*'
+    setlocal errorformat=%D(In\ %f),
+          \%A\ %\\+%\\d%\\+)\ Failure:,
+          \%C%.%#\ [%f:%l]:,
+          \%A\ %\\+%\\d%\\+)\ Error:,
+          \%CActionView::TemplateError:\ compile\ error,
+          \%Z%f:%l:\ syntax\ error\\,\ %m,
+          \%Z%f:%l:\ %m,
+          \%Z\ %#,
+          \%C\ %\\+On\ line\ #%l\ of\ %f,
+          \%C\ \ \ \ %f:%l:%.%#,
+          \%Ctest_%.%#:,
+          \%CActionView::TemplateError:\ %f:%l:in\ `%.%#':\ %m,
+          \%CActionView::TemplateError:\ You\ have\ a\ %m!,
+          \%CNoMethodError:\ You\ have\ a\ %m!,
+          \%CActionView::TemplateError:\ %m,
+          \%CThe\ error\ occured\ while\ %m,
+          \%C%m,
+          \ActionView::TemplateError\ (%m)\ on\ line\ #%l\ of\ %f:,
+          \%AActionView::TemplateError\ (compile\ error,
+          \%-G%.%#
+    "let &l:makeprg='rake -f '.rp.'/Rakefile $*'
+    setlocal makeprg=rake
     if has("balloon_eval") && executable('ri')
       setlocal balloonexpr=RailsBalloonexpr()
     endif
@@ -285,6 +293,7 @@ function! s:BufInit(path)
   if filereadable(b:rails_root."/config/rails.vim") && exists(":sandbox")
     sandbox exe "source ".rp."/config/rails.vim"
   endif
+  let &cpo = cpo_save
   return b:rails_root
 endfunction
 
@@ -417,6 +426,26 @@ function! s:InitConfig()
 endfunction
 
 " }}}1
+" Rake {{{1
+
+function! s:QuickFixCmdPre()
+  if exists("b:rails_root")
+    if strpart(getcwd(),0,strlen(RailsRoot())) != RailsRoot()
+      let s:last_dir = getcwd()
+      echo "lchdir ".s:escapepath(RailsRoot())
+      exe "lchdir ".s:escapepath(RailsRoot())
+    endif
+  endif
+endfunction
+
+function! s:QuickFixCmdPost()
+  if exists("s:last_dir")
+    exe "lchdir ".s:escapepath(s:last_dir)
+    unlet s:last_dir
+  endif
+endfunction
+
+" }}}1
 " Commands {{{1
 
 function! s:BufCommands()
@@ -430,9 +459,10 @@ function! s:BufCommands()
   command! -buffer -bar -complete=custom,s:PluginComplete -nargs=* Rplugin :call s:Plugin(<bang>0,<f-args>)
   command! -buffer -bar -complete=custom,s:RakeComplete -nargs=? Rake :call s:Rake(<bang>0,<q-args>)
   command! -buffer -bar -complete=custom,s:PreviewComplete -nargs=? Rpreview :call s:Preview(<bang>0,<q-args>)
-  command! -buffer -bar -complete=custom,s:environments -nargs=? Rlog :call s:Log(<bang>0,<q-args>)
+  command! -buffer -bar -complete=custom,s:environments -bang -nargs=? Rlog :call s:Log(<bang>0,<q-args>)
   command! -buffer -bar -complete=custom,s:environments -nargs=? -bang Rserver :call s:Server(<bang>0,<q-args>)
   command! -buffer -nargs=1 Rrunner :call s:Script(<bang>0,"runner",<f-args>)
+  command! -buffer -nargs=1 Rp      :call s:Script(<bang>0,"runner","p begin ".<f-args>." end")
   command! -buffer -bar -nargs=? Rmigration :call s:Migration(<bang>0,"edit",<q-args>)
   command! -buffer -bar -nargs=* Rcontroller :call s:ControllerFunc(<bang>0,"app/controllers/","_controller.rb",<f-args>)
   command! -buffer -bar -nargs=* Rhelper :call s:ControllerFunc(<bang>0,"app/helpers/","_helper.rb",<f-args>)
@@ -542,10 +572,16 @@ endfunction
 
 function! s:Log(bang,arg)
   if a:arg == ""
-    exe "sfind log/".s:environment().".log"
-    "exe "pedit ".s:escapepath(RailsRoot())."/log/".s:environment().".log"
+    let lf = "log/".s:environment().".log"
   else
-    exe "sfind log/".a:arg.".log"
+    let lf = "log/".a:arg.".log"
+  endif
+  if a:bang
+    exe "cgetfile ".lf
+    clast
+  else
+    "exe "pedit ".s:escapepath(RailsRoot())."/log/".s:environment().".log"
+    exe "sfind ".lf
   endif
 endfunction
 
