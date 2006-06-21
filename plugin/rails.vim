@@ -155,8 +155,8 @@ function! s:InitPlugin()
       autocmd BufNewFile,BufRead * call s:Detect(expand("<afile>:p"))
       autocmd BufEnter * call s:SetGlobals()
       autocmd BufLeave * call s:ClearGlobals()
-      autocmd QuickFixCmdPre  make* call s:QuickFixCmdPre()
-      autocmd QuickFixCmdPost make* call s:QuickFixCmdPost()
+      silent! autocmd QuickFixCmdPre  make* call s:QuickFixCmdPre()
+      silent! autocmd QuickFixCmdPost make* call s:QuickFixCmdPost()
       autocmd FileType railslog call s:RailslogSyntax()
     augroup END
   endif
