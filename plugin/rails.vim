@@ -511,7 +511,7 @@ function! s:Rake(bang,arg)
     else
       let call = ""
     endif
-    exe "make ".s:sub(s:gsub(t,'-',':'),'unit$\|functional$','&s')." TEST=%".call
+    exe "make ".s:sub(s:gsub(t,'-',':'),'unit$\|functional$','&s')." TEST=%:p".call
   elseif t=~ '^migration\>'
     make db:migrate
   elseif t=~ '^model\>'
