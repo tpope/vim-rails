@@ -234,14 +234,17 @@ function! s:BufInit(path)
     call s:BufAbbreviations()
     call s:SetBasePath()
     "silent compiler rubyunit
-    setlocal errorformat=%D(In\ %f),
+    setlocal errorformat=%D(in\ %f),
           \%A\ %\\+%\\d%\\+)\ Failure:,
           \%C%.%#\ [%f:%l]:,
           \%A\ %\\+%\\d%\\+)\ Error:,
           \%CActionView::TemplateError:\ compile\ error,
+          \%C%.%#/lib/gems/%\\d.%\\d/gems/%.%#,
+          \%C%.%#/vendor/rails/%.%#,
           \%Z%f:%l:\ syntax\ error\\,\ %m,
           \%Z%f:%l:\ %m,
           \%Z\ %#,
+          \%Z%p^,
           \%C\ %\\+On\ line\ #%l\ of\ %f,
           \%C\ \ \ \ %f:%l:%.%#,
           \%Ctest_%.%#:,
@@ -253,6 +256,10 @@ function! s:BufInit(path)
           \%C%m,
           \ActionView::TemplateError\ (%m)\ on\ line\ #%l\ of\ %f:,
           \%AActionView::TemplateError\ (compile\ error,
+          \%.%#/rake_test_loader.rb:%\\d%\\+:in\ `load':\ %f:%l:\ %m,
+          \%-G%.%#/lib/gems/%\\d.%\\d/gems/%.%#,
+          \%-G%.%#/vendor/rails/%.%#,
+          \%f:%l:\ %m,
           \%-G%.%#
     "let &l:makeprg='rake -f '.rp.'/Rakefile $*'
     setlocal makeprg=rake
@@ -268,8 +275,6 @@ function! s:BufInit(path)
       if exists('+completefunc')
         if &completefunc == ''
           set completefunc=syntaxcomplete#Complete
-        endif
-        if &completefunc == 'syntaxcomplete#Complete'
         endif
       endif
     else
@@ -911,7 +916,7 @@ endfunction
 
 function! s:ControllerFunc(bang,prefix,suffix,...)
   if a:0
-    let c = s:sub(RailsIncludefind(a:1),'\.rb$','')
+    let c = s:sub(RailsIncludefind(s:sub(a:1,'^.','\u&')),'\.rb$','')
   else
     let c = s:controller()
   endif
