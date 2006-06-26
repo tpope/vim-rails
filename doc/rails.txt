@@ -318,6 +318,10 @@ gf			|rails-gf| for details.
 ==============================================================================
 COMMANDS					*rails-commands*
 
+All commands are buffer local, unless otherwise stated.  This means you must
+actually edit a file from a Rails application.  (Simply launching Vim in the
+directory is insufficient).
+
 						*rails-:Rails*
 :Rails {directory}	The only global command.  Creates a new Rails
 			application in {directory}, and loads the README.
