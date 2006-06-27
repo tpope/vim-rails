@@ -39,9 +39,10 @@ Rails application development.
    your application. |rails-options|
 
 4. Easy navigation of the Rails directory structure.  |gf| considers context
-   and knows about partials, fixtures, and much more.  There are mappings for
-   easy jumping between files, including favorites like model to migration,
-   template to helper, and controller to functional test. |rails-navigation|
+   and knows about partials, fixtures, and much more.  There are two commands,
+   :A and :R, for easy jumping between files, including favorites like model
+   to migration, template to helper, and controller to functional test.
+   |rails-navigation|
 
 5. Partial extraction.  |:Rpartial| {file} replaces the desired range (ideally
    selected in visual line mode) with "render :partial => '{file}'", which is
@@ -49,14 +50,14 @@ Rails application development.
    replaced with the {file} local variable. |rails-partials|
 
 6. Enhanced syntax highlighting.  From has_and_belongs_to_many to
-   distance_of_time_in_words, it's here.
+   distance_of_time_in_words, it's here.  For Vim 7 users, 'completefunc' is
+   set to enable syntax based completion oh |i_CTRL-X_CTRL-U|, making it easy
+   to complete such long method names.
 
 7. Interface to script/*.  Generally, use ":Rscript about" to call
-   "script/about".  Some commands have additional features:
+   "script/about".  Many commands have wrappers with additional features:
    ":Rgenerate controller Blog" generates a blog controller and edits
    apps/controllers/blog_controller.rb. |rails-commands|
-
-8. Snippets.  (Just kidding.)
 
 ==============================================================================
 INSTALLATION AND USAGE				*rails-installation*
@@ -125,8 +126,8 @@ Do not load the plugin. For emergency use only.
 
 						*g:rails_avim_commands*  >
 	let g:rails_avim_commands=1
-Adds some a.vim compatible aliases for |:Ralternate|, like :A, :AS, :AV, and
-:AT.  This does not require a.vim.  (a.vim is a plugin for easily alternating
+Adds some a.vim style navigation commands like |rails-:A| and |rails-:R|.
+This does not require a.vim.  (a.vim is a plugin for easily alternating
 between, for example, foo.c and foo.h.  If it's installed, you can see
 |alternate.txt| for more information.)  Enabled when |g:rails_level| >= 3.
 
@@ -245,6 +246,10 @@ The 'path' has been modified to include all the best places to be.
 	:find blog_controller
 	:find book_test
 <
+Two commands, :A and :R, are used quickly jump to related files.  See
+|rails-:A| and |rails-:R| for details, but the easiest way to learn how they
+work is to try them in different files.
+
 						*rails-gf*
 Use |gf|, |CTRL-W_f|, and |CTRL-W_gf| liberally, as 'includeexpr' has been
 hacked to make them quite intelligent (if |g:rails_mappings| is enabled,
@@ -299,16 +304,12 @@ to change.
 						*<Plug>RailsAlternate*
 <Plug>RailsAlternate	Switch to the "alternate" file.  Typically this just
 <LocalLeader>ra		adds or removes "_test" from the filename, but try it
-			in lots of places; you may be surprised.  This
-			might be replaced by |rails-:A| and friends.
+			in lots of places; you may be surprised.  Deprecated
+			in favor of |rails-:A| and friends.
 
 						*<Plug>RailsMagicM*
-<Plug>RailsMagicM	Magic.  Maybe it will execute the current test Method,
-<LocalLeader>rm		or Make all test Methods in the current test run.
-			Maybe it will find the create_foos Migration for your
-			current Model.  Or Maybe it will find the controller
-			Method for your view, or vice versa.  You Might find
-			it easiest to try it yourself.
+<Plug>RailsMagicM	Pay no attention to the name; this is a deprecated
+<LocalLeader>rm		mapping that calls |rails-:R|.
 
 						*<Plug>RailsFind*
 <Plug>RailsFind		Find the file under the cursor, taking into account
@@ -428,16 +429,19 @@ directory is insufficient).
 :A			These are compatible with Michael Sharpe's a.vim (but
 :AS			do not make use of that plugin).  Briefly, they edit,
 :AV			split, vertical split, and tabify the "alternate"
-:AT			file.  |g:rails_avim_commands| must be enabled.  This
-			is likely to become the preferred interface in the
-			future.
+:AT			file.  |g:rails_avim_commands| must be enabled (the
+			default).  The alternate file is usually the test, but
+			there are exceptions: in a template, this opens the
+			helper.
 
 			*rails-:R* *rails-:RS* *rails-:RV* *:rails-:RT*
-:R			These are just like |rails-:A| and friends above, only
-:RS			they correspond to |<LocalLeader>RailsMagicM| instead
-:RV			of |<LocalLeader>RailsAlternate|.  (Confusing, I
-:RT			know).  The same caveats apply.
-
+:R			These are similar |rails-:A| and friends above, only
+:RS			with different (oftentimes more useful) destinations.
+:RV			In a template, they jump to a contrller method of the
+:RT			same name, and in a controller, they jump to the
+			template named after the current method. In a model,
+			a related migration is opened.  Experiment to find the
+			rest.
 
 ==============================================================================
 PARTIAL EXTRACTION				*rails-partials*
@@ -487,6 +491,10 @@ TODO						*rails-todo*
 
 Abbrevations.  You can enable some experimental ones with
 |g:rails_abbreviations| (but don't tell anyone).  Try pa[ and rp<Tab>.
+
+A command to build self.down from self.up, or vice versa, in migrations.  It'd
+be a great companion for :Rpartial.  It wouldn't need to be perfect, just good
+enough to change add_column to remove_column, and the like.
 
 Create and maintain some sort of changelog.
 
