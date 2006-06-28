@@ -59,7 +59,7 @@ function! s:rubyeval(ruby,...)
   else
     let q = &shellquote
   endif
-  let cmd = 'ruby -e '.q.'require %{rubygems} rescue nil; require %{active_support} rescue nil; '.a:ruby.q
+  let cmd = 'ruby -e '.s:rquote('require %{rubygems} rescue nil; require %{active_support} rescue nil; '.a:ruby)
   "let g:rails_last_ruby_command = cmd
   let results = system(cmd)
   "let g:rails_last_ruby_result = results
@@ -156,9 +156,11 @@ function! s:InitPlugin()
       autocmd BufEnter * call s:SetGlobals()
       autocmd BufLeave * call s:ClearGlobals()
       autocmd VimEnter * if expand("<amatch>") == "" && !exists("b:rails_root") | call s:Detect(getcwd()) | endif
+      autocmd BufWritePost */config/database.yml let s:dbext_last_root = "*" " Force reload
+      autocmd FileType railslog call s:RailslogSyntax()
+      autocmd Syntax ruby,eruby,yaml,railslog if exists("b:rails_root") | call s:BufSyntax() | endif
       silent! autocmd QuickFixCmdPre  make* call s:QuickFixCmdPre()
       silent! autocmd QuickFixCmdPost make* call s:QuickFixCmdPost()
-      autocmd FileType railslog call s:RailslogSyntax()
     augroup END
   endif
   command! -bar -bang -nargs=* -complete=dir Rails :call s:NewApp(<bang>0,<f-args>)
@@ -221,18 +223,22 @@ function! s:BufInit(path)
     endif
     if &ft == "" && ( expand("%:e") == "rjs" || expand("%:e") == "rxml" || expand("%:e") == "mab" )
       setlocal filetype=ruby
+    else
+      " Activate custom syntax
+      exe "setlocal syntax=".&syntax
     endif
     if expand("%:e") == "log"
       setlocal modifiable filetype=railslog
       silent! exe "%s/\e\\[[0-9;]*m//g"
       silent! exe "%s/\r$//"
       setlocal readonly nomodifiable noswapfile autoread foldmethod=syntax
+      map <buffer> <silent> R :checktime<CR>
       $
     endif
-    call s:BufSyntax()
     call s:BufCommands()
     call s:BufMappings()
     call s:BufAbbreviations()
+    call s:BufDatabase()
     call s:SetBasePath()
     "silent compiler rubyunit
     setlocal errorformat=%D(in\ %f),
@@ -267,6 +273,7 @@ function! s:BufInit(path)
     if has("balloon_eval") && executable('ri')
       setlocal balloonexpr=RailsBalloonexpr()
     endif
+    " There is no rjs/rxml filetype now, but in the future, who knows...
     if &ft == "ruby" || &ft == "eruby" || &ft == "rjs" || &ft == "rxml" || &ft == "yaml"
       " This is a strong convention in Rails, so we'll break the usual rule
       " of considering shiftwidth to be a personal preference
@@ -388,7 +395,7 @@ function! RailsFileType()
     else
       let r = "fixtures-" . e
     endif
-  elseif f =~ '\<db/migrate\>'
+  elseif f =~ '\<db/migrate\>' || f=~ '\<db/schema\.rb$'
     let r = "migration"
   elseif f =~ '\<lib/tasks\>' || f=~ '\<Rakefile$'
     let r = "task"
@@ -418,17 +425,23 @@ function! s:InitConfig()
   call s:SetOptDefault("rails_mappings",l>2)
   call s:SetOptDefault("rails_abbreviations",l>4)
   call s:SetOptDefault("rails_expensive",l>(2+(has("win32")||has("win32unix"))))
+  call s:SetOptDefault("rails_dbext",g:rails_expensive)
   call s:SetOptDefault("rails_avim_commands",l>2)
   call s:SetOptDefault("rails_subversion",l>3)
   call s:SetOptDefault("rails_default_file","README")
   call s:SetOptDefault("rails_default_database","")
   call s:SetOptDefault("rails_leader","<LocalLeader>r")
   call s:SetOptDefault("rails_root_url",'http://localhost:3000/')
+  if l > 2
+    if exists("g:loaded_dbext") && executable("sqlite3") && ! executable("sqlite")
+      " Since dbext can't find it by itself
+      call s:SetOptDefault("dbext_default_SQLITE_bin","sqlite3")
+    endif
+  endif
   if l > 3
     "call s:SetOptDefault("ruby_no_identifiers",1)
     call s:SetOptDefault("rubycomplete_rails",1)
   endif
-  "call s:SetOptDefault("",)
 endfunction
 
 " }}}1
@@ -1227,6 +1240,8 @@ function! s:RailsFind()
   if res != ""|return res|endif
   let res = s:singularize(s:findamethod('has_many\|has_and_belongs_to_many','app/models/\1'))
   if res != ""|return res|endif
+  let res = s:singularize(s:findamethod('create_table\|drop_table\|add_column\|rename_column\|remove_column\|add_index','app/models/\1'))
+  if res != ""|return res|endif
   let res = s:singularize(s:findasymbol('through','app/models/\1'))
   if res != ""|return res|endif
   let res = s:findamethod('fixtures','test/fixtures/\1')
@@ -1365,13 +1380,19 @@ function! s:Alternate(bang,cmd)
   let cmd = a:cmd.(a:bang?"!":"")
   let f = RailsFilePath()
   let t = RailsFileType()
-  if f =~ '\<config/database.yml$' || f =~ '\<config/environments/' || f == 'README'
+  if f =~ '\<config/database.yml$' || f =~ '\<config/environments/'
     exe cmd." environment.rb"
-  elseif f =~ '\<config/environment\.rb$' || f =~ '\<db/schema\.rb$'
+  elseif f =~ '\<config/environment\.rb$' || f == 'README'
     exe cmd." database.yml"
   elseif f =~ '\<db/migrate/\d\d\d_'
-    let num = matchstr(f,'\<db/migrate/0*\zs\d\+\ze_')+1
-    call s:Migration(0,cmd,num)
+    let num = matchstr(f,'\<db/migrate/0*\zs\d\+\ze_')-1
+    if num
+      call s:Migration(0,cmd,num)
+    else
+      exe cmd." db/schema.rb"
+    endif
+  elseif f =~ '\<db/schema\.rb$'
+    call s:Migration(0,cmd,"")
   elseif t =~ '^view\>'
     if t =~ '\<layout\>'
       let dest = fnamemodify(f,':r:s?/layouts\>??').'/layout'
@@ -1417,9 +1438,12 @@ endfunction
 
 function! s:MagicM(bang,cmd)
   let cmd = a:cmd.(a:bang ? '!' : '')
+  let f = RailsFilePath()
   let t = RailsFileType()
-  if RailsFilePath() == 'README'
-    find config/database.yml
+  if f =~ '\<config/database.yml$' || f =~ '\<config/environments/'
+    exe cmd." config/environment.rb"
+  elseif RailsFilePath() == 'README'
+    exe cmd." config/database.yml"
   elseif t =~ '^test\>'
     call s:warn('In the future, use :Rake instead')
     Rake
@@ -1433,6 +1457,13 @@ function! s:MagicM(bang,cmd)
     call s:Migration(0,cmd,'create_'.s:sub(expand('%:t:r'),'y$','ie$').'s')
   elseif t =~ '^api\>'
     exe cmd." ".s:sub(s:sub(RailsFilePath(),'/apis/','/controllers/'),'_api\.rb$','_controller.rb')
+  elseif f =~ '\<db/migrate/\d\d\d_'
+    let num = matchstr(f,'\<db/migrate/0*\zs\d\+\ze_')+1
+    call s:Migration(0,cmd,num)
+  elseif f =~ '\<db/schema\.rb$'
+    call s:Migration(0,cmd,"1")
+  else
+    call s:warn("No related file is defined")
   endif
 endfunction
 
@@ -1616,6 +1647,64 @@ function! s:BufMappings()
     call s:leadermap('m','<Plug>RailsMagicM')
     " Deprecated
     call s:leadermap('v',':echoerr "Use <Lt>LocalLeader>rm instead!"<CR>')
+  endif
+endfunction
+
+" }}}1
+" Database {{{1
+
+function s:extractdbarg(str,arg)
+  return matchstr("\n".a:str."\n",'\n'.a:arg.'=\zs.\{-\}\ze\n')
+endfunction
+
+function! s:BufDatabase(...)
+  if (a:0 && a:1 > 1) || !exists("s:dbext_last_root")
+    let s:dbext_last_root = '*'
+  endif
+  " Crude caching mechanism
+  if s:dbext_last_root != RailsRoot()
+    if exists("g:loaded_dbext") && (g:rails_dbext || (a:0 && a:1))
+      let cmd = 'require %{yaml}; y = File.open(%q{'.RailsRoot().'/config/database.yml}) {|f| YAML::load(f)}; y[%{'.s:environment().'}].each{|k,v|puts k+%{=}+v if v}'
+      let out = s:rubyeval(cmd,'')
+      let adapter = s:extractdbarg(out,'adapter')
+      let s:sbext_bin = ''
+      if adapter == 'postgresql'
+        let adapter = 'pgsql'
+      elseif adapter == 'sqlite3'
+        let adapter = 'sqlite'
+        " Does not appear to work
+        let s:dbext_bin = 'sqlite3'
+      elseif adapter == 'sqlserver'
+        let adapter = 'sqlsrv'
+      elseif adapter == 'sybase'
+        let adapter = 'asa'
+      elseif adapter == 'oci'
+        let adapter = 'ora'
+      endif
+      let s:dbext_type = toupper(adapter)
+      let s:dbext_user = s:extractdbarg(out,'username')
+      let s:dbext_passwd = s:extractdbarg(out,'password')
+      let s:dbext_dbname = s:extractdbarg(out,'database')
+      if s:dbext_dbname != '' && adapter =~? '^sqlite'
+        let s:dbext_dbname = RailsRoot().'/'.s:dbext_dbname
+      endif
+      let s:dbext_profile = ''
+      let s:dbext_host = s:extractdbarg(out,'host')
+      let s:dbext_port = s:extractdbarg(out,'port')
+      let s:dbext_dsnname = s:extractdbarg(out,'dsn')
+      let s:dbext_last_root = RailsRoot()
+    endif
+  endif
+  if s:dbext_last_root == RailsRoot()
+    silent! let b:dbext_type    = s:dbext_type
+    silent! let b:dbext_profile = s:dbext_profile
+    silent! let b:dbext_bin     = s:dbext_bin
+    silent! let b:dbext_user    = s:dbext_user
+    silent! let b:dbext_passwd  = s:dbext_passwd
+    silent! let b:dbext_dbname  = s:dbext_dbname
+    silent! let b:dbext_host    = s:dbext_host
+    silent! let b:dbext_port    = s:dbext_port
+    silent! let b:dbext_dsnname = s:dbext_dsnname
   endif
 endfunction
 

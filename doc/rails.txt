@@ -143,8 +143,20 @@ Database to use for new applications.  Defaults to letting Rails decide.
 	let g:rails_expensive=1
 Enables or disables expensive (slow) features (typically involving calls to
 the Ruby interpreter).  Recommended for moderately fast computers.  Enabled
-when |g:rails_level| >= 3 (>= 4 on Windows, which is decidedly slower in the
-author's experience).
+when |g:rails_level| >= 3 (>= 4 on Windows, which runs external programs
+decidedly slower).
+
+						*g:rails_dbext*  >
+	let g:rails_dbext=1
+Enable integration with the dbext plugin, if it is installed.  Defaults to the
+value of |g:rails_expensive|.  When this option is set, dbext settings are
+automagically extracted from config/database.yml.  Then, you can use features
+like table name completion and commands like >
+	:Create database brablog_development
+	:Select * from posts where title like '%Denmark%'
+Note that dbext is a complicated plugin, and may require additional
+configuration.  See |dbext| (if installed) and |sql-completion-dynamic| (in
+Vim 7).
 
 						*g:rails_isfname*  >
 	let g:rails_isfname=1
@@ -209,8 +221,7 @@ others.  This allows shortening the above example: >
 	:find blog_controller
 <
 					*rails-'includeexpr'*	*rails-'inex'*
-The 'include' and 'includeexpr' options are set to enable the magic described
-in |rails-gf|.
+The 'includeexpr' option is set to enable the magic described in |rails-gf|.
 
 					*rails-'statusline'*	*rails-'stl'*
 Useful information is added to the 'statusline', but only when the existing
