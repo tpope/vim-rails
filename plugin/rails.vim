@@ -45,6 +45,15 @@ function! s:escapepath(p)
   return s:gsub(a:p,' ','\\ ')
 endfunction
 
+function! s:rubyexestr(cmd)
+  return "ruby -C ".s:rquote(RailsRoot())." ".a:cmd
+endfunction
+
+function! s:rubyexe(cmd)
+  exe "!".s:rubyexestr(a:cmd)
+  return v:shell_error
+endfunction
+
 function! s:rubyeval(ruby,...)
   if a:0 > 0
     let def = a:1
@@ -54,12 +63,12 @@ function! s:rubyeval(ruby,...)
   if !executable("ruby")
     return def
   endif
-  if &shellquote == ""
-    let q = '"'
-  else
-    let q = &shellquote
-  endif
-  let cmd = 'ruby -e '.s:rquote('require %{rubygems} rescue nil; require %{active_support} rescue nil; '.a:ruby)
+  "if &shellquote == ""
+    "let q = '"'
+  "else
+    "let q = &shellquote
+  "endif
+  let cmd = s:rubyexestr('-e '.s:rquote('require %{rubygems} rescue nil; require %{active_support} rescue nil; '.a:ruby))
   "let g:rails_last_ruby_command = cmd
   let results = system(cmd)
   "let g:rails_last_ruby_result = results
@@ -139,175 +148,6 @@ function! s:error(str)
   echomsg a:str
   echohl None
   let v:errmsg = a:str
-endfunction
-
-" }}}1
-" Initialization {{{1
-
-function! s:InitPlugin()
-  call s:InitConfig()
-  if g:rails_statusline
-    call s:InitStatusline()
-  endif
-  if has("autocmd") && g:rails_level >= 0
-    augroup railsPluginDetect
-      autocmd!
-      autocmd BufNewFile,BufRead * call s:Detect(expand("<afile>:p"))
-      autocmd BufEnter * call s:SetGlobals()
-      autocmd BufLeave * call s:ClearGlobals()
-      autocmd VimEnter * if expand("<amatch>") == "" && !exists("b:rails_root") | call s:Detect(getcwd()) | endif
-      autocmd BufWritePost */config/database.yml let s:dbext_last_root = "*" " Force reload
-      autocmd FileType railslog call s:RailslogSyntax()
-      autocmd Syntax ruby,eruby,yaml,railslog if exists("b:rails_root") | call s:BufSyntax() | endif
-      silent! autocmd QuickFixCmdPre  make* call s:QuickFixCmdPre()
-      silent! autocmd QuickFixCmdPost make* call s:QuickFixCmdPost()
-    augroup END
-  endif
-  command! -bar -bang -nargs=* -complete=dir Rails :call s:NewApp(<bang>0,<f-args>)
-endfunction
-
-function! s:Detect(filename)
-  let fn = fnamemodify(a:filename,":p")
-  if fn =~ '[\/]config[\/]environment\.rb$'
-    return s:BufInit(strpart(fn,0,strlen(fn)-22))
-  endif
-  if isdirectory(fn)
-    let fn = fnamemodify(fn,":s?[\/]$??")
-  else
-    let fn = fnamemodify(fn,':s?\(.*\)[\/][^\/]*$?\1?')
-  endif
-  let ofn = ""
-  while fn != ofn
-    if filereadable(fn . "/config/environment.rb")
-      return s:BufInit(fn)
-    endif
-    let ofn = fn
-    let fn = fnamemodify(ofn,':s?\(.*\)[\/]\(app\|components\|config\|db\|doc\|lib\|log\|public\|script\|test\|tmp\|vendor\)\($\|[\/].*$\)?\1?')
-  endwhile
-  return 0
-endfunction
-
-function! s:SetGlobals()
-  if exists("b:rails_root")
-    if g:rails_isfname
-      let b:rails_restore_isfname=&isfname
-      set isfname=@,48-57,/,-,_,\",',:
-    endif
-    if exists("+completefunc") && &completefunc == 'syntaxcomplete#Complete'
-      if exists("g:loaded_syntax_completion")
-        " Ugly but necessary, until we have our own completion
-        unlet g:loaded_syntax_completion
-        silent! delfunction syntaxcomplete#Complete
-      endif
-    endif
-  endif
-endfunction
-
-function! s:ClearGlobals()
-  if exists("b:rails_restore_isfname")
-    let &isfname=b:rails_restore_isfname
-    unlet b:rails_restore_isfname
-  endif
-endfunction
-
-function! s:BufInit(path)
-  let cpo_save = &cpo
-  set cpo&vim
-  call s:InitRuby()
-  let b:rails_root = a:path
-  let b:rails_app_path = b:rails_root
-  let rp = s:escapepath(b:rails_root)
-  if g:rails_level > 0
-    if &ft == "mason"
-      setlocal filetype=eruby
-    endif
-    if &ft == "" && ( expand("%:e") == "rjs" || expand("%:e") == "rxml" || expand("%:e") == "mab" )
-      setlocal filetype=ruby
-    else
-      " Activate custom syntax
-      exe "setlocal syntax=".&syntax
-    endif
-    if expand("%:e") == "log"
-      setlocal modifiable filetype=railslog
-      silent! exe "%s/\e\\[[0-9;]*m//g"
-      silent! exe "%s/\r$//"
-      setlocal readonly nomodifiable noswapfile autoread foldmethod=syntax
-      map <buffer> <silent> R :checktime<CR>
-      $
-    endif
-    call s:BufCommands()
-    call s:BufMappings()
-    call s:BufAbbreviations()
-    call s:BufDatabase()
-    call s:SetBasePath()
-    "silent compiler rubyunit
-    setlocal errorformat=%D(in\ %f),
-          \%A\ %\\+%\\d%\\+)\ Failure:,
-          \%C%.%#\ [%f:%l]:,
-          \%A\ %\\+%\\d%\\+)\ Error:,
-          \%CActionView::TemplateError:\ compile\ error,
-          \%C%.%#/lib/gems/%\\d.%\\d/gems/%.%#,
-          \%C%.%#/vendor/rails/%.%#,
-          \%Z%f:%l:\ syntax\ error\\,\ %m,
-          \%Z%f:%l:\ %m,
-          \%Z\ %#,
-          \%Z%p^,
-          \%C\ %\\+On\ line\ #%l\ of\ %f,
-          \%C\ \ \ \ %f:%l:%.%#,
-          \%Ctest_%.%#:,
-          \%CActionView::TemplateError:\ %f:%l:in\ `%.%#':\ %m,
-          \%CActionView::TemplateError:\ You\ have\ a\ %m!,
-          \%CNoMethodError:\ You\ have\ a\ %m!,
-          \%CActionView::TemplateError:\ %m,
-          \%CThe\ error\ occured\ while\ %m,
-          \%C%m,
-          \ActionView::TemplateError\ (%m)\ on\ line\ #%l\ of\ %f:,
-          \%AActionView::TemplateError\ (compile\ error,
-          \%.%#/rake_test_loader.rb:%\\d%\\+:in\ `load':\ %f:%l:\ %m,
-          \%-G%.%#/lib/gems/%\\d.%\\d/gems/%.%#,
-          \%-G%.%#/vendor/rails/%.%#,
-          \%f:%l:\ %m,
-          \%-G%.%#
-    "let &l:makeprg='rake -f '.rp.'/Rakefile $*'
-    setlocal makeprg=rake
-    if has("balloon_eval") && executable('ri')
-      setlocal balloonexpr=RailsBalloonexpr()
-    endif
-    " There is no rjs/rxml filetype now, but in the future, who knows...
-    if &ft == "ruby" || &ft == "eruby" || &ft == "rjs" || &ft == "rxml" || &ft == "yaml"
-      " This is a strong convention in Rails, so we'll break the usual rule
-      " of considering shiftwidth to be a personal preference
-      setlocal sw=2 sts=2 et
-      "set include=\\<\\zsAct\\f*::Base\\ze\\>\\\|^\\s*\\(require\\\|load\\)\\s\\+['\"]\\zs\\f\\+\\ze
-      setlocal includeexpr=RailsIncludeexpr()
-      if exists('+completefunc')
-        if &completefunc == ''
-          set completefunc=syntaxcomplete#Complete
-        endif
-      endif
-    else
-      " Does this cause problems in any filetypes?
-      setlocal includeexpr=RailsIncludeexpr()
-      setlocal suffixesadd=.rb,.rhtml,.rxml,.rjs,.mab,.css,.js,.yml,.csv,.rake,.sql,.html
-    endif
-    if &filetype == "ruby"
-      setlocal suffixesadd=.rb,.rhtml,.rxml,.rjs,.mab,.yml,.csv,.rake,s.rb
-      setlocal define=^\\s*def\\s\\+\\(self\\.\\)\\=
-    elseif &filetype == "eruby"
-      "set include=\\<\\zsAct\\f*::Base\\ze\\>\\\|^\\s*\\(require\\\|load\\)\\s\\+['\"]\\zs\\f\\+\\ze\\\|\\zs<%=\\ze
-      setlocal suffixesadd=.rhtml,.rxml,.rjs,.mab,.rb,.css,.js,.html
-    endif
-  endif
-  let t = RailsFileType()
-  if t != ""
-    let t = "-".t
-  endif
-  exe "silent doautocmd User Rails".s:gsub(t,'-','.')."."
-  if filereadable(b:rails_root."/config/rails.vim") && exists(":sandbox")
-    sandbox exe "source ".rp."/config/rails.vim"
-  endif
-  let &cpo = cpo_save
-  return b:rails_root
 endfunction
 
 " }}}1
@@ -428,6 +268,7 @@ function! s:InitConfig()
   call s:SetOptDefault("rails_dbext",g:rails_expensive)
   call s:SetOptDefault("rails_avim_commands",l>2)
   call s:SetOptDefault("rails_subversion",l>3)
+  call s:SetOptDefault("rails_tabstop",0)
   call s:SetOptDefault("rails_default_file","README")
   call s:SetOptDefault("rails_default_database","")
   call s:SetOptDefault("rails_leader","<LocalLeader>r")
@@ -445,7 +286,7 @@ function! s:InitConfig()
 endfunction
 
 " }}}1
-" Rake {{{1
+" Autocommand Functions {{{1
 
 function! s:QuickFixCmdPre()
   if exists("b:rails_root")
@@ -461,6 +302,51 @@ function! s:QuickFixCmdPost()
   if exists("s:last_dir")
     exe "lchdir ".s:escapepath(s:last_dir)
     unlet s:last_dir
+  endif
+endfunction
+
+function s:tabstop()
+  if !exists("b:rails_root")
+    return 0
+  elseif exists("b:rails_tabstop")
+    return b:rails_tabstop
+  else
+    return g:rails_tabstop
+  endif
+endfunction
+
+function! s:breaktabs()
+  let ts = s:tabstop()
+  if ts && &filetype != 'railslog'
+    if exists("s:retab_in_process")
+      unlet s:retab_in_process
+      silent! undo
+    else
+      let &l:tabstop = 2
+      setlocal noexpandtab
+      let mod = &l:modifiable
+      setlocal modifiable
+      g/^\s/retab!
+      let &l:modifiable = mod
+    endif
+    let &l:tabstop = ts
+    let &l:softtabstop = ts
+    let &l:shiftwidth = ts
+  endif
+endfunction
+
+function! s:fixtabs()
+  let ts = s:tabstop()
+  if ts && ! &l:expandtab && !exists("s:retab_in_process")
+    if 0
+      undojoin
+    else
+      let s:retab_in_process = 1
+    endif
+    let &l:tabstop = 2
+    setlocal expandtab
+    retab
+    let &l:tabstop = ts
   endif
 endfunction
 
@@ -512,6 +398,7 @@ function! s:BufCommands()
   if exists(":Project")
     command! -buffer -bar -bang -nargs=? Rproject :call s:Project(<bang>0,<q-args>)
   endif
+  command! -buffer -bar -nargs=0 Rtags :call s:Tags(<bang>0)
   let ext = expand("%:e")
   if ext == "rhtml" || ext == "rxml" || ext == "rjs" || ext == "mab"
     command! -buffer -bar -nargs=? -range Rpartial :<line1>,<line2>call s:MakePartial(<bang>0,<f-args>)
@@ -740,14 +627,92 @@ function! s:FindList(ArgLead, CmdLine, CursorPos)
   endif
 endfunction
 
-function! s:rubyexestr(cmd)
-  return "ruby -C ".s:rquote(RailsRoot())." ".a:cmd
+function! s:NewApp(bang,...)
+  if a:0 == 0
+    !rails
+    return
+  endif
+  let dir = ""
+  if a:1 !~ '^-'
+    let dir = a:1
+  elseif a:{a:0} =~ '[\/]'
+    let dir = a:{a:0}
+  else
+    let dir = a:1
+  endif
+  let dir = expand(dir)
+  if isdirectory(fnamemodify(dir,':h')."/.svn") && g:rails_subversion
+    let append = " -c"
+  else
+    let append = ""
+  endif
+  if g:rails_default_database != ""
+    let append = append." -d ".g:rails_default_database
+  endif
+  if a:bang
+    let append = append." --force"
+  endif
+  let str = ""
+  let c = 1
+  while c <= a:0
+    let str = str . " " . s:rquote(expand(a:{c}))
+    let c = c + 1
+  endwhile
+  exe "!rails".append.str
+  if filereadable(dir."/".g:rails_default_file)
+    exe "edit ".s:escapepath(dir)."/".g:rails_default_file
+  endif
 endfunction
 
-function! s:rubyexe(cmd)
-  exe "!".s:rubyexestr(a:cmd)
-  return v:shell_error
+function! s:ControllerFunc(bang,prefix,suffix,...)
+  if a:0
+    let c = s:sub(RailsIncludefind(s:sub(a:1,'^.','\u&')),'\.rb$','')
+  else
+    let c = s:controller()
+  endif
+  if c == ""
+    return s:error("No controller name given")
+  endif
+  let cmd = "edit".(a:bang?"! ":' ').s:escapepath(RailsRoot()).'/'.a:prefix.c.a:suffix
+  exe cmd
+  if a:0 > 1
+    exe "silent! djump ".a:2
+  endif
 endfunction
+
+function! s:RealMansGlob(path,glob)
+  " HOW COULD SUCH A SIMPLE OPERATION BE SO COMPLICATED?
+  if a:path =~ '[\/]$'
+    let path = a:path
+  else
+    let path = a:path . '/'
+  endif
+  let badres = glob(path.a:glob)
+  let goodres = ""
+  while strlen(badres) > 0
+    let idx = stridx(badres,"\n")
+    if idx == -1
+      let idx = strlen(badres)
+    endif
+    let tmp = strpart(badres,0,idx+1)
+    let badres = strpart(badres,idx+1)
+    let goodres = goodres.strpart(tmp,strlen(path))
+  endwhile
+  return goodres
+endfunction
+
+function! s:Tags(bang)
+  if executable("ctags-exuberant")
+    exe "!ctags-exuberant -R ".s:escapepath(RailsRoot())
+  elseif executable("ctags")
+    exe "!ctags -R ".s:escapepath(RailsRoot())
+  else
+    call s:error("ctags not found")
+  endif
+endfunction
+
+" }}}1
+" Script Wrappers {{{1
 
 function! s:Script(bang,cmd,...)
   let str = ""
@@ -889,80 +854,6 @@ endfunction
 
 function! s:PluginComplete(A,L,P)
   return s:CustomComplete(a:A,a:L,a:P,"plugin")
-endfunction
-
-function! s:NewApp(bang,...)
-  if a:0 == 0
-    !rails
-    return
-  endif
-  let dir = ""
-  if a:1 !~ '^-'
-    let dir = a:1
-  elseif a:{a:0} =~ '[\/]'
-    let dir = a:{a:0}
-  else
-    let dir = a:1
-  endif
-  let dir = expand(dir)
-  if isdirectory(fnamemodify(dir,':h')."/.svn") && g:rails_subversion
-    let append = " -c"
-  else
-    let append = ""
-  endif
-  if g:rails_default_database != ""
-    let append = append." -d ".g:rails_default_database
-  endif
-  if a:bang
-    let append = append." --force"
-  endif
-  let str = ""
-  let c = 1
-  while c <= a:0
-    let str = str . " " . s:rquote(expand(a:{c}))
-    let c = c + 1
-  endwhile
-  exe "!rails".append.str
-  if filereadable(dir."/".g:rails_default_file)
-    exe "edit ".s:escapepath(dir)."/".g:rails_default_file
-  endif
-endfunction
-
-function! s:ControllerFunc(bang,prefix,suffix,...)
-  if a:0
-    let c = s:sub(RailsIncludefind(s:sub(a:1,'^.','\u&')),'\.rb$','')
-  else
-    let c = s:controller()
-  endif
-  if c == ""
-    return s:error("No controller name given")
-  endif
-  let cmd = "edit".(a:bang?"! ":' ').s:escapepath(RailsRoot()).'/'.a:prefix.c.a:suffix
-  exe cmd
-  if a:0 > 1
-    exe "silent! djump ".a:2
-  endif
-endfunction
-
-function! s:RealMansGlob(path,glob)
-  " HOW COULD SUCH A SIMPLE OPERATION BE SO COMPLICATED?
-  if a:path =~ '[\/]$'
-    let path = a:path
-  else
-    let path = a:path . '/'
-  endif
-  let badres = glob(path.a:glob)
-  let goodres = ""
-  while strlen(badres) > 0
-    let idx = stridx(badres,"\n")
-    if idx == -1
-      let idx = strlen(badres)
-    endif
-    let tmp = strpart(badres,0,idx+1)
-    let badres = strpart(badres,idx+1)
-    let goodres = goodres.strpart(tmp,strlen(path))
-  endwhile
-  return goodres
 endfunction
 
 " }}}1
@@ -1870,6 +1761,177 @@ function! s:BufAbbreviations()
     call s:AddColonExpand('AWS','ActionWebService')
   endif
 endfunction
+" }}}1
+" Initialization {{{1
+
+function! s:InitPlugin()
+  call s:InitConfig()
+  if g:rails_statusline
+    call s:InitStatusline()
+  endif
+  if has("autocmd") && g:rails_level >= 0
+    augroup railsPluginDetect
+      autocmd!
+      autocmd BufNewFile,BufRead * call s:Detect(expand("<afile>:p"))
+      autocmd BufEnter * call s:SetGlobals()
+      autocmd BufLeave * call s:ClearGlobals()
+      autocmd VimEnter * if expand("<amatch>") == "" && !exists("b:rails_root") | call s:Detect(getcwd()) | endif
+      autocmd BufWritePost */config/database.yml let s:dbext_last_root = "*" " Force reload
+      autocmd BufWritePost,BufReadPost * call s:breaktabs()
+      autocmd BufWritePre              * call s:fixtabs()
+      autocmd FileType railslog call s:RailslogSyntax()
+      autocmd Syntax ruby,eruby,yaml,railslog if exists("b:rails_root") | call s:BufSyntax() | endif
+      silent! autocmd QuickFixCmdPre  make* call s:QuickFixCmdPre()
+      silent! autocmd QuickFixCmdPost make* call s:QuickFixCmdPost()
+    augroup END
+  endif
+  command! -bar -bang -nargs=* -complete=dir Rails :call s:NewApp(<bang>0,<f-args>)
+endfunction
+
+function! s:Detect(filename)
+  let fn = fnamemodify(a:filename,":p")
+  if fn =~ '[\/]config[\/]environment\.rb$'
+    return s:BufInit(strpart(fn,0,strlen(fn)-22))
+  endif
+  if isdirectory(fn)
+    let fn = fnamemodify(fn,":s?[\/]$??")
+  else
+    let fn = fnamemodify(fn,':s?\(.*\)[\/][^\/]*$?\1?')
+  endif
+  let ofn = ""
+  while fn != ofn
+    if filereadable(fn . "/config/environment.rb")
+      return s:BufInit(fn)
+    endif
+    let ofn = fn
+    let fn = fnamemodify(ofn,':s?\(.*\)[\/]\(app\|components\|config\|db\|doc\|lib\|log\|public\|script\|test\|tmp\|vendor\)\($\|[\/].*$\)?\1?')
+  endwhile
+  return 0
+endfunction
+
+function! s:SetGlobals()
+  if exists("b:rails_root")
+    if g:rails_isfname
+      let b:rails_restore_isfname=&isfname
+      set isfname=@,48-57,/,-,_,\",',:
+    endif
+    if exists("+completefunc") && &completefunc == 'syntaxcomplete#Complete'
+      if exists("g:loaded_syntax_completion")
+        " Ugly but necessary, until we have our own completion
+        unlet g:loaded_syntax_completion
+        silent! delfunction syntaxcomplete#Complete
+      endif
+    endif
+  endif
+endfunction
+
+function! s:ClearGlobals()
+  if exists("b:rails_restore_isfname")
+    let &isfname=b:rails_restore_isfname
+    unlet b:rails_restore_isfname
+  endif
+endfunction
+
+function! s:BufInit(path)
+  let cpo_save = &cpo
+  set cpo&vim
+  call s:InitRuby()
+  let b:rails_root = a:path
+  let b:rails_app_path = b:rails_root
+  let rp = s:escapepath(b:rails_root)
+  if g:rails_level > 0
+    if &ft == "mason"
+      setlocal filetype=eruby
+    endif
+    if &ft == "" && ( expand("%:e") == "rjs" || expand("%:e") == "rxml" || expand("%:e") == "mab" )
+      setlocal filetype=ruby
+    else
+      " Activate custom syntax
+      exe "setlocal syntax=".&syntax
+    endif
+    if expand("%:e") == "log"
+      setlocal modifiable filetype=railslog
+      silent! exe "%s/\e\\[[0-9;]*m//g"
+      silent! exe "%s/\r$//"
+      setlocal readonly nomodifiable noswapfile autoread foldmethod=syntax
+      map <buffer> <silent> R :checktime<CR>
+      $
+    endif
+    call s:BufCommands()
+    call s:BufMappings()
+    call s:BufAbbreviations()
+    call s:BufDatabase()
+    call s:SetBasePath()
+    "silent compiler rubyunit
+    setlocal errorformat=%D(in\ %f),
+          \%A\ %\\+%\\d%\\+)\ Failure:,
+          \%C%.%#\ [%f:%l]:,
+          \%A\ %\\+%\\d%\\+)\ Error:,
+          \%CActionView::TemplateError:\ compile\ error,
+          \%C%.%#/lib/gems/%\\d.%\\d/gems/%.%#,
+          \%C%.%#/vendor/rails/%.%#,
+          \%Z%f:%l:\ syntax\ error\\,\ %m,
+          \%Z%f:%l:\ %m,
+          \%Z\ %#,
+          \%Z%p^,
+          \%C\ %\\+On\ line\ #%l\ of\ %f,
+          \%C\ \ \ \ %f:%l:%.%#,
+          \%Ctest_%.%#:,
+          \%CActionView::TemplateError:\ %f:%l:in\ `%.%#':\ %m,
+          \%CActionView::TemplateError:\ You\ have\ a\ %m!,
+          \%CNoMethodError:\ You\ have\ a\ %m!,
+          \%CActionView::TemplateError:\ %m,
+          \%CThe\ error\ occured\ while\ %m,
+          \%C%m,
+          \ActionView::TemplateError\ (%m)\ on\ line\ #%l\ of\ %f:,
+          \%AActionView::TemplateError\ (compile\ error,
+          \%.%#/rake_test_loader.rb:%\\d%\\+:in\ `load':\ %f:%l:\ %m,
+          \%-G%.%#/lib/gems/%\\d.%\\d/gems/%.%#,
+          \%-G%.%#/vendor/rails/%.%#,
+          \%f:%l:\ %m,
+          \%-G%.%#
+    "let &l:makeprg='rake -f '.rp.'/Rakefile $*'
+    setlocal makeprg=rake
+    if has("balloon_eval") && executable('ri')
+      setlocal balloonexpr=RailsBalloonexpr()
+    endif
+    " There is no rjs/rxml filetype now, but in the future, who knows...
+    if &ft == "ruby" || &ft == "eruby" || &ft == "rjs" || &ft == "rxml" || &ft == "yaml"
+      " This is a strong convention in Rails, so we'll break the usual rule
+      " of considering shiftwidth to be a personal preference
+      setlocal sw=2 sts=2 et
+      "set include=\\<\\zsAct\\f*::Base\\ze\\>\\\|^\\s*\\(require\\\|load\\)\\s\\+['\"]\\zs\\f\\+\\ze
+      setlocal includeexpr=RailsIncludeexpr()
+      if exists('+completefunc')
+        if &completefunc == ''
+          set completefunc=syntaxcomplete#Complete
+        endif
+      endif
+    else
+      " Does this cause problems in any filetypes?
+      setlocal includeexpr=RailsIncludeexpr()
+      setlocal suffixesadd=.rb,.rhtml,.rxml,.rjs,.mab,.css,.js,.yml,.csv,.rake,.sql,.html
+    endif
+    if &filetype == "ruby"
+      setlocal suffixesadd=.rb,.rhtml,.rxml,.rjs,.mab,.yml,.csv,.rake,s.rb
+      setlocal define=^\\s*def\\s\\+\\(self\\.\\)\\=
+    elseif &filetype == "eruby"
+      "set include=\\<\\zsAct\\f*::Base\\ze\\>\\\|^\\s*\\(require\\\|load\\)\\s\\+['\"]\\zs\\f\\+\\ze\\\|\\zs<%=\\ze
+      setlocal suffixesadd=.rhtml,.rxml,.rjs,.mab,.rb,.css,.js,.html
+    endif
+  endif
+  let t = RailsFileType()
+  if t != ""
+    let t = "-".t
+  endif
+  exe "silent doautocmd User Rails".s:gsub(t,'-','.')."."
+  if filereadable(b:rails_root."/config/rails.vim") && exists(":sandbox")
+    sandbox exe "source ".rp."/config/rails.vim"
+  endif
+  let &cpo = cpo_save
+  return b:rails_root
+endfunction
+
 " }}}1
 
 call s:InitPlugin()

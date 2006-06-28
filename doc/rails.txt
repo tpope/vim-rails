@@ -9,6 +9,7 @@ Author: Tim Pope <vimNOSPAM@tpope.info>		*rails-plugin-author*
 |rails-navigation|	Navigation
 |rails-mappings|	Mappings
 |rails-commands|	Commands
+|rails-scripts|		Script Wrappers
 |rails-partials|	Partial Extraction
 |rails-todo|		To Do
 
@@ -57,7 +58,7 @@ Rails application development.
 7. Interface to script/*.  Generally, use ":Rscript about" to call
    "script/about".  Many commands have wrappers with additional features:
    ":Rgenerate controller Blog" generates a blog controller and edits
-   apps/controllers/blog_controller.rb. |rails-commands|
+   apps/controllers/blog_controller.rb. |rails-scripts|
 
 ==============================================================================
 INSTALLATION AND USAGE				*rails-installation*
@@ -95,7 +96,7 @@ specification.
 
 						*config/rails.vim*
 If you have settings particular to a specific project, they can be put in a
-config/rails.vim file in the root directory of that application.  The file is
+config/rails.vim file in the root directory of the application.  The file is
 sourced in the |sandbox| for security reasons.  This only works in Vim 7 or
 newer.
 
@@ -185,6 +186,24 @@ Enabled when |g:rails_level| >= 2.
 When g:rails_syntax is enabled, you may find your Ruby files to be a bit heavy
 on the cyan (or however your Identifiers are highlighted).  You may want to
 enable g:ruby_no_identifiers, as explained in |ft-ruby-syntax|.
+
+					*rails-tabs* *g:rails_tabstop*  >
+	let g:rails_tabstop=4
+This option is for people who dislike the default 'shiftwidth' of 2.  When
+non-zero, all files will have a |:retab|! done with 'tabstop' set to 2 on
+load, to convert the initial indent from spaces to tabs.  Then, 'tabstop' and
+'shiftwidth' will be set to the option's value.  The process is reversed on
+write.  Thus, one can use a custom indent when editing files, yet conform to
+Rails conventions when saving them.  There is also a local buffer version
+of this option, to allow for things like: >
+	autocmd User Rails* if &ft == 'ruby' | let b:rails_tabstop = 4 | endif
+This option defaults to 0, which is the recommended value.
+
+If instead of all this magic, you would prefer to just override this plugin's
+settings and use your own custom 'shiftwidth', adjust things manually in an
+autocommand: >
+	autocmd User Rails* set sw=4 sts=4 noet
+This is highly discouraged: don't fight Rails.
 
 						*g:rails_subversion*  >
 	let g:rails_subversion=1
@@ -350,40 +369,6 @@ directory is insufficient).
 						*rails-:Rlcd*
 :Rlcd [{directory}]	|:lcd| to /path/to/railsapp/{directory}.
 
-						*rails-:Rscript*
-:Rscript {script} {options}
-			Call ruby script/{script} {options}.
-
-						*rails-:Rconsole*
-:Rconsole {options}	Start script/console.
-
-						*rails-:Rrunner*
-:Rrunner {code}		Executes {code} with script/runner.  Different from
-			:Rscript runner {code} in that code is passed as one
-			argument.
-
-						*rails-:Rgenerate*
-:Rgenerate {options}	Calls script/generate {options}, and then edits the
-			first file generated.  Respects |g:rails_subversion|.
-
-						*rails-:Rdestroy*
-:Rdestroy {options}	Calls script/destroy {options}.  Respects
-			|g:rails_subversion|.
-
-						*rails-:Rplugin*
-:Rplugin {options}	Calls script/plugin {options}.  Respects
-			|g:rails_subversion|.
-
-						*rails-:Rserver*
-:Rserver {options}	Launches script/server {options} in the background.
-			On win32, this means |!start|.  On other systems, this
-			uses the --daemon option.
-
-						*rails-:Rserver!*
-:Rserver! {options}	Same as |:Rserver|, only first attempts to kill any
-			other server using the same port.  On non-win32
-			systems, lsof must be installed for this to work.
-
 						*rails-:Rlog*
 :Rlog [{logfile}]	Split window and open {logfile} ($RAILS_ENV or
 			development by default).  The control characters used
@@ -432,9 +417,9 @@ directory is insufficient).
 			Create a {name} partial from [range] lines (default:
 			current line).  See |rails-partials|.
 
-						*rails-:Ralternate*
-:Ralternate		Load the "alternate" file.  See
-			|<Plug>RailsAlternate|.
+						*rails-:Rtags*
+:Rtags			Calls ctags -R on the current application root.
+			Exuberant ctags must be installed.
 
 			*rails-:A* *rails-:AS* *rails-:AV* *:rails-:AT*
 :A			These are compatible with Michael Sharpe's a.vim (but
@@ -453,6 +438,48 @@ directory is insufficient).
 			template named after the current method. In a model,
 			a related migration is opened.  Experiment to find the
 			rest.
+
+==============================================================================
+SCRIPT WRAPPERS					*rails-scripts*
+
+The following commands are wrappers around the scripts in the script directory
+of the Rails application.  Most have extra features beyond calling the script.
+A limited amount of completion with <Tab> is supported.
+
+						*rails-:Rscript*
+:Rscript {script} {options}
+			Call ruby script/{script} {options}.
+
+						*rails-:Rconsole*
+:Rconsole {options}	Start script/console.
+
+						*rails-:Rrunner*
+:Rrunner {code}		Executes {code} with script/runner.  Different from
+			:Rscript runner {code} in that code is passed as one
+			argument.
+
+						*rails-:Rgenerate*
+:Rgenerate {options}	Calls script/generate {options}, and then edits the
+			first file generated.  Respects |g:rails_subversion|.
+
+						*rails-:Rdestroy*
+:Rdestroy {options}	Calls script/destroy {options}.  Respects
+			|g:rails_subversion|.
+
+						*rails-:Rplugin*
+:Rplugin {options}	Calls script/plugin {options}.  Respects
+			|g:rails_subversion|.
+
+						*rails-:Rserver*
+:Rserver {options}	Launches script/server {options} in the background.
+			On win32, this means |!start|.  On other systems, this
+			uses the --daemon option.
+
+						*rails-:Rserver!*
+:Rserver! {options}	Same as |:Rserver|, only first attempts to kill any
+			other server using the same port.  On non-Windows
+			systems, lsof must be installed for this to work.
+
 
 ==============================================================================
 PARTIAL EXTRACTION				*rails-partials*
