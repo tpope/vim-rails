@@ -79,7 +79,7 @@ buffer-specific commands.
 CONFIGURATION					*rails-configuration*
 
 Very little configuration is actually required; this plugin automatically
-detects and adjusts Vim sensibly and subtly.
+detects and adjusts Vim sensibly.
 
 					*rails-:autocmd* *rails-autocommands*
 If you would like to set your own custom Vim settings whenever a Rails file is
@@ -372,10 +372,14 @@ directory is insufficient).
 						*rails-:Rlog*
 :Rlog [{logfile}]	Split window and open {logfile} ($RAILS_ENV or
 			development by default).  The control characters used
-			for highlighting are removed.  The usefulness of this
-			command is somewhat limited by the current failure to
-			reload the file on change  (you might try
-			TailMinusF.vim from vim.org).
+			for highlighting are removed.  If you have a :Tail
+			command (provided by |tailminusf|.vim), that is used;
+			otherwise, the file does NOT reload upon change.
+			Use |:checktime| to tell Vim to check for changes.
+			|G| has been mapped to do just that prior to jumping
+			to the end of the file, and q is mapped to close the
+			window.  If the delay in loading is too long, you
+			might like :Rake log:clear.
 
 						*rails-:Rpreview*
 :Rpreview [{path}]	Highly experimental command.  Creates a URL from
@@ -399,6 +403,11 @@ directory is insufficient).
 			a new project, with appropriate directories (app,
 			etc., but not vendor).
 
+						*rails-:Rpartial*
+:[range]Rpartial [{controller}/]{name}	
+			Create a {name} partial from [range] lines (default:
+			current line).  See |rails-partials|.
+
 						*rails-:Rproject!*
 :Rproject! [{file}]	Same as :Rproject, only delete existing project if it
 			exists and recreate it.  The logic to delete the old
@@ -411,11 +420,6 @@ directory is insufficient).
 			this is that you will have to regenerate your project
 			each time you add another view directory (which is why
 			this command recreates your project each time!).
-
-						*rails-:Rpartial*
-:[range]Rpartial [{controller}/]{name}	
-			Create a {name} partial from [range] lines (default:
-			current line).  See |rails-partials|.
 
 						*rails-:Rtags*
 :Rtags			Calls ctags -R on the current application root.

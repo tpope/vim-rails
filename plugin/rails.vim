@@ -42,7 +42,11 @@ function! s:rquote(str)
 endfunction
 
 function! s:escapepath(p)
-  return s:gsub(a:p,' ','\\ ')
+  return s:gsub(a:p,'[ ,]','\\&')
+endfunction
+
+function! s:escapecmd(p)
+  return s:gsub(a:p,'[ !%#]','\\&')
 endfunction
 
 function! s:rubyexestr(cmd)
@@ -292,20 +296,20 @@ function! s:QuickFixCmdPre()
   if exists("b:rails_root")
     if strpart(getcwd(),0,strlen(RailsRoot())) != RailsRoot()
       let s:last_dir = getcwd()
-      echo "lchdir ".s:escapepath(RailsRoot())
-      exe "lchdir ".s:escapepath(RailsRoot())
+      echo "lchdir ".s:escapecmd(RailsRoot())
+      exe "lchdir ".s:escapecmd(RailsRoot())
     endif
   endif
 endfunction
 
 function! s:QuickFixCmdPost()
   if exists("s:last_dir")
-    exe "lchdir ".s:escapepath(s:last_dir)
+    exe "lchdir ".s:escapecmd(s:last_dir)
     unlet s:last_dir
   endif
 endfunction
 
-function s:tabstop()
+function! s:tabstop()
   if !exists("b:rails_root")
     return 0
   elseif exists("b:rails_tabstop")
@@ -354,7 +358,7 @@ endfunction
 " Commands {{{1
 
 function! s:BufCommands()
-  let rp = s:escapepath(b:rails_root)
+  let rp = s:escapecmd(RailsRoot())
   "  silent exe 'command! -buffer -complete=custom,s:ScriptComplete -nargs=+ Script :!ruby '.s:escapepath(b:rails_root.'/script/').'<args>'
   command! -buffer -bar -complete=custom,s:ScriptComplete -nargs=+ Rscript :call s:Script(<bang>0,<f-args>)
   command! -buffer -bar -complete=custom,s:ScriptComplete -nargs=+ Script :Rscript<bang> <args>
@@ -373,8 +377,8 @@ function! s:BufCommands()
   command! -buffer -bar -nargs=* Rhelper :call s:ControllerFunc(<bang>0,"app/helpers/","_helper.rb",<f-args>)
   silent exe "command! -buffer -nargs=? Rcd :cd ".rp."/<args>"
   silent exe "command! -buffer -nargs=? Rlcd :lcd ".rp."/<args>"
-  command! -buffer -bar -nargs=? Cd :Rcd <args>
-  command! -buffer -bar -nargs=? Lcd :Rlcd <args>
+  "command! -buffer -bar -nargs=? Cd :Rcd <args>
+  "command! -buffer -bar -nargs=? Lcd :Rlcd <args>
   command! -buffer -bar -complete=custom,s:FindList -nargs=* -count=1 Rfind :call s:Find(<bang>0,<count>,"",<f-args>)
   command! -buffer -bar -complete=custom,s:FindList -nargs=* -count=1 Rsfind :call s:Find(<bang>0,<count>,"s",<f-args>)
   command! -buffer -bar -complete=custom,s:FindList -nargs=* -count=1 Rsplitfind :call s:Find(<bang>0,<count>,"s",<f-args>)
@@ -429,11 +433,11 @@ function! s:Rake(bang,arg)
   endif
 endfunction
 
-function s:RakeComplete(A,L,P)
+function! s:RakeComplete(A,L,P)
   return "db:fixtures:load\ndb:migrate\ndb:schema:dump\ndb:schema:load\ndb:sessions:clear\ndb:sessions:create\ndb:structure:dump\ndb:test:clone\ndb:test:clone_structure\ndb:test:prepare\ndb:test:purge\ndoc:app\ndoc:clobber_app\ndoc:clobber_plugins\ndoc:clobber_rails\ndoc:plugins\ndoc:rails\ndoc:reapp\ndoc:rerails\nlog:clear\nrails:freeze:edge\nrails:freeze:gems\nrails:unfreeze\nrails:update\nrails:update:configs\nrails:update:javascripts\nrails:update:scripts\nstats\ntest\ntest:functionals\ntest:integration\ntest:plugins\ntest:recent\ntest:uncommitted\ntest:units\ntmp:cache:clear\ntmp:clear\ntmp:create\ntmp:sessions:clear\ntmp:sockets:clear"
 endfunction
 
-function s:Preview(bang,arg)
+function! s:Preview(bang,arg)
   let root = exists("b:rails_root_url") ? b:rails_root_url : g:rails_root_url
   let root = s:sub(root,'/$','')
   if a:arg =~ '://'
@@ -463,7 +467,7 @@ function s:Preview(bang,arg)
   endif
 endfunction
 
-function s:PreviewComplete(A,L,P)
+function! s:PreviewComplete(A,L,P)
   let ret = ''
   if s:controller() != '' && s:controller() != 'application'
     let ret = s:controller().'/'
@@ -486,8 +490,12 @@ function! s:Log(bang,arg)
     exe "cgetfile ".lf
     clast
   else
-    "exe "pedit ".s:escapepath(RailsRoot())."/log/".s:environment().".log"
-    exe "sfind ".lf
+    if exists(":Tail")
+      exe "Tail ".lf
+    else
+      "exe "pedit ".s:escapecmd(RailsRoot())."/log/".s:environment().".log"
+      exe "sfind ".lf
+    endif
   endif
 endfunction
 
@@ -528,7 +536,7 @@ function! s:Project(bang,arg)
   normal! 0zt
 endfunction
 
-function s:NewProject(proj,rr,fancy)
+function! s:NewProject(proj,rr,fancy)
     let line = line('.')+1
     let template = s:NewProjectTemplate(a:proj,a:rr,a:fancy)
     silent put =template
@@ -597,7 +605,7 @@ function! s:Migration(bang,cmd,arg)
   endif
   let migr = s:sub(glob(RailsRoot().'/db/migrate/'.glob),'.*\n','')
   if migr != ''
-    exe a:cmd." ".s:escapepath(migr)
+    exe a:cmd." ".s:escapecmd(migr)
   else
     return s:error("Migration not found".(a:arg=='' ? '' : ': '.a:arg))
   endif
@@ -608,20 +616,20 @@ function! s:Find(bang,count,arg,...)
   if a:0
     let i = 1
     while i < a:0
-      let str = str . s:escapepath(a:{i}) . " "
+      let str = str . s:escapecmd(a:{i}) . " "
       let i = i + 1
     endwhile
-    let file = s:escapepath(RailsIncludefind(a:{i},1))
+    let file = s:escapecmd(s:RailsIncludefind(a:{i},1))
   else
-    "let file = RailsIncludefind(expand("<cfile>"),1)
+    "let file = s:RailsIncludefind(expand("<cfile>"),1)
     let file = s:RailsFind()
   endif
-  exe (a:count==1?'' : a:count).a:arg."find ".str.s:escapepath(file)
+  exe (a:count==1?'' : a:count).a:arg."find ".str.s:escapecmd(file)
 endfunction
 
 function! s:FindList(ArgLead, CmdLine, CursorPos)
   if exists("*UserFileComplete") " genutils.vim
-    return UserFileComplete(RailsIncludefind(a:ArgLead), a:CmdLine, a:CursorPos, 1, &path)
+    return UserFileComplete(s:RailsIncludefind(a:ArgLead), a:CmdLine, a:CursorPos, 1, &path)
   else
     return ""
   endif
@@ -660,20 +668,20 @@ function! s:NewApp(bang,...)
   endwhile
   exe "!rails".append.str
   if filereadable(dir."/".g:rails_default_file)
-    exe "edit ".s:escapepath(dir)."/".g:rails_default_file
+    exe "edit ".s:escapecmd(dir)."/".g:rails_default_file
   endif
 endfunction
 
 function! s:ControllerFunc(bang,prefix,suffix,...)
   if a:0
-    let c = s:sub(RailsIncludefind(s:sub(a:1,'^.','\u&')),'\.rb$','')
+    let c = s:sub(s:RailsIncludefind(s:sub(a:1,'^.','\u&')),'\.rb$','')
   else
     let c = s:controller()
   endif
   if c == ""
     return s:error("No controller name given")
   endif
-  let cmd = "edit".(a:bang?"! ":' ').s:escapepath(RailsRoot()).'/'.a:prefix.c.a:suffix
+  let cmd = "edit".(a:bang?"! ":' ').s:escapecmd(RailsRoot()).'/'.a:prefix.c.a:suffix
   exe cmd
   if a:0 > 1
     exe "silent! djump ".a:2
@@ -702,13 +710,20 @@ function! s:RealMansGlob(path,glob)
 endfunction
 
 function! s:Tags(bang)
-  if executable("ctags-exuberant")
-    exe "!ctags-exuberant -R ".s:escapepath(RailsRoot())
+  if exists("g:Tlist_Ctags_Cmd")
+    let cmd = g:Tlist_Ctags_Cmd
+  elseif executable("exuberant-ctags")
+    let cmd = "exuberant-ctags"
+  elseif executable("ctags-exuberant")
+    let cmd = "ctags-exuberant"
   elseif executable("ctags")
-    exe "!ctags -R ".s:escapepath(RailsRoot())
+    let cmd = "ctags"
+  elseif executable("ctags.exe")
+    let cmd = "ctags.exe"
   else
-    call s:error("ctags not found")
+    return s:error("ctags not found")
   endif
+  exe "!".cmd." -R ".s:escapecmd(RailsRoot())
 endfunction
 
 " }}}1
@@ -808,7 +823,7 @@ function! s:Generate(bang,...)
     let file = ""
   endif
   if !s:rubyexe("script/generate ".target.(s:usesubversion()?' -c':'').str) && file != ""
-    exe "edit ".s:escapepath(RailsRoot())."/".file
+    exe "edit ".s:escapecmd(RailsRoot())."/".file
   endif
 endfunction
 
@@ -968,10 +983,10 @@ function! s:HiDefaults()
   hi def link yamlRailsComment                Comment
 endfunction
 
-function s:RailslogSyntax()
+function! s:RailslogSyntax()
   syn match   railslogRender      '^\s*\<\%(Processing\|Rendering\|Rendered\|Redirected\|Completed\)\>'
   syn match   railslogComment     '^\s*# .*'
-  syn match   railslogModel       '^\s*\u\w* \%(Load\|Columns\)\>' skipwhite nextgroup=railslogModelNum
+  syn match   railslogModel       '^\s*\u\w* \%(Load\%( Including Associations\)\=\|Columns\|Count\)\>' skipwhite nextgroup=railslogModelNum
   syn match   railslogModel       '^\s*SQL\>' skipwhite nextgroup=railslogModelNum
   syn region  railslogModelNum    start='(' end=')' contains=railslogNumber contained skipwhite nextgroup=railslogSQL
   syn match   railslogSQL         '\u.*$' contained
@@ -1077,9 +1092,9 @@ endfunction
 function! RailsIncludeexpr()
   " Is this foolproof?
   if mode() =~ '[iR]' || expand("<cfile>") != v:fname
-    return RailsIncludefind(v:fname)
+    return s:RailsIncludefind(v:fname)
   else
-    return RailsIncludefind(v:fname,1)
+    return s:RailsIncludefind(v:fname,1)
   endif
 endfunction
 
@@ -1165,8 +1180,9 @@ function! s:RailsFind()
   endif
   let isf_keep = &isfname
   set isfname=@,48-57,/,-,_,: ",\",'
+  " FIXME: grab visual selection in visual mode
   let cfile = expand("<cfile>")
-  let res = RailsIncludefind(cfile,1)
+  let res = s:RailsIncludefind(cfile,1)
   let &isfname = isf_keep
   return res
 endfunction
@@ -1180,7 +1196,7 @@ function! s:underscore(str)
   return str
 endfunction
 
-function! RailsIncludefind(str,...)
+function! s:RailsIncludefind(str,...)
   if a:str == "ApplicationController"
     return "controllers/application.rb"
   elseif a:str == "<%="
@@ -1298,31 +1314,31 @@ function! s:Alternate(bang,cmd)
     if filereadable(b:rails_root."/".helper)
       " Would it be better to skip the helper and go straight to the
       " controller?
-      exe cmd." ".s:escapepath(helper)
+      exe cmd." ".s:escapecmd(helper)
     elseif filereadable(b:rails_root."/".controller)
       let jumpto = expand("%:t:r")
-      exe cmd." ".s:escapepath(controller)
+      exe cmd." ".s:escapecmd(controller)
       exe "silent! djump ".jumpto
     elseif filereadable(b:rails_root."/".model)
-      exe cmd." ".s:escapepath(model)
+      exe cmd." ".s:escapecmd(model)
     else
-      exe cmd." ".s:escapepath(helper)
+      exe cmd." ".s:escapecmd(helper)
     endif
   elseif t =~ '^controller-api\>'
     let api = s:sub(s:sub(f,'/controllers/','/apis/'),'_controller\.rb$','_api.rb')
-    exe cmd." ".s:escapepath(api)
+    exe cmd." ".s:escapecmd(api)
   elseif t =~ '^helper\>'
     let controller = s:sub(s:sub(f,'/helpers/','/controllers/'),'_helper\.rb$','_controller.rb')
-    exe cmd." ".s:escapepath(controller)
+    exe cmd." ".s:escapecmd(controller)
   elseif t =~ '\<fixtures\>'
     let file = s:singularize(expand("%:t:r")).'_test.rb'
-    exe cmd." ".s:escapepath(file)
+    exe cmd." ".s:escapecmd(file)
   else
     let file = fnamemodify(f,":t:r")
     if file =~ '_test$'
-      exe cmd." ".s:escapepath(s:sub(file,'_test$','.rb'))
+      exe cmd." ".s:escapecmd(s:sub(file,'_test$','.rb'))
     else
-      exe cmd." ".s:escapepath(file).'_test'
+      exe cmd." ".s:escapecmd(file).'_test'
     endif
   endif
 endfunction
@@ -1455,7 +1471,7 @@ function! s:MakePartial(bang,...) range abort
   else
     new
   endif
-  exe "silent file ".s:escapepath(fnamemodify(out,':~:.'))
+  exe "silent file ".s:escapecmd(fnamemodify(out,':~:.'))
   let &ft = ft
   let @@ = partial
   silent put
@@ -1509,12 +1525,12 @@ endfunction
 " }}}1
 " Mappings {{{1
 
-function s:leadermap(key,mapping)
+function! s:leadermap(key,mapping)
   exe "map <buffer> ".g:rails_leader.a:key." ".a:mapping
 endfunction
 
 function! s:BufMappings()
-  map <buffer> <silent> <Plug>RailsAlternate :Ralternate<CR>
+  map <buffer> <silent> <Plug>RailsAlternate :A<CR>
   map <buffer> <silent> <Plug>RailsFind      :Rfind<CR>
   map <buffer> <silent> <Plug>RailsSplitFind :Rsfind<CR>
   map <buffer> <silent> <Plug>RailsVSplitFind :Rvsfind<CR>
@@ -1522,13 +1538,13 @@ function! s:BufMappings()
   map <buffer> <silent> <Plug>RailsMagicM    :call <SID>MagicM(0,"find")<CR>
   if g:rails_mappings
     if !hasmapto("<Plug>RailsFind")
-      map <buffer> gf              <Plug>RailsFind
+      nmap <buffer> gf              <Plug>RailsFind
     endif
     if !hasmapto("<Plug>RailsSplitFind")
-      map <buffer> <C-W>f          <Plug>RailsSplitFind
+      nmap <buffer> <C-W>f          <Plug>RailsSplitFind
     endif
     if !hasmapto("<Plug>RailsTabFind")
-      map <buffer> <C-W>gf         <Plug>RailsTabFind
+      nmap <buffer> <C-W>gf         <Plug>RailsTabFind
     endif
     map <buffer> <LocalLeader>rf <Plug>RailsFind
     map <buffer> <LocalLeader>ra <Plug>RailsAlternate
@@ -1544,7 +1560,7 @@ endfunction
 " }}}1
 " Database {{{1
 
-function s:extractdbarg(str,arg)
+function! s:extractdbarg(str,arg)
   return matchstr("\n".a:str."\n",'\n'.a:arg.'=\zs.\{-\}\ze\n')
 endfunction
 
@@ -1854,7 +1870,9 @@ function! s:BufInit(path)
       silent! exe "%s/\e\\[[0-9;]*m//g"
       silent! exe "%s/\r$//"
       setlocal readonly nomodifiable noswapfile autoread foldmethod=syntax
-      map <buffer> <silent> R :checktime<CR>
+      nnoremap <buffer> <silent> R :checktime<CR>
+      nnoremap <buffer> <silent> G :checktime<Bar>$<CR>
+      nnoremap <buffer> <silent> q :bwipe<CR>
       $
     endif
     call s:BufCommands()
@@ -1892,6 +1910,9 @@ function! s:BufInit(path)
           \%-G%.%#
     "let &l:makeprg='rake -f '.rp.'/Rakefile $*'
     setlocal makeprg=rake
+    if stridx(&tags,rp) == -1
+      let &l:tags = &tags . "," . rp ."/tags"
+    endif
     if has("balloon_eval") && executable('ri')
       setlocal balloonexpr=RailsBalloonexpr()
     endif
