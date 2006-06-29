@@ -359,17 +359,10 @@ endfunction
 
 function! s:BufCommands()
   let rp = s:escapecmd(RailsRoot())
-  "  silent exe 'command! -buffer -complete=custom,s:ScriptComplete -nargs=+ Script :!ruby '.s:escapepath(b:rails_root.'/script/').'<args>'
-  command! -buffer -bar -complete=custom,s:ScriptComplete -nargs=+ Rscript :call s:Script(<bang>0,<f-args>)
-  command! -buffer -bar -complete=custom,s:ScriptComplete -nargs=+ Script :Rscript<bang> <args>
-  command! -buffer -bar -complete=custom,s:ConsoleComplete -nargs=* Rconsole :Rscript console <args>
-  command! -buffer -bar -complete=custom,s:GenerateComplete -nargs=* Rgenerate :call s:Generate(<bang>0,<f-args>)
-  command! -buffer -bar -complete=custom,s:DestroyComplete -nargs=* Rdestroy :call s:Destroy(<bang>0,<f-args>)
-  command! -buffer -bar -complete=custom,s:PluginComplete -nargs=* Rplugin :call s:Plugin(<bang>0,<f-args>)
+  call s:BufScriptWrappers()
   command! -buffer -bar -complete=custom,s:RakeComplete -nargs=? Rake :call s:Rake(<bang>0,<q-args>)
   command! -buffer -bar -complete=custom,s:PreviewComplete -nargs=? Rpreview :call s:Preview(<bang>0,<q-args>)
   command! -buffer -bar -complete=custom,s:environments -bang -nargs=? Rlog :call s:Log(<bang>0,<q-args>)
-  command! -buffer -bar -complete=custom,s:environments -nargs=? -bang Rserver :call s:Server(<bang>0,<q-args>)
   command! -buffer -nargs=1 Rrunner :call s:Script(<bang>0,"runner",<f-args>)
   command! -buffer -nargs=1 Rp      :call s:Script(<bang>0,"runner","p begin ".<f-args>." end")
   command! -buffer -bar -nargs=? Rmigration :call s:Migration(<bang>0,"edit",<q-args>)
@@ -491,9 +484,9 @@ function! s:Log(bang,arg)
     clast
   else
     if exists(":Tail")
-      exe "Tail ".lf
+      exe "Tail ".s:escapecmd(RailsRoot()).lf
     else
-      "exe "pedit ".s:escapecmd(RailsRoot())."/log/".s:environment().".log"
+      "exe "pedit ".s:escapecmd(RailsRoot()).lf
       exe "sfind ".lf
     endif
   endif
@@ -728,6 +721,15 @@ endfunction
 
 " }}}1
 " Script Wrappers {{{1
+
+function! s:BufScriptWrappers()
+  command! -buffer -bar -complete=custom,s:ScriptComplete -nargs=+ Rscript :call s:Script(<bang>0,<f-args>)
+  command! -buffer -bar -complete=custom,s:ConsoleComplete -nargs=* Rconsole :Rscript console <args>
+  command! -buffer -bar -complete=custom,s:GenerateComplete -nargs=* Rgenerate :call s:Generate(<bang>0,<f-args>)
+  command! -buffer -bar -complete=custom,s:DestroyComplete -nargs=* Rdestroy :call s:Destroy(<bang>0,<f-args>)
+  command! -buffer -bar -complete=custom,s:PluginComplete -nargs=* Rplugin :call s:Plugin(<bang>0,<f-args>)
+  command! -buffer -bar -complete=custom,s:environments -nargs=? -bang Rserver :call s:Server(<bang>0,<q-args>)
+endfunction
 
 function! s:Script(bang,cmd,...)
   let str = ""
