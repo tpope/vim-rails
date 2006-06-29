@@ -312,6 +312,8 @@ endfunction
 function! s:tabstop()
   if !exists("b:rails_root")
     return 0
+  elseif &filetype != 'ruby' && &filetype != 'eruby' && &filetype != 'html' && &filetype != 'css' && &filetype != 'yaml'
+    return 0
   elseif exists("b:rails_tabstop")
     return b:rails_tabstop
   else
@@ -321,7 +323,7 @@ endfunction
 
 function! s:breaktabs()
   let ts = s:tabstop()
-  if ts && &filetype != 'railslog'
+  if ts
     if exists("s:retab_in_process")
       unlet s:retab_in_process
       silent! undo
@@ -330,7 +332,9 @@ function! s:breaktabs()
       setlocal noexpandtab
       let mod = &l:modifiable
       setlocal modifiable
-      g/^\s/retab!
+      let line = line('.')
+      keepmarks g/^\s/retab!
+      keepmarks exe line
       let &l:modifiable = mod
     endif
     let &l:tabstop = ts
@@ -889,6 +893,9 @@ function! s:BufSyntax()
     "let g:rails_view_helpers = s:rails_view_helpers
     let rails_view_helpers = '+\.\@<!\<\('.s:gsub(s:rails_view_helpers,'\s\+','\\|').'\)\>+'
     if &syntax == 'ruby'
+      if t =~ '.'
+        syn match rubyRailsError ':order_by\>'
+      endif
       if t =~ '^api\>'
         syn keyword rubyRailsAPIMethod api_method
       endif
@@ -902,8 +909,11 @@ function! s:BufSyntax()
         "syn keyword rubyRailsARCallbackMethod after_find after_initialize
         syn keyword rubyRailsARValidationMethod validate validate_on_create validate_on_update validates_acceptance_of validates_associated validates_confirmation_of validates_each validates_exclusion_of validates_format_of validates_inclusion_of validates_length_of validates_numericality_of validates_presence_of validates_size_of validates_uniqueness_of
       endif
+      if t == ''
+        syn keyword rubyRailsMethod params request response session headers template cookies flash
+      endif
       if t =~ '^controller\>' || t =~ '^view\>' || t=~ '^helper\>'
-      syn keyword rubyRailsMethod params request response session headers template cookies flash
+        syn keyword rubyRailsMethod params request response session headers template cookies flash
         syn match rubyRailsError '[@:]\@<!@\%(params\|request\|response\|session\|headers\|template\|cookies\|flash\)\>'
         syn match rubyRailsError '\<render_partial\>'
         syn keyword rubyRailsRenderMethod render render_component
@@ -931,6 +941,8 @@ function! s:BufSyntax()
       syn keyword rubyRailsMethod cattr_accessor mattr_accessor
       syn keyword rubyRailsInclude require_dependency require_gem
     elseif &syntax == "eruby" && t =~ '^view\>'
+      syn match rubyRailsError ':order_by\>'
+      "syn match rubyRailsError '@content_for_\w*\>'
       syn cluster erubyRailsRegions contains=erubyOneLiner,erubyBlock,erubyExpression
       "exe "syn match erubyRailsHelperMethod ".rails_view_helpers." contained containedin=@erubyRailsRegions"
         exe "syn keyword erubyRailsHelperMethod ".s:sub(s:rails_view_helpers,'\<select\s\+','')." contained containedin=@erubyRailsRegions"
@@ -1028,13 +1040,19 @@ function! s:SetBasePath()
   let rp = s:escapepath(b:rails_root)
   let t = RailsFileType()
   let oldpath = s:sub(&l:path,'^\.,','')
-  let &l:path = '.,'.rp.",".rp."/app/controllers,".rp."/app,".rp."/app/models,".rp."/app/helpers,".rp."/components,".rp."/config,".rp."/lib,".rp."/vendor/plugins/*/lib,".rp."/vendor,".rp."/test/unit,".rp."/test/functional,".rp."/test/integration,".rp."/app/apis,"."/test,"
+  if stridx(oldpath,rp) == 2
+    let oldpath = ''
+  endif
+  let &l:path = '.,'.rp.",".rp."/app/controllers,".rp."/app,".rp."/app/models,".rp."/app/helpers,".rp."/components,".rp."/config,".rp."/lib,".rp."/vendor/plugins/*/lib,".rp."/vendor,".rp."/test/unit,".rp."/test/functional,".rp."/test/integration,".rp."/app/apis,".rp."/test,"
   if s:controller() != ''
     if RailsFilePath() =~ '\<components/'
       let &l:path = &l:path . rp . '/components/' . s:controller() . ','
     else
       let &l:path = &l:path . rp . '/app/views/' . s:controller() . ',' . rp . '/app/views,' . rp . '/public,'
     endif
+  endif
+  if t =~ '^log\>'
+    let &l:path = &l:path . rp . '/app/views,'
   endif
   let &l:path = &l:path . oldpath
 endfunction
