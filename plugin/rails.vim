@@ -484,7 +484,7 @@ function! s:Log(bang,arg)
     clast
   else
     if exists(":Tail")
-      exe "Tail ".s:escapecmd(RailsRoot()).lf
+      exe "Tail ".s:escapecmd(RailsRoot()).'/'.lf
     else
       "exe "pedit ".s:escapecmd(RailsRoot()).lf
       exe "sfind ".lf
@@ -988,10 +988,12 @@ endfunction
 function! s:RailslogSyntax()
   syn match   railslogRender      '^\s*\<\%(Processing\|Rendering\|Rendered\|Redirected\|Completed\)\>'
   syn match   railslogComment     '^\s*# .*'
-  syn match   railslogModel       '^\s*\u\w* \%(Load\%( Including Associations\)\=\|Columns\|Count\)\>' skipwhite nextgroup=railslogModelNum
+  syn match   railslogModel       '^\s*\u\w* \%(Load\%( Including Associations\| IDs For Limited Eager Loading\)\=\|Columns\|Count\|Update\|Destroy\|Delete all\)\>' skipwhite nextgroup=railslogModelNum
   syn match   railslogModel       '^\s*SQL\>' skipwhite nextgroup=railslogModelNum
   syn region  railslogModelNum    start='(' end=')' contains=railslogNumber contained skipwhite nextgroup=railslogSQL
   syn match   railslogSQL         '\u.*$' contained
+  " Destroy generates multiline SQL, ugh
+  syn match   railslogSQL         '^ WHERE .*$'
   syn match   railslogNumber      '\<\d\+\>%'
   syn match   railslogNumber      '[ (]\@<=\<\d\+\.\d\+\>'
   syn region  railslogString      start='"' skip='\\"' end='"' oneline contained
