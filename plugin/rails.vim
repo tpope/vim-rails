@@ -326,15 +326,18 @@ function! s:breaktabs()
   if ts
     if exists("s:retab_in_process")
       unlet s:retab_in_process
-      silent! undo
+      let line = line('.')
+      lockmarks silent! undo
+      lockmarks exe line
     else
       let &l:tabstop = 2
       setlocal noexpandtab
       let mod = &l:modifiable
       setlocal modifiable
       let line = line('.')
-      keepmarks g/^\s/retab!
-      keepmarks exe line
+      " FIXME: when I say g/^\s/, only apply to those lines
+      lockmarks g/^\s/retab!
+      lockmarks exe line
       let &l:modifiable = mod
     endif
     let &l:tabstop = ts
@@ -353,7 +356,9 @@ function! s:fixtabs()
     endif
     let &l:tabstop = 2
     setlocal expandtab
-    retab
+    let line = line('.')
+    lockmarks retab
+    lockmarks exe line
     let &l:tabstop = ts
   endif
 endfunction
@@ -398,6 +403,9 @@ function! s:BufCommands()
   endif
   if exists(":Project")
     command! -buffer -bar -bang -nargs=? Rproject :call s:Project(<bang>0,<q-args>)
+  endif
+  if exists("g:loaded_dbext")
+    command! -buffer -bar -nargs=? Rdbext :call s:BufDatabase(2,<q-args>,<bang>0)
   endif
   command! -buffer -bar -nargs=0 Rtags :call s:Tags(<bang>0)
   let ext = expand("%:e")
@@ -1590,11 +1598,17 @@ function! s:BufDatabase(...)
   if (a:0 && a:1 > 1) || !exists("s:dbext_last_root")
     let s:dbext_last_root = '*'
   endif
+  if (a:0 > 1 && a:2 != '')
+    let env = a:2
+  else
+    let env = s:environment()
+  endif
   " Crude caching mechanism
   if s:dbext_last_root != RailsRoot()
     if exists("g:loaded_dbext") && (g:rails_dbext || (a:0 && a:1))
-      let cmd = 'require %{yaml}; y = File.open(%q{'.RailsRoot().'/config/database.yml}) {|f| YAML::load(f)}; y[%{'.s:environment().'}].each{|k,v|puts k+%{=}+v if v}'
-      let out = s:rubyeval(cmd,'')
+      let cmdb = 'require %{yaml}; y = File.open(%q{'.RailsRoot().'/config/database.yml}) {|f| YAML::load(f)}; e = y[%{'
+      let cmde = '}]; i=0; e=y[e] while e.respond_to?(:to_str) && (i+=1)<16; e.each{|k,v|puts k+%{=}+v if v}'
+      let out = s:rubyeval(cmdb.env.cmde,'')
       let adapter = s:extractdbarg(out,'adapter')
       let s:sbext_bin = ''
       if adapter == 'postgresql'
@@ -1614,7 +1628,7 @@ function! s:BufDatabase(...)
       let s:dbext_user = s:extractdbarg(out,'username')
       let s:dbext_passwd = s:extractdbarg(out,'password')
       let s:dbext_dbname = s:extractdbarg(out,'database')
-      if s:dbext_dbname != '' && adapter =~? '^sqlite'
+      if s:dbext_dbname != '' && s:dbext_dbname !~ '^:' && adapter =~? '^sqlite'
         let s:dbext_dbname = RailsRoot().'/'.s:dbext_dbname
       endif
       let s:dbext_profile = ''
