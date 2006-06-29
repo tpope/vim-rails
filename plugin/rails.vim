@@ -36,6 +36,8 @@ function! s:rquote(str)
   " Imperfect but adequate for Ruby arguments
   if a:str =~ '^[A-Za-z0-9_/.-]\+$'
     return a:str
+  elseif &shell =~? 'cmd'
+    return '"'.s:gsub(s:gsub(a:str,'\','\\'),'"','\\"').'"'
   else
     return "'".s:gsub(s:gsub(a:str,'\','\\'),"'","'\\\\''")."'"
   endif
@@ -54,7 +56,7 @@ function! s:rubyexestr(cmd)
 endfunction
 
 function! s:rubyexe(cmd)
-  exe "!".s:rubyexestr(a:cmd)
+  exe "!".s:gsub(s:rubyexestr(a:cmd),'[!%$]','\\&')
   return v:shell_error
 endfunction
 
@@ -67,14 +69,10 @@ function! s:rubyeval(ruby,...)
   if !executable("ruby")
     return def
   endif
-  "if &shellquote == ""
-    "let q = '"'
-  "else
-    "let q = &shellquote
-  "endif
   let cmd = s:rubyexestr('-e '.s:rquote('require %{rubygems} rescue nil; require %{active_support} rescue nil; '.a:ruby))
   "let g:rails_last_ruby_command = cmd
-  let results = system(cmd)
+  " If the shell is messed up, this command could cause an error message
+  silent! let results = system(cmd)
   "let g:rails_last_ruby_result = results
   if results =~ '-e:\d'
     return def
@@ -156,6 +154,8 @@ endfunction
 
 " }}}1
 " "Public" Interface {{{1
+
+" RailsRoot() is the only official public function
 
 function! RailsRoot()
   if exists("b:rails_root")
@@ -387,8 +387,7 @@ function! s:BufCommands()
   command! -buffer -bar -complete=custom,s:FindList -nargs=* -count=1 Rvsfind :call s:Find(<bang>0,<count>,"vert s",<f-args>)
   command! -buffer -bar -complete=custom,s:FindList -nargs=* -count=1 Rvsplitfind :call s:Find(<bang>0,<count>,"vert s",<f-args>)
   command! -buffer -bar -complete=custom,s:FindList -nargs=* -count=1 Rtabfind :call s:Find(<bang>0,<count>,"tab",<f-args>)
-  command! -buffer -bar -nargs=0 Alternate :echoerr Use :A instead
-  command! -buffer -bar -nargs=0 Ralternate :call s:Alternate(<bang>0,"find")
+  command! -buffer -bar -nargs=0 Ralternate :call s:warn('Use :A instead')|call s:Alternate(<bang>0,"find")
   if g:rails_avim_commands
     command! -buffer -bar -nargs=0 A  :call s:Alternate(<bang>0,"find")
     command! -buffer -bar -nargs=0 AS :call s:Alternate(<bang>0,"sfind")
@@ -1109,7 +1108,7 @@ function! RailsBalloonexpr()
     if str !~ '^\u'
       return ""
     endif
-    let res = s:sub(system("ri ".s:rquote(str)),'\n$','')
+    silent! let res = s:sub(system("ri ".s:rquote(str)),'\n$','')
     if res =~ '^Nothing known about'
       return ''
     endif
@@ -1606,11 +1605,14 @@ function! s:BufDatabase(...)
   " Crude caching mechanism
   if s:dbext_last_root != RailsRoot()
     if exists("g:loaded_dbext") && (g:rails_dbext || (a:0 && a:1))
+      " Ideally we would filter this through ERB but that could be insecure.
+      " It might be possible to make use of taint checking.
       let cmdb = 'require %{yaml}; y = File.open(%q{'.RailsRoot().'/config/database.yml}) {|f| YAML::load(f)}; e = y[%{'
       let cmde = '}]; i=0; e=y[e] while e.respond_to?(:to_str) && (i+=1)<16; e.each{|k,v|puts k+%{=}+v if v}'
       let out = s:rubyeval(cmdb.env.cmde,'')
       let adapter = s:extractdbarg(out,'adapter')
-      let s:sbext_bin = ''
+      let s:dbext_bin = ''
+      let s:dbext_integratedlogin = ''
       if adapter == 'postgresql'
         let adapter = 'pgsql'
       elseif adapter == 'sqlite3'
@@ -1635,6 +1637,12 @@ function! s:BufDatabase(...)
       let s:dbext_host = s:extractdbarg(out,'host')
       let s:dbext_port = s:extractdbarg(out,'port')
       let s:dbext_dsnname = s:extractdbarg(out,'dsn')
+      if s:dbext_host =~? '^\cDBI:'
+        if s:dbext_host =~? '\c\<Trusted[_ ]Connection\s*=\s*yes\>'
+          let s:dbext_integratedlogin = 1
+        endif
+        let s:dbext_host = matchstr(s:dbext_host,'\c\<\%(Server\|Data Source\)\s*=\s*\zs[^;]*')
+      endif
       let s:dbext_last_root = RailsRoot()
     endif
   endif
@@ -1648,6 +1656,7 @@ function! s:BufDatabase(...)
     silent! let b:dbext_host    = s:dbext_host
     silent! let b:dbext_port    = s:dbext_port
     silent! let b:dbext_dsnname = s:dbext_dsnname
+    silent! let b:dbext_integratedlogin = s:dbext_integratedlogin
   endif
 endfunction
 
