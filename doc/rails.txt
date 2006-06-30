@@ -58,7 +58,8 @@ Rails application development.
 7. Interface to script/*.  Generally, use ":Rscript about" to call
    "script/about".  Many commands have wrappers with additional features:
    ":Rgenerate controller Blog" generates a blog controller and edits
-   apps/controllers/blog_controller.rb. |rails-scripts|
+   apps/controllers/blog_controller.rb.  A menu interface is also provideq,
+   for these and other commands.  |rails-scripts|
 
 ==============================================================================
 INSTALLATION AND USAGE				*rails-installation*
@@ -132,6 +133,18 @@ This does not require a.vim.  (a.vim is a plugin for easily alternating
 between, for example, foo.c and foo.h.  If it's installed, you can see
 |alternate.txt| for more information.)  Enabled when |g:rails_level| >= 3.
 
+						*g:rails_dbext*  >
+	let g:rails_dbext=1
+Enable integration with the dbext plugin, if it is installed.  Defaults to the
+value of |g:rails_expensive|.  When this option is set, dbext settings are
+automagically extracted from config/database.yml.  Then, you can use features
+like table name completion and commands like >
+	:Create database brablog_development
+	:Select * from posts where title like '%Denmark%'
+Note that dbext is a complicated plugin, and may require additional
+configuration.  See |dbext| (if installed) and |sql-completion-dynamic| (in
+Vim 7).
+
 						*g:rails_default_file*  >
 	let g:rails_default_file='config/database.yml'
 File to load when a new Rails application is created.  Defaults to the README.
@@ -147,18 +160,6 @@ the Ruby interpreter).  Recommended for moderately fast computers.  Enabled
 when |g:rails_level| >= 3 (>= 4 on Windows, which runs external programs
 decidedly slower).
 
-						*g:rails_dbext*  >
-	let g:rails_dbext=1
-Enable integration with the dbext plugin, if it is installed.  Defaults to the
-value of |g:rails_expensive|.  When this option is set, dbext settings are
-automagically extracted from config/database.yml.  Then, you can use features
-like table name completion and commands like >
-	:Create database brablog_development
-	:Select * from posts where title like '%Denmark%'
-Note that dbext is a complicated plugin, and may require additional
-configuration.  See |dbext| (if installed) and |sql-completion-dynamic| (in
-Vim 7).
-
 						*g:rails_isfname*  >
 	let g:rails_isfname=1
 Enables changes to the 'isfname' option.  Should no longer be necessary.
@@ -172,10 +173,28 @@ Prefix for mappings.  See |rails-mappings|.
 Enables a few <LocalLeader> mappings.  See |rails-mappings|. Enabled when
 |g:rails_level| >= 3.
 
+						*g:rails_menu*  >
+	let g:rails_menu=1
+When 2, a Rails menu is created.  When 1, this menu is a submenu under the
+Plugin menu.  The default is 0, 1, or 2, depending on whether |g:rails_level|
+is less than, equal to, or greater than 3.
+
+						*g:rails_root_url*  >
+	let g:rails_root_url='http://localhost:3000/'
+Used for the |:Rpreview| command.  Default is as shown above.  Overridden by
+b:rails_root_url.
+
 						*g:rails_statusline*  >
 	let g:rails_statusline=1
 Give a clue in the statusline when this plugin is enabled.  This requires that
 the current filetype is in your existing 'statusline'.  Enabled when
+|g:rails_level| >= 3.
+
+						*g:rails_subversion*  >
+	let g:rails_subversion=1
+Automatically add/remove files to the subversion repository for commands like
+|:Rgenerate| and |:Rdestroy| (but not |:Rscript|).  Ignored when the
+application is not part of a subversion repository.  Enabled with
 |g:rails_level| >= 3.
 
 						*g:rails_syntax*  >
@@ -204,18 +223,6 @@ settings and use your own custom 'shiftwidth', adjust things manually in an
 autocommand: >
 	autocmd User Rails* set sw=4 sts=4 noet
 This is highly discouraged: don't fight Rails.
-
-						*g:rails_subversion*  >
-	let g:rails_subversion=1
-Automatically add/remove files to the subversion repository for commands like
-|:Rgenerate| and |:Rdestroy| (but not |:Rscript|).  Ignored when the
-application is not part of a subversion repository.  Enabled with
-|g:rails_level| >= 3.
-
-						*g:rails_root_url*  >
-	let g:rails_root_url='http://localhost:3000/'
-Used for the |:Rpreview| command.  Default is as shown above.  Overridden by
-b:rails_root_url.
 
 ==============================================================================
 MANAGED VIM OPTIONS			*rails-options*
@@ -250,9 +257,8 @@ appears to have no side effects.
 
 					*rails-'makeprg'*	*rails-'mp'*
 					*rails-'errorformat'*	*rails-'efm'*
-Rake is used as the 'makeprg', so |:make| will work as expected.  Also, thanks
-to the rubyunit compiler, 'errorformat' is set appropriately to handle your
-tests.
+Rake is used as the 'makeprg', so |:make| will work as expected.  Also, 
+'errorformat' is set appropriately to handle your tests.
 
 					*rails-'filetype'*	*rails-'ft'*
 The 'filetype' is sometimes adjusted for Rails files.  Most notably, *.rxml
@@ -337,8 +343,8 @@ to change.
 			in lots of places; you may be surprised.  Deprecated
 			in favor of |rails-:A| and friends.
 
-						*<Plug>RailsMagicM*
-<Plug>RailsMagicM	Pay no attention to the name; this is a deprecated
+						*<Plug>RailsRelated*
+<Plug>RailsRelated	The former <Plug>RailsMagicM.  This is a deprecated
 <LocalLeader>rm		mapping that calls |rails-:R|.
 
 						*<Plug>RailsFind*
@@ -446,12 +452,12 @@ directory is insufficient).
 
 			*rails-:R* *rails-:RS* *rails-:RV* *:rails-:RT*
 :R			These are similar |rails-:A| and friends above, only
-:RS			with different (oftentimes more useful) destinations.
-:RV			In a template, they jump to a contrller method of the
-:RT			same name, and in a controller, they jump to the
-			template named after the current method. In a model,
-			a related migration is opened.  Experiment to find the
-			rest.
+:RS			they jump to the "related" file rather than the
+:RV			"alternate."  In a template, they jump to a contrller
+:RT			method of the same name, and in a controller, they
+			jump to the template named after the current method.
+			In a model, a related migration is opened.  Experiment
+			to find the rest.
 
 ==============================================================================
 SCRIPT WRAPPERS					*rails-scripts*

@@ -277,6 +277,7 @@ function! s:InitConfig()
   call s:SetOptDefault("rails_default_database","")
   call s:SetOptDefault("rails_leader","<LocalLeader>r")
   call s:SetOptDefault("rails_root_url",'http://localhost:3000/')
+  call s:SetOptDefault("rails_menu",(l>2)+(l>3))
   if l > 2
     if exists("g:loaded_dbext") && executable("sqlite3") && ! executable("sqlite")
       " Since dbext can't find it by itself
@@ -393,11 +394,11 @@ function! s:BufCommands()
     command! -buffer -bar -nargs=0 AS :call s:Alternate(<bang>0,"sfind")
     command! -buffer -bar -nargs=0 AV :call s:Alternate(<bang>0,"vert sfind")
     command! -buffer -bar -nargs=0 AT :call s:Alternate(<bang>0,"tabfind")
-    command! -buffer -bar -nargs=0 AN :call s:MagicM(<bang>0,"find")
-    command! -buffer -bar -nargs=0 R  :call s:MagicM(<bang>0,"find")
-    command! -buffer -bar -nargs=0 RS :call s:MagicM(<bang>0,"sfind")
-    command! -buffer -bar -nargs=0 RV :call s:MagicM(<bang>0,"vert sfind")
-    command! -buffer -bar -nargs=0 RT :call s:MagicM(<bang>0,"tabfind")
+    command! -buffer -bar -nargs=0 AN :call s:Related(<bang>0,"find")
+    command! -buffer -bar -nargs=0 R  :call s:Related(<bang>0,"find")
+    command! -buffer -bar -nargs=0 RS :call s:Related(<bang>0,"sfind")
+    command! -buffer -bar -nargs=0 RV :call s:Related(<bang>0,"vert sfind")
+    command! -buffer -bar -nargs=0 RT :call s:Related(<bang>0,"tabfind")
     command! -buffer -bar -nargs=0 RN :call s:Alternate(<bang>0,"find")
   endif
   if exists(":Project")
@@ -437,8 +438,12 @@ function! s:Rake(bang,arg)
   endif
 endfunction
 
-function! s:RakeComplete(A,L,P)
+function! s:raketasks()
   return "db:fixtures:load\ndb:migrate\ndb:schema:dump\ndb:schema:load\ndb:sessions:clear\ndb:sessions:create\ndb:structure:dump\ndb:test:clone\ndb:test:clone_structure\ndb:test:prepare\ndb:test:purge\ndoc:app\ndoc:clobber_app\ndoc:clobber_plugins\ndoc:clobber_rails\ndoc:plugins\ndoc:rails\ndoc:reapp\ndoc:rerails\nlog:clear\nrails:freeze:edge\nrails:freeze:gems\nrails:unfreeze\nrails:update\nrails:update:configs\nrails:update:javascripts\nrails:update:scripts\nstats\ntest\ntest:functionals\ntest:integration\ntest:plugins\ntest:recent\ntest:uncommitted\ntest:units\ntmp:cache:clear\ntmp:clear\ntmp:create\ntmp:sessions:clear\ntmp:sockets:clear"
+endfunction
+
+function! s:RakeComplete(A,L,P)
+  return s:raketasks()
 endfunction
 
 function! s:Preview(bang,arg)
@@ -468,6 +473,7 @@ function! s:Preview(bang,arg)
       setlocal filetype=xhtml
     endif
     wincmd w
+    call s:warn("Define a :OpenURL command to use a browser")
   endif
 endfunction
 
@@ -800,6 +806,13 @@ function! s:Plugin(bang,...)
 endfunction
 
 function! s:Destroy(bang,...)
+  if a:0 == 0
+    call s:rubyexe("script/destroy")
+    return
+  elseif a:0 == 1
+    call s:rubyexe("script/destroy ".s:rquote(a:1))
+    return
+  endif
   let str = ""
   let c = 1
   while c <= a:0
@@ -840,6 +853,10 @@ function! s:Generate(bang,...)
   endif
 endfunction
 
+function! s:generators()
+  return "controller\nintegration_test\nmailer\nmigration\nmodel\nplugin\nscaffold\nsession_migration\nweb_service"
+endfunction
+
 function! s:ScriptComplete(ArgLead,CmdLine,P)
   "  return s:gsub(glob(RailsRoot()."/script/**"),'\%(.\%(\n\)\@<!\)*[\/]script[\/]','')
   let cmd = s:sub(a:CmdLine,'^\u\w*\s\+','')
@@ -852,7 +869,7 @@ function! s:ScriptComplete(ArgLead,CmdLine,P)
   elseif cmd =~ '^\w*$'
     return "about\nbreakpointer\nconsole\ndestroy\ngenerate\nperformance/benchmarker\nperformance/profiler\nplugin\nproccess/reaper\nprocess/spawner\nrunner\nserver"
   elseif cmd =~ '^\%(generate\|destroy\)\s\+'.a:ArgLead."$"
-    return "controller\nintegration_test\nmailer\nmigration\nmodel\nplugin\nscaffold\nsession_migration\nweb_service"
+    return s:generators()
   elseif cmd =~ '^\%(console\)\s\+\(--\=\w\+\s\+\)\='.a:ArgLead."$"
     return s:environments()."\n-s\n--sandbox"
   elseif cmd =~ '^\%(plugin\)\s\+'.a:ArgLead."$"
@@ -1372,7 +1389,7 @@ function! s:Alternate(bang,cmd)
   endif
 endfunction
 
-function! s:MagicM(bang,cmd)
+function! s:Related(bang,cmd)
   let cmd = a:cmd.(a:bang ? '!' : '')
   let f = RailsFilePath()
   let t = RailsFileType()
@@ -1390,7 +1407,7 @@ function! s:MagicM(bang,cmd)
   elseif t =~ '^controller\>'
     exe cmd." ".s:sub(s:sub(RailsFilePath(),'/controllers/','/views/'),'_controller\.rb$','/'.s:lastmethod())
   elseif t =~ '^model-ar\>'
-    call s:Migration(0,cmd,'create_'.s:sub(expand('%:t:r'),'y$','ie$').'s')
+    call s:Migration(0,cmd,'create_'.s:sub(expand('%:t:r'),'y$','ie').'s')
   elseif t =~ '^api\>'
     exe cmd." ".s:sub(s:sub(RailsFilePath(),'/apis/','/controllers/'),'_api\.rb$','_controller.rb')
   elseif f =~ '\<db/migrate/\d\d\d_'
@@ -1564,7 +1581,8 @@ function! s:BufMappings()
   map <buffer> <silent> <Plug>RailsSplitFind :Rsfind<CR>
   map <buffer> <silent> <Plug>RailsVSplitFind :Rvsfind<CR>
   map <buffer> <silent> <Plug>RailsTabFind   :Rtabfind<CR>
-  map <buffer> <silent> <Plug>RailsMagicM    :call <SID>MagicM(0,"find")<CR>
+  map <buffer> <silent> <Plug>RailsRelated   :call <SID>Related(0,"find")<CR>
+  map <buffer> <silent> <Plug>RailsMagicM    <Plug>RailsRelated
   if g:rails_mappings
     if !hasmapto("<Plug>RailsFind")
       nmap <buffer> gf              <Plug>RailsFind
@@ -1575,15 +1593,106 @@ function! s:BufMappings()
     if !hasmapto("<Plug>RailsTabFind")
       nmap <buffer> <C-W>gf         <Plug>RailsTabFind
     endif
+    if exists("$CREAM")
+      imap <buffer> <C-CR> <C-O><Plug>RailsFind
+      " FIXME: Find a better place for these!
+      imap <buffer> <C-\>a      <C-O>:A<CR>
+      imap <buffer> <C-\>r      <C-O>:R<CR>
+      imap <buffer> <C-\><C-A>  <C-O>:A<CR>
+      imap <buffer> <C-\><C-R>  <C-O>:R<CR>
+    endif
     map <buffer> <LocalLeader>rf <Plug>RailsFind
     map <buffer> <LocalLeader>ra <Plug>RailsAlternate
-    map <buffer> <LocalLeader>rm <Plug>RailsMagicM
+    map <buffer> <LocalLeader>rm <Plug>RailsRelated
     call s:leadermap('f','<Plug>RailsFind')
     call s:leadermap('a','<Plug>RailsAlternate')
-    call s:leadermap('m','<Plug>RailsMagicM')
+    call s:leadermap('m','<Plug>RailsRelated')
     " Deprecated
     call s:leadermap('v',':echoerr "Use <Lt>LocalLeader>rm instead!"<CR>')
   endif
+endfunction
+
+" }}}1
+" Menus {{{1
+
+function! s:CreateMenus() abort
+  if exists("g:rails_installed_menu") && g:rails_installed_menu != ""
+    exe "aunmenu ".g:rails_installed_menu
+    unlet g:rails_installed_menu
+  endif
+  if has("menu") && (exists("g:did_install_default_menus") || exists("$CREAM")) && g:rails_menu
+    if g:rails_menu > 1
+      let g:rails_installed_menu = '&Rails'
+    else
+      let g:rails_installed_menu = '&Plugin.&Rails'
+    endif
+    exe 'anoremenu <script> '.g:rails_installed_menu.'.&Related\ File\	:R :R<CR>'
+    exe 'anoremenu <script> '.g:rails_installed_menu.'.&Alternate\ File\	:A :A<CR>'
+    if exists("$CREAM")
+      exe 'anoremenu <script> '.g:rails_installed_menu.'.&File\ under\ cursor\	Ctrl+Enter :Rfind<CR>'
+    else
+      exe 'anoremenu <script> '.g:rails_installed_menu.'.&File\ under\ cursor\	gf :Rfind<CR>'
+    endif
+    exe 'anoremenu <script> '.g:rails_installed_menu.'.Rake\	:Rake :Rake<CR>'
+    let tasks = s:raketasks()
+    while tasks != ''
+      let task = matchstr(tasks,'.\{-\}\ze\%(\n\|$\)')
+      let tasks = s:sub(tasks,'.\{-\}\%(\n\|$\)','')
+      exe 'anoremenu <script> '.g:rails_installed_menu.'.Rake\ tasks\	:Rake.'.s:sub(s:sub(task,'^[^:]*$','&:all'),':','.').' :Rake '.task.'<CR>'
+    endwhile
+    let tasks = s:generators()
+    while tasks != ''
+      let task = matchstr(tasks,'.\{-\}\ze\%(\n\|$\)')
+      let tasks = s:sub(tasks,'.\{-\}\%(\n\|$\)','')
+      exe 'anoremenu <script> <silent> '.g:rails_installed_menu.'.Generate\	:Rgenerate.'.s:gsub(task,'_','\\ ').' :call <SID>menuprompt("Rgenerate '.task.'","Arguments for script/generate '.task.': ")<CR>'
+      exe 'anoremenu <script> <silent> '.g:rails_installed_menu.'.Destroy\	:Rdestroy.'.s:gsub(task,'_','\\ ').' :call <SID>menuprompt("Rdestroy '.task.'","Arguments for script/destroy '.task.': ")<CR>'
+    endwhile
+    exe 'anoremenu <script> '.g:rails_installed_menu.'.Server\	:Rserver.&Start\	:Rserver :Rserver<CR>'
+    exe 'anoremenu <script> '.g:rails_installed_menu.'.Server\	:Rserver.&Force\ start\	:Rserver! :Rserver!<CR>'
+    exe 'anoremenu <script> '.g:rails_installed_menu.'.Server\	:Rserver.&Kill\	:Rserver!\ - :Rserver! -<CR>'
+    exe 'anoremenu <script> '.g:rails_installed_menu.'.Console\	:Rconsole :Rconsole<CR>'
+    exe 'anoremenu <script> '.g:rails_installed_menu.'.Preview\	:Rpreview :Rpreview<CR>'
+    exe 'anoremenu <script> '.g:rails_installed_menu.'.Log\	:Rlog :Rlog<CR>'
+    exe 'vmenu <script> <silent> '.g:rails_installed_menu.'.Extract\ as\ Partial\	:Rpartial :call <SID>menuprompt("'."'".'<,'."'".'>Rpartial","Partial name (e.g., template or /controller/template): ")<CR>'
+    exe 'anoremenu <script>          '.g:rails_installed_menu.'.-Sep- :'
+    exe 'anoremenu <script> <silent> '.g:rails_installed_menu.'.&Help\	:help\ rails :call <SID>help()<CR>'
+    let g:rails_did_menus = 1
+  endif
+endfunction
+
+function! s:help()
+  let fn = fnamemodify(s:file,':h:h').'/doc/'
+  if filereadable(fn.'rails.txt')
+    if !filereadable(fn.'tags') || getftime(fn.'tags') <= getftime(fn.'rails.txt')
+      silent! exe "helptags ".s:escapecmd(fn)
+    endif
+  endif
+  help rails
+endfunction
+
+function! s:menuBufEnter()
+  if exists("g:rails_installed_menu") && g:rails_installed_menu != ""
+    let menu = s:gsub(g:rails_installed_menu,'&','')
+    exe 'amenu enable '.menu.'.*'
+    if RailsFileType() !~ '^view\>'
+      exe 'vmenu disable '.menu.'.Extract\ as\ Partial'
+    endif
+  endif
+endfunction
+
+function! s:menuBufLeave()
+  if exists("g:rails_installed_menu") && g:rails_installed_menu != ""
+    let menu = s:gsub(g:rails_installed_menu,'&','')
+    exe 'amenu disable '.menu.'.*'
+    exe 'amenu enable  '.menu.'.Help'
+  endif
+endfunction
+function! s:menuprompt(vimcmd,prompt)
+  let res = inputdialog(a:prompt,'','!!!')
+  if res == '!!!'
+    return ""
+  endif
+  exe a:vimcmd." ".res
 endfunction
 
 " }}}1
@@ -1834,19 +1943,21 @@ function! s:InitPlugin()
     augroup railsPluginDetect
       autocmd!
       autocmd BufNewFile,BufRead * call s:Detect(expand("<afile>:p"))
-      autocmd BufEnter * call s:SetGlobals()
-      autocmd BufLeave * call s:ClearGlobals()
+      autocmd BufEnter * call s:BufEnter()
+      autocmd BufLeave * call s:BufLeave()
       autocmd VimEnter * if expand("<amatch>") == "" && !exists("b:rails_root") | call s:Detect(getcwd()) | endif
       autocmd BufWritePost */config/database.yml let s:dbext_last_root = "*" " Force reload
       autocmd BufWritePost,BufReadPost * call s:breaktabs()
       autocmd BufWritePre              * call s:fixtabs()
       autocmd FileType railslog call s:RailslogSyntax()
+      autocmd FileType * if exists("b:rails_root") | call s:SetBasePath() | endif
       autocmd Syntax ruby,eruby,yaml,railslog if exists("b:rails_root") | call s:BufSyntax() | endif
       silent! autocmd QuickFixCmdPre  make* call s:QuickFixCmdPre()
       silent! autocmd QuickFixCmdPost make* call s:QuickFixCmdPost()
     augroup END
   endif
   command! -bar -bang -nargs=* -complete=dir Rails :call s:NewApp(<bang>0,<f-args>)
+  call s:CreateMenus()
 endfunction
 
 function! s:Detect(filename)
@@ -1870,7 +1981,7 @@ function! s:Detect(filename)
   return 0
 endfunction
 
-function! s:SetGlobals()
+function! s:BufEnter()
   if exists("b:rails_root")
     if g:rails_isfname
       let b:rails_restore_isfname=&isfname
@@ -1883,14 +1994,16 @@ function! s:SetGlobals()
         silent! delfunction syntaxcomplete#Complete
       endif
     endif
+    call s:menuBufEnter()
   endif
 endfunction
 
-function! s:ClearGlobals()
+function! s:BufLeave()
   if exists("b:rails_restore_isfname")
     let &isfname=b:rails_restore_isfname
     unlet b:rails_restore_isfname
   endif
+  call s:menuBufLeave()
 endfunction
 
 function! s:BufInit(path)
@@ -2000,6 +2113,7 @@ endfunction
 
 " }}}1
 
+let s:file = expand('<sfile>:p')
 call s:InitPlugin()
 
 let &cpo = cpo_save
