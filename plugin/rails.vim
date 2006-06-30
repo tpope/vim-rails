@@ -221,11 +221,11 @@ function! RailsFileType()
     else
       let r = "model"
     endif
-  elseif f =~ '\<app/views/layouts\>'
+  elseif f =~ '\<app/views/layouts\>.*\.'
     let r = "view-layout-" . e
   elseif f =~ '\<\%(app/views\|components\)/.*/_\k\+\.\k\+$'
     let r = "view-partial-" . e
-  elseif f =~ '\<app/views\>' || f =~ '\<components/.*/.*\.\(rhtml\|rxml\|rjs\|mab\)'
+  elseif f =~ '\<app/views\>.*\.' || f =~ '\<components/.*/.*\.\(rhtml\|rxml\|rjs\|mab\)'
     let r = "view-" . e
   elseif f =~ '\<test/unit/.*_test\.rb'
     let r = "test-unit"
@@ -310,6 +310,35 @@ function! s:QuickFixCmdPost()
   endif
 endfunction
 
+function! s:BufEnter()
+  if exists("b:rails_root")
+    if g:rails_isfname
+      let b:rails_restore_isfname=&isfname
+      set isfname=@,48-57,/,-,_,\",',:
+    endif
+    if exists("+completefunc") && &completefunc == 'syntaxcomplete#Complete'
+      if exists("g:loaded_syntax_completion")
+        " Ugly but necessary, until we have our own completion
+        unlet g:loaded_syntax_completion
+        silent! delfunction syntaxcomplete#Complete
+      endif
+    endif
+    call s:menuBufEnter()
+  else
+    if isdirectory(expand('%;p'))
+      call s:Detect(expand('%:p'))
+    endif
+  endif
+endfunction
+
+function! s:BufLeave()
+  if exists("b:rails_restore_isfname")
+    let &isfname=b:rails_restore_isfname
+    unlet b:rails_restore_isfname
+  endif
+  call s:menuBufLeave()
+endfunction
+
 function! s:tabstop()
   if !exists("b:rails_root")
     return 0
@@ -378,8 +407,8 @@ function! s:BufCommands()
   command! -buffer -bar -nargs=? Rmigration :call s:Migration(<bang>0,"edit",<q-args>)
   command! -buffer -bar -nargs=* Rcontroller :call s:ControllerFunc(<bang>0,"app/controllers/","_controller.rb",<f-args>)
   command! -buffer -bar -nargs=* Rhelper :call s:ControllerFunc(<bang>0,"app/helpers/","_helper.rb",<f-args>)
-  silent exe "command! -buffer -nargs=? Rcd :cd ".rp."/<args>"
-  silent exe "command! -buffer -nargs=? Rlcd :lcd ".rp."/<args>"
+  silent exe "command! -bar -buffer -nargs=? Rcd :cd ".rp."/<args>"
+  silent exe "command! -bar -buffer -nargs=? Rlcd :lcd ".rp."/<args>"
   "command! -buffer -bar -nargs=? Cd :Rcd <args>
   "command! -buffer -bar -nargs=? Lcd :Rlcd <args>
   command! -buffer -bar -complete=custom,s:FindList -nargs=* -count=1 Rfind :call s:Find(<bang>0,<count>,"",<f-args>)
@@ -416,6 +445,9 @@ endfunction
 
 function! s:Rake(bang,arg)
   let t = RailsFileType()
+  if a:arg == "stats"
+    exe "!".&makeprg." stats"
+    return
   if a:arg != ''
     exe 'make '.a:arg
     return
@@ -1626,8 +1658,8 @@ function! s:CreateMenus() abort
     else
       let g:rails_installed_menu = '&Plugin.&Rails'
     endif
-    exe 'anoremenu <script> '.g:rails_installed_menu.'.&Related\ File\	:R :R<CR>'
-    exe 'anoremenu <script> '.g:rails_installed_menu.'.&Alternate\ File\	:A :A<CR>'
+    exe 'anoremenu <script> '.g:rails_installed_menu.'.&Related\ file\	:R :R<CR>'
+    exe 'anoremenu <script> '.g:rails_installed_menu.'.&Alternate\ file\	:A :A<CR>'
     if exists("$CREAM")
       exe 'anoremenu <script> '.g:rails_installed_menu.'.&File\ under\ cursor\	Ctrl+Enter :Rfind<CR>'
     else
@@ -1653,10 +1685,11 @@ function! s:CreateMenus() abort
     exe 'anoremenu <script> '.g:rails_installed_menu.'.Console\	:Rconsole :Rconsole<CR>'
     exe 'anoremenu <script> '.g:rails_installed_menu.'.Preview\	:Rpreview :Rpreview<CR>'
     exe 'anoremenu <script> '.g:rails_installed_menu.'.Log\	:Rlog :Rlog<CR>'
-    exe 'vmenu <script> <silent> '.g:rails_installed_menu.'.Extract\ as\ Partial\	:Rpartial :call <SID>menuprompt("'."'".'<,'."'".'>Rpartial","Partial name (e.g., template or /controller/template): ")<CR>'
+    exe 'vmenu <script> <silent> '.g:rails_installed_menu.'.Extract\ as\ partial\	:Rpartial :call <SID>menuprompt("'."'".'<,'."'".'>Rpartial","Partial name (e.g., template or /controller/template): ")<CR>'
     exe 'anoremenu <script>          '.g:rails_installed_menu.'.-Sep- :'
     exe 'anoremenu <script> <silent> '.g:rails_installed_menu.'.&Help\	:help\ rails :call <SID>help()<CR>'
     let g:rails_did_menus = 1
+    call s:menuBufLeave()
   endif
 endfunction
 
@@ -1675,7 +1708,7 @@ function! s:menuBufEnter()
     let menu = s:gsub(g:rails_installed_menu,'&','')
     exe 'amenu enable '.menu.'.*'
     if RailsFileType() !~ '^view\>'
-      exe 'vmenu disable '.menu.'.Extract\ as\ Partial'
+      exe 'vmenu disable '.menu.'.Extract\ as\ partial'
     endif
   endif
 endfunction
@@ -1951,6 +1984,7 @@ function! s:InitPlugin()
       autocmd BufWritePre              * call s:fixtabs()
       autocmd FileType railslog call s:RailslogSyntax()
       autocmd FileType * if exists("b:rails_root") | call s:SetBasePath() | endif
+      autocmd FileType netrw call s:Detect(expand("<afile>:p"))
       autocmd Syntax ruby,eruby,yaml,railslog if exists("b:rails_root") | call s:BufSyntax() | endif
       silent! autocmd QuickFixCmdPre  make* call s:QuickFixCmdPre()
       silent! autocmd QuickFixCmdPost make* call s:QuickFixCmdPost()
@@ -1979,31 +2013,6 @@ function! s:Detect(filename)
     let fn = fnamemodify(ofn,':s?\(.*\)[\/]\(app\|components\|config\|db\|doc\|lib\|log\|public\|script\|test\|tmp\|vendor\)\($\|[\/].*$\)?\1?')
   endwhile
   return 0
-endfunction
-
-function! s:BufEnter()
-  if exists("b:rails_root")
-    if g:rails_isfname
-      let b:rails_restore_isfname=&isfname
-      set isfname=@,48-57,/,-,_,\",',:
-    endif
-    if exists("+completefunc") && &completefunc == 'syntaxcomplete#Complete'
-      if exists("g:loaded_syntax_completion")
-        " Ugly but necessary, until we have our own completion
-        unlet g:loaded_syntax_completion
-        silent! delfunction syntaxcomplete#Complete
-      endif
-    endif
-    call s:menuBufEnter()
-  endif
-endfunction
-
-function! s:BufLeave()
-  if exists("b:rails_restore_isfname")
-    let &isfname=b:rails_restore_isfname
-    unlet b:rails_restore_isfname
-  endif
-  call s:menuBufLeave()
 endfunction
 
 function! s:BufInit(path)
