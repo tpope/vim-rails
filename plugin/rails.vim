@@ -408,6 +408,7 @@ function! s:BufCommands()
   command! -buffer -bar -nargs=? Rmigration :call s:Migration(<bang>0,"edit",<q-args>)
   command! -buffer -bar -nargs=* Rcontroller :call s:ControllerFunc(<bang>0,"app/controllers/","_controller.rb",<f-args>)
   command! -buffer -bar -nargs=* Rhelper :call s:ControllerFunc(<bang>0,"app/helpers/","_helper.rb",<f-args>)
+  command! -buffer -bar -nargs=* Rlayout :call s:LayoutFunc(<bang>0,<f-args>)
   silent exe "command! -bar -buffer -nargs=? Rcd :cd ".rp."/<args>"
   silent exe "command! -bar -buffer -nargs=? Rlcd :lcd ".rp."/<args>"
   "command! -buffer -bar -nargs=? Cd :Rcd <args>
@@ -713,6 +714,40 @@ function! s:NewApp(bang,...)
   if filereadable(dir."/".g:rails_default_file)
     exe "edit ".s:escapecmd(dir)."/".g:rails_default_file
   endif
+endfunction
+
+function! s:findlayout(name)
+  let c = a:name
+  if filereadable(RailsRoot()."/apps/layouts/".c.".rhtml")
+    let file = "/app/views/layouts/".c.".rhtml"
+  elseif filereadable(RailsRoot()."/apps/layouts/".c.".rxml")
+    let file = "/app/views/layouts/".c.".rxml"
+  elseif filereadable(RailsRoot()."/apps/layouts/".c.".mab")
+    let file = "/app/views/layouts/".c.".mab"
+  else
+    let file = ""
+  endif
+  return file
+endfunction
+
+function! s:LayoutFunc(bang,...)
+  if a:0
+    let c = s:sub(s:RailsIncludefind(s:sub(a:1,'^.','\u&')),'\.rb$','')
+  else
+    let c = s:controller()
+  endif
+  if c == ""
+    return s:error("No layout name given")
+  endif
+  let file = s:findlayout(c)
+  if file == ""
+    let file = s:findlayout("application")
+  endif
+  if file == ""
+    let file = "/app/views/layouts/application.rhtml"
+  endif
+  let cmd = "edit".(a:bang?"! ":' ').s:escapecmd(RailsRoot()).file
+  exe cmd
 endfunction
 
 function! s:ControllerFunc(bang,prefix,suffix,...)
@@ -1335,11 +1370,15 @@ function! s:singularize(word)
   " Probably not worth it to be as comprehensive as Rails but we can
   " still hit the common cases.
   let word = a:word
+  if word =~? '\.js$'
+    return word
+  endif
   let word = s:sub(word,'eople$','erson')
   let word = s:sub(word,'[aeio]\@<!ies$','ys')
   let word = s:sub(word,'xe[ns]$','xs')
   let word = s:sub(word,'ves$','fs')
-  let word = s:sub(word,'s\@<!s$','')
+  let word = s:sub(word,'ss\%(es\)\=$','sss')
+  let word = s:sub(word,'s$','')
   return word
 endfunction
 
@@ -1347,10 +1386,13 @@ function! s:Alternate(bang,cmd)
   let cmd = a:cmd.(a:bang?"!":"")
   let f = RailsFilePath()
   let t = RailsFileType()
-  if f =~ '\<config/database.yml$' || f =~ '\<config/environments/'
-    exe cmd." environment.rb"
-  elseif f =~ '\<config/environment\.rb$' || f == 'README'
-    exe cmd." database.yml"
+  if f =~ '\<config/environments/'
+    exe cmd." config/environment.rb"
+  elseif f == 'README'
+    exe cmd." config/database.yml"
+  elseif f =~ '\<config/database\.yml$'   | exe cmd." config/routes.rb"
+  elseif f =~ '\<config/routes\.rb$'      | exe cmd." config/environment.rb"
+  elseif f =~ '\<config/environment\.rb$' | exe cmd." config/database.yml"
   elseif f =~ '\<db/migrate/\d\d\d_'
     let num = matchstr(f,'\<db/migrate/0*\zs\d\+\ze_')-1
     if num
@@ -1358,6 +1400,10 @@ function! s:Alternate(bang,cmd)
     else
       exe cmd." db/schema.rb"
     endif
+  elseif f =~ '\<application\.js$'
+    exe cmd." app/helpers/application_helper.rb"
+  elseif t =~ '^js\>'
+    exe cmd." public/javascripts/application.js"
   elseif f =~ '\<db/schema\.rb$'
     call s:Migration(0,cmd,"")
   elseif t =~ '^view\>'
@@ -1389,6 +1435,7 @@ function! s:Alternate(bang,cmd)
     exe cmd." ".s:escapecmd(api)
   elseif t =~ '^helper\>'
     let controller = s:sub(s:sub(f,'/helpers/','/controllers/'),'_helper\.rb$','_controller.rb')
+    let controller =s:sub(controller,'application_controller','application')
     exe cmd." ".s:escapecmd(controller)
   elseif t =~ '\<fixtures\>'
     let file = s:singularize(expand("%:t:r")).'_test.rb'
@@ -1404,29 +1451,46 @@ function! s:Alternate(bang,cmd)
 endfunction
 
 function! s:Related(bang,cmd)
-  let cmd = a:cmd.(a:bang ? '!' : '')
+  let cmd = a:cmd.(a:bang?"!":"")
   let f = RailsFilePath()
   let t = RailsFileType()
-  if f =~ '\<config/database.yml$' || f =~ '\<config/environments/'
+  if f =~ '\<config/environments/'
     exe cmd." config/environment.rb"
-  elseif RailsFilePath() == 'README'
+  elseif f == 'README'
     exe cmd." config/database.yml"
+  elseif f =~ '\<config/database\.yml$'   | exe cmd." config/environment.rb"
+  elseif f =~ '\<config/routes\.rb$'      | exe cmd." config/database.yml"
+  elseif f =~ '\<config/environment\.rb$' | exe cmd." config/routes.rb"
+  elseif f =~ '\<db/migrate/\d\d\d_'
+    let num = matchstr(f,'\<db/migrate/0*\zs\d\+\ze_')+1
+    call s:Migration(0,cmd,num)
   elseif t =~ '^test\>'
-    call s:warn('In the future, use :Rake instead')
-    Rake
+    return s:error('Use :Rake instead')
+    "Rake
+  elseif f =~ '\<application\.js$'
+    exe cmd." app/helpers/application_helper.rb"
+  elseif t =~ '^js\>'
+    exe cmd." public/javascripts/application.js"
+  elseif t =~ '^view-layout\>'
+    exe cmd." ".s:sub(s:sub(s:sub(RailsFilePath(),'/views/','/controllers/'),'/layouts/\(\k\+\)\..*$','/\1_controller.rb'),'application_controller\.rb$','application.rb')
+  elseif t=~ '^view-partial\>'
+    call s:warn("No related file is defined")
   elseif t =~ '^view\>'
     exe cmd." ".s:sub(s:sub(RailsFilePath(),'/views/','/controllers/'),'/\(\k\+\)\..*$','_controller|silent! djump \1')
   elseif t =~ '^controller-api\>'
     exe cmd." ".s:sub(s:sub(RailsFilePath(),'/controllers/','/apis/'),'_controller\.rb$','_api.rb')
   elseif t =~ '^controller\>'
-    exe cmd." ".s:sub(s:sub(RailsFilePath(),'/controllers/','/views/'),'_controller\.rb$','/'.s:lastmethod())
+    if s:lastmethod() != ""
+      exe cmd." ".s:sub(s:sub(s:(RailsFilePath(),'/application\.rb$','/shared_controller.rb'),'/controllers/','/views/'),'_controller\.rb$','/'.s:lastmethod())
+    else
+      exe cmd." ".s:sub(s:sub(RailsFilePath(),'/controllers/','/helpers/'),'\%(_controller\)\=\.rb$','_helper.rb')
+    endif
+  elseif t=~ '^helper\>'
+      exe cmd." ".s:sub(s:sub(RailsFilePath(),'/helpers/','/views/layouts/'),'\%(_helper\)\=\.rb$','')
   elseif t =~ '^model-ar\>'
     call s:Migration(0,cmd,'create_'.s:sub(expand('%:t:r'),'y$','ie').'s')
   elseif t =~ '^api\>'
     exe cmd." ".s:sub(s:sub(RailsFilePath(),'/apis/','/controllers/'),'_api\.rb$','_controller.rb')
-  elseif f =~ '\<db/migrate/\d\d\d_'
-    let num = matchstr(f,'\<db/migrate/0*\zs\d\+\ze_')+1
-    call s:Migration(0,cmd,num)
   elseif f =~ '\<db/schema\.rb$'
     call s:Migration(0,cmd,"1")
   else
@@ -1585,6 +1649,10 @@ endfunction
 " }}}1
 " Mappings {{{1
 
+function! s:leaderunmap(key,...)
+  silent! exe "unmap <buffer> ".g:rails_leader.a:key
+endfunction
+
 function! s:leadermap(key,mapping)
   exe "map <buffer> ".g:rails_leader.a:key." ".a:mapping
 endfunction
@@ -1596,8 +1664,12 @@ function! s:BufMappings()
   map <buffer> <silent> <Plug>RailsVSplitFind :Rvsfind<CR>
   map <buffer> <silent> <Plug>RailsTabFind   :Rtabfind<CR>
   map <buffer> <silent> <Plug>RailsRelated   :call <SID>Related(0,"find")<CR>
-  map <buffer> <silent> <Plug>RailsMagicM    <Plug>RailsRelated
   if g:rails_mappings
+    " Unmap so hasmapto doesn't get confused by stale bindings
+    call s:leaderunmap('f','<Plug>RailsFind')
+    call s:leaderunmap('a','<Plug>RailsAlternate')
+    call s:leaderunmap('m','<Plug>RailsRelated')
+    silent! unmap <buffer> <Plug>RailsMagicM
     if !hasmapto("<Plug>RailsFind")
       nmap <buffer> gf              <Plug>RailsFind
     endif
@@ -1612,22 +1684,21 @@ function! s:BufMappings()
       nmap <buffer> [f              <Plug>RailsAlternate
     endif
     if !hasmapto("<Plug>RailsRelated")
-      nmap <buffer> ]f          <Plug>RailsRelated
+      nmap <buffer> ]f              <Plug>RailsRelated
     endif
     if exists("$CREAM")
       imap <buffer> <C-CR> <C-O><Plug>RailsFind
       " Are these a good idea?
-      imap <buffer> <M-[>       <Plug>RailsAlternate
-      imap <buffer> <M-]>       <Plug>RailsRelated
+      imap <buffer> <M-[>  <C-O><Plug>RailsAlternate
+      imap <buffer> <M-]>  <C-O><Plug>RailsRelated
     endif
-    map <buffer> <LocalLeader>rf <Plug>RailsFind
-    map <buffer> <LocalLeader>ra <Plug>RailsAlternate
-    map <buffer> <LocalLeader>rm <Plug>RailsRelated
+    map <buffer> <silent> <Plug>RailsMagicM    <Plug>RailsRelated
+    "map <buffer> <LocalLeader>rf <Plug>RailsFind
+    "map <buffer> <LocalLeader>ra <Plug>RailsAlternate
+    "map <buffer> <LocalLeader>rm <Plug>RailsRelated
     call s:leadermap('f','<Plug>RailsFind')
     call s:leadermap('a','<Plug>RailsAlternate')
     call s:leadermap('m','<Plug>RailsRelated')
-    " Deprecated
-    call s:leadermap('v',':echoerr "Use <Lt>LocalLeader>rm instead!"<CR>')
   endif
 endfunction
 
@@ -1658,15 +1729,15 @@ function! s:CreateMenus() abort
       "exe menucmd.g:rails_installed_menu.'.&Alternate\ file\	:A\ /\ [f :A<CR>'
       exe menucmd.g:rails_installed_menu.'.&File\ under\ cursor\	gf :Rfind<CR>'
     endif
-    exe menucmd.g:rails_installed_menu.'.&Other\ files.Application\ &Controller :Rfind app/controllers/application.rb<CR>'
-    exe menucmd.g:rails_installed_menu.'.&Other\ files.Application\ &Helper :Rfind app/helpers/application_helper.rb<CR>'
-    exe menucmd.g:rails_installed_menu.'.&Other\ files.Application\ &Javascript :Rfind public/javascripts/application.js<CR>'
-    exe menucmd.g:rails_installed_menu.'.&Other\ files.Application\ &Layout :find app/views/layouts/application<CR>'
+    exe menucmd.g:rails_installed_menu.'.&Other\ files.Application\ &Controller :find app/controllers/application.rb<CR>'
+    exe menucmd.g:rails_installed_menu.'.&Other\ files.Application\ &Helper :find app/helpers/application_helper.rb<CR>'
+    exe menucmd.g:rails_installed_menu.'.&Other\ files.Application\ &Javascript :find public/javascripts/application.js<CR>'
+    exe menucmd.g:rails_installed_menu.'.&Other\ files.Application\ &Layout :Rlayout application<CR>'
     exe menucmd.g:rails_installed_menu.'.&Other\ files.Application\ &README :find doc/README_FOR_APP<CR>'
-    exe menucmd.g:rails_installed_menu.'.&Other\ files.&Environment :Rfind config/environment.rb<CR>'
-    exe menucmd.g:rails_installed_menu.'.&Other\ files.&Database\ Configuration :Rfind config/database.yml<CR>'
-    exe menucmd.g:rails_installed_menu.'.&Other\ files.R&outes :Rfind config/routes.rb<CR>'
-    exe menucmd.g:rails_installed_menu.'.&Other\ files.&Test\ Helper :Rfind test/test_helper.rb<CR>'
+    exe menucmd.g:rails_installed_menu.'.&Other\ files.&Environment :find config/environment.rb<CR>'
+    exe menucmd.g:rails_installed_menu.'.&Other\ files.&Database\ Configuration :find config/database.yml<CR>'
+    exe menucmd.g:rails_installed_menu.'.&Other\ files.R&outes :find config/routes.rb<CR>'
+    exe menucmd.g:rails_installed_menu.'.&Other\ files.&Test\ Helper :find test/test_helper.rb<CR>'
     exe menucmd.g:rails_installed_menu.'.-FSep- :'
     exe menucmd.g:rails_installed_menu.'.Ra&ke\	:Rake :Rake<CR>'
     let tasks = s:raketasks()
@@ -1980,7 +2051,7 @@ function! s:InitPlugin()
       autocmd BufNewFile,BufRead * call s:Detect(expand("<afile>:p"))
       autocmd BufEnter * call s:BufEnter()
       autocmd BufLeave * call s:BufLeave()
-      autocmd VimEnter * if expand("<amatch>") == "" && !exists("b:rails_root") | call s:Detect(getcwd()) | endif
+      autocmd VimEnter * if expand("<amatch>") == "" && !exists("b:rails_root") | call s:Detect(getcwd()) | call s:BufEnter() | endif
       autocmd BufWritePost */config/database.yml let s:dbext_last_root = "*" " Force reload
       autocmd BufWritePost,BufReadPost * call s:breaktabs()
       autocmd BufWritePre              * call s:fixtabs()
