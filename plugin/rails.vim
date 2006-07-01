@@ -14,7 +14,7 @@
 " Exit quickly when:
 " - this plugin was already loaded (or disabled)
 " - when 'compatible' is set
-if exists("g:loaded_rails") && g:loaded_rails || &cp
+if exists("g:loaded_rails") && (g:loaded_rails && !g:rails_debug) || &cp
   finish
 endif
 let g:loaded_rails = 1
@@ -278,6 +278,7 @@ function! s:InitConfig()
   call s:SetOptDefault("rails_leader","<LocalLeader>r")
   call s:SetOptDefault("rails_root_url",'http://localhost:3000/')
   call s:SetOptDefault("rails_menu",(l>2)+(l>3))
+  call s:SetOptDefault("rails_debug",0)
   if l > 2
     if exists("g:loaded_dbext") && executable("sqlite3") && ! executable("sqlite")
       " Since dbext can't find it by itself
@@ -448,7 +449,7 @@ function! s:Rake(bang,arg)
   if a:arg == "stats"
     exe "!".&makeprg." stats"
     return
-  if a:arg != ''
+  elseif a:arg != ''
     exe 'make '.a:arg
     return
   elseif t =~ '^test\>'
@@ -1092,27 +1093,6 @@ endfunction
 " }}}1
 " Navigation {{{1
 
-function! s:SetBasePath()
-  let rp = s:escapepath(b:rails_root)
-  let t = RailsFileType()
-  let oldpath = s:sub(&l:path,'^\.,','')
-  if stridx(oldpath,rp) == 2
-    let oldpath = ''
-  endif
-  let &l:path = '.,'.rp.",".rp."/app/controllers,".rp."/app,".rp."/app/models,".rp."/app/helpers,".rp."/components,".rp."/config,".rp."/lib,".rp."/vendor/plugins/*/lib,".rp."/vendor,".rp."/test/unit,".rp."/test/functional,".rp."/test/integration,".rp."/app/apis,".rp."/test,"
-  if s:controller() != ''
-    if RailsFilePath() =~ '\<components/'
-      let &l:path = &l:path . rp . '/components/' . s:controller() . ','
-    else
-      let &l:path = &l:path . rp . '/app/views/' . s:controller() . ',' . rp . '/app/views,' . rp . '/public,'
-    endif
-  endif
-  if t =~ '^log\>'
-    let &l:path = &l:path . rp . '/app/views,'
-  endif
-  let &l:path = &l:path . oldpath
-endfunction
-
 function! s:InitRuby()
   if has("ruby") && ! exists("s:ruby_initialized")
     let s:ruby_initialized = 1
@@ -1277,6 +1257,8 @@ endfunction
 function! s:RailsIncludefind(str,...)
   if a:str == "ApplicationController"
     return "controllers/application.rb"
+  elseif a:str == "Test::Unit::TestCase"
+    return "test/unit/testcase.rb"
   elseif a:str == "<%="
     " Probably a silly idea
     return "action_view.rb"
@@ -1625,13 +1607,18 @@ function! s:BufMappings()
     if !hasmapto("<Plug>RailsTabFind")
       nmap <buffer> <C-W>gf         <Plug>RailsTabFind
     endif
+    " Lets see if anyone complains about these next two.
+    if !hasmapto("<Plug>RailsAlternate")
+      nmap <buffer> [f              <Plug>RailsAlternate
+    endif
+    if !hasmapto("<Plug>RailsRelated")
+      nmap <buffer> ]f          <Plug>RailsRelated
+    endif
     if exists("$CREAM")
       imap <buffer> <C-CR> <C-O><Plug>RailsFind
-      " FIXME: Find a better place for these!
-      imap <buffer> <C-\>a      <C-O>:A<CR>
-      imap <buffer> <C-\>r      <C-O>:R<CR>
-      imap <buffer> <C-\><C-A>  <C-O>:A<CR>
-      imap <buffer> <C-\><C-R>  <C-O>:R<CR>
+      " Are these a good idea?
+      imap <buffer> <M-[>       <Plug>RailsAlternate
+      imap <buffer> <M-]>       <Plug>RailsRelated
     endif
     map <buffer> <LocalLeader>rf <Plug>RailsFind
     map <buffer> <LocalLeader>ra <Plug>RailsAlternate
@@ -1645,7 +1632,7 @@ function! s:BufMappings()
 endfunction
 
 " }}}1
-" Menus {{{1
+" Menus {{{2
 
 function! s:CreateMenus() abort
   if exists("g:rails_installed_menu") && g:rails_installed_menu != ""
@@ -1658,49 +1645,64 @@ function! s:CreateMenus() abort
     else
       let g:rails_installed_menu = '&Plugin.&Rails'
     endif
-    exe 'anoremenu <script> '.g:rails_installed_menu.'.&Related\ file\	:R :R<CR>'
-    exe 'anoremenu <script> '.g:rails_installed_menu.'.&Alternate\ file\	:A :A<CR>'
     if exists("$CREAM")
-      exe 'anoremenu <script> '.g:rails_installed_menu.'.&File\ under\ cursor\	Ctrl+Enter :Rfind<CR>'
+      let menucmd = '87anoremenu <script> '
+      exe menucmd.g:rails_installed_menu.'.&Related\ file\	:R\ /\ Alt-] :R<CR>'
+      exe menucmd.g:rails_installed_menu.'.&Alternate\ file\	:A\ /\ Alt-[ :A<CR>'
+      exe menucmd.g:rails_installed_menu.'.&File\ under\ cursor\	Ctrl+Enter :Rfind<CR>'
     else
-      exe 'anoremenu <script> '.g:rails_installed_menu.'.&File\ under\ cursor\	gf :Rfind<CR>'
+      let menucmd = 'anoremenu <script> '
+      exe menucmd.g:rails_installed_menu.'.&Related\ file\	:R :R<CR>'
+      exe menucmd.g:rails_installed_menu.'.&Alternate\ file\	:A :A<CR>'
+      "exe menucmd.g:rails_installed_menu.'.&Related\ file\	:R\ /\ ]f :R<CR>'
+      "exe menucmd.g:rails_installed_menu.'.&Alternate\ file\	:A\ /\ [f :A<CR>'
+      exe menucmd.g:rails_installed_menu.'.&File\ under\ cursor\	gf :Rfind<CR>'
     endif
-    exe 'anoremenu <script> '.g:rails_installed_menu.'.Rake\	:Rake :Rake<CR>'
+    exe menucmd.g:rails_installed_menu.'.&Other\ files.Application\ &Controller :Rfind app/controllers/application.rb<CR>'
+    exe menucmd.g:rails_installed_menu.'.&Other\ files.Application\ &Helper :Rfind app/helpers/application_helper.rb<CR>'
+    exe menucmd.g:rails_installed_menu.'.&Other\ files.Application\ &Javascript :Rfind public/javascripts/application.js<CR>'
+    exe menucmd.g:rails_installed_menu.'.&Other\ files.Application\ &Layout :find app/views/layouts/application<CR>'
+    exe menucmd.g:rails_installed_menu.'.&Other\ files.Application\ &README :find doc/README_FOR_APP<CR>'
+    exe menucmd.g:rails_installed_menu.'.&Other\ files.&Environment :Rfind config/environment.rb<CR>'
+    exe menucmd.g:rails_installed_menu.'.&Other\ files.&Database\ Configuration :Rfind config/database.yml<CR>'
+    exe menucmd.g:rails_installed_menu.'.&Other\ files.R&outes :Rfind config/routes.rb<CR>'
+    exe menucmd.g:rails_installed_menu.'.&Other\ files.&Test\ Helper :Rfind test/test_helper.rb<CR>'
+    exe menucmd.g:rails_installed_menu.'.-FSep- :'
+    exe menucmd.g:rails_installed_menu.'.Ra&ke\	:Rake :Rake<CR>'
     let tasks = s:raketasks()
     while tasks != ''
       let task = matchstr(tasks,'.\{-\}\ze\%(\n\|$\)')
       let tasks = s:sub(tasks,'.\{-\}\%(\n\|$\)','')
-      exe 'anoremenu <script> '.g:rails_installed_menu.'.Rake\ tasks\	:Rake.'.s:sub(s:sub(task,'^[^:]*$','&:all'),':','.').' :Rake '.task.'<CR>'
+      exe menucmd.g:rails_installed_menu.'.Rake\ &tasks\	:Rake.'.s:sub(s:sub(task,'^[^:]*$','&:all'),':','.').' :Rake '.task.'<CR>'
     endwhile
     let tasks = s:generators()
     while tasks != ''
       let task = matchstr(tasks,'.\{-\}\ze\%(\n\|$\)')
       let tasks = s:sub(tasks,'.\{-\}\%(\n\|$\)','')
-      exe 'anoremenu <script> <silent> '.g:rails_installed_menu.'.Generate\	:Rgenerate.'.s:gsub(task,'_','\\ ').' :call <SID>menuprompt("Rgenerate '.task.'","Arguments for script/generate '.task.': ")<CR>'
-      exe 'anoremenu <script> <silent> '.g:rails_installed_menu.'.Destroy\	:Rdestroy.'.s:gsub(task,'_','\\ ').' :call <SID>menuprompt("Rdestroy '.task.'","Arguments for script/destroy '.task.': ")<CR>'
+      exe menucmd.'<silent> '.g:rails_installed_menu.'.&Generate\	:Rgenerate.'.s:gsub(task,'_','\\ ').' :call <SID>menuprompt("Rgenerate '.task.'","Arguments for script/generate '.task.': ")<CR>'
+      exe menucmd.'<silent> '.g:rails_installed_menu.'.&Destroy\	:Rdestroy.'.s:gsub(task,'_','\\ ').' :call <SID>menuprompt("Rdestroy '.task.'","Arguments for script/destroy '.task.': ")<CR>'
     endwhile
-    exe 'anoremenu <script> '.g:rails_installed_menu.'.Server\	:Rserver.&Start\	:Rserver :Rserver<CR>'
-    exe 'anoremenu <script> '.g:rails_installed_menu.'.Server\	:Rserver.&Force\ start\	:Rserver! :Rserver!<CR>'
-    exe 'anoremenu <script> '.g:rails_installed_menu.'.Server\	:Rserver.&Kill\	:Rserver!\ - :Rserver! -<CR>'
-    exe 'anoremenu <script> '.g:rails_installed_menu.'.Console\	:Rconsole :Rconsole<CR>'
-    exe 'anoremenu <script> '.g:rails_installed_menu.'.Preview\	:Rpreview :Rpreview<CR>'
-    exe 'anoremenu <script> '.g:rails_installed_menu.'.Log\	:Rlog :Rlog<CR>'
-    exe 'vmenu <script> <silent> '.g:rails_installed_menu.'.Extract\ as\ partial\	:Rpartial :call <SID>menuprompt("'."'".'<,'."'".'>Rpartial","Partial name (e.g., template or /controller/template): ")<CR>'
-    exe 'anoremenu <script>          '.g:rails_installed_menu.'.-Sep- :'
-    exe 'anoremenu <script> <silent> '.g:rails_installed_menu.'.&Help\	:help\ rails :call <SID>help()<CR>'
+    exe menucmd.g:rails_installed_menu.'.&Server\	:Rserver.&Start\	:Rserver :Rserver<CR>'
+    exe menucmd.g:rails_installed_menu.'.&Server\	:Rserver.&Force\ start\	:Rserver! :Rserver!<CR>'
+    exe menucmd.g:rails_installed_menu.'.&Server\	:Rserver.&Kill\	:Rserver!\ - :Rserver! -<CR>'
+    exe menucmd.g:rails_installed_menu.'.&Console\	:Rconsole :Rconsole<CR>'
+    exe menucmd.g:rails_installed_menu.'.&Preview\	:Rpreview :Rpreview<CR>'
+    exe menucmd.g:rails_installed_menu.'.&Log\	:Rlog :Rlog<CR>'
+    exe s:sub(menucmd,'anoremenu','vnoremenu').' <silent> '.g:rails_installed_menu.'.E&xtract\ as\ partial\	:Rpartial :call <SID>menuprompt("'."'".'<,'."'".'>Rpartial","Partial name (e.g., template or /controller/template): ")<CR>'
+    exe menucmd.'         '.g:rails_installed_menu.'.-HSep- :'
+    exe menucmd.'<silent> '.g:rails_installed_menu.'.&Help\	:help\ rails :call <SID>prephelp()<Bar>help rails<CR>'
     let g:rails_did_menus = 1
     call s:menuBufLeave()
   endif
 endfunction
 
-function! s:help()
+function! s:prephelp()
   let fn = fnamemodify(s:file,':h:h').'/doc/'
   if filereadable(fn.'rails.txt')
     if !filereadable(fn.'tags') || getftime(fn.'tags') <= getftime(fn.'rails.txt')
       silent! exe "helptags ".s:escapecmd(fn)
     endif
   endif
-  help rails
 endfunction
 
 function! s:menuBufEnter()
@@ -1983,7 +1985,7 @@ function! s:InitPlugin()
       autocmd BufWritePost,BufReadPost * call s:breaktabs()
       autocmd BufWritePre              * call s:fixtabs()
       autocmd FileType railslog call s:RailslogSyntax()
-      autocmd FileType * if exists("b:rails_root") | call s:SetBasePath() | endif
+      autocmd FileType * if exists("b:rails_root") | call s:BufSettings() | endif
       autocmd FileType netrw call s:Detect(expand("<afile>:p"))
       autocmd Syntax ruby,eruby,yaml,railslog if exists("b:rails_root") | call s:BufSyntax() | endif
       silent! autocmd QuickFixCmdPre  make* call s:QuickFixCmdPre()
@@ -2046,68 +2048,7 @@ function! s:BufInit(path)
     call s:BufMappings()
     call s:BufAbbreviations()
     call s:BufDatabase()
-    call s:SetBasePath()
-    "silent compiler rubyunit
-    setlocal errorformat=%D(in\ %f),
-          \%A\ %\\+%\\d%\\+)\ Failure:,
-          \%C%.%#\ [%f:%l]:,
-          \%A\ %\\+%\\d%\\+)\ Error:,
-          \%CActionView::TemplateError:\ compile\ error,
-          \%C%.%#/lib/gems/%\\d.%\\d/gems/%.%#,
-          \%C%.%#/vendor/rails/%.%#,
-          \%Z%f:%l:\ syntax\ error\\,\ %m,
-          \%Z%f:%l:\ %m,
-          \%Z\ %#,
-          \%Z%p^,
-          \%C\ %\\+On\ line\ #%l\ of\ %f,
-          \%C\ \ \ \ %f:%l:%.%#,
-          \%Ctest_%.%#:,
-          \%CActionView::TemplateError:\ %f:%l:in\ `%.%#':\ %m,
-          \%CActionView::TemplateError:\ You\ have\ a\ %m!,
-          \%CNoMethodError:\ You\ have\ a\ %m!,
-          \%CActionView::TemplateError:\ %m,
-          \%CThe\ error\ occured\ while\ %m,
-          \%C%m,
-          \ActionView::TemplateError\ (%m)\ on\ line\ #%l\ of\ %f:,
-          \%AActionView::TemplateError\ (compile\ error,
-          \%.%#/rake_test_loader.rb:%\\d%\\+:in\ `load':\ %f:%l:\ %m,
-          \%-G%.%#/lib/gems/%\\d.%\\d/gems/%.%#,
-          \%-G%.%#/vendor/rails/%.%#,
-          \%f:%l:\ %m,
-          \%-G%.%#
-    "let &l:makeprg='rake -f '.rp.'/Rakefile $*'
-    setlocal makeprg=rake
-    if stridx(&tags,rp) == -1
-      let &l:tags = &tags . "," . rp ."/tags"
-    endif
-    if has("balloon_eval") && executable('ri')
-      setlocal balloonexpr=RailsBalloonexpr()
-    endif
-    " There is no rjs/rxml filetype now, but in the future, who knows...
-    if &ft == "ruby" || &ft == "eruby" || &ft == "rjs" || &ft == "rxml" || &ft == "yaml"
-      " This is a strong convention in Rails, so we'll break the usual rule
-      " of considering shiftwidth to be a personal preference
-      setlocal sw=2 sts=2 et
-      "set include=\\<\\zsAct\\f*::Base\\ze\\>\\\|^\\s*\\(require\\\|load\\)\\s\\+['\"]\\zs\\f\\+\\ze
-      setlocal includeexpr=RailsIncludeexpr()
-      if exists('+completefunc')
-        if &completefunc == ''
-          set completefunc=syntaxcomplete#Complete
-        endif
-      endif
-    else
-      " Does this cause problems in any filetypes?
-      setlocal includeexpr=RailsIncludeexpr()
-      setlocal suffixesadd=.rb,.rhtml,.rxml,.rjs,.mab,.css,.js,.yml,.csv,.rake,.sql,.html
-    endif
-    if &filetype == "ruby"
-      setlocal suffixesadd=.rb,.rhtml,.rxml,.rjs,.mab,.yml,.csv,.rake,s.rb
-      setlocal define=^\\s*def\\s\\+\\(self\\.\\)\\=
-    elseif &filetype == "eruby"
-      "set include=\\<\\zsAct\\f*::Base\\ze\\>\\\|^\\s*\\(require\\\|load\\)\\s\\+['\"]\\zs\\f\\+\\ze\\\|\\zs<%=\\ze
-      setlocal suffixesadd=.rhtml,.rxml,.rjs,.mab,.rb,.css,.js,.html
-    endif
-  endif
+    call s:BufSettings()
   let t = RailsFileType()
   if t != ""
     let t = "-".t
@@ -2118,6 +2059,95 @@ function! s:BufInit(path)
   endif
   let &cpo = cpo_save
   return b:rails_root
+endfunction
+
+function! s:SetBasePath()
+  let rp = s:escapepath(b:rails_root)
+  let t = RailsFileType()
+  let oldpath = s:sub(&l:path,'^\.,','')
+  if stridx(oldpath,rp) == 2
+    let oldpath = ''
+  endif
+  let &l:path = '.,'.rp.",".rp."/app/controllers,".rp."/app,".rp."/app/models,".rp."/app/helpers,".rp."/components,".rp."/config,".rp."/lib,".rp."/vendor/plugins/*/lib,".rp."/vendor,".rp."/test/unit,".rp."/test/functional,".rp."/test/integration,".rp."/app/apis,".rp."/test,"
+  if s:controller() != ''
+    if RailsFilePath() =~ '\<components/'
+      let &l:path = &l:path . rp . '/components/' . s:controller() . ','
+    else
+      let &l:path = &l:path . rp . '/app/views/' . s:controller() . ',' . rp . '/app/views,' . rp . '/public,'
+    endif
+  endif
+  if t =~ '^log\>'
+    let &l:path = &l:path . rp . '/app/views,'
+  endif
+  let &l:path = &l:path . oldpath
+endfunction
+
+function s:BufSettings()
+  if !exists('b:rails_root')
+    return ''
+  endif
+  call s:SetBasePath()
+  "silent compiler rubyunit
+  let rp = s:escapepath(RailsRoot())
+  setlocal errorformat=%D(in\ %f),
+        \%A\ %\\+%\\d%\\+)\ Failure:,
+        \%C%.%#\ [%f:%l]:,
+        \%A\ %\\+%\\d%\\+)\ Error:,
+        \%CActionView::TemplateError:\ compile\ error,
+        \%C%.%#/lib/gems/%\\d.%\\d/gems/%.%#,
+        \%C%.%#/vendor/rails/%.%#,
+        \%Z%f:%l:\ syntax\ error\\,\ %m,
+        \%Z%f:%l:\ %m,
+        \%Z\ %#,
+        \%Z%p^,
+        \%C\ %\\+On\ line\ #%l\ of\ %f,
+        \%C\ \ \ \ %f:%l:%.%#,
+        \%Ctest_%.%#:,
+        \%CActionView::TemplateError:\ %f:%l:in\ `%.%#':\ %m,
+        \%CActionView::TemplateError:\ You\ have\ a\ %m!,
+        \%CNoMethodError:\ You\ have\ a\ %m!,
+        \%CActionView::TemplateError:\ %m,
+        \%CThe\ error\ occured\ while\ %m,
+        \%C%m,
+        \ActionView::TemplateError\ (%m)\ on\ line\ #%l\ of\ %f:,
+        \%AActionView::TemplateError\ (compile\ error,
+        \%.%#/rake_test_loader.rb:%\\d%\\+:in\ `load':\ %f:%l:\ %m,
+        \%-G%.%#/lib/gems/%\\d.%\\d/gems/%.%#,
+        \%-G%.%#/vendor/rails/%.%#,
+        \%f:%l:\ %m,
+        \%-G%.%#
+  "let &l:makeprg='rake -f '.rp.'/Rakefile $*'
+  setlocal makeprg=rake
+  if stridx(&tags,rp) == -1
+    let &l:tags = &tags . "," . rp ."/tags"
+  endif
+  if has("balloon_eval") && executable('ri')
+    setlocal balloonexpr=RailsBalloonexpr()
+  endif
+  " There is no rjs/rxml filetype now, but in the future, who knows...
+  if &ft == "ruby" || &ft == "eruby" || &ft == "rjs" || &ft == "rxml" || &ft == "yaml"
+    " This is a strong convention in Rails, so we'll break the usual rule
+    " of considering shiftwidth to be a personal preference
+    setlocal sw=2 sts=2 et
+    "set include=\\<\\zsAct\\f*::Base\\ze\\>\\\|^\\s*\\(require\\\|load\\)\\s\\+['\"]\\zs\\f\\+\\ze
+    setlocal includeexpr=RailsIncludeexpr()
+    if exists('+completefunc')
+      if &completefunc == ''
+        set completefunc=syntaxcomplete#Complete
+      endif
+    endif
+  else
+    " Does this cause problems in any filetypes?
+    setlocal includeexpr=RailsIncludeexpr()
+    setlocal suffixesadd=.rb,.rhtml,.rxml,.rjs,.mab,.css,.js,.yml,.csv,.rake,.sql,.html
+  endif
+  if &filetype == "ruby"
+    setlocal suffixesadd=.rb,.rhtml,.rxml,.rjs,.mab,.yml,.csv,.rake,s.rb
+    setlocal define=^\\s*def\\s\\+\\(self\\.\\)\\=
+  elseif &filetype == "eruby"
+    "set include=\\<\\zsAct\\f*::Base\\ze\\>\\\|^\\s*\\(require\\\|load\\)\\s\\+['\"]\\zs\\f\\+\\ze\\\|\\zs<%=\\ze
+    setlocal suffixesadd=.rhtml,.rxml,.rjs,.mab,.rb,.css,.js,.html
+  endif
 endfunction
 
 " }}}1

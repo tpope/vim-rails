@@ -90,7 +90,7 @@ You can also have autocommands that only apply to certain types of files.
 These are based off the information shown in the statusline (see
 |rails-'statusline'|), with hyphens changed to asterisks. A few examples: >
 	autocmd User Rails*test*	iabbr <buffer> ae assert_equal
-	autocmd User Rails*view*rhtml*	nmap  <buffer> <C-T> <Plug>RailsMagicM
+	autocmd User Rails*view*rhtml*	nmap <buffer> <C-T> <Plug>RailsRelated
 	autocmd User Rails*model*ar*	iabbr <buffer> vfo validates_format_of
 End all Rails autocommands with asterisks, even if you have an exact
 specification.
@@ -337,15 +337,20 @@ are available if |g:rails_mappings| is enabled or |g:rails_level| >= 3.  (The
 mappings are still under development, and it would not be unrealistic for them
 to change.
 
-						*<Plug>RailsAlternate*
+					*<Plug>RailsAlternate* *rails-[f*
 <Plug>RailsAlternate	Switch to the "alternate" file.  Typically this just
 <LocalLeader>ra		adds or removes "_test" from the filename, but try it
-			in lots of places; you may be surprised.  Deprecated
-			in favor of |rails-:A| and friends.
+[f			in lots of places; you may be surprised.  Deprecated
+			in favor of |rails-:A| and friends, except for [f,
+			which is experimental.  (In Vim, |[f| and |]f| are
+			just deprecated aliases for |gf|.  This seems as good
+			of reason as any to reclaim them for another file
+			seeking operation.)
 
-						*<Plug>RailsRelated*
-<Plug>RailsRelated	The former <Plug>RailsMagicM.  This is a deprecated
-<LocalLeader>rm		mapping that calls |rails-:R|.
+					*<Plug>RailsRelated* *rails-]f*
+<Plug>RailsRelated	The former <Plug>RailsMagicM. Each of these behaves
+<LocalLeader>rm		identically to |rails-:R|.  They are all deprecated
+]f			except ]f, which is experimental.
 
 						*<Plug>RailsFind*
 <Plug>RailsFind		Find the file under the cursor, taking into account
