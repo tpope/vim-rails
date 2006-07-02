@@ -401,7 +401,7 @@ function! s:BufCommands()
   let rp = s:escapecmd(RailsRoot())
   call s:BufScriptWrappers()
   command! -buffer -bar -complete=custom,s:RakeComplete -nargs=? Rake :call s:Rake(<bang>0,<q-args>)
-  command! -buffer -bar -complete=custom,s:PreviewComplete -nargs=? Rpreview :call s:Preview(<bang>0,<q-args>)
+  command! -buffer -bar -complete=custom,s:PreviewComplete -bang -nargs=? Rpreview :call s:Preview(<bang>0,<q-args>)
   command! -buffer -bar -complete=custom,s:environments -bang -nargs=? Rlog :call s:Log(<bang>0,<q-args>)
   command! -buffer -nargs=1 Rrunner :call s:Script(<bang>0,"runner",<f-args>)
   command! -buffer -nargs=1 Rp      :call s:Script(<bang>0,"runner","p begin ".<f-args>." end")
@@ -498,16 +498,29 @@ function! s:Preview(bang,arg)
       endif
     endif
   endif
-  if exists(':OpenURL')
+  if !exists(":OpenURL")
+    if has("gui_mac")
+      command -bar -nargs=1 OpenURL :!open <args>
+    elseif has("gui_win32")
+      command -bar -nargs=1 OpenURL :!start cmd /cstart /b <args>
+    endif
+  endif
+  if exists(':OpenURL') && !a:bang
     exe 'OpenURL '.uri
   else
-    exe 'pedit '.uri.(uri =~ '?' ? '' : '?')
+    " Work around bug where URLs with out ? get handled as FTP
+    let url = uri.(uri =~ '?' ? '' : '?')
+    exe 'pedit '.url
     wincmd w
     if &filetype == ''
       setlocal filetype=xhtml
     endif
-    wincmd w
-    call s:warn("Define a :OpenURL command to use a browser")
+    call s:Detect(RailsRoot())
+    map <buffer> <silent> q :bwipe<CR>
+    wincmd p
+    if !a:bang
+      call s:warn("Define a :OpenURL command to use a browser")
+    endif
   endif
 endfunction
 
@@ -537,8 +550,8 @@ function! s:Log(bang,arg)
     if exists(":Tail")
       exe "Tail ".s:escapecmd(RailsRoot()).'/'.lf
     else
-      "exe "pedit ".s:escapecmd(RailsRoot()).lf
-      exe "sfind ".lf
+      exe "pedit ".s:escapecmd(RailsRoot()).'/'.lf
+      "exe "sfind ".lf
     endif
   endif
 endfunction
@@ -841,11 +854,11 @@ function! s:Server(bang,arg)
     endif
     if pid =~ '^\d\+$'
       echo "Killing server with pid ".pid
-      if has("win32") || has("win64")
-        call system("ruby -e 'Process.kill(9,".pid.")'")
-      else
+      if !has("win32")
         call system("ruby -e 'Process.kill(:TERM,".pid.")'")
+        sleep 100m
       endif
+      call system("ruby -e 'Process.kill(9,".pid.")'")
       sleep 100m
     endif
     if a:arg == "-"
@@ -1481,7 +1494,7 @@ function! s:Related(bang,cmd)
     exe cmd." ".s:sub(s:sub(RailsFilePath(),'/controllers/','/apis/'),'_controller\.rb$','_api.rb')
   elseif t =~ '^controller\>'
     if s:lastmethod() != ""
-      exe cmd." ".s:sub(s:sub(s:(RailsFilePath(),'/application\.rb$','/shared_controller.rb'),'/controllers/','/views/'),'_controller\.rb$','/'.s:lastmethod())
+      exe cmd." ".s:sub(s:sub(s:sub(RailsFilePath(),'/application\.rb$','/shared_controller.rb'),'/controllers/','/views/'),'_controller\.rb$','/'.s:lastmethod())
     else
       exe cmd." ".s:sub(s:sub(RailsFilePath(),'/controllers/','/helpers/'),'\%(_controller\)\=\.rb$','_helper.rb')
     endif
@@ -1703,7 +1716,7 @@ function! s:BufMappings()
 endfunction
 
 " }}}1
-" Menus {{{2
+" Menus {{{1
 
 function! s:CreateMenus() abort
   if exists("g:rails_installed_menu") && g:rails_installed_menu != ""
@@ -1736,6 +1749,7 @@ function! s:CreateMenus() abort
     exe menucmd.g:rails_installed_menu.'.&Other\ files.Application\ &README :find doc/README_FOR_APP<CR>'
     exe menucmd.g:rails_installed_menu.'.&Other\ files.&Environment :find config/environment.rb<CR>'
     exe menucmd.g:rails_installed_menu.'.&Other\ files.&Database\ Configuration :find config/database.yml<CR>'
+    exe menucmd.g:rails_installed_menu.'.&Other\ files.Database\ &Schema :call <SID>findschema()<CR>'
     exe menucmd.g:rails_installed_menu.'.&Other\ files.R&outes :find config/routes.rb<CR>'
     exe menucmd.g:rails_installed_menu.'.&Other\ files.&Test\ Helper :find test/test_helper.rb<CR>'
     exe menucmd.g:rails_installed_menu.'.-FSep- :'
@@ -1767,15 +1781,6 @@ function! s:CreateMenus() abort
   endif
 endfunction
 
-function! s:prephelp()
-  let fn = fnamemodify(s:file,':h:h').'/doc/'
-  if filereadable(fn.'rails.txt')
-    if !filereadable(fn.'tags') || getftime(fn.'tags') <= getftime(fn.'rails.txt')
-      silent! exe "helptags ".s:escapecmd(fn)
-    endif
-  endif
-endfunction
-
 function! s:menuBufEnter()
   if exists("g:rails_installed_menu") && g:rails_installed_menu != ""
     let menu = s:gsub(g:rails_installed_menu,'&','')
@@ -1799,6 +1804,25 @@ function! s:menuprompt(vimcmd,prompt)
     return ""
   endif
   exe a:vimcmd." ".res
+endfunction
+
+function! s:prephelp()
+  let fn = fnamemodify(s:file,':h:h').'/doc/'
+  if filereadable(fn.'rails.txt')
+    if !filereadable(fn.'tags') || getftime(fn.'tags') <= getftime(fn.'rails.txt')
+      silent! exe "helptags ".s:escapecmd(fn)
+    endif
+  endif
+endfunction
+
+function! s:findschema()
+  if filereadable(RailsRoot()."/db/schema.rb")
+    exe "edit ".s:escapecmd(RailsRoot())."/db/schema.rb"
+  elseif filereadable(RailsRoot()."/db/".s:environment()."_structure.sql")
+    exe "edit ".s:escapecmd(RailsRoot())."/db/".s:environment()."_structure.sql"
+  else
+    return s:error("Schema not found: try :Rake db:schema:dump")
+  endif
 endfunction
 
 " }}}1
@@ -2153,7 +2177,7 @@ function! s:SetBasePath()
   let &l:path = &l:path . oldpath
 endfunction
 
-function s:BufSettings()
+function! s:BufSettings()
   if !exists('b:rails_root')
     return ''
   endif

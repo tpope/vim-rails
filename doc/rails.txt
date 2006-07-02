@@ -405,6 +405,9 @@ directory is insufficient).
 		:command -bar -nargs=1 OpenURL :!start cmd /cstart /b <args>
 <			Other operating systems are left as an exercise to the
 			reader.
+			
+						*rails-:Rpreview!*
+:Rpreview! [{path}]	As with :Rpreview, only :OpenURL is never used.
 
 						*rails-:Rpartial*
 :[range]Rpartial [{controller}/]{name}	
@@ -553,7 +556,7 @@ will suffice. (Note the use of a controller name in this example.)
 TODO						*rails-todo*
 
 Abbrevations.  You can enable some experimental ones with
-|g:rails_abbreviations| (but don't tell anyone).  Try pa[ and rp<Tab>.
+|g:rails_abbreviations| (but don't tell anyone).  Try pa[, AR:, and rp<Tab>.
 
 A command to build self.down from self.up, or vice versa, in migrations.  It'd
 be a great companion for :Rpartial.  It wouldn't need to be perfect, just good
