@@ -221,12 +221,12 @@ alternate and related files follow:
 Current file		Alternate file		Related file ~
 model			unit test		related migration
 controller (in method)	functional test		template (view)
-template (view)		helper			controller (in method)
+template (view)		helper			controller (jump to method)
 migration		previous migration	next migration
 config/routes.rb	config/database.yml	config/environment.rb
 
 Suggestions for further contexts to consider for the alternate file, related
-file, and file under the cursor, are welcome.  They are subtly tweaked from
+file, and file under the cursor are welcome.  They are subtly tweaked from
 release to release.
 
 Finally, one Vim feature that proves helpful in conjunction with the above is
@@ -245,18 +245,18 @@ A limited amount of completion with <Tab> is supported.
 			Call ruby script/{script} {options}.
 
 						*rails-:Rconsole*
-:Rconsole {options}	Start script/console.  On Windows this is backgrounded
-			with |!start|.
+:Rconsole {options}	Start script/console.  On Windows this is launched in
+			the background with |!start|.
 
 						*rails-:Rbreakpointer*
 :Rbreakpointer {options}
-			Start script/console.  On Windows this is backgrounded
-			with |!start|.
+			Start script/breakpointer.  On Windows this is
+			launched in the background with |!start|.
 
 						*rails-:Rrunner*
-:Rrunner {code}		Executes {code} with script/runner.  Different from
-			:Rscript runner {code} in that code is passed as one
-			argument.
+:Rrunner {code}		Executes {code} with script/runner.  Differs from
+			:Rscript runner {code} in that the code is passed as
+			one argument.
 
 						*rails-:Rgenerate*
 :Rgenerate {options}	Calls script/generate {options}, and then edits the
@@ -279,7 +279,6 @@ A limited amount of completion with <Tab> is supported.
 :Rserver! {options}	Same as |:Rserver|, only first attempts to kill any
 			other server using the same port.  On non-Windows
 			systems, lsof must be installed for this to work.
-
 
 ==============================================================================
 PARTIAL EXTRACTION				*rails-partials*

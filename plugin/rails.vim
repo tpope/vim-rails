@@ -452,11 +452,16 @@ endfunction
 function! s:Rake(bang,arg)
   let t = RailsFileType()
   if a:arg == "stats"
+    " So you can see it in Windows
+    call s:QuickFixCmdPre()
     exe "!".&makeprg." stats"
+    call s:QuickFixCmdPost()
     return
   elseif a:arg != ''
     exe 'make '.a:arg
     return
+  elseif exists("b:rails_default_rake_target")
+    exe 'make '.b:rails_default_rake_target
   elseif t =~ '^test\>'
     let meth = s:lastmethod()
     if meth =~ '^test_'
@@ -465,10 +470,10 @@ function! s:Rake(bang,arg)
       let call = ""
     endif
     exe "make ".s:sub(s:gsub(t,'-',':'),'unit$\|functional$','&s')." TEST=\"%:p\"".call
-  elseif t=~ '^migration\>'
+  elseif t=~ '^migration\>' && RailsFilePath() !~ '\<db/schema\.rb$'
     make db:migrate
   elseif t=~ '^model\>'
-    make test:units TEST=%:p:r:s?[\/]app[\/]models[\/]?/test/unit/?_test.rb
+    make test:units TEST="%:p:r:s?[\/]app[\/]models[\/]?/test/unit/?_test.rb"
   elseif t=~ '^\<\%(controller\|helper\|view\)\>'
     make test:functionals
   else
@@ -1796,6 +1801,7 @@ function! s:CreateMenus() abort
     exe s:sub(menucmd,'anoremenu','vnoremenu').' <silent> '.g:rails_installed_menu.'.E&xtract\ as\ partial\	:Rpartial :call <SID>menuprompt("'."'".'<,'."'".'>Rpartial","Partial name (e.g., template or /controller/template): ")<CR>'
     exe menucmd.'         '.g:rails_installed_menu.'.-HSep- :'
     exe menucmd.'<silent> '.g:rails_installed_menu.'.&Help\	:help\ rails :call <SID>prephelp()<Bar>help rails<CR>'
+    exe menucmd.'<silent> '.g:rails_installed_menu.'.Abo&ut :call <SID>prephelp()<Bar>help rails-about<CR>'
     let g:rails_did_menus = 1
     call s:menuBufLeave()
   endif
