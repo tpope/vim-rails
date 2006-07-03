@@ -55,7 +55,7 @@ Rails application development.
 6. Interface to script/*.  Generally, use ":Rscript about" to call
    "script/about".  Many commands have wrappers with additional features:
    ":Rgenerate controller Blog" generates a blog controller and edits
-   apps/controllers/blog_controller.rb.  |rails-scripts|
+   app/controllers/blog_controller.rb.  |rails-scripts|
 
 7. Partial extraction.  |:Rpartial| {file} replaces the desired range (ideally
    selected in visual line mode) with "render :partial => '{file}'", which is
@@ -228,6 +228,10 @@ config/routes.rb	config/database.yml	config/environment.rb
 Suggestions for further contexts to consider for the alternate file, related
 file, and file under the cursor, are welcome.  They are subtly tweaked from
 release to release.
+
+Finally, one Vim feature that proves helpful in conjunction with the above is
+|CTRL-^|.  This keystroke edits the previous file, and is helpful to back out
+of any of the above commands.
 
 ==============================================================================
 SCRIPT WRAPPERS					*rails-scripts*
@@ -599,15 +603,26 @@ This is highly discouraged: don't fight Rails.
 ==============================================================================
 ABOUT					*rails-about* *rails-plugin-author*
 
-This plugin was written by Tim Pope.  Email him at vimNOSPAM@tpope.info.  He
+This plugin was written by Tim Pope.  Email him at <vimNOSPAM@tpope.info>.  He
 can also be found on Freenode's IRC network, hanging out in #rubyonrails and
 #vim.
 
-Feedback is highly desired on this pluign.  Please send all comments,
+The latest stable version can be found at
+    http://www.vim.org/scripts/script.php?script_id=1567
+In Vim 7.0, you can keep up to date with |GetLatestVimScripts|.
+
+Development versions can be found at the following URLs:
+    http://tpope.us/rails.vba
+    http://tpope.us/rails.zip
+    http://svn.tpope.net/rails/vim/railsvim
+The first is a |vimball| for Vim 7.0.  The third is a subversion repository
+and contains the very latest features and bugs.
+
+Feedback is highly desired on this plugin.  Please send all comments,
 complaints, and compliments to the author.
 
 This plugin is distributable under the same terms as Vim itself.  See
-|license|.
+|license|.  No warranties, expressed or implied.
 
 ==============================================================================
 TODO						*rails-todo*

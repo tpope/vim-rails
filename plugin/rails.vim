@@ -1755,10 +1755,10 @@ function! s:CreateMenus() abort
       exe menucmd.g:rails_installed_menu.'.&File\ under\ cursor\	Ctrl+Enter :Rfind<CR>'
     else
       let menucmd = 'anoremenu <script> '
-      exe menucmd.g:rails_installed_menu.'.&Related\ file\	:R :R<CR>'
-      exe menucmd.g:rails_installed_menu.'.&Alternate\ file\	:A :A<CR>'
-      "exe menucmd.g:rails_installed_menu.'.&Related\ file\	:R\ /\ ]f :R<CR>'
-      "exe menucmd.g:rails_installed_menu.'.&Alternate\ file\	:A\ /\ [f :A<CR>'
+      "exe menucmd.g:rails_installed_menu.'.&Related\ file\	:R :R<CR>'
+      "exe menucmd.g:rails_installed_menu.'.&Alternate\ file\	:A :A<CR>'
+      exe menucmd.g:rails_installed_menu.'.&Related\ file\	:R\ /\ ]f :R<CR>'
+      exe menucmd.g:rails_installed_menu.'.&Alternate\ file\	:A\ /\ [f :A<CR>'
       exe menucmd.g:rails_installed_menu.'.&File\ under\ cursor\	gf :Rfind<CR>'
     endif
     exe menucmd.g:rails_installed_menu.'.&Other\ files.Application\ &Controller :find app/controllers/application.rb<CR>'
