@@ -55,8 +55,12 @@ function! s:rubyexestr(cmd)
   return "ruby -C ".s:rquote(RailsRoot())." ".a:cmd
 endfunction
 
-function! s:rubyexe(cmd)
-  exe "!".s:gsub(s:rubyexestr(a:cmd),'[!%$]','\\&')
+function! s:rubyexe(cmd,...)
+  if a:0 && has("gui_win32")
+    exe "!start ".s:gsub(s:rubyexestr(a:cmd),'[!%#$]','\\&')
+  else
+    exe "!".s:gsub(s:rubyexestr(a:cmd),'[!%#$]','\\&')
+  endif
   return v:shell_error
 endfunction
 
@@ -460,7 +464,7 @@ function! s:Rake(bang,arg)
     else
       let call = ""
     endif
-    exe "make ".s:sub(s:gsub(t,'-',':'),'unit$\|functional$','&s')." TEST=%:p".call
+    exe "make ".s:sub(s:gsub(t,'-',':'),'unit$\|functional$','&s')." TEST=\"%:p\"".call
   elseif t=~ '^migration\>'
     make db:migrate
   elseif t=~ '^model\>'
@@ -731,11 +735,11 @@ endfunction
 
 function! s:findlayout(name)
   let c = a:name
-  if filereadable(RailsRoot()."/apps/layouts/".c.".rhtml")
+  if filereadable(RailsRoot()."/app/views/layouts/".c.".rhtml")
     let file = "/app/views/layouts/".c.".rhtml"
-  elseif filereadable(RailsRoot()."/apps/layouts/".c.".rxml")
+  elseif filereadable(RailsRoot()."/app/views/layouts/".c.".rxml")
     let file = "/app/views/layouts/".c.".rxml"
-  elseif filereadable(RailsRoot()."/apps/layouts/".c.".mab")
+  elseif filereadable(RailsRoot()."/app/views/layouts/".c.".mab")
     let file = "/app/views/layouts/".c.".mab"
   else
     let file = ""
@@ -821,8 +825,16 @@ endfunction
 " Script Wrappers {{{1
 
 function! s:BufScriptWrappers()
-  command! -buffer -bar -complete=custom,s:ScriptComplete -nargs=+ Rscript :call s:Script(<bang>0,<f-args>)
-  command! -buffer -bar -complete=custom,s:ConsoleComplete -nargs=* Rconsole :Rscript console <args>
+  if has("gui_win32")
+    " Poor win32 users, let's allow background tasks since their shell sucks
+    command! -buffer -bar -complete=custom,s:ScriptComplete -nargs=+ -bang Rscript :call s:Script(<bang>0,<f-args>)
+    command! -buffer -bar -complete=custom,s:ConsoleComplete -nargs=* Rconsole :Rscript! console <args>
+    command! -buffer -bar -nargs=* Rbreakpointer :Rscript! breakpointer <args>
+  else
+    command! -buffer -bar -complete=custom,s:ScriptComplete -nargs=+ Rscript :call s:Script(<bang>0,<f-args>)
+    command! -buffer -bar -complete=custom,s:ConsoleComplete -nargs=* Rconsole :Rscript console <args>
+    command! -buffer -bar -nargs=* Rbreakpointer :Rscript breakpointer <args>
+  endif
   command! -buffer -bar -complete=custom,s:GenerateComplete -nargs=* Rgenerate :call s:Generate(<bang>0,<f-args>)
   command! -buffer -bar -complete=custom,s:DestroyComplete -nargs=* Rdestroy :call s:Destroy(<bang>0,<f-args>)
   command! -buffer -bar -complete=custom,s:PluginComplete -nargs=* Rplugin :call s:Plugin(<bang>0,<f-args>)
@@ -836,7 +848,11 @@ function! s:Script(bang,cmd,...)
     let str = str . " " . s:rquote(a:{c})
     let c = c + 1
   endwhile
-  call s:rubyexe(s:rquote("script/".a:cmd).str)
+  if a:bang
+    call s:rubyexe(s:rquote("script/".a:cmd).str,1)
+  else
+    call s:rubyexe(s:rquote("script/".a:cmd).str)
+  endif
 endfunction
 
 function! s:Server(bang,arg)
@@ -998,8 +1014,12 @@ function! s:BufSyntax()
     "let g:rails_view_helpers = s:rails_view_helpers
     let rails_view_helpers = '+\.\@<!\<\('.s:gsub(s:rails_view_helpers,'\s\+','\\|').'\)\>+'
     if &syntax == 'ruby'
-      if t =~ '.'
+      syn keyword rubyRailsMethod breakpoint
+      if t != ''
         syn match rubyRailsError ':order_by\>'
+      endif
+      if t == ''
+        syn keyword rubyRailsMethod params request response session headers template cookies flash
       endif
       if t =~ '^api\>'
         syn keyword rubyRailsAPIMethod api_method
@@ -1013,9 +1033,6 @@ function! s:BufSyntax()
         syn keyword rubyRailsARClassMethod attr_accessible attr_protected establish_connection set_inheritance_column set_locking_column set_primary_key set_sequence_name set_table_name
         "syn keyword rubyRailsARCallbackMethod after_find after_initialize
         syn keyword rubyRailsARValidationMethod validate validate_on_create validate_on_update validates_acceptance_of validates_associated validates_confirmation_of validates_each validates_exclusion_of validates_format_of validates_inclusion_of validates_length_of validates_numericality_of validates_presence_of validates_size_of validates_uniqueness_of
-      endif
-      if t == ''
-        syn keyword rubyRailsMethod params request response session headers template cookies flash
       endif
       if t =~ '^controller\>' || t =~ '^view\>' || t=~ '^helper\>'
         syn keyword rubyRailsMethod params request response session headers template cookies flash
@@ -1040,6 +1057,7 @@ function! s:BufSyntax()
       if t =~ '^test\>'
         syn keyword rubyRailsTestMethod add_assertion assert assert_block assert_equal assert_in_delta assert_instance_of assert_kind_of assert_match assert_nil assert_no_match assert_not_equal assert_not_nil assert_not_same assert_nothing_raised assert_nothing_thrown assert_operator assert_raise assert_respond_to assert_same assert_send assert_throws flunk fixtures use_transactional_fixtures use_instantiated_fixtures
         if t !~ '^test-unit\>'
+          syn match   rubyRailsTestControllerMethod  '\.\@<!\<\%(get\|post\|put\|delete\|head\|process\)\>'
           syn keyword rubyRailsTestControllerMethod assert_response assert_redirected_to assert_template assert_recognizes assert_generates assert_routing assert_tag assert_no_tag assert_dom_equal assert_dom_not_equal assert_valid
         endif
       endif
@@ -1052,6 +1070,7 @@ function! s:BufSyntax()
       "exe "syn match erubyRailsHelperMethod ".rails_view_helpers." contained containedin=@erubyRailsRegions"
         exe "syn keyword erubyRailsHelperMethod ".s:sub(s:rails_view_helpers,'\<select\s\+','')." contained containedin=@erubyRailsRegions"
         syn match erubyRailsHelperMethod '\<select\>\%(\s*{\|\s*do\>\|\s*(\=\s*&\)\@!' contained containedin=@erubyRailsRegions
+      syn keyword erubyRailsMethod breakpoint
       syn keyword erubyRailsMethod params request response session headers template cookies flash contained containedin=@erubyRailsRegions
       syn match erubyRailsMethod '\.\@<!\<\(h\|html_escape\|u\|url_encode\)\>' contained containedin=@erubyRailsRegions
         syn keyword erubyRailsRenderMethod render render_component contained containedin=@erubyRailsRegions
@@ -1065,8 +1084,8 @@ function! s:BufSyntax()
       syn cluster erubyRegions contains=yamlRailsOneLiner,yamlRailsBlock,yamlRailsExpression,yamlRailsComment
       syn cluster erubyRailsRegions contains=yamlRailsOneLiner,yamlRailsBlock,yamlRailsExpression
       syn region  yamlRailsOneLiner   matchgroup=yamlRailsDelimiter start="^%%\@!" end="$"  contains=@rubyRailsTop	containedin=ALLBUT,@yamlRailsRegions keepend oneline
-      syn region  yamlRailsBlock	    matchgroup=yamlRailsDelimiter start="<%%\@!" end="%>" contains=@rubyTop	containedin=ALLBUT,@yamlRailsRegions
-      syn region  yamlRailsExpression matchgroup=yamlRailsDelimiter start="<%="    end="%>" contains=@rubyTop	    	containedin=ALLBUT,@yamlRailsRegions
+      syn region  yamlRailsBlock      matchgroup=yamlRailsDelimiter start="<%%\@!" end="%>" contains=@rubyTop		containedin=ALLBUT,@yamlRailsRegions
+      syn region  yamlRailsExpression matchgroup=yamlRailsDelimiter start="<%="    end="%>" contains=@rubyTop		containedin=ALLBUT,@yamlRailsRegions
       syn region  yamlRailsComment    matchgroup=yamlRailsDelimiter start="<%#"    end="%>" contains=rubyTodo,@Spell	containedin=ALLBUT,@yamlRailsRegions keepend
         syn match yamlRailsMethod '\.\@<!\<\(h\|html_escape\|u\|url_encode\)\>' containedin=@erubyRailsRegions
       let b:current_syntax = "yaml"
@@ -1731,8 +1750,8 @@ function! s:CreateMenus() abort
     endif
     if exists("$CREAM")
       let menucmd = '87anoremenu <script> '
-      exe menucmd.g:rails_installed_menu.'.&Related\ file\	:R\ /\ Alt-] :R<CR>'
-      exe menucmd.g:rails_installed_menu.'.&Alternate\ file\	:A\ /\ Alt-[ :A<CR>'
+      exe menucmd.g:rails_installed_menu.'.&Related\ file\	:R\ /\ Alt+] :R<CR>'
+      exe menucmd.g:rails_installed_menu.'.&Alternate\ file\	:A\ /\ Alt+[ :A<CR>'
       exe menucmd.g:rails_installed_menu.'.&File\ under\ cursor\	Ctrl+Enter :Rfind<CR>'
     else
       let menucmd = 'anoremenu <script> '
@@ -1764,13 +1783,14 @@ function! s:CreateMenus() abort
     while tasks != ''
       let task = matchstr(tasks,'.\{-\}\ze\%(\n\|$\)')
       let tasks = s:sub(tasks,'.\{-\}\%(\n\|$\)','')
-      exe menucmd.'<silent> '.g:rails_installed_menu.'.&Generate\	:Rgenerate.'.s:gsub(task,'_','\\ ').' :call <SID>menuprompt("Rgenerate '.task.'","Arguments for script/generate '.task.': ")<CR>'
+      exe menucmd.'<silent> '.g:rails_installed_menu.'.&Generate\	:Rgen.'.s:gsub(task,'_','\\ ').' :call <SID>menuprompt("Rgenerate '.task.'","Arguments for script/generate '.task.': ")<CR>'
       exe menucmd.'<silent> '.g:rails_installed_menu.'.&Destroy\	:Rdestroy.'.s:gsub(task,'_','\\ ').' :call <SID>menuprompt("Rdestroy '.task.'","Arguments for script/destroy '.task.': ")<CR>'
     endwhile
     exe menucmd.g:rails_installed_menu.'.&Server\	:Rserver.&Start\	:Rserver :Rserver<CR>'
     exe menucmd.g:rails_installed_menu.'.&Server\	:Rserver.&Force\ start\	:Rserver! :Rserver!<CR>'
     exe menucmd.g:rails_installed_menu.'.&Server\	:Rserver.&Kill\	:Rserver!\ - :Rserver! -<CR>'
     exe menucmd.g:rails_installed_menu.'.&Console\	:Rconsole :Rconsole<CR>'
+    exe menucmd.g:rails_installed_menu.'.&Breakpointer\	:Rbreak :Rbreakpointer<CR>'
     exe menucmd.g:rails_installed_menu.'.&Preview\	:Rpreview :Rpreview<CR>'
     exe menucmd.g:rails_installed_menu.'.&Log\	:Rlog :Rlog<CR>'
     exe s:sub(menucmd,'anoremenu','vnoremenu').' <silent> '.g:rails_installed_menu.'.E&xtract\ as\ partial\	:Rpartial :call <SID>menuprompt("'."'".'<,'."'".'>Rpartial","Partial name (e.g., template or /controller/template): ")<CR>'
