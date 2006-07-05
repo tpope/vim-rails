@@ -7,6 +7,7 @@ file 'rails.zip' => files do |t|
   system('zip','-q',t.name,*t.prerequisites)
 end
 
+desc "Make vimball"
 file 'rails.vba' => files do |t|
   File.unlink t.name if File.exists?(t.name)
   File.open(t.name,"w") do |out|

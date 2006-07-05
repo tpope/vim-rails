@@ -570,7 +570,7 @@ the current filetype is in your existing 'statusline'.  Enabled when
 Automatically add/remove files to the subversion repository for commands like
 |:Rgenerate| and |:Rdestroy| (but not |:Rscript|).  Ignored when the
 application is not part of a subversion repository.  Enabled with
-|g:rails_level| >= 3.
+|g:rails_level| >= 4.
 
 						*g:rails_syntax*  >
 	let g:rails_syntax=1
@@ -604,7 +604,7 @@ ABOUT					*rails-about* *rails-plugin-author*
 
 This plugin was written by Tim Pope.  Email him at <vimNOSPAM@tpope.info>.  He
 can also be found on Freenode's IRC network, hanging out in #rubyonrails and
-#vim.
+#vim as tpope.
 
 The latest stable version can be found at
     http://www.vim.org/scripts/script.php?script_id=1567
