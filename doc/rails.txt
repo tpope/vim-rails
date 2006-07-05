@@ -361,7 +361,13 @@ PLUGIN INTEGRATION				*rails-integration*
 			application is edited.  This command is called for you
 			automatically when |g:rails_dbext| is set (default on
 			non-Windows systems).
-						
+
+						*rails-:Rdbext!*
+:Rdbext! [{environment}]
+			Load the database configuration as above, and then
+			attempt a CREATE DATABASE for it.  This is primarily
+			useful for demonstrations.
+
 						*rails-cream*
 This plugin provides a few additional keybindings if it is running under
 Cream, the user friendly editor which uses Vim as a backend.  Ctrl+Enter finds
@@ -501,13 +507,6 @@ value	meaning ~
 	let g:loaded_rails=1
 Do not load the plugin. For emergency use only.
 
-						*g:rails_avim_commands*  >
-	let g:rails_avim_commands=1
-Adds some a.vim style navigation commands like |rails-:A| and |rails-:R|.
-This does not require a.vim.  (a.vim is a plugin for easily alternating
-between, for example, foo.c and foo.h.  If it's installed, you can see
-|alternate.txt| for more information.)  Enabled when |g:rails_level| >= 3.
-
 						*g:rails_dbext*  >
 	let g:rails_dbext=1
 Enable integration with the dbext plugin, if it is installed.  Defaults to the
@@ -536,10 +535,6 @@ when |g:rails_level| >= 3 (>= 4 on Windows, which runs external programs
 decidedly slower).  Windows users are encouraged to turn this option on and
 see if performance is still acceptable.
 
-						*g:rails_isfname*  >
-	let g:rails_isfname=1
-Enables changes to the 'isfname' option.  Should no longer be necessary.
-
 						*g:rails_leader*  >
 	let g:rails_leader='<LocalLeader>r'
 Prefix for mappings.  See |rails-mappings|.
@@ -549,16 +544,27 @@ Prefix for mappings.  See |rails-mappings|.
 Enables a few <LocalLeader> mappings.  See |rails-mappings|. Enabled when
 |g:rails_level| >= 3.
 
+						*g:rails_modelines*  >
+	let g:rails_modelines=1
+Enable modelines like the following: >
+	# Rset rake_task=db:schema:load
+Modelines set buffer-local options using the (undocumented) :Rset command.
+Also enables the method specific defaults for use with :Rake. >
+	  def show
+	    # rake preview:blog/show/1
+Extremely useful but may cause security concerns when editing projects from
+an untrusted source.  Enabled when |g:rails_level| >= 4.
+
 						*g:rails_menu*  >
 	let g:rails_menu=1
 When 2, a Rails menu is created.  When 1, this menu is a submenu under the
 Plugin menu.  The default is 0, 1, or 2, depending on whether |g:rails_level|
 is less than, equal to, or greater than 3.
 
-						*g:rails_root_url*  >
-	let g:rails_root_url='http://localhost:3000/'
+						*g:rails_url*  >
+	let g:rails_url='http://localhost:3000/'
 Used for the |:Rpreview| command.  Default is as shown above.  Overridden by
-b:rails_root_url.
+b:rails_url.
 
 						*g:rails_statusline*  >
 	let g:rails_statusline=1

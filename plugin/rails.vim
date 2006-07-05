@@ -36,30 +36,61 @@ function! s:escpath(p)
 endfunction
 
 function! s:escarg(p)
-  return s:gsub(a:p,'[ !%#$]','\\&')
+  return s:gsub(a:p,'[ !%#]','\\&')
 endfunction
 
-function s:esccmd(p)
-  return s:gsub(a:p,'[!%#$]','\\&')
+function! s:esccmd(p)
+  return s:gsub(a:p,'[!%#]','\\&')
 endfunction
 
-function s:r()
+function! s:r()
   return RailsRoot()
 endfunction
 
-function s:rp()
+function! s:rp()
   " Rails root, escaped for use in &path
   return s:escpath(s:r())
 endfunction
 
-function s:ra()
+function! s:ra()
   " Rails root, escaped for use as single argument
   return s:escarg(s:r())
 endfunction
 
-function s:rc()
+function! s:rc()
   " Rails root, escaped for use with a command (spaces not escaped)
   return s:esccmd(s:r())
+endfunction
+
+function! s:rv()
+  " Rails root, escaped to be a variable name
+  let r = fnamemodify(RailsRoot(),':~')
+  let r = s:gsub(r,'^\~','0')
+  let r = s:gsub(r,'\W','_')
+  let r = s:gsub(r,'^\d','_&')
+  return r
+endfunction
+
+function! s:gbopt(opt)
+  " Get buffer option
+  if exists("b:".s:sname()."_".a:opt)
+    return b:{s:sname()}_{a:opt}
+  elseif exists("s:_".s:rv()."_".s:environment()."_".a:opt)
+    return s:_{s:rv()}_{s:environment()}_{a:opt}
+  elseif exists("g:".s:sname()."_".a:opt)
+    return g:{s:sname()}_{a:opt}
+  else
+    return ""
+  endif
+endfunction
+
+function! s:saopt(opt,val)
+  " Set an application option
+  let s:_{s:rv()}_{s:environment()}_{a:opt} = a:val
+endfunction
+
+function! s:sname()
+  return fnamemodify(s:file,':t:r')
 endfunction
 
 function! s:rquote(str)
@@ -309,7 +340,8 @@ function! s:InitConfig()
   call s:SetOptDefault("rails_default_file","README")
   call s:SetOptDefault("rails_default_database","")
   call s:SetOptDefault("rails_leader","<LocalLeader>r")
-  call s:SetOptDefault("rails_root_url",'http://localhost:3000/')
+  call s:SetOptDefault("rails_url",'http://localhost:3000/')
+  call s:SetOptDefault("rails_modelines",l>3)
   call s:SetOptDefault("rails_menu",(l>2)+(l>3))
   call s:SetOptDefault("rails_debug",0)
   if l > 2
@@ -358,6 +390,7 @@ function! s:BufEnter()
       endif
     endif
     call s:menuBufEnter()
+    call s:BufDatabase(-1)
   else
     if isdirectory(expand('%;p'))
       call s:Detect(expand('%:p'))
@@ -442,13 +475,12 @@ function! s:BufCommands()
   command! -buffer -bar -nargs=* Rhelper :call s:ControllerFunc(<bang>0,"app/helpers/","_helper.rb",<f-args>)
   command! -buffer -bar -nargs=* Rlayout :call s:LayoutFunc(<bang>0,<f-args>)
   command! -buffer -bar -nargs=0 Rtags :call s:Tags(<bang>0)
-  " Future compatibility
-  command! -buffer -bar -nargs=* -bang -range Rset :
+  command! -buffer -bar -bang -complete=custom,s:RsetComplete -nargs=* Rset :call s:Rset(<bang>0,<f-args>)
   if exists(":Project")
     command! -buffer -bar -bang -nargs=? Rproject :call s:Project(<bang>0,<q-args>)
   endif
   if exists("g:loaded_dbext")
-    command! -buffer -bar -nargs=? Rdbext :call s:BufDatabase(2,<q-args>,<bang>0)
+    command! -buffer -bar -nargs=? -bang Rdbext :call s:BufDatabase(2,<q-args>,<bang>0)
   endif
   let ext = expand("%:e")
   if ext == "rhtml" || ext == "rxml" || ext == "rjs" || ext == "mab"
@@ -456,10 +488,10 @@ function! s:BufCommands()
   endif
 endfunction
 
-function! s:Rake(bang,arg)
+function! s:Rake(bang,arg) " {{{2
   let t = RailsFileType()
   let arg = a:arg
-  if &filetype == "ruby" && arg == ''
+  if &filetype == "ruby" && arg == '' && g:rails_modelines
     let lnum = s:lastmethodline()
     let str = getline(lnum)."\n".getline(lnum+1)."\n".getline(lnum+2)."\n"
     let pat = '\s\+\zs.\{-\}\ze\%(\n\|\s\s\|#{\@!\|$\)'
@@ -473,7 +505,7 @@ function! s:Rake(bang,arg)
     if exists("b:rails_rake_task")
       let arg = b:rails_rake_task
     elseif exists("b:rails_default_rake_target")
-      " Deprecated
+      call s:warn("b:rails_default_rake_target is deprecated.  :Rset rake_task=... instead")
       let arg = b:rails_default_rake_target
     endif
   endif
@@ -485,8 +517,14 @@ function! s:Rake(bang,arg)
   elseif arg =~ '^preview\>'
     exe 'R'.s:gsub(arg,':','/')
   elseif arg =~ '^runner:'
+    " FIXME: set a proper 'efm'
     let arg = s:sub(arg,'^runner:','')
-    exe 'Rrunner '.arg
+    let old_make = &makeprg
+    let &l:makeprg = s:rubyexestr("script/runner ".s:rquote(s:esccmd(arg)))
+    echo &l:makeprg
+    make
+    "exe 'Rrunner '.arg
+    let &l:makeprg = old_make
   elseif arg != ''
     exe 'make '.a:arg
   elseif t =~ '^task\>'
@@ -523,10 +561,13 @@ endfunction
 
 function! s:RakeComplete(A,L,P)
   return s:raketasks()
-endfunction
+endfunction " }}}2
 
-function! s:Preview(bang,arg)
-  let root = exists("b:rails_root_url") ? b:rails_root_url : g:rails_root_url
+function! s:Preview(bang,arg) " {{{2
+  let root = s:gbopt("url")
+  if root == ''
+    let root = s:gbopt("root_url")
+  endif
   let root = s:sub(root,'/$','')
   if a:arg =~ '://'
     let uri = a:arg
@@ -580,7 +621,7 @@ function! s:PreviewComplete(A,L,P)
     endif
   endif
   return ret
-endfunction
+endfunction " }}}2
 
 function! s:Log(bang,arg)
   if a:arg == ""
@@ -605,7 +646,7 @@ function! s:Log(bang,arg)
   endif
 endfunction
 
-function! s:Project(bang,arg)
+function! s:Project(bang,arg) " {{{2
   let rr = RailsRoot()
   exe "Project ".a:arg
   let line = search('^[^ =]*="'.s:gsub(rr,'[\/]','[\\/]').'"')
@@ -695,7 +736,7 @@ function! s:NewProjectTemplate(proj,rr,fancy)
   endif
   let str = str . "  mocks=mocks filter=\"**\" {\n  }\n  unit=unit filter=\"**\" {\n  }\n }\n}\n"
   return str
-endfunction
+endfunction " }}}2
 
 function! s:Migration(bang,cmd,arg)
   if a:arg =~ '^\d$'
@@ -802,6 +843,40 @@ function! s:ControllerFunc(bang,prefix,suffix,...)
   if a:0 > 1
     exe "silent! djump ".a:2
   endif
+endfunction
+
+function! s:Rset(bang,...)
+  let c = 1
+  while c <= a:0
+    let arg = a:{c}
+    let c = c + 1
+    if arg !~ '='
+      if exists("b:".s:sname()."_".arg) || exists("s:_".s:rv()."_".s:environment()."_".arg)
+        echo arg."=".s:gbopt(arg)
+      else
+        call s:error("No such rails.vim option: ".arg)
+      endif
+    else
+      let opt = matchstr(arg,'[^=]*')
+      let val = s:sub(arg,'^[^=]*=','')
+      if a:bang
+        let b:rails_{opt} = val
+      else
+        "call s:saopt(opt,val)
+        let b:rails_{opt} = val
+      endif
+    endif
+  endwhile
+endfunction
+
+function! s:RsetComplete(A,L,P)
+  if a:A =~ '='
+    let opt = matchstr(a:A,'[^=]*')
+    return opt."=".s:gbopt(opt)
+  else
+    return "rake_task=\nurl="
+  endif
+  return ""
 endfunction
 
 function! s:RealMansGlob(path,glob)
@@ -1631,13 +1706,13 @@ function! s:MakePartial(bang,...) range abort
   let var = "@".name
   let collection = ""
   if dir =~ '^/'
-    let out = (b:rails_root).dir."/_".fname
+    let out = (RailsRoot()).dir."/_".fname
   elseif dir == ""
     let out = (curdir)."/_".fname
   elseif isdirectory(curdir."/".dir)
     let out = (curdir)."/".dir."/_".fname
   else
-    let out = (b:rails_root)."/app/views/".dir."/_".fname
+    let out = (RailsRoot())."/app/views/".dir."/_".fname
   endif
   if filereadable(out)
     let partial_warn = 1
@@ -1939,7 +2014,7 @@ function! s:BufDatabase(...)
   endif
   " Crude caching mechanism
   if s:dbext_last_root != RailsRoot()
-    if exists("g:loaded_dbext") && (g:rails_dbext || (a:0 && a:1))
+    if exists("g:loaded_dbext") && (g:rails_dbext + (a:0 ? a:1 : 0)) > 0
       " Ideally we would filter this through ERB but that could be insecure.
       " It might be possible to make use of taint checking.
       let cmdb = 'require %{yaml}; y = File.open(%q{'.RailsRoot().'/config/database.yml}) {|f| YAML::load(f)}; e = y[%{'
@@ -1992,6 +2067,14 @@ function! s:BufDatabase(...)
     silent! let b:dbext_port    = s:dbext_port
     silent! let b:dbext_dsnname = s:dbext_dsnname
     silent! let b:dbext_integratedlogin = s:dbext_integratedlogin
+  endif
+  if a:0 >= 3 && a:3 && exists(":Create")
+    if exists("b:dbext_dbname") && exists("b:dbext_type") && b:dbext_type !~? 'sqlite'
+      let db = b:dbext_dbname
+      let b:dbext_dbname = ''
+      exe "Create database ".db
+      let b:dbext_dbname = db
+    endif
   endif
 endfunction
 
@@ -2161,6 +2244,9 @@ endfunction
 " Modelines {{{1
 
 function! s:BufModelines()
+  if !g:rails_modelines
+    return
+  endif
   let lines = getline(1)."\n".getline(2)."\n".getline(3)."\n".getline("$")."\n"
   let pat = '\s\+\zs.\{-\}\ze\%(\n\|\s\s\|#{\@!\|%>\|-->\||\|$\)'
   let mat = matchstr(lines,'\<Rset'.pat)
@@ -2250,26 +2336,31 @@ function! s:BufInit(path)
       nnoremap <buffer> <silent> q :bwipe<CR>
       $
     endif
-    call s:BufCommands()
-    call s:BufMappings()
-    call s:BufAbbreviations()
-    call s:BufModelines()
-    call s:BufDatabase()
-    call s:BufSettings()
+  endif
+  call s:BufSettings()
+  call s:BufCommands()
+  call s:BufMappings()
+  call s:BufAbbreviations()
+  call s:BufDatabase()
   let t = RailsFileType()
   if t != ""
     let t = "-".t
   endif
   exe "silent doautocmd User Rails".s:gsub(t,'-','.')."."
-  if filereadable(b:rails_root."/config/rails.vim") && exists(":sandbox")
-    sandbox exe "source ".s:rp()."/config/rails.vim"
+  if filereadable(b:rails_root."/config/rails.vim")
+    if exists(":sandbox")
+      sandbox exe "source ".s:rp()."/config/rails.vim"
+    elseif g:rails_modelines
+      exe "source ".s:rp()."/config/rails.vim"
+    endif
   endif
+  call s:BufModelines()
   let &cpo = cpo_save
   return b:rails_root
 endfunction
 
 function! s:SetBasePath()
-  let rp = s:escpath(b:rails_root)
+  let rp = s:rp()
   let t = RailsFileType()
   let oldpath = s:sub(&l:path,'^\.,','')
   if stridx(oldpath,rp) == 2
