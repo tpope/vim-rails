@@ -107,13 +107,18 @@ function! s:rubyeval(ruby,...)
   endif
 endfunction
 
-function! s:lastmethod()
+function! s:lastmethodline()
   let line = line(".")
   while line > 0 && getline(line) !~ &l:define
-    let line = line -1
+    let line = line - 1
   endwhile
+  return line
+endfunction
+
+function! s:lastmethod()
+  let line = s:lastmethodline()
   if line
-    return matchstr(getline(line),&define.'\zs\k\+')
+    return matchstr(getline(line),'\%('.&define.'\)\zs\k\%(\k\|:\)*')
   else
     return ""
   endif
@@ -428,45 +433,23 @@ endfunction
 function! s:BufCommands()
   let rp = s:ra()
   call s:BufScriptWrappers()
+  call s:BufNavCommands()
   command! -buffer -bar -complete=custom,s:RakeComplete -nargs=? Rake :call s:Rake(<bang>0,<q-args>)
   command! -buffer -bar -complete=custom,s:PreviewComplete -bang -nargs=? Rpreview :call s:Preview(<bang>0,<q-args>)
   command! -buffer -bar -complete=custom,s:environments -bang -nargs=? Rlog :call s:Log(<bang>0,<q-args>)
-  command! -buffer -nargs=1 Rrunner :call s:Script(<bang>0,"runner",<f-args>)
-  command! -buffer -nargs=1 Rp      :call s:Script(<bang>0,"runner","p begin ".<f-args>." end")
   command! -buffer -bar -nargs=? Rmigration :call s:Migration(<bang>0,"edit",<q-args>)
   command! -buffer -bar -nargs=* Rcontroller :call s:ControllerFunc(<bang>0,"app/controllers/","_controller.rb",<f-args>)
   command! -buffer -bar -nargs=* Rhelper :call s:ControllerFunc(<bang>0,"app/helpers/","_helper.rb",<f-args>)
   command! -buffer -bar -nargs=* Rlayout :call s:LayoutFunc(<bang>0,<f-args>)
-  silent exe "command! -bar -buffer -nargs=? Rcd :cd ".rp."/<args>"
-  silent exe "command! -bar -buffer -nargs=? Rlcd :lcd ".rp."/<args>"
-  "command! -buffer -bar -nargs=? Cd :Rcd <args>
-  "command! -buffer -bar -nargs=? Lcd :Rlcd <args>
-  command! -buffer -bar -complete=custom,s:FindList -nargs=* -count=1 Rfind :call s:Find(<bang>0,<count>,"",<f-args>)
-  command! -buffer -bar -complete=custom,s:FindList -nargs=* -count=1 Rsfind :call s:Find(<bang>0,<count>,"s",<f-args>)
-  command! -buffer -bar -complete=custom,s:FindList -nargs=* -count=1 Rsplitfind :call s:Find(<bang>0,<count>,"s",<f-args>)
-  command! -buffer -bar -complete=custom,s:FindList -nargs=* -count=1 Rvsfind :call s:Find(<bang>0,<count>,"vert s",<f-args>)
-  command! -buffer -bar -complete=custom,s:FindList -nargs=* -count=1 Rvsplitfind :call s:Find(<bang>0,<count>,"vert s",<f-args>)
-  command! -buffer -bar -complete=custom,s:FindList -nargs=* -count=1 Rtabfind :call s:Find(<bang>0,<count>,"tab",<f-args>)
-  command! -buffer -bar -nargs=0 Ralternate :call s:warn('Use :A instead')|call s:Alternate(<bang>0,"find")
-  if g:rails_avim_commands
-    command! -buffer -bar -nargs=0 A  :call s:Alternate(<bang>0,"find")
-    command! -buffer -bar -nargs=0 AS :call s:Alternate(<bang>0,"sfind")
-    command! -buffer -bar -nargs=0 AV :call s:Alternate(<bang>0,"vert sfind")
-    command! -buffer -bar -nargs=0 AT :call s:Alternate(<bang>0,"tabfind")
-    command! -buffer -bar -nargs=0 AN :call s:Related(<bang>0,"find")
-    command! -buffer -bar -nargs=0 R  :call s:Related(<bang>0,"find")
-    command! -buffer -bar -nargs=0 RS :call s:Related(<bang>0,"sfind")
-    command! -buffer -bar -nargs=0 RV :call s:Related(<bang>0,"vert sfind")
-    command! -buffer -bar -nargs=0 RT :call s:Related(<bang>0,"tabfind")
-    command! -buffer -bar -nargs=0 RN :call s:Alternate(<bang>0,"find")
-  endif
+  command! -buffer -bar -nargs=0 Rtags :call s:Tags(<bang>0)
+  " Future compatibility
+  command! -buffer -bar -nargs=* -bang -range Rset :
   if exists(":Project")
     command! -buffer -bar -bang -nargs=? Rproject :call s:Project(<bang>0,<q-args>)
   endif
   if exists("g:loaded_dbext")
     command! -buffer -bar -nargs=? Rdbext :call s:BufDatabase(2,<q-args>,<bang>0)
   endif
-  command! -buffer -bar -nargs=0 Rtags :call s:Tags(<bang>0)
   let ext = expand("%:e")
   if ext == "rhtml" || ext == "rxml" || ext == "rjs" || ext == "mab"
     command! -buffer -bar -nargs=? -range Rpartial :<line1>,<line2>call s:MakePartial(<bang>0,<f-args>)
@@ -475,17 +458,46 @@ endfunction
 
 function! s:Rake(bang,arg)
   let t = RailsFileType()
-  if a:arg == "stats"
+  let arg = a:arg
+  if &filetype == "ruby" && arg == ''
+    let lnum = s:lastmethodline()
+    let str = getline(lnum)."\n".getline(lnum+1)."\n".getline(lnum+2)."\n"
+    let pat = '\s\+\zs.\{-\}\ze\%(\n\|\s\s\|#{\@!\|$\)'
+    let mat = matchstr(str,'#\s*rake'.pat)
+    let mat = s:sub(mat,'\s\+$','')
+    if mat != ""
+      let arg = mat
+    endif
+  endif
+  if arg == ''
+    if exists("b:rails_rake_task")
+      let arg = b:rails_rake_task
+    elseif exists("b:rails_default_rake_target")
+      " Deprecated
+      let arg = b:rails_default_rake_target
+    endif
+  endif
+  if arg == "stats"
     " So you can see it in Windows
     call s:QuickFixCmdPre()
     exe "!".&makeprg." stats"
     call s:QuickFixCmdPost()
-    return
-  elseif a:arg != ''
+  elseif arg =~ '^preview\>'
+    exe 'R'.s:gsub(arg,':','/')
+  elseif arg =~ '^runner:'
+    let arg = s:sub(arg,'^runner:','')
+    exe 'Rrunner '.arg
+  elseif arg != ''
     exe 'make '.a:arg
-    return
-  elseif exists("b:rails_default_rake_target")
-    exe 'make '.b:rails_default_rake_target
+  elseif t =~ '^task\>'
+    let lnum = s:lastmethodline()
+    let line = getline(ln)
+    " We can't grab the namespace so only run tasks at the start of the line
+    if line =~ '^\%(task\|file\)\>'
+      exe 'make '.s:lastmethod()
+    else
+      make
+    endif
   elseif t =~ '^test\>'
     let meth = s:lastmethod()
     if meth =~ '^test_'
@@ -705,30 +717,6 @@ function! s:Migration(bang,cmd,arg)
   endif
 endfunction
 
-function! s:Find(bang,count,arg,...)
-  let str = ""
-  if a:0
-    let i = 1
-    while i < a:0
-      let str = str . s:escarg(a:{i}) . " "
-      let i = i + 1
-    endwhile
-    let file = s:RailsIncludefind(a:{i},1)
-  else
-    "let file = s:RailsIncludefind(expand("<cfile>"),1)
-    let file = s:RailsFind()
-  endif
-  exe (a:count==1?'' : a:count).a:arg."find ".str.s:escarg(file)
-endfunction
-
-function! s:FindList(ArgLead, CmdLine, CursorPos)
-  if exists("*UserFileComplete") " genutils.vim
-    return UserFileComplete(s:RailsIncludefind(a:ArgLead), a:CmdLine, a:CursorPos, 1, &path)
-  else
-    return ""
-  endif
-endfunction
-
 function! s:NewApp(bang,...)
   if a:0 == 0
     !rails
@@ -872,6 +860,8 @@ function! s:BufScriptWrappers()
   command! -buffer -bar -complete=custom,s:DestroyComplete -nargs=* Rdestroy :call s:Destroy(<bang>0,<f-args>)
   command! -buffer -bar -complete=custom,s:PluginComplete -nargs=* Rplugin :call s:Plugin(<bang>0,<f-args>)
   command! -buffer -bar -complete=custom,s:environments -nargs=? -bang Rserver :call s:Server(<bang>0,<q-args>)
+  command! -buffer -nargs=1 Rrunner :call s:Script(<bang>0,"runner",<f-args>)
+  command! -buffer -nargs=1 Rp      :call s:Script(<bang>0,"runner","p begin ".<f-args>." end")
 endfunction
 
 function! s:Script(bang,cmd,...)
@@ -1094,6 +1084,9 @@ function! s:BufSyntax()
           syn keyword rubyRailsTestControllerMethod assert_response assert_redirected_to assert_template assert_recognizes assert_generates assert_routing assert_tag assert_no_tag assert_dom_equal assert_dom_not_equal assert_valid
         endif
       endif
+      if t =~ '^task\>'
+        syn match rubyRailsRakeMethod '^\s*\zs\%(task\|file\|desc\)\>\%(\s*=\)\@!'
+      endif
       syn keyword rubyRailsMethod cattr_accessor mattr_accessor
       syn keyword rubyRailsInclude require_dependency require_gem
     elseif &syntax == "eruby" && t =~ '^view\>'
@@ -1142,6 +1135,7 @@ function! s:HiDefaults()
   hi def link rubyRailsFilterMethod           rubyRailsMethod
   hi def link rubyRailsTestControllerMethod   rubyRailsTestMethod
   hi def link rubyRailsTestMethod             rubyRailsMethod
+  hi def link rubyRailsRakeMethod             rubyRailsMethod
   hi def link rubyRailsMethod                 railsMethod
   hi def link rubyRailsError                  rubyError
   hi def link rubyRailsInclude                rubyInclude
@@ -1193,13 +1187,61 @@ endfunction
 " }}}1
 " Navigation {{{1
 
+function! s:BufNavCommands()
+  silent exe "command! -bar -buffer -nargs=? Rcd :cd ".s:rp()."/<args>"
+  silent exe "command! -bar -buffer -nargs=? Rlcd :lcd ".s:rp()."/<args>"
+  command! -buffer -bar -complete=custom,s:FindList -nargs=* -count=1 Rfind :call s:Find(<bang>0,<count>,"",<f-args>)
+  command! -buffer -bar -complete=custom,s:FindList -nargs=* -count=1 Rsfind :call s:Find(<bang>0,<count>,"s",<f-args>)
+  command! -buffer -bar -complete=custom,s:FindList -nargs=* -count=1 Rsplitfind :call s:Find(<bang>0,<count>,"s",<f-args>)
+  command! -buffer -bar -complete=custom,s:FindList -nargs=* -count=1 Rvsfind :call s:Find(<bang>0,<count>,"vert s",<f-args>)
+  command! -buffer -bar -complete=custom,s:FindList -nargs=* -count=1 Rvsplitfind :call s:Find(<bang>0,<count>,"vert s",<f-args>)
+  command! -buffer -bar -complete=custom,s:FindList -nargs=* -count=1 Rtabfind :call s:Find(<bang>0,<count>,"tab",<f-args>)
+  command! -buffer -bar -nargs=0 Ralternate :call s:warn('Use :A instead')|call s:Alternate(<bang>0,"find")
+  if g:rails_avim_commands
+    command! -buffer -bar -nargs=0 A  :call s:Alternate(<bang>0,"find")
+    command! -buffer -bar -nargs=0 AS :call s:Alternate(<bang>0,"sfind")
+    command! -buffer -bar -nargs=0 AV :call s:Alternate(<bang>0,"vert sfind")
+    command! -buffer -bar -nargs=0 AT :call s:Alternate(<bang>0,"tabfind")
+    command! -buffer -bar -nargs=0 AN :call s:Related(<bang>0,"find")
+    command! -buffer -bar -nargs=0 R  :call s:Related(<bang>0,"find")
+    command! -buffer -bar -nargs=0 RS :call s:Related(<bang>0,"sfind")
+    command! -buffer -bar -nargs=0 RV :call s:Related(<bang>0,"vert sfind")
+    command! -buffer -bar -nargs=0 RT :call s:Related(<bang>0,"tabfind")
+    command! -buffer -bar -nargs=0 RN :call s:Alternate(<bang>0,"find")
+  endif
+endfunction
+
+function! s:Find(bang,count,arg,...)
+  let str = ""
+  if a:0
+    let i = 1
+    while i < a:0
+      let str = str . s:escarg(a:{i}) . " "
+      let i = i + 1
+    endwhile
+    let file = s:RailsIncludefind(a:{i},1)
+  else
+    "let file = s:RailsIncludefind(expand("<cfile>"),1)
+    let file = s:RailsFind()
+  endif
+  exe (a:count==1?'' : a:count).a:arg."find ".str.s:escarg(file)
+endfunction
+
+function! s:FindList(ArgLead, CmdLine, CursorPos)
+  if exists("*UserFileComplete") " genutils.vim
+    return UserFileComplete(s:RailsIncludefind(a:ArgLead), a:CmdLine, a:CursorPos, 1, &path)
+  else
+    return ""
+  endif
+endfunction
+
 function! s:InitRuby()
-  if has("ruby") && ! exists("s:ruby_initialized")
-    let s:ruby_initialized = 1
+  "if has("ruby") && ! exists("s:ruby_initialized")
+    "let s:ruby_initialized = 1
     " Is there a drawback to doing this?
     "        ruby require "rubygems" rescue nil
     "        ruby require "active_support" rescue nil
-  endif
+  "endif
 endfunction
 
 function! RailsBalloonexpr()
@@ -2116,6 +2158,19 @@ function! s:BufAbbreviations()
   endif
 endfunction
 " }}}1
+" Modelines {{{1
+
+function! s:BufModelines()
+  let lines = getline(1)."\n".getline(2)."\n".getline(3)."\n".getline("$")."\n"
+  let pat = '\s\+\zs.\{-\}\ze\%(\n\|\s\s\|#{\@!\|%>\|-->\||\|$\)'
+  let mat = matchstr(lines,'\<Rset'.pat)
+  let mat = s:sub(mat,'\s\+$','')
+  if mat != ''
+    exe "Rset ".mat
+  endif
+endfunction
+
+" }}}1
 " Initialization {{{1
 
 function! s:InitPlugin()
@@ -2169,7 +2224,7 @@ endfunction
 function! s:BufInit(path)
   let cpo_save = &cpo
   set cpo&vim
-  call s:InitRuby()
+  "call s:InitRuby()
   let b:rails_root = a:path
   if g:rails_level > 0
     if &ft == "mason"
@@ -2198,6 +2253,7 @@ function! s:BufInit(path)
     call s:BufCommands()
     call s:BufMappings()
     call s:BufAbbreviations()
+    call s:BufModelines()
     call s:BufDatabase()
     call s:BufSettings()
   let t = RailsFileType()
@@ -2294,7 +2350,11 @@ function! s:BufSettings()
   endif
   if &filetype == "ruby"
     setlocal suffixesadd=.rb,.rhtml,.rxml,.rjs,.mab,.yml,.csv,.rake,s.rb
-    setlocal define=^\\s*def\\s\\+\\(self\\.\\)\\=
+    if expand('%:e') == 'rake'
+      setlocal define=^\\s*def\\s\\+\\(self\\.\\)\\=\\\|^\\s*\\%(task\\\|file\\)\\s\\+[:'\"]
+    else
+      setlocal define=^\\s*def\\s\\+\\(self\\.\\)\\=
+    endif
   elseif &filetype == "eruby"
     "set include=\\<\\zsAct\\f*::Base\\ze\\>\\\|^\\s*\\(require\\\|load\\)\\s\\+['\"]\\zs\\f\\+\\ze\\\|\\zs<%=\\ze
     setlocal suffixesadd=.rhtml,.rxml,.rjs,.mab,.rb,.css,.js,.html

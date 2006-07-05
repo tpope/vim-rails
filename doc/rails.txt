@@ -459,6 +459,7 @@ detects your Rails application and adjusts Vim sensibly.
 If you would like to set your own custom Vim settings whenever a Rails file is
 loaded, you can use an autocommand like the following in your vimrc: >
 	autocmd User Rails*		silent! Rlcd
+	autocmd User Rails*		map <buffer> <F9> :Rake<CR>
 You can also have autocommands that only apply to certain types of files.
 These are based off the information shown in the statusline (see
 |rails-'statusline'|), with hyphens changed to asterisks. A few examples: >
