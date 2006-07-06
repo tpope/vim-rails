@@ -771,24 +771,24 @@ function! s:NewApp(bang,...)
   else
     let dir = a:1
   endif
-  let dir = expand(dir)
-  if isdirectory(fnamemodify(dir,':h')."/.svn") && g:rails_subversion
-    let append = " -c"
-  else
-    let append = ""
-  endif
-  if g:rails_default_database != ""
-    let append = append." -d ".g:rails_default_database
-  endif
-  if a:bang
-    let append = append." --force"
-  endif
   let str = ""
   let c = 1
   while c <= a:0
     let str = str . " " . s:rquote(expand(a:{c}))
     let c = c + 1
   endwhile
+  let dir = expand(dir)
+  if isdirectory(fnamemodify(dir,':h')."/.svn") && g:rails_subversion
+    let append = " -c"
+  else
+    let append = ""
+  endif
+  if g:rails_default_database != "" && str !~ '-d \|--database='
+    let append = append." -d ".g:rails_default_database
+  endif
+  if a:bang
+    let append = append." --force"
+  endif
   exe "!rails".append.str
   if filereadable(dir."/".g:rails_default_file)
     exe "edit ".s:escarg(dir)."/".g:rails_default_file
@@ -954,8 +954,11 @@ function! s:Script(bang,cmd,...)
 endfunction
 
 function! s:Server(bang,arg)
+  let port = matchstr(a:arg,'-p\s*\zs\d\+')
+  if port == ''
+    let port = "3000"
+  endif
   let bind = "0.0.0.0"
-  let port = "3000"
   if a:bang && executable("ruby")
     if has("win32") || has("win64")
       let netstat = system("netstat -anop tcp")
@@ -984,6 +987,7 @@ function! s:Server(bang,arg)
   else
     call s:rubyexe(s:rquote("script/server")." ".a:arg." --daemon")
   endif
+  call s:saopt('url','http://'.(bind=='0.0.0.0'?'localhost': bind).':'.port.'/')
 endfunction
 
 function! s:Plugin(bang,...)
@@ -1889,7 +1893,7 @@ endfunction
 
 function! s:CreateMenus() abort
   if exists("g:rails_installed_menu") && g:rails_installed_menu != ""
-    exe "aunmenu ".g:rails_installed_menu
+    exe "aunmenu ".s:gsub(g:rails_installed_menu,'&','')
     unlet g:rails_installed_menu
   endif
   if has("menu") && (exists("g:did_install_default_menus") || exists("$CREAM")) && g:rails_menu
@@ -1949,6 +1953,9 @@ function! s:CreateMenus() abort
     exe menucmd.'<silent> '.g:rails_installed_menu.'.Abo&ut :call <SID>prephelp()<Bar>help rails-about<CR>'
     let g:rails_did_menus = 1
     call s:menuBufLeave()
+    if exists("b:rails_root")
+      call s:menuBufEnter()
+    endif
   endif
 endfunction
 
@@ -1967,6 +1974,7 @@ function! s:menuBufLeave()
     let menu = s:gsub(g:rails_installed_menu,'&','')
     exe 'amenu disable '.menu.'.*'
     exe 'amenu enable  '.menu.'.Help'
+    exe 'amenu enable  '.menu.'.About'
   endif
 endfunction
 function! s:menuprompt(vimcmd,prompt)
@@ -2248,11 +2256,12 @@ function! s:BufModelines()
     return
   endif
   let lines = getline(1)."\n".getline(2)."\n".getline(3)."\n".getline("$")."\n"
-  let pat = '\s\+\zs.\{-\}\ze\%(\n\|\s\s\|#{\@!\|%>\|-->\||\|$\)'
+  let pat = '\s\+\zs.\{-\}\ze\%(\n\|\s\s\|#{\@!\|%>\|-->\|$\)'
   let mat = matchstr(lines,'\<Rset'.pat)
   let mat = s:sub(mat,'\s\+$','')
+  let mat = s:gsub(mat,'|','\\|')
   if mat != ''
-    exe "Rset ".mat
+    silent! exe "Rset ".mat
   endif
 endfunction
 
