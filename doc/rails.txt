@@ -121,6 +121,14 @@ actually edit a file from a Rails application.
 			window.  If the delay in loading is too long, you
 			might like :Rake log:clear.
 
+						*rails-:Rinvert*
+:Rinvert		Experimental command available only in migrations.
+			Rewrite the self.up method into a self.down method.
+			If self.up is empty, the process is reversed.  The
+			chokes on more complicated instructions, but works
+			reasonably well for simple calls to create_table,
+			add_column, and the like.
+
 						*rails-:Rpreview*
 :Rpreview [{path}]	Creates a URL from http://localhost:3000/ and the
 			{path} given.  If {path} is omitted, a sensible
@@ -635,10 +643,6 @@ TODO						*rails-todo*
 
 Abbrevations.  You can enable some experimental ones with
 |g:rails_abbreviations| (but don't tell anyone).  Try pa[, AR:, and rp<Tab>.
-
-A command to build self.down from self.up, or vice versa, in migrations.  It'd
-be a great companion for :Rpartial.  It wouldn't need to be perfect, just good
-enough to change add_column to remove_column, and the like.
 
 Create and maintain some sort of changelog.
 

@@ -155,6 +155,30 @@ function! s:lastmethod()
   endif
 endfunction
 
+function s:endof(lnum)
+  let cline = getline(a:lnum)
+  let spc = matchstr(cline,'^\s*')
+  let endpat = '\<end\>'
+  if matchstr(getline(a:lnum+1),'^'.spc) && !matchstr(getline(a:lnum+1),'^'.spc.endpat) && matchstr(cline,endpat)
+    return a:lnum
+  endif
+  let endl = a:lnum
+  while endl <= line('$')
+    let endl = endl + 1
+    if getline(endl) =~ '^'.spc.endpat
+      return endl
+    elseif getline(endl) =~ '^=begin\>'
+      while getline(endl) ~! '^=end\>' && endl <= line('$')
+        let endl = endl + 1
+      endwhile
+      let endl = endl + 1
+    elseif getline(endl) !~ '^'.spc && getline(endl) !~ '^\s*\%(#.*\)\=$'
+      return 0
+    endif
+  endwhile
+  return 0
+endfunction
+
 function! s:controller()
   let t = RailsFileType()
   let f = RailsFilePath()
@@ -176,6 +200,31 @@ function! s:controller()
     return s:sub(f,'.*\<components/\(.\{-\}\)/\k\+\.\k\+$','\1')
   endif
   return ""
+endfunction
+
+function! s:underscore(str)
+  let str = s:gsub(a:str,'::','/')
+  let str = s:gsub(str,'\(\u\+\)\(\u\l\)','\1_\2')
+  let str = s:gsub(str,'\(\l\|\d\)\(\u\)','\1_\2')
+  let str = s:gsub(str,'-','_')
+  let str = tolower(str)
+  return str
+endfunction
+
+function! s:singularize(word)
+  " Probably not worth it to be as comprehensive as Rails but we can
+  " still hit the common cases.
+  let word = a:word
+  if word =~? '\.js$'
+    return word
+  endif
+  let word = s:sub(word,'eople$','erson')
+  let word = s:sub(word,'[aeio]\@<!ies$','ys')
+  let word = s:sub(word,'xe[ns]$','xs')
+  let word = s:sub(word,'ves$','fs')
+  let word = s:sub(word,'ss\%(es\)\=$','sss')
+  let word = s:sub(word,'s$','')
+  return word
 endfunction
 
 function! s:usesubversion()
@@ -467,161 +516,29 @@ function! s:BufCommands()
   let rp = s:ra()
   call s:BufScriptWrappers()
   call s:BufNavCommands()
-  command! -buffer -bar -complete=custom,s:RakeComplete -nargs=? Rake :call s:Rake(<bang>0,<q-args>)
-  command! -buffer -bar -complete=custom,s:PreviewComplete -bang -nargs=? Rpreview :call s:Preview(<bang>0,<q-args>)
-  command! -buffer -bar -complete=custom,s:environments -bang -nargs=? Rlog :call s:Log(<bang>0,<q-args>)
-  command! -buffer -bar -nargs=? Rmigration :call s:Migration(<bang>0,"edit",<q-args>)
+  command! -buffer -bar -nargs=?       -complete=custom,s:RakeComplete    Rake     :call s:Rake(<bang>0,<q-args>)
+  command! -buffer -bar -nargs=? -bang -complete=custom,s:PreviewComplete Rpreview :call s:Preview(<bang>0,<q-args>)
+  command! -buffer -bar -nargs=? -bang -complete=custom,s:environments    Rlog     :call s:Log(<bang>0,<q-args>)
+  command! -buffer -bar -nargs=* -bang -complete=custom,s:RsetComplete    Rset     :call s:Rset(<bang>0,<f-args>)
+  command! -buffer -bar -nargs=? Rmigration  :call s:Migration(<bang>0,"edit",<q-args>)
   command! -buffer -bar -nargs=* Rcontroller :call s:ControllerFunc(<bang>0,"app/controllers/","_controller.rb",<f-args>)
-  command! -buffer -bar -nargs=* Rhelper :call s:ControllerFunc(<bang>0,"app/helpers/","_helper.rb",<f-args>)
-  command! -buffer -bar -nargs=* Rlayout :call s:LayoutFunc(<bang>0,<f-args>)
-  command! -buffer -bar -nargs=0 Rtags :call s:Tags(<bang>0)
-  command! -buffer -bar -bang -complete=custom,s:RsetComplete -nargs=* Rset :call s:Rset(<bang>0,<f-args>)
+  command! -buffer -bar -nargs=* Rhelper     :call s:ControllerFunc(<bang>0,"app/helpers/","_helper.rb",<f-args>)
+  command! -buffer -bar -nargs=* Rlayout     :call s:LayoutFunc(<bang>0,<f-args>)
+  command! -buffer -bar -nargs=0 Rtags       :call s:Tags(<bang>0)
   if exists(":Project")
-    command! -buffer -bar -bang -nargs=? Rproject :call s:Project(<bang>0,<q-args>)
+    command! -buffer -bar -nargs=? -bang  Rproject :call s:Project(<bang>0,<q-args>)
   endif
   if exists("g:loaded_dbext")
-    command! -buffer -bar -nargs=? -bang Rdbext :call s:BufDatabase(2,<q-args>,<bang>0)
+    command! -buffer -bar -nargs=? -bang  Rdbext   :call s:BufDatabase(2,<q-args>,<bang>0)
   endif
   let ext = expand("%:e")
   if ext == "rhtml" || ext == "rxml" || ext == "rjs" || ext == "mab"
-    command! -buffer -bar -nargs=? -range Rpartial :<line1>,<line2>call s:MakePartial(<bang>0,<f-args>)
+    command! -buffer -bar -nargs=? -range Rpartial :<line1>,<line2>call s:Partial(<bang>0,<f-args>)
+  endif
+  if RailsFileType() =~ '^migration\>' && expand("%:t:r") != "schema"
+    command! -buffer -bar                 Rinvert  :call s:Invert(<bang>0)
   endif
 endfunction
-
-function! s:Rake(bang,arg) " {{{2
-  let t = RailsFileType()
-  let arg = a:arg
-  if &filetype == "ruby" && arg == '' && g:rails_modelines
-    let lnum = s:lastmethodline()
-    let str = getline(lnum)."\n".getline(lnum+1)."\n".getline(lnum+2)."\n"
-    let pat = '\s\+\zs.\{-\}\ze\%(\n\|\s\s\|#{\@!\|$\)'
-    let mat = matchstr(str,'#\s*rake'.pat)
-    let mat = s:sub(mat,'\s\+$','')
-    if mat != ""
-      let arg = mat
-    endif
-  endif
-  if arg == ''
-    if exists("b:rails_rake_task")
-      let arg = b:rails_rake_task
-    elseif exists("b:rails_default_rake_target")
-      call s:warn("b:rails_default_rake_target is deprecated.  :Rset rake_task=... instead")
-      let arg = b:rails_default_rake_target
-    endif
-  endif
-  if arg == "stats"
-    " So you can see it in Windows
-    call s:QuickFixCmdPre()
-    exe "!".&makeprg." stats"
-    call s:QuickFixCmdPost()
-  elseif arg =~ '^preview\>'
-    exe 'R'.s:gsub(arg,':','/')
-  elseif arg =~ '^runner:'
-    " FIXME: set a proper 'efm'
-    let arg = s:sub(arg,'^runner:','')
-    let old_make = &makeprg
-    let &l:makeprg = s:rubyexestr("script/runner ".s:rquote(s:esccmd(arg)))
-    echo &l:makeprg
-    make
-    "exe 'Rrunner '.arg
-    let &l:makeprg = old_make
-  elseif arg != ''
-    exe 'make '.a:arg
-  elseif t =~ '^task\>'
-    let lnum = s:lastmethodline()
-    let line = getline(ln)
-    " We can't grab the namespace so only run tasks at the start of the line
-    if line =~ '^\%(task\|file\)\>'
-      exe 'make '.s:lastmethod()
-    else
-      make
-    endif
-  elseif t =~ '^test\>'
-    let meth = s:lastmethod()
-    if meth =~ '^test_'
-      let call = " TESTOPTS=-n/".meth."/"
-    else
-      let call = ""
-    endif
-    exe "make ".s:sub(s:gsub(t,'-',':'),'unit$\|functional$','&s')." TEST=\"%:p\"".call
-  elseif t=~ '^migration\>' && RailsFilePath() !~ '\<db/schema\.rb$'
-    make db:migrate
-  elseif t=~ '^model\>'
-    make test:units TEST="%:p:r:s?[\/]app[\/]models[\/]?/test/unit/?_test.rb"
-  elseif t=~ '^\<\%(controller\|helper\|view\)\>'
-    make test:functionals
-  else
-    make
-  endif
-endfunction
-
-function! s:raketasks()
-  return "db:fixtures:load\ndb:migrate\ndb:schema:dump\ndb:schema:load\ndb:sessions:clear\ndb:sessions:create\ndb:structure:dump\ndb:test:clone\ndb:test:clone_structure\ndb:test:prepare\ndb:test:purge\ndoc:app\ndoc:clobber_app\ndoc:clobber_plugins\ndoc:clobber_rails\ndoc:plugins\ndoc:rails\ndoc:reapp\ndoc:rerails\nlog:clear\nrails:freeze:edge\nrails:freeze:gems\nrails:unfreeze\nrails:update\nrails:update:configs\nrails:update:javascripts\nrails:update:scripts\nstats\ntest\ntest:functionals\ntest:integration\ntest:plugins\ntest:recent\ntest:uncommitted\ntest:units\ntmp:cache:clear\ntmp:clear\ntmp:create\ntmp:sessions:clear\ntmp:sockets:clear"
-endfunction
-
-function! s:RakeComplete(A,L,P)
-  return s:raketasks()
-endfunction " }}}2
-
-function! s:Preview(bang,arg) " {{{2
-  let root = s:gbopt("url")
-  if root == ''
-    let root = s:gbopt("root_url")
-  endif
-  let root = s:sub(root,'/$','')
-  if a:arg =~ '://'
-    let uri = a:arg
-  elseif a:arg != ''
-    let uri = root.'/'.s:sub(a:arg,'^/','')
-  else
-    let uri = root.'/'
-    if s:controller() != '' && s:controller() != 'application'
-      let uri = uri.s:controller().'/'
-      if RailsFileType() =~ '^view\%(-partial\|-layout\)\@!'
-        let uri = uri.expand('%:t:r').'/'
-      elseif RailsFileType() =~ '^controller\>' && s:lastmethod() != ''
-        let uri = uri.s:lastmethod().'/'
-      endif
-    endif
-  endif
-  if !exists(":OpenURL")
-    if has("gui_mac")
-      command -bar -nargs=1 OpenURL :!open <args>
-    elseif has("gui_win32")
-      command -bar -nargs=1 OpenURL :!start cmd /cstart /b <args>
-    endif
-  endif
-  if exists(':OpenURL') && !a:bang
-    exe 'OpenURL '.uri
-  else
-    " Work around bug where URLs with out ? get handled as FTP
-    let url = uri.(uri =~ '?' ? '' : '?')
-    exe 'pedit '.url
-    wincmd w
-    if &filetype == ''
-      setlocal filetype=xhtml
-    endif
-    call s:Detect(RailsRoot())
-    map <buffer> <silent> q :bwipe<CR>
-    wincmd p
-    if !a:bang
-      call s:warn("Define a :OpenURL command to use a browser")
-    endif
-  endif
-endfunction
-
-function! s:PreviewComplete(A,L,P)
-  let ret = ''
-  if s:controller() != '' && s:controller() != 'application'
-    let ret = s:controller().'/'
-    if RailsFileType() =~ '^view\%(-partial\|-layout\)\@!'
-      let ret = ret.expand('%:t:r').'/'
-    elseif RailsFileType() =~ '^controller\>' && s:lastmethod() != ''
-      let ret = ret.s:lastmethod().'/'
-    endif
-  endif
-  return ret
-endfunction " }}}2
 
 function! s:Log(bang,arg)
   if a:arg == ""
@@ -645,98 +562,6 @@ function! s:Log(bang,arg)
     endif
   endif
 endfunction
-
-function! s:Project(bang,arg) " {{{2
-  let rr = RailsRoot()
-  exe "Project ".a:arg
-  let line = search('^[^ =]*="'.s:gsub(rr,'[\/]','[\\/]').'"')
-  let projname = s:gsub(fnamemodify(rr,':t'),'=','-') " .'_on_rails'
-  if line && a:bang
-    let projname = matchstr(getline('.'),'^[^=]*')
-    " Most of this would be unnecessary if the project.vim author had just put
-    " the newlines AFTER each project rather than before.  Ugh.
-    norm zR0"_d%
-    if line('.') > 2
-      delete _
-    endif
-    if line('.') != line('$')
-      .-2
-    endif
-    let line = 0
-  elseif !line
-    $
-  endif
-  if !line
-    if line('.') > 1
-      append
-
-.
-    endif
-    let line = line('.')+1
-    call s:NewProject(projname,rr,a:bang)
-  endif
-  normal! zMzo
-  if search("^ app=app {","W",line+10)
-    normal! zo
-    exe line
-  endif
-  normal! 0zt
-endfunction
-
-function! s:NewProject(proj,rr,fancy)
-    let line = line('.')+1
-    let template = s:NewProjectTemplate(a:proj,a:rr,a:fancy)
-    silent put =template
-    exe line
-    " Ugh. how else can I force detecting folds?
-    setlocal foldmethod=manual
-    setlocal foldmethod=marker
-    setlocal nomodified
-    " FIXME: make undo stop here
-    if !exists("g:maplocalleader")
-      silent! normal \R
-    else " Needs to be tested
-      exe 'silent! normal '.g:maplocalleader.'R'
-    endif
-endfunction
-
-function! s:NewProjectTemplate(proj,rr,fancy)
-  let str = a:proj.'="'.a:rr."\" CD=. filter=\"*\" {\n"
-  let str = str." app=app {\n"
-  if isdirectory(a:rr.'/app/apis')
-    let str = str."  apis=apis {\n  }\n"
-  endif
-  let str = str."  controllers=controllers filter=\"**\" {\n  }\n"
-  let str = str."  helpers=helpers filter=\"**\" {\n  }\n"
-  let str = str."  models=models filter=\"**\" {\n  }\n"
-  if a:fancy
-    let str = str."  views=views {\n"
-    let views = s:RealMansGlob(a:rr.'/app/views','*')."\n"
-    while views != ''
-      let dir = matchstr(views,'^.\{-\}\ze\n')
-      let views = s:sub(views,'^.\{-\}\n','')
-      let str = str."   ".dir."=".dir.' glob="**" {'."\n   }\n"
-    endwhile
-    let str = str."  }\n"
-  else
-    let str = str."  views=views filter=\"**\" {\n  }\n"
-  endif
-  let str = str . " }\n components=components filter=\"**\" {\n }\n"
-  let str = str . " config=config {\n  environments=environments {\n  }\n }\n"
-  let str = str . " db=db {\n"
-  if isdirectory(a:rr.'/db/migrate')
-    let str = str . "  migrate=migrate {\n  }\n"
-  endif
-  let str = str . " }\n"
-  let str = str . " lib=lib {\n  tasks=tasks {\n  }\n }\n"
-  let str = str . " public=public {\n  images=images {\n  }\n  javascripts=javascripts {\n  }\n  stylesheets=stylesheets {\n  }\n }\n"
-  let str = str . " test=test {\n  fixtures=fixtures filter=\"**\" {\n  }\n  functional=functional filter=\"**\" {\n  }\n"
-  if isdirectory(a:rr.'/test/integration')
-    let str = str . "  integration=integration filter=\"**\" {\n  }\n"
-  endif
-  let str = str . "  mocks=mocks filter=\"**\" {\n  }\n  unit=unit filter=\"**\" {\n  }\n }\n}\n"
-  return str
-endfunction " }}}2
 
 function! s:Migration(bang,cmd,arg)
   if a:arg =~ '^\d$'
@@ -918,25 +743,166 @@ function! s:Tags(bang)
 endfunction
 
 " }}}1
+" Rake {{{1
+
+function! s:Rake(bang,arg)
+  let t = RailsFileType()
+  let arg = a:arg
+  if &filetype == "ruby" && arg == '' && g:rails_modelines
+    let lnum = s:lastmethodline()
+    let str = getline(lnum)."\n".getline(lnum+1)."\n".getline(lnum+2)."\n"
+    let pat = '\s\+\zs.\{-\}\ze\%(\n\|\s\s\|#{\@!\|$\)'
+    let mat = matchstr(str,'#\s*rake'.pat)
+    let mat = s:sub(mat,'\s\+$','')
+    if mat != ""
+      let arg = mat
+    endif
+  endif
+  if arg == ''
+    if exists("b:rails_rake_task")
+      let arg = b:rails_rake_task
+    elseif exists("b:rails_default_rake_target")
+      call s:warn("b:rails_default_rake_target is deprecated.  :Rset rake_task=... instead")
+      let arg = b:rails_default_rake_target
+    endif
+  endif
+  if arg == "stats"
+    " So you can see it in Windows
+    call s:QuickFixCmdPre()
+    exe "!".&makeprg." stats"
+    call s:QuickFixCmdPost()
+  elseif arg =~ '^preview\>'
+    exe 'R'.s:gsub(arg,':','/')
+  elseif arg =~ '^runner:'
+    " FIXME: set a proper 'efm'
+    let arg = s:sub(arg,'^runner:','')
+    let old_make = &makeprg
+    let &l:makeprg = s:rubyexestr("script/runner ".s:rquote(s:esccmd(arg)))
+    echo &l:makeprg
+    make
+    "exe 'Rrunner '.arg
+    let &l:makeprg = old_make
+  elseif arg != ''
+    exe 'make '.a:arg
+  elseif t =~ '^task\>'
+    let lnum = s:lastmethodline()
+    let line = getline(ln)
+    " We can't grab the namespace so only run tasks at the start of the line
+    if line =~ '^\%(task\|file\)\>'
+      exe 'make '.s:lastmethod()
+    else
+      make
+    endif
+  elseif t =~ '^test\>'
+    let meth = s:lastmethod()
+    if meth =~ '^test_'
+      let call = " TESTOPTS=-n/".meth."/"
+    else
+      let call = ""
+    endif
+    exe "make ".s:sub(s:gsub(t,'-',':'),'unit$\|functional$','&s')." TEST=\"%:p\"".call
+  elseif t=~ '^migration\>' && RailsFilePath() !~ '\<db/schema\.rb$'
+    make db:migrate
+  elseif t=~ '^model\>'
+    make test:units TEST="%:p:r:s?[\/]app[\/]models[\/]?/test/unit/?_test.rb"
+  elseif t=~ '^\<\%(controller\|helper\|view\)\>'
+    make test:functionals
+  else
+    make
+  endif
+endfunction
+
+function! s:raketasks()
+  return "db:fixtures:load\ndb:migrate\ndb:schema:dump\ndb:schema:load\ndb:sessions:clear\ndb:sessions:create\ndb:structure:dump\ndb:test:clone\ndb:test:clone_structure\ndb:test:prepare\ndb:test:purge\ndoc:app\ndoc:clobber_app\ndoc:clobber_plugins\ndoc:clobber_rails\ndoc:plugins\ndoc:rails\ndoc:reapp\ndoc:rerails\nlog:clear\nrails:freeze:edge\nrails:freeze:gems\nrails:unfreeze\nrails:update\nrails:update:configs\nrails:update:javascripts\nrails:update:scripts\nstats\ntest\ntest:functionals\ntest:integration\ntest:plugins\ntest:recent\ntest:uncommitted\ntest:units\ntmp:cache:clear\ntmp:clear\ntmp:create\ntmp:sessions:clear\ntmp:sockets:clear"
+endfunction
+
+function! s:RakeComplete(A,L,P)
+  return s:raketasks()
+endfunction
+
+" }}}1
+" Preview {{{1
+
+function! s:Preview(bang,arg)
+  let root = s:gbopt("url")
+  if root == ''
+    let root = s:gbopt("root_url")
+  endif
+  let root = s:sub(root,'/$','')
+  if a:arg =~ '://'
+    let uri = a:arg
+  elseif a:arg != ''
+    let uri = root.'/'.s:sub(a:arg,'^/','')
+  else
+    let uri = root.'/'
+    if s:controller() != '' && s:controller() != 'application'
+      let uri = uri.s:controller().'/'
+      if RailsFileType() =~ '^view\%(-partial\|-layout\)\@!'
+        let uri = uri.expand('%:t:r').'/'
+      elseif RailsFileType() =~ '^controller\>' && s:lastmethod() != ''
+        let uri = uri.s:lastmethod().'/'
+      endif
+    endif
+  endif
+  if !exists(":OpenURL")
+    if has("gui_mac")
+      command -bar -nargs=1 OpenURL :!open <args>
+    elseif has("gui_win32")
+      command -bar -nargs=1 OpenURL :!start cmd /cstart /b <args>
+    endif
+  endif
+  if exists(':OpenURL') && !a:bang
+    exe 'OpenURL '.uri
+  else
+    " Work around bug where URLs with out ? get handled as FTP
+    let url = uri.(uri =~ '?' ? '' : '?')
+    exe 'pedit '.url
+    wincmd w
+    if &filetype == ''
+      setlocal filetype=xhtml
+    endif
+    call s:Detect(RailsRoot())
+    map <buffer> <silent> q :bwipe<CR>
+    wincmd p
+    if !a:bang
+      call s:warn("Define a :OpenURL command to use a browser")
+    endif
+  endif
+endfunction
+
+function! s:PreviewComplete(A,L,P)
+  let ret = ''
+  if s:controller() != '' && s:controller() != 'application'
+    let ret = s:controller().'/'
+    if RailsFileType() =~ '^view\%(-partial\|-layout\)\@!'
+      let ret = ret.expand('%:t:r').'/'
+    elseif RailsFileType() =~ '^controller\>' && s:lastmethod() != ''
+      let ret = ret.s:lastmethod().'/'
+    endif
+  endif
+  return ret
+endfunction
+
+" }}}1
 " Script Wrappers {{{1
 
 function! s:BufScriptWrappers()
   if has("gui_win32")
     " Poor win32 users, let's allow background tasks since their shell sucks
-    command! -buffer -bar -complete=custom,s:ScriptComplete -nargs=+ -bang Rscript :call s:Script(<bang>0,<f-args>)
-    command! -buffer -bar -complete=custom,s:ConsoleComplete -nargs=* Rconsole :Rscript! console <args>
-    command! -buffer -bar -nargs=* Rbreakpointer :Rscript! breakpointer <args>
+    command! -buffer -bar -nargs=+ -bang -complete=custom,s:ScriptComplete   Rscript :call s:Script(<bang>0,<f-args>)
+    command! -buffer -bar -nargs=*       -complete=custom,s:ConsoleComplete  Rconsole :Rscript! console <args>
+    command! -buffer -bar -nargs=*                                           Rbreakpointer :Rscript! breakpointer <args>
   else
-    command! -buffer -bar -complete=custom,s:ScriptComplete -nargs=+ Rscript :call s:Script(<bang>0,<f-args>)
-    command! -buffer -bar -complete=custom,s:ConsoleComplete -nargs=* Rconsole :Rscript console <args>
-    command! -buffer -bar -nargs=* Rbreakpointer :Rscript breakpointer <args>
+    command! -buffer -bar -nargs=+       -complete=custom,s:ScriptComplete   Rscript :call s:Script(<bang>0,<f-args>)
+    command! -buffer -bar -nargs=*       -complete=custom,s:ConsoleComplete  Rconsole :Rscript console <args>
+    command! -buffer -bar -nargs=*                                           Rbreakpointer :Rscript breakpointer <args>
   endif
-  command! -buffer -bar -complete=custom,s:GenerateComplete -nargs=* Rgenerate :call s:Generate(<bang>0,<f-args>)
-  command! -buffer -bar -complete=custom,s:DestroyComplete -nargs=* Rdestroy :call s:Destroy(<bang>0,<f-args>)
-  command! -buffer -bar -complete=custom,s:PluginComplete -nargs=* Rplugin :call s:Plugin(<bang>0,<f-args>)
-  command! -buffer -bar -complete=custom,s:environments -nargs=? -bang Rserver :call s:Server(<bang>0,<q-args>)
-  command! -buffer -nargs=1 Rrunner :call s:Script(<bang>0,"runner",<f-args>)
-  command! -buffer -nargs=1 Rp      :call s:Script(<bang>0,"runner","p begin ".<f-args>." end")
+  command!   -buffer -bar -nargs=*       -complete=custom,s:GenerateComplete Rgenerate :call s:Generate(<bang>0,<f-args>)
+  command!   -buffer -bar -nargs=*       -complete=custom,s:DestroyComplete  Rdestroy :call s:Destroy(<bang>0,<f-args>)
+  command!   -buffer -bar -nargs=*       -complete=custom,s:PluginComplete   Rplugin :call s:Plugin(<bang>0,<f-args>)
+  command!   -buffer -bar -nargs=? -bang -complete=custom,s:environments     Rserver :call s:Server(<bang>0,<q-args>)
+  command!   -buffer      -nargs=1                 Rrunner :call s:Script(<bang>0,"runner",<f-args>)
+  command!   -buffer      -nargs=1                 Rp      :call s:Script(<bang>0,"runner","p begin ".<f-args>." end")
 endfunction
 
 function! s:Script(bang,cmd,...)
@@ -1101,181 +1067,18 @@ function! s:PluginComplete(A,L,P)
 endfunction
 
 " }}}1
-" Syntax {{{1
-
-function! s:BufSyntax()
-  if (!exists("g:rails_syntax") || g:rails_syntax) && (exists("g:syntax_on") || exists("g:syntax_manual"))
-    let t = RailsFileType()
-    if !exists("s:rails_view_helpers")
-      if g:rails_expensive
-        let s:rails_view_helpers = s:rubyeval('require %{action_view}; puts ActionView::Helpers.constants.grep(/Helper$/).collect {|c|ActionView::Helpers.const_get c}.collect {|c| c.public_instance_methods(false)}.flatten.sort.uniq.reject {|m| m =~ /[=?]$/}.join(%{ })',"link_to")
-      else
-        let s:rails_view_helpers = "link_to"
-      endif
-    endif
-    "let g:rails_view_helpers = s:rails_view_helpers
-    let rails_view_helpers = '+\.\@<!\<\('.s:gsub(s:rails_view_helpers,'\s\+','\\|').'\)\>+'
-    if &syntax == 'ruby'
-      syn keyword rubyRailsMethod breakpoint
-      if t != ''
-        syn match rubyRailsError ':order_by\>'
-      endif
-      if t == ''
-        syn keyword rubyRailsMethod params request response session headers template cookies flash
-      endif
-      if t =~ '^api\>'
-        syn keyword rubyRailsAPIMethod api_method
-      endif
-      if t =~ '^model$' || t =~ '^model-ar\>'
-        syn keyword rubyRailsARMethod acts_as_list acts_as_nested_set acts_as_tree composed_of
-        syn keyword rubyRailsARAssociationMethod belongs_to has_one has_many has_and_belongs_to_many
-        "syn match rubyRailsARCallbackMethod '\<\(before\|after\)_\(create\|destroy\|save\|update\|validation\|validation_on_create\|validation_on_update\)\>'
-        syn keyword rubyRailsARCallbackMethod before_create before_destroy before_save before_update before_validation before_validation_on_create before_validation_on_update
-        syn keyword rubyRailsARCallbackMethod after_create after_destroy after_save after_update after_validation after_validation_on_create after_validation_on_update
-        syn keyword rubyRailsARClassMethod attr_accessible attr_protected establish_connection set_inheritance_column set_locking_column set_primary_key set_sequence_name set_table_name
-        "syn keyword rubyRailsARCallbackMethod after_find after_initialize
-        syn keyword rubyRailsARValidationMethod validate validate_on_create validate_on_update validates_acceptance_of validates_associated validates_confirmation_of validates_each validates_exclusion_of validates_format_of validates_inclusion_of validates_length_of validates_numericality_of validates_presence_of validates_size_of validates_uniqueness_of
-      endif
-      if t =~ '^controller\>' || t =~ '^view\>' || t=~ '^helper\>'
-        syn keyword rubyRailsMethod params request response session headers template cookies flash
-        syn match rubyRailsError '[@:]\@<!@\%(params\|request\|response\|session\|headers\|template\|cookies\|flash\)\>'
-        syn match rubyRailsError '\<render_partial\>'
-        syn keyword rubyRailsRenderMethod render render_component
-      endif
-      if t =~ '^helper\>' || t=~ '^view\>'
-        "exe "syn match rubyRailsHelperMethod ".rails_view_helpers
-        exe "syn keyword rubyRailsHelperMethod ".s:sub(s:rails_view_helpers,'\<select\s\+','')
-        syn match rubyRailsHelperMethod '\<select\>\%(\s*{\|\s*do\>\|\s*(\=\s*&\)\@!'
-      elseif t =~ '^controller\>'
-        syn keyword rubyRailsControllerHelperMethod helper helper_attr helper_method filter layout url_for scaffold observer service model serialize
-        syn match rubyRailsControllerDeprecatedMethod '\<render_\%(action\|text\|file\|template\|nothing\|without_layout\)\>'
-        syn keyword rubyRailsRenderMethod render_to_string render_component_as_string redirect_to
-        syn keyword rubyRailsFilterMethod before_filter append_before_filter prepend_before_filter after_filter append_after_filter prepend_after_filter around_filter append_around_filter prepend_around_filter skip_before_filter skip_after_filter
-        syn keyword rubyRailsFilterMethod verify
-      endif
-      if t =~ '^migration\>'
-        syn keyword rubyRailsMigrationMethod create_table drop_table rename_table add_column rename_column change_column remove_column add_index remove_index
-      endif
-      if t =~ '^test\>'
-        syn keyword rubyRailsTestMethod add_assertion assert assert_block assert_equal assert_in_delta assert_instance_of assert_kind_of assert_match assert_nil assert_no_match assert_not_equal assert_not_nil assert_not_same assert_nothing_raised assert_nothing_thrown assert_operator assert_raise assert_respond_to assert_same assert_send assert_throws flunk fixtures use_transactional_fixtures use_instantiated_fixtures
-        if t !~ '^test-unit\>'
-          syn match   rubyRailsTestControllerMethod  '\.\@<!\<\%(get\|post\|put\|delete\|head\|process\)\>'
-          syn keyword rubyRailsTestControllerMethod assert_response assert_redirected_to assert_template assert_recognizes assert_generates assert_routing assert_tag assert_no_tag assert_dom_equal assert_dom_not_equal assert_valid
-        endif
-      endif
-      if t =~ '^task\>'
-        syn match rubyRailsRakeMethod '^\s*\zs\%(task\|file\|desc\)\>\%(\s*=\)\@!'
-      endif
-      syn keyword rubyRailsMethod cattr_accessor mattr_accessor
-      syn keyword rubyRailsInclude require_dependency require_gem
-    elseif &syntax == "eruby" && t =~ '^view\>'
-      syn match rubyRailsError ':order_by\>'
-      "syn match rubyRailsError '@content_for_\w*\>'
-      syn cluster erubyRailsRegions contains=erubyOneLiner,erubyBlock,erubyExpression
-      "exe "syn match erubyRailsHelperMethod ".rails_view_helpers." contained containedin=@erubyRailsRegions"
-        exe "syn keyword erubyRailsHelperMethod ".s:sub(s:rails_view_helpers,'\<select\s\+','')." contained containedin=@erubyRailsRegions"
-        syn match erubyRailsHelperMethod '\<select\>\%(\s*{\|\s*do\>\|\s*(\=\s*&\)\@!' contained containedin=@erubyRailsRegions
-      syn keyword erubyRailsMethod breakpoint
-      syn keyword erubyRailsMethod params request response session headers template cookies flash contained containedin=@erubyRailsRegions
-      syn match erubyRailsMethod '\.\@<!\<\(h\|html_escape\|u\|url_encode\)\>' contained containedin=@erubyRailsRegions
-        syn keyword erubyRailsRenderMethod render render_component contained containedin=@erubyRailsRegions
-      syn match rubyRailsError '[^@:]\@<!@\%(params\|request\|response\|session\|headers\|template\|cookies\|flash\)\>' contained containedin=@erubyRailsRegions
-    elseif &syntax == "yaml"
-      " Modeled after syntax/eruby.vim
-      unlet b:current_syntax
-      let g:main_syntax = 'eruby'
-      syn include @rubyTop syntax/ruby.vim
-      unlet g:main_syntax
-      syn cluster erubyRegions contains=yamlRailsOneLiner,yamlRailsBlock,yamlRailsExpression,yamlRailsComment
-      syn cluster erubyRailsRegions contains=yamlRailsOneLiner,yamlRailsBlock,yamlRailsExpression
-      syn region  yamlRailsOneLiner   matchgroup=yamlRailsDelimiter start="^%%\@!" end="$"  contains=@rubyRailsTop	containedin=ALLBUT,@yamlRailsRegions keepend oneline
-      syn region  yamlRailsBlock      matchgroup=yamlRailsDelimiter start="<%%\@!" end="%>" contains=@rubyTop		containedin=ALLBUT,@yamlRailsRegions
-      syn region  yamlRailsExpression matchgroup=yamlRailsDelimiter start="<%="    end="%>" contains=@rubyTop		containedin=ALLBUT,@yamlRailsRegions
-      syn region  yamlRailsComment    matchgroup=yamlRailsDelimiter start="<%#"    end="%>" contains=rubyTodo,@Spell	containedin=ALLBUT,@yamlRailsRegions keepend
-        syn match yamlRailsMethod '\.\@<!\<\(h\|html_escape\|u\|url_encode\)\>' containedin=@erubyRailsRegions
-      let b:current_syntax = "yaml"
-    endif
-  endif
-  call s:HiDefaults()
-endfunction
-
-function! s:HiDefaults()
-  hi def link rubyRailsAPIMethod              rubyRailsMethod
-  hi def link rubyRailsARAssociationMethod    rubyRailsARMethod
-  hi def link rubyRailsARCallbackMethod       rubyRailsARMethod
-  hi def link rubyRailsARClassMethod          rubyRailsARMethod
-  hi def link rubyRailsARValidationMethod     rubyRailsARMethod
-  hi def link rubyRailsARMethod               rubyRailsMethod
-  hi def link rubyRailsRenderMethod           rubyRailsMethod
-  hi def link rubyRailsHelperMethod           rubyRailsMethod
-  hi def link rubyRailsMigrationMethod        rubyRailsMethod
-  hi def link rubyRailsControllerHelperMethod rubyRailsMethod
-  hi def link rubyRailsControllerDeprecatedMethod rubyRailsError
-  hi def link rubyRailsFilterMethod           rubyRailsMethod
-  hi def link rubyRailsTestControllerMethod   rubyRailsTestMethod
-  hi def link rubyRailsTestMethod             rubyRailsMethod
-  hi def link rubyRailsRakeMethod             rubyRailsMethod
-  hi def link rubyRailsMethod                 railsMethod
-  hi def link rubyRailsError                  rubyError
-  hi def link rubyRailsInclude                rubyInclude
-  hi def link railsMethod                     Function
-  hi def link erubyRailsHelperMethod          erubyRailsMethod
-  hi def link erubyRailsRenderMethod          erubyRailsMethod
-  hi def link erubyRailsMethod                railsMethod
-  hi def link yamlRailsDelimiter              Delimiter
-  hi def link yamlRailsMethod                 railsMethod
-  hi def link yamlRailsComment                Comment
-endfunction
-
-function! s:RailslogSyntax()
-  syn match   railslogRender      '^\s*\<\%(Processing\|Rendering\|Rendered\|Redirected\|Completed\)\>'
-  syn match   railslogComment     '^\s*# .*'
-  syn match   railslogModel       '^\s*\u\%(\w\|:\)* \%(Load\%( Including Associations\| IDs For Limited Eager Loading\)\=\|Columns\|Count\|Update\|Destroy\|Delete all\)\>' skipwhite nextgroup=railslogModelNum
-  syn match   railslogModel       '^\s*SQL\>' skipwhite nextgroup=railslogModelNum
-  syn region  railslogModelNum    start='(' end=')' contains=railslogNumber contained skipwhite nextgroup=railslogSQL
-  syn match   railslogSQL         '\u.*$' contained
-  " Destroy generates multiline SQL, ugh
-  syn match   railslogSQL         '^ WHERE .*$'
-  syn match   railslogNumber      '\<\d\+\>%'
-  syn match   railslogNumber      '[ (]\@<=\<\d\+\.\d\+\>'
-  syn region  railslogString      start='"' skip='\\"' end='"' oneline contained
-  syn region  railslogHash        start='{' end='}' oneline contains=railslogHash,railslogString
-  syn match   railslogIP          '\<\d\{1,3\}\%(\.\d\{1,3}\)\{3\}\>'
-  syn match   railslogTimestamp   '\<\d\d\d\d-\d\d-\d\d \d\d:\d\d:\d\d\>'
-  syn match   railslogSessionID   '\<\x\{32\}\>'
-  syn match   railslogIdentifier  '^\s*\%(Session ID\|Parameters\)\ze:'
-  syn match   railslogSuccess     '\<2\d\d \u[A-Za-z0-9 ]*\>'
-  syn match   railslogRedirect    '\<3\d\d \u[A-Za-z0-9 ]*\>'
-  syn match   railslogError       '\<[45]\d\d \u[A-Za-z0-9 ]*\>'
-  syn keyword railslogHTTP        OPTIONS GET HEAD POST PUT DELETE TRACE CONNECT
-  syn region  railslogStackTrace  start=":\d\+:in `\w\+'$" end="^\s*$" keepend fold
-  hi def link railslogComment     Comment
-  hi def link railslogRender      Keyword
-  hi def link railslogModel       Type
-  hi def link railslogSQL         PreProc
-  hi def link railslogNumber      Number
-  hi def link railslogString      String
-  hi def link railslogSessionID   Constant
-  hi def link railslogIdentifier  Identifier
-  hi def link railslogRedirect    railslogSuccess
-  hi def link railslogSuccess     Special
-  hi def link railslogError       Error
-  hi def link railslogHTTP        Special
-endfunction
-
-" }}}1
 " Navigation {{{1
 
 function! s:BufNavCommands()
   silent exe "command! -bar -buffer -nargs=? Rcd :cd ".s:rp()."/<args>"
   silent exe "command! -bar -buffer -nargs=? Rlcd :lcd ".s:rp()."/<args>"
-  command! -buffer -bar -complete=custom,s:FindList -nargs=* -count=1 Rfind :call s:Find(<bang>0,<count>,"",<f-args>)
-  command! -buffer -bar -complete=custom,s:FindList -nargs=* -count=1 Rsfind :call s:Find(<bang>0,<count>,"s",<f-args>)
-  command! -buffer -bar -complete=custom,s:FindList -nargs=* -count=1 Rsplitfind :call s:Find(<bang>0,<count>,"s",<f-args>)
-  command! -buffer -bar -complete=custom,s:FindList -nargs=* -count=1 Rvsfind :call s:Find(<bang>0,<count>,"vert s",<f-args>)
-  command! -buffer -bar -complete=custom,s:FindList -nargs=* -count=1 Rvsplitfind :call s:Find(<bang>0,<count>,"vert s",<f-args>)
-  command! -buffer -bar -complete=custom,s:FindList -nargs=* -count=1 Rtabfind :call s:Find(<bang>0,<count>,"tab",<f-args>)
-  command! -buffer -bar -nargs=0 Ralternate :call s:warn('Use :A instead')|call s:Alternate(<bang>0,"find")
+  command!   -buffer -bar -nargs=* -count=1 -complete=custom,s:FindList Rfind       :call s:Find(<bang>0,<count>,"",<f-args>)
+  command!   -buffer -bar -nargs=* -count=1 -complete=custom,s:FindList Rsfind      :call s:Find(<bang>0,<count>,"s",<f-args>)
+  command!   -buffer -bar -nargs=* -count=1 -complete=custom,s:FindList Rsplitfind  :call s:Find(<bang>0,<count>,"s",<f-args>)
+  command!   -buffer -bar -nargs=* -count=1 -complete=custom,s:FindList Rvsfind     :call s:Find(<bang>0,<count>,"vert s",<f-args>)
+  command!   -buffer -bar -nargs=* -count=1 -complete=custom,s:FindList Rvsplitfind :call s:Find(<bang>0,<count>,"vert s",<f-args>)
+  command!   -buffer -bar -nargs=* -count=1 -complete=custom,s:FindList Rtabfind    :call s:Find(<bang>0,<count>,"tab",<f-args>)
+  command!   -buffer -bar -nargs=0         Ralternate :call s:warn('Use :A instead')|call s:Alternate(<bang>0,"find")
   if g:rails_avim_commands
     command! -buffer -bar -nargs=0 A  :call s:Alternate(<bang>0,"find")
     command! -buffer -bar -nargs=0 AS :call s:Alternate(<bang>0,"sfind")
@@ -1309,60 +1112,6 @@ endfunction
 function! s:FindList(ArgLead, CmdLine, CursorPos)
   if exists("*UserFileComplete") " genutils.vim
     return UserFileComplete(s:RailsIncludefind(a:ArgLead), a:CmdLine, a:CursorPos, 1, &path)
-  else
-    return ""
-  endif
-endfunction
-
-function! s:InitRuby()
-  "if has("ruby") && ! exists("s:ruby_initialized")
-    "let s:ruby_initialized = 1
-    " Is there a drawback to doing this?
-    "        ruby require "rubygems" rescue nil
-    "        ruby require "active_support" rescue nil
-  "endif
-endfunction
-
-function! RailsBalloonexpr()
-  if executable('ri')
-    let line = getline(v:beval_lnum)
-    let b = matchstr(strpart(line,0,v:beval_col),'\%(\w\|[:.]\)*$')
-    let a = s:gsub(matchstr(strpart(line,v:beval_col),'^\w*\%([?!]\|\s*=\)\?'),'\s\+','')
-    let str = b.a
-    let before = strpart(line,0,v:beval_col-strlen(b))
-    let after  = strpart(line,v:beval_col+strlen(a))
-    if str =~ '^\.'
-      let str = s:gsub(str,'^\.','#')
-      if before =~ '\]\s*$'
-        let str = 'Array'.str
-      elseif before =~ '}\s*$'
-        let str = 'Hash'.str
-      elseif before =~ "[\"'`]\\s*$" || before =~ '\$\d\+\s*$'
-        let str = 'String'.str
-      elseif before =~ '\$\d\+\.\d\+\s*$'
-        let str = 'Float'.str
-      elseif before =~ '\$\d\+\s*$'
-        let str = 'Integer'.str
-      elseif before =~ '/\s*$'
-        let str = 'Regexp'.str
-      else
-        let str = s:sub(str,'^#','.')
-      endif
-    endif
-    let str = s:sub(str,'.*\.\s*to_f\s*\.\s*','Float#')
-    let str = s:sub(str,'.*\.\s*to_i\%(nt\)\=\s*\.\s*','Integer#')
-    let str = s:sub(str,'.*\.\s*to_s\%(tr\)\=\s*\.\s*','String#')
-    let str = s:sub(str,'.*\.\s*to_sym\s*\.\s*','Symbol#')
-    let str = s:sub(str,'.*\.\s*to_a\%(ry\)\=\s*\.\s*','Array#')
-    let str = s:sub(str,'.*\.\s*to_proc\s*\.\s*','Proc#')
-    if str !~ '^\u'
-      return ""
-    endif
-    silent! let res = s:sub(system("ri ".s:rquote(str)),'\n$','')
-    if res =~ '^Nothing known about'
-      return ''
-    endif
-    return res
   else
     return ""
   endif
@@ -1466,15 +1215,6 @@ function! s:RailsFind()
   return res
 endfunction
 
-function! s:underscore(str)
-  let str = s:gsub(a:str,'::','/')
-  let str = s:gsub(str,'\(\u\+\)\(\u\l\)','\1_\2')
-  let str = s:gsub(str,'\(\l\|\d\)\(\u\)','\1_\2')
-  let str = s:gsub(str,'-','_')
-  let str = tolower(str)
-  return str
-endfunction
-
 function! s:RailsIncludefind(str,...)
   if a:str == "ApplicationController"
     return "controllers/application.rb"
@@ -1552,21 +1292,8 @@ function! s:RailsIncludefind(str,...)
   return str
 endfunction
 
-function! s:singularize(word)
-  " Probably not worth it to be as comprehensive as Rails but we can
-  " still hit the common cases.
-  let word = a:word
-  if word =~? '\.js$'
-    return word
-  endif
-  let word = s:sub(word,'eople$','erson')
-  let word = s:sub(word,'[aeio]\@<!ies$','ys')
-  let word = s:sub(word,'xe[ns]$','xs')
-  let word = s:sub(word,'ves$','fs')
-  let word = s:sub(word,'ss\%(es\)\=$','sss')
-  let word = s:sub(word,'s$','')
-  return word
-endfunction
+" }}}1
+" Alternate/Related {{{1
 
 function! s:Alternate(bang,cmd)
   let cmd = a:cmd.(a:bang?"!":"")
@@ -1687,7 +1414,7 @@ endfunction
 " }}}1
 " Partials {{{1
 
-function! s:MakePartial(bang,...) range abort
+function! s:Partial(bang,...) range abort
   if a:0 == 0 || a:0 > 1
     return s:error("Incorrect number of arguments")
   endif
@@ -1796,6 +1523,289 @@ function! s:MakePartial(bang,...) range abort
   if exists("l:partial_warn")
     call s:warn("Warning: partial exists!")
   endif
+endfunction
+
+" }}}1
+" Migration Inversion {{{1
+
+function! s:mkeep(str)
+  " Things to keep (like comments) from a migration statement
+  return matchstr(a:str,' #[^{].*')
+endfunction
+
+function! s:mextargs(str,num)
+  if a:str =~ '^\s*\w\+\s*('
+    return s:sub(matchstr(a:str,'^\s*\w\+\s*\zs(\%([^,)]\+[,)]\)\{,'.a:num.'\}'),',$',')')
+  else
+    return s:sub(s:sub(matchstr(a:str,'\w\+\>\zs\s*\%([^,){ ]*[, ]*\)\{,'.a:num.'\}'),'[, ]*$',''),'^\s\+',' ')
+  endif
+endfunction
+
+function s:spc(line)
+  return matchstr(a:line,'^\s*')
+endfunction
+
+function s:invertrange(beg,end)
+  let str = ""
+  let lnum = a:beg
+  while lnum <= a:end
+    let line = getline(lnum)
+    let add = ""
+    if line == ''
+      let add = ' '
+    elseif line =~ '^\s*\(#[^{].*\)\=$'
+      let add = line
+    elseif line =~ '\<create_table\>'
+      "let add = s:sub(line,'\<create_table\>\s*(\=\s*\([^,){ ]*\).*','drop_table \1').s:mkeep(line)
+      let add = s:spc(line)."drop_table".s:mextargs(line,1).s:mkeep(line)
+      let lnum = s:endof(line)
+    elseif line =~ '\<drop_table\>'
+      let add = s:sub(line,'\<drop_table\>\s*(\=\s*\([^,){ ]*\).*','create_table \1 do |t|'."\n".matchstr(line,'^\s*').'end').s:mkeep(line)
+    elseif line =~ '\<add_column\>'
+      let add = s:spc(line).'remove_column'.s:mextargs(line,2).s:mkeep(line)
+    elseif line =~ '\<remove_column\>'
+      let add = s:sub(line,'\<remove_column\>','add_column')
+    elseif line =~ '\<add_index\>'
+      let add = s:spc(line).'remove_index'.s:mextargs(line,1)
+      let mat = matchstr(line,':name\s*=>\s*\zs[^ ,)]*')
+      if mat != ''
+        let add = s:sub(add,')\=$',', :name => '.mat.'&')
+      else
+        let mat = matchstr(line,'\<add_index\>[^,]*,\s*\zs\%(\[[^]]*\]\|[:"'."'".']\w*["'."'".']\=\)')
+        if mat != ''
+          let add = s:sub(add,')\=$',', :columns => '.mat.'&')
+        endif
+      endif
+      let add = add.s:mkeep(line)
+    elseif line =~ '\<remove_index\>'
+      let add = s:sub(s:sub(line,'\<remove_index','add_index'),':columns\s*=>\s*','')
+    elseif line =~ '\<rename_\%(table\|column\)\>'
+      let add = s:sub(line,'\<rename_\%(table\s*(\=\s*\|column\s*(\=\s*[^,]*,\s*\)\zs\([^,]*\)\(,\s*\)\([^,]*\)','\3\2\1')
+    elseif line =~ '\<change_column\>'
+      let add = s:spc(line).'change_column'.s:mextargs(line,2).s:mkeep(line)
+    elseif line =~ '\<change_column_default\>'
+      let add = s:spc(line).'change_column_default'.s:mextargs(line,2).s:mkeep(line)
+    elseif line =~ '\.update_all(\(["'."'".']\).*\1)$' || line =~ '\.update_all \(["'."'".']\).*\1$'
+      " .update_all('a = b') => .update_all('b = a')
+      let pre = matchstr(line,'^.*\.update_all[( ][}'."'".']')
+      let post = matchstr(line,'["'."'".'])\=$')
+      let mat = strpart(line,strlen(pre),strlen(line)-strlen(pre)-strlen(post))
+      let mat = s:gsub(','.mat.',',',\s*\([^,=]\{-\}\)\(\s*=\s*\)\([^,=]\{-\}\)\s*,','\3\2\1')
+      let add = pre.s:sub(s:sub(mat,'^,',''),',$','').post
+    elseif line =~ '^s\*\%(if\|unless\|while\|until\|for\)\>'
+      let lnum = s:endof(lnum)
+    endif
+    if lnum == 0
+      return -1
+    endif
+    if add == ""
+      let add = s:sub(line,'^\s*\zs.*','raise ActiveRecord::IrreversableMigration')
+    elseif add == " "
+      let add = ""
+    endif
+    let str = add."\n".str
+    let lnum = lnum + 1
+  endwhile
+  let str = s:gsub(str,'\(\s*raise ActiveRecord::IrreversableMigration\n\)\+','\1')
+  return str
+endfunction
+
+function! s:Invert(bang)
+  let err = "Could not parse method"
+  let src = "up"
+  let dst = "down"
+  let beg = search('\%('.&l:define.'\).*'.src.'\>',"w")
+  let end = s:endof(beg)
+  if beg + 1 == end
+    let src = "down"
+    let dst = "up"
+    let beg = search('\%('.&l:define.'\).*'.src.'\>',"w")
+    let end = s:endof(beg)
+  endif
+  if !beg || !end
+    return s:error(err)
+  endif
+  let str = s:invertrange(beg+1,end-1)
+  if str == -1
+    return s:error(err)
+  endif
+  let beg = search('\%('.&l:define.'\).*'.dst.'\>',"w")
+  let end = s:endof(beg)
+  if !beg || !end
+    return s:error(err)
+  endif
+  if beg + 1 < end
+    exe (beg+1).",".(end-1)."delete _"
+  endif
+  if str != ""
+    let reg_keep = @"
+    let @" = str
+    exe beg."put"
+    let @" = reg_keep
+  endif
+endfunction
+
+" }}}1
+" Syntax {{{1
+
+function! s:BufSyntax()
+  if (!exists("g:rails_syntax") || g:rails_syntax) && (exists("g:syntax_on") || exists("g:syntax_manual"))
+    let t = RailsFileType()
+    if !exists("s:rails_view_helpers")
+      if g:rails_expensive
+        let s:rails_view_helpers = s:rubyeval('require %{action_view}; puts ActionView::Helpers.constants.grep(/Helper$/).collect {|c|ActionView::Helpers.const_get c}.collect {|c| c.public_instance_methods(false)}.flatten.sort.uniq.reject {|m| m =~ /[=?]$/}.join(%{ })',"link_to")
+      else
+        let s:rails_view_helpers = "link_to"
+      endif
+    endif
+    "let g:rails_view_helpers = s:rails_view_helpers
+    let rails_view_helpers = '+\.\@<!\<\('.s:gsub(s:rails_view_helpers,'\s\+','\\|').'\)\>+'
+    if &syntax == 'ruby'
+      syn keyword rubyRailsMethod breakpoint
+      if t != ''
+        syn match rubyRailsError ':order_by\>'
+      endif
+      if t == ''
+        syn keyword rubyRailsMethod params request response session headers template cookies flash
+      endif
+      if t =~ '^api\>'
+        syn keyword rubyRailsAPIMethod api_method
+      endif
+      if t =~ '^model$' || t =~ '^model-ar\>'
+        syn keyword rubyRailsARMethod acts_as_list acts_as_nested_set acts_as_tree composed_of
+        syn keyword rubyRailsARAssociationMethod belongs_to has_one has_many has_and_belongs_to_many
+        "syn match rubyRailsARCallbackMethod '\<\(before\|after\)_\(create\|destroy\|save\|update\|validation\|validation_on_create\|validation_on_update\)\>'
+        syn keyword rubyRailsARCallbackMethod before_create before_destroy before_save before_update before_validation before_validation_on_create before_validation_on_update
+        syn keyword rubyRailsARCallbackMethod after_create after_destroy after_save after_update after_validation after_validation_on_create after_validation_on_update
+        syn keyword rubyRailsARClassMethod attr_accessible attr_protected establish_connection set_inheritance_column set_locking_column set_primary_key set_sequence_name set_table_name
+        "syn keyword rubyRailsARCallbackMethod after_find after_initialize
+        syn keyword rubyRailsARValidationMethod validate validate_on_create validate_on_update validates_acceptance_of validates_associated validates_confirmation_of validates_each validates_exclusion_of validates_format_of validates_inclusion_of validates_length_of validates_numericality_of validates_presence_of validates_size_of validates_uniqueness_of
+      endif
+      if t =~ '^controller\>' || t =~ '^view\>' || t=~ '^helper\>'
+        syn keyword rubyRailsMethod params request response session headers template cookies flash
+        syn match rubyRailsError '[@:]\@<!@\%(params\|request\|response\|session\|headers\|template\|cookies\|flash\)\>'
+        syn match rubyRailsError '\<render_partial\>'
+        syn keyword rubyRailsRenderMethod render render_component
+      endif
+      if t =~ '^helper\>' || t=~ '^view\>'
+        "exe "syn match rubyRailsHelperMethod ".rails_view_helpers
+        exe "syn keyword rubyRailsHelperMethod ".s:sub(s:rails_view_helpers,'\<select\s\+','')
+        syn match rubyRailsHelperMethod '\<select\>\%(\s*{\|\s*do\>\|\s*(\=\s*&\)\@!'
+      elseif t =~ '^controller\>'
+        syn keyword rubyRailsControllerHelperMethod helper helper_attr helper_method filter layout url_for scaffold observer service model serialize
+        syn match rubyRailsControllerDeprecatedMethod '\<render_\%(action\|text\|file\|template\|nothing\|without_layout\)\>'
+        syn keyword rubyRailsRenderMethod render_to_string render_component_as_string redirect_to
+        syn keyword rubyRailsFilterMethod before_filter append_before_filter prepend_before_filter after_filter append_after_filter prepend_after_filter around_filter append_around_filter prepend_around_filter skip_before_filter skip_after_filter
+        syn keyword rubyRailsFilterMethod verify
+      endif
+      if t =~ '^migration\>'
+        syn keyword rubyRailsMigrationMethod create_table drop_table rename_table add_column rename_column change_column change_column_default remove_column add_index remove_index
+      endif
+      if t =~ '^test\>'
+        syn keyword rubyRailsTestMethod add_assertion assert assert_block assert_equal assert_in_delta assert_instance_of assert_kind_of assert_match assert_nil assert_no_match assert_not_equal assert_not_nil assert_not_same assert_nothing_raised assert_nothing_thrown assert_operator assert_raise assert_respond_to assert_same assert_send assert_throws flunk fixtures use_transactional_fixtures use_instantiated_fixtures
+        if t !~ '^test-unit\>'
+          syn match   rubyRailsTestControllerMethod  '\.\@<!\<\%(get\|post\|put\|delete\|head\|process\)\>'
+          syn keyword rubyRailsTestControllerMethod assert_response assert_redirected_to assert_template assert_recognizes assert_generates assert_routing assert_tag assert_no_tag assert_dom_equal assert_dom_not_equal assert_valid
+        endif
+      endif
+      if t =~ '^task\>'
+        syn match rubyRailsRakeMethod '^\s*\zs\%(task\|file\|desc\)\>\%(\s*=\)\@!'
+      endif
+      syn keyword rubyRailsMethod cattr_accessor mattr_accessor
+      syn keyword rubyRailsInclude require_dependency require_gem
+    elseif &syntax == "eruby" && t =~ '^view\>'
+      syn match rubyRailsError ':order_by\>'
+      "syn match rubyRailsError '@content_for_\w*\>'
+      syn cluster erubyRailsRegions contains=erubyOneLiner,erubyBlock,erubyExpression
+      "exe "syn match erubyRailsHelperMethod ".rails_view_helpers." contained containedin=@erubyRailsRegions"
+        exe "syn keyword erubyRailsHelperMethod ".s:sub(s:rails_view_helpers,'\<select\s\+','')." contained containedin=@erubyRailsRegions"
+        syn match erubyRailsHelperMethod '\<select\>\%(\s*{\|\s*do\>\|\s*(\=\s*&\)\@!' contained containedin=@erubyRailsRegions
+      syn keyword erubyRailsMethod breakpoint
+      syn keyword erubyRailsMethod params request response session headers template cookies flash contained containedin=@erubyRailsRegions
+      syn match erubyRailsMethod '\.\@<!\<\(h\|html_escape\|u\|url_encode\)\>' contained containedin=@erubyRailsRegions
+        syn keyword erubyRailsRenderMethod render render_component contained containedin=@erubyRailsRegions
+      syn match rubyRailsError '[^@:]\@<!@\%(params\|request\|response\|session\|headers\|template\|cookies\|flash\)\>' contained containedin=@erubyRailsRegions
+    elseif &syntax == "yaml"
+      " Modeled after syntax/eruby.vim
+      unlet b:current_syntax
+      let g:main_syntax = 'eruby'
+      syn include @rubyTop syntax/ruby.vim
+      unlet g:main_syntax
+      syn cluster erubyRegions contains=yamlRailsOneLiner,yamlRailsBlock,yamlRailsExpression,yamlRailsComment
+      syn cluster erubyRailsRegions contains=yamlRailsOneLiner,yamlRailsBlock,yamlRailsExpression
+      syn region  yamlRailsOneLiner   matchgroup=yamlRailsDelimiter start="^%%\@!" end="$"  contains=@rubyRailsTop	containedin=ALLBUT,@yamlRailsRegions keepend oneline
+      syn region  yamlRailsBlock      matchgroup=yamlRailsDelimiter start="<%%\@!" end="%>" contains=@rubyTop		containedin=ALLBUT,@yamlRailsRegions
+      syn region  yamlRailsExpression matchgroup=yamlRailsDelimiter start="<%="    end="%>" contains=@rubyTop		containedin=ALLBUT,@yamlRailsRegions
+      syn region  yamlRailsComment    matchgroup=yamlRailsDelimiter start="<%#"    end="%>" contains=rubyTodo,@Spell	containedin=ALLBUT,@yamlRailsRegions keepend
+        syn match yamlRailsMethod '\.\@<!\<\(h\|html_escape\|u\|url_encode\)\>' containedin=@erubyRailsRegions
+      let b:current_syntax = "yaml"
+    endif
+  endif
+  call s:HiDefaults()
+endfunction
+
+function! s:HiDefaults()
+  hi def link rubyRailsAPIMethod              rubyRailsMethod
+  hi def link rubyRailsARAssociationMethod    rubyRailsARMethod
+  hi def link rubyRailsARCallbackMethod       rubyRailsARMethod
+  hi def link rubyRailsARClassMethod          rubyRailsARMethod
+  hi def link rubyRailsARValidationMethod     rubyRailsARMethod
+  hi def link rubyRailsARMethod               rubyRailsMethod
+  hi def link rubyRailsRenderMethod           rubyRailsMethod
+  hi def link rubyRailsHelperMethod           rubyRailsMethod
+  hi def link rubyRailsMigrationMethod        rubyRailsMethod
+  hi def link rubyRailsControllerHelperMethod rubyRailsMethod
+  hi def link rubyRailsControllerDeprecatedMethod rubyRailsError
+  hi def link rubyRailsFilterMethod           rubyRailsMethod
+  hi def link rubyRailsTestControllerMethod   rubyRailsTestMethod
+  hi def link rubyRailsTestMethod             rubyRailsMethod
+  hi def link rubyRailsRakeMethod             rubyRailsMethod
+  hi def link rubyRailsMethod                 railsMethod
+  hi def link rubyRailsError                  rubyError
+  hi def link rubyRailsInclude                rubyInclude
+  hi def link railsMethod                     Function
+  hi def link erubyRailsHelperMethod          erubyRailsMethod
+  hi def link erubyRailsRenderMethod          erubyRailsMethod
+  hi def link erubyRailsMethod                railsMethod
+  hi def link yamlRailsDelimiter              Delimiter
+  hi def link yamlRailsMethod                 railsMethod
+  hi def link yamlRailsComment                Comment
+endfunction
+
+function! s:RailslogSyntax()
+  syn match   railslogRender      '^\s*\<\%(Processing\|Rendering\|Rendered\|Redirected\|Completed\)\>'
+  syn match   railslogComment     '^\s*# .*'
+  syn match   railslogModel       '^\s*\u\%(\w\|:\)* \%(Load\%( Including Associations\| IDs For Limited Eager Loading\)\=\|Columns\|Count\|Update\|Destroy\|Delete all\)\>' skipwhite nextgroup=railslogModelNum
+  syn match   railslogModel       '^\s*SQL\>' skipwhite nextgroup=railslogModelNum
+  syn region  railslogModelNum    start='(' end=')' contains=railslogNumber contained skipwhite nextgroup=railslogSQL
+  syn match   railslogSQL         '\u.*$' contained
+  " Destroy generates multiline SQL, ugh
+  syn match   railslogSQL         '^ WHERE .*$'
+  syn match   railslogNumber      '\<\d\+\>%'
+  syn match   railslogNumber      '[ (]\@<=\<\d\+\.\d\+\>'
+  syn region  railslogString      start='"' skip='\\"' end='"' oneline contained
+  syn region  railslogHash        start='{' end='}' oneline contains=railslogHash,railslogString
+  syn match   railslogIP          '\<\d\{1,3\}\%(\.\d\{1,3}\)\{3\}\>'
+  syn match   railslogTimestamp   '\<\d\d\d\d-\d\d-\d\d \d\d:\d\d:\d\d\>'
+  syn match   railslogSessionID   '\<\x\{32\}\>'
+  syn match   railslogIdentifier  '^\s*\%(Session ID\|Parameters\)\ze:'
+  syn match   railslogSuccess     '\<2\d\d \u[A-Za-z0-9 ]*\>'
+  syn match   railslogRedirect    '\<3\d\d \u[A-Za-z0-9 ]*\>'
+  syn match   railslogError       '\<[45]\d\d \u[A-Za-z0-9 ]*\>'
+  syn keyword railslogHTTP        OPTIONS GET HEAD POST PUT DELETE TRACE CONNECT
+  syn region  railslogStackTrace  start=":\d\+:in `\w\+'$" end="^\s*$" keepend fold
+  hi def link railslogComment     Comment
+  hi def link railslogRender      Keyword
+  hi def link railslogModel       Type
+  hi def link railslogSQL         PreProc
+  hi def link railslogNumber      Number
+  hi def link railslogString      String
+  hi def link railslogSessionID   Constant
+  hi def link railslogIdentifier  Identifier
+  hi def link railslogRedirect    railslogSuccess
+  hi def link railslogSuccess     Special
+  hi def link railslogError       Error
+  hi def link railslogHTTP        Special
 endfunction
 
 " }}}1
@@ -2002,6 +2012,149 @@ function! s:findschema()
   else
     return s:error("Schema not found: try :Rake db:schema:dump")
   endif
+endfunction
+
+" }}}1
+" Balloons {{{1
+
+function! RailsBalloonexpr()
+  if executable('ri')
+    let line = getline(v:beval_lnum)
+    let b = matchstr(strpart(line,0,v:beval_col),'\%(\w\|[:.]\)*$')
+    let a = s:gsub(matchstr(strpart(line,v:beval_col),'^\w*\%([?!]\|\s*=\)\?'),'\s\+','')
+    let str = b.a
+    let before = strpart(line,0,v:beval_col-strlen(b))
+    let after  = strpart(line,v:beval_col+strlen(a))
+    if str =~ '^\.'
+      let str = s:gsub(str,'^\.','#')
+      if before =~ '\]\s*$'
+        let str = 'Array'.str
+      elseif before =~ '}\s*$'
+        let str = 'Hash'.str
+      elseif before =~ "[\"'`]\\s*$" || before =~ '\$\d\+\s*$'
+        let str = 'String'.str
+      elseif before =~ '\$\d\+\.\d\+\s*$'
+        let str = 'Float'.str
+      elseif before =~ '\$\d\+\s*$'
+        let str = 'Integer'.str
+      elseif before =~ '/\s*$'
+        let str = 'Regexp'.str
+      else
+        let str = s:sub(str,'^#','.')
+      endif
+    endif
+    let str = s:sub(str,'.*\.\s*to_f\s*\.\s*','Float#')
+    let str = s:sub(str,'.*\.\s*to_i\%(nt\)\=\s*\.\s*','Integer#')
+    let str = s:sub(str,'.*\.\s*to_s\%(tr\)\=\s*\.\s*','String#')
+    let str = s:sub(str,'.*\.\s*to_sym\s*\.\s*','Symbol#')
+    let str = s:sub(str,'.*\.\s*to_a\%(ry\)\=\s*\.\s*','Array#')
+    let str = s:sub(str,'.*\.\s*to_proc\s*\.\s*','Proc#')
+    if str !~ '^\u'
+      return ""
+    endif
+    silent! let res = s:sub(system("ri ".s:rquote(str)),'\n$','')
+    if res =~ '^Nothing known about'
+      return ''
+    endif
+    return res
+  else
+    return ""
+  endif
+endfunction
+
+" }}}1
+" Project {{{1
+
+function! s:Project(bang,arg)
+  let rr = RailsRoot()
+  exe "Project ".a:arg
+  let line = search('^[^ =]*="'.s:gsub(rr,'[\/]','[\\/]').'"')
+  let projname = s:gsub(fnamemodify(rr,':t'),'=','-') " .'_on_rails'
+  if line && a:bang
+    let projname = matchstr(getline('.'),'^[^=]*')
+    " Most of this would be unnecessary if the project.vim author had just put
+    " the newlines AFTER each project rather than before.  Ugh.
+    norm zR0"_d%
+    if line('.') > 2
+      delete _
+    endif
+    if line('.') != line('$')
+      .-2
+    endif
+    let line = 0
+  elseif !line
+    $
+  endif
+  if !line
+    if line('.') > 1
+      append
+
+.
+    endif
+    let line = line('.')+1
+    call s:NewProject(projname,rr,a:bang)
+  endif
+  normal! zMzo
+  if search("^ app=app {","W",line+10)
+    normal! zo
+    exe line
+  endif
+  normal! 0zt
+endfunction
+
+function! s:NewProject(proj,rr,fancy)
+    let line = line('.')+1
+    let template = s:NewProjectTemplate(a:proj,a:rr,a:fancy)
+    silent put =template
+    exe line
+    " Ugh. how else can I force detecting folds?
+    setlocal foldmethod=manual
+    setlocal foldmethod=marker
+    setlocal nomodified
+    " FIXME: make undo stop here
+    if !exists("g:maplocalleader")
+      silent! normal \R
+    else " Needs to be tested
+      exe 'silent! normal '.g:maplocalleader.'R'
+    endif
+endfunction
+
+function! s:NewProjectTemplate(proj,rr,fancy)
+  let str = a:proj.'="'.a:rr."\" CD=. filter=\"*\" {\n"
+  let str = str." app=app {\n"
+  if isdirectory(a:rr.'/app/apis')
+    let str = str."  apis=apis {\n  }\n"
+  endif
+  let str = str."  controllers=controllers filter=\"**\" {\n  }\n"
+  let str = str."  helpers=helpers filter=\"**\" {\n  }\n"
+  let str = str."  models=models filter=\"**\" {\n  }\n"
+  if a:fancy
+    let str = str."  views=views {\n"
+    let views = s:RealMansGlob(a:rr.'/app/views','*')."\n"
+    while views != ''
+      let dir = matchstr(views,'^.\{-\}\ze\n')
+      let views = s:sub(views,'^.\{-\}\n','')
+      let str = str."   ".dir."=".dir.' glob="**" {'."\n   }\n"
+    endwhile
+    let str = str."  }\n"
+  else
+    let str = str."  views=views filter=\"**\" {\n  }\n"
+  endif
+  let str = str . " }\n components=components filter=\"**\" {\n }\n"
+  let str = str . " config=config {\n  environments=environments {\n  }\n }\n"
+  let str = str . " db=db {\n"
+  if isdirectory(a:rr.'/db/migrate')
+    let str = str . "  migrate=migrate {\n  }\n"
+  endif
+  let str = str . " }\n"
+  let str = str . " lib=lib {\n  tasks=tasks {\n  }\n }\n"
+  let str = str . " public=public {\n  images=images {\n  }\n  javascripts=javascripts {\n  }\n  stylesheets=stylesheets {\n  }\n }\n"
+  let str = str . " test=test {\n  fixtures=fixtures filter=\"**\" {\n  }\n  functional=functional filter=\"**\" {\n  }\n"
+  if isdirectory(a:rr.'/test/integration')
+    let str = str . "  integration=integration filter=\"**\" {\n  }\n"
+  endif
+  let str = str . "  mocks=mocks filter=\"**\" {\n  }\n  unit=unit filter=\"**\" {\n  }\n }\n}\n"
+  return str
 endfunction
 
 " }}}1
@@ -2319,7 +2472,6 @@ endfunction
 function! s:BufInit(path)
   let cpo_save = &cpo
   set cpo&vim
-  "call s:InitRuby()
   let b:rails_root = a:path
   if g:rails_level > 0
     if &ft == "mason"
