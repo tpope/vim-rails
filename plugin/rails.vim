@@ -62,13 +62,17 @@ function! s:rc()
   return s:esccmd(s:r())
 endfunction
 
-function! s:rv()
-  " Rails root, escaped to be a variable name
-  let r = fnamemodify(RailsRoot(),':~')
+function! s:escvar(r)
+  let r = fnamemodify(a:r,':~')
   let r = s:gsub(r,'^\~','0')
   let r = s:gsub(r,'\W','_')
   let r = s:gsub(r,'^\d','_&')
   return r
+endfunction
+
+function! s:rv()
+  " Rails root, escaped to be a variable name
+  return s:escvar(RailsRoot())
 endfunction
 
 function! s:gbopt(opt)
@@ -105,7 +109,11 @@ function! s:rquote(str)
 endfunction
 
 function! s:rubyexestr(cmd)
-  return "ruby -C ".s:rquote(RailsRoot())." ".a:cmd
+  if RailsRoot() =~ '://'
+    return "ruby ".a:cmd
+  else
+    return "ruby -C ".s:rquote(RailsRoot())." ".a:cmd
+  endif
 endfunction
 
 function! s:rubyexe(cmd,...)
@@ -131,7 +139,7 @@ function! s:rubyeval(ruby,...)
   " If the shell is messed up, this command could cause an error message
   silent! let results = system(cmd)
   "let g:rails_last_ruby_result = results
-  if results =~ '-e:\d'
+  if results =~ '-e:\d' || results =~ 'ruby:.*(fatal)'
     return def
   else
     return results
@@ -155,7 +163,7 @@ function! s:lastmethod()
   endif
 endfunction
 
-function s:endof(lnum)
+function! s:endof(lnum)
   let cline = getline(a:lnum)
   let spc = matchstr(cline,'^\s*')
   let endpat = '\<end\>'
@@ -1541,11 +1549,11 @@ function! s:mextargs(str,num)
   endif
 endfunction
 
-function s:spc(line)
+function! s:spc(line)
   return matchstr(a:line,'^\s*')
 endfunction
 
-function s:invertrange(beg,end)
+function! s:invertrange(beg,end)
   let str = ""
   let lnum = a:beg
   while lnum <= a:end
@@ -1713,7 +1721,7 @@ function! s:BufSyntax()
       endif
       syn keyword rubyRailsMethod cattr_accessor mattr_accessor
       syn keyword rubyRailsInclude require_dependency require_gem
-    elseif &syntax == "eruby" && t =~ '^view\>'
+    elseif &syntax == "eruby" " && t =~ '^view\>'
       syn match rubyRailsError ':order_by\>'
       "syn match rubyRailsError '@content_for_\w*\>'
       syn cluster erubyRailsRegions contains=erubyOneLiner,erubyBlock,erubyExpression
@@ -2459,6 +2467,15 @@ function! s:Detect(filename)
     let fn = fnamemodify(fn,':s?\(.*\)[\/][^\/]*$?\1?')
   endif
   let ofn = ""
+  let nfn = fn
+  while nfn != ofn
+    if exists("s:_".s:escvar(nfn))
+      return s:BufInit(nfn)
+    endif
+    let ofn = nfn
+    let nfn = fnamemodify(nfn,':h')
+  endwhile
+  let ofn = ""
   while fn != ofn
     if filereadable(fn . "/config/environment.rb")
       return s:BufInit(fn)
@@ -2473,6 +2490,7 @@ function! s:BufInit(path)
   let cpo_save = &cpo
   set cpo&vim
   let b:rails_root = a:path
+  let s:_{s:rv()} = 1
   if g:rails_level > 0
     if &ft == "mason"
       setlocal filetype=eruby
@@ -2537,6 +2555,10 @@ function! s:SetBasePath()
   endif
   if t =~ '^log\>'
     let &l:path = &l:path . rp . '/app/views,'
+  endif
+  if &l:path =~ '://'
+    " FIXME: Worthless because :// becomes :/ with :find
+    let &l:path = rp.",.,"
   endif
   let &l:path = &l:path . oldpath
 endfunction
