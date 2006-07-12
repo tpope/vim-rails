@@ -388,7 +388,7 @@ function! s:InitConfig()
   call s:SetOptDefault("rails_syntax",l>1)
   call s:SetOptDefault("rails_isfname",0)
   call s:SetOptDefault("rails_mappings",l>2)
-  call s:SetOptDefault("rails_abbreviations",l>4)
+  call s:SetOptDefault("rails_abbreviations",l>2)
   call s:SetOptDefault("rails_expensive",l>(2+(has("win32")||has("win32unix"))))
   call s:SetOptDefault("rails_dbext",g:rails_expensive)
   call s:SetOptDefault("rails_avim_commands",l>2)
@@ -2168,7 +2168,7 @@ endfunction
 " }}}1
 " Database {{{1
 
-function! s:extractdbarg(str,arg)
+function! s:extractvar(str,arg)
   return matchstr("\n".a:str."\n",'\n'.a:arg.'=\zs.\{-\}\ze\n')
 endfunction
 
@@ -2189,7 +2189,7 @@ function! s:BufDatabase(...)
       let cmdb = 'require %{yaml}; y = File.open(%q{'.RailsRoot().'/config/database.yml}) {|f| YAML::load(f)}; e = y[%{'
       let cmde = '}]; i=0; e=y[e] while e.respond_to?(:to_str) && (i+=1)<16; e.each{|k,v|puts k+%{=}+v if v}'
       let out = s:rubyeval(cmdb.env.cmde,'')
-      let adapter = s:extractdbarg(out,'adapter')
+      let adapter = s:extractvar(out,'adapter')
       let s:dbext_bin = ''
       let s:dbext_integratedlogin = ''
       if adapter == 'postgresql'
@@ -2206,16 +2206,16 @@ function! s:BufDatabase(...)
         let adapter = 'ora'
       endif
       let s:dbext_type = toupper(adapter)
-      let s:dbext_user = s:extractdbarg(out,'username')
-      let s:dbext_passwd = s:extractdbarg(out,'password')
-      let s:dbext_dbname = s:extractdbarg(out,'database')
+      let s:dbext_user = s:extractvar(out,'username')
+      let s:dbext_passwd = s:extractvar(out,'password')
+      let s:dbext_dbname = s:extractvar(out,'database')
       if s:dbext_dbname != '' && s:dbext_dbname !~ '^:' && adapter =~? '^sqlite'
         let s:dbext_dbname = RailsRoot().'/'.s:dbext_dbname
       endif
       let s:dbext_profile = ''
-      let s:dbext_host = s:extractdbarg(out,'host')
-      let s:dbext_port = s:extractdbarg(out,'port')
-      let s:dbext_dsnname = s:extractdbarg(out,'dsn')
+      let s:dbext_host = s:extractvar(out,'host')
+      let s:dbext_port = s:extractvar(out,'port')
+      let s:dbext_dsnname = s:extractvar(out,'dsn')
       if s:dbext_host =~? '^\cDBI:'
         if s:dbext_host =~? '\c\<Trusted[_ ]Connection\s*=\s*yes\>'
           let s:dbext_integratedlogin = 1
@@ -2279,19 +2279,25 @@ endfunction
 
 function! s:TheMagicC()
   let l = s:linepeak()
-  if l =~ '\<find\s*\((\|:first,\|:all,\)'
+  if l =~ '\<find\s*\((\|:first,\|:all,\)' || l =~ '\<paginate\>'
     return <SID>RailsSelectiveExpand('..',':conditions => ',':c')
-  elseif l =~ '\<render\s*(\=\s*:partial\s\+=>\s*'
+  elseif l =~ '\<render\s*(\=\s*:partial\s\*=>\s*'
     return <SID>RailsSelectiveExpand('..',':collection => ',':c')
+  elseif RailsFileType() =~ '^model\>'
+    return <SID>RailsSelectiveExpand('..',':conditions => ',':c')
   else
     return <SID>RailsSelectiveExpand('..',':controller => ',':c')
   endif
 endfunction
 
 function! s:AddSelectiveExpand(abbr,pat,expn,...)
-  let pat = s:gsub(a:pat,"'","'.\"'\".'")
-  let expn = s:gsub(s:gsub(a:expn,'["|]','\\&'),'<','<Lt>')
-  exe "iabbr <buffer> <silent> ".a:abbr." <C-R>=<SID>RailsSelectiveExpand('".pat."',\"".expn."\",'".a:abbr.(a:0 ? "','".a:1 : '')."')<CR>"
+  let expn  = s:gsub(s:gsub(a:expn        ,'[\"|]','\\&'),'<','\\<Lt>')
+  let expn2 = s:gsub(s:gsub(a:0 ? a:1 : '','[\"|]','\\&'),'<','\\<Lt>')
+  if a:0
+    exe "iabbr <buffer> <silent> ".a:abbr." <C-R>=<SID>RailsSelectiveExpand(".string(a:pat).",\"".expn."\",".string(a:abbr).",\"".expn2."\")<CR>"
+  else
+    exe "iabbr <buffer> <silent> ".a:abbr." <C-R>=<SID>RailsSelectiveExpand(".string(a:pat).",\"".expn."\",".string(a:abbr).")<CR>"
+  endif
 endfunction
 
 function! s:AddTabExpand(abbr,expn)
@@ -2299,7 +2305,7 @@ function! s:AddTabExpand(abbr,expn)
 endfunction
 
 function! s:AddBracketExpand(abbr,expn)
-  call s:AddSelectiveExpand(a:abbr,'[[]',a:expn)
+  call s:AddSelectiveExpand(a:abbr,'[[.]',a:expn)
 endfunction
 
 function! s:AddColonExpand(abbr,expn)
@@ -2310,33 +2316,16 @@ function! s:AddParenExpand(abbr,expn,...)
   if a:0
     call s:AddSelectiveExpand(a:abbr,'(',a:expn,a:1)
   else
-    call s:AddSelectiveExpand(a:abbr,'(',a:expn)
+    call s:AddSelectiveExpand(a:abbr,'(',a:expn,'')
   endif
 endfunction
 
 function! s:BufAbbreviations()
-  " EXPERIMENTAL.  USE AT YOUR OWN RISK
+  command! -buffer -bar -nargs=* -bang Rabbrev :call s:Abbrev(<bang>0,<f-args>)
   " Some of these were cherry picked from the TextMate snippets
   if g:rails_abbreviations
     " Limit to the right filetypes.  But error on the liberal side
     if RailsFileType() =~ '^\(controller\|view\|helper\|test-functional\|test-integration\)\>'
-      call s:AddBracketExpand('pa','params')
-      call s:AddBracketExpand('rq','request')
-      call s:AddBracketExpand('rs','response')
-      call s:AddBracketExpand('se','session')
-      call s:AddBracketExpand('he','headers')
-      call s:AddBracketExpand('te','template')
-      call s:AddBracketExpand('co','cookies')
-      call s:AddBracketExpand('fl','flash')
-      call s:AddParenExpand('rr','render ')
-      call s:AddParenExpand('rp','render',':partial => ')
-      call s:AddParenExpand('ri','render',':inline => ')
-      call s:AddParenExpand('rt','render',':text => ')
-      call s:AddParenExpand('rtlt','render',':layout => true, :text => ')
-      call s:AddParenExpand('rl','render',':layout => ')
-      call s:AddParenExpand('ra','render',':action => ')
-      call s:AddParenExpand('rc','render',':controller => ')
-      call s:AddParenExpand('rf','render',':file => ')
       iabbr <buffer> render_partial render :partial =>
       iabbr <buffer> render_action render :action =>
       iabbr <buffer> render_text render :text =>
@@ -2344,71 +2333,154 @@ function! s:BufAbbreviations()
       iabbr <buffer> render_template render :template =>
       iabbr <buffer> <silent> render_nothing render :nothing => true<C-R>=<SID>DiscretionaryComma()<CR>
       iabbr <buffer> <silent> render_without_layout render :layout => false<C-R>=<SID>DiscretionaryComma()<CR>
+      Rabbrev pa[ params
+      Rabbrev rq[ request
+      Rabbrev rs[ response
+      Rabbrev se[ session
+      Rabbrev hd[ headers
+      Rabbrev te[ template
+      Rabbrev co[ cookies
+      Rabbrev fl[ flash
+      Rabbrev rr(   render
+      Rabbrev rp(   render :partial\ =>\ 
+      Rabbrev ri(   render :inline\ =>\ 
+      Rabbrev rt(   render :text\ =>\ 
+      "Rabbrev rtlt( render :layout\ =>\ true,\ :text\ =>\ 
+      Rabbrev rl(   render :layout\ =>\ 
+      Rabbrev ra(   render :action\ =>\ 
+      Rabbrev rc(   render :controller\ =>\ 
+      Rabbrev rf(   render :file\ =>\ 
     endif
-    if RailsFileType() =~ '^view\>'
-      call s:AddTabExpand('dotiw','distance_of_time_in_words ')
-      call s:AddTabExpand('taiw','time_ago_in_words ')
+    if RailsFileType() =~ '^\%(view\|helper\)\>'
+      Rabbrev dotiw distance_of_time_in_words
+      Rabbrev taiw  time_ago_in_words
     endif
     if RailsFileType() =~ '^controller\>'
-      call s:AddSelectiveExpand('rn','[,\r]','render :nothing => true')
-      call s:AddParenExpand('rea','redirect_to',':action => ')
-      call s:AddParenExpand('rec','redirect_to',':controller => ')
+      "call s:AddSelectiveExpand('rn','[,\r]','render :nothing => true')
+      "let b:rails_abbreviations = b:rails_abbreviations . "rn\trender :nothing => true\n"
+      Rabbrev rea( redirect_to :action\ =>\ 
+      Rabbrev rec( redirect_to :controller\ =>\ 
     endif
     if RailsFileType() =~ '^model-ar\>' || RailsFileType() =~ '^model$'
-      call s:AddParenExpand('bt','belongs_to','')
-      call s:AddParenExpand('ho','has_one','')
-      call s:AddParenExpand('hm','has_many','')
-      call s:AddParenExpand('habtm','has_and_belongs_to_many','')
-      call s:AddParenExpand('va','validates_associated','')
-      call s:AddParenExpand('vb','validates_acceptance_of','')
-      call s:AddParenExpand('vc','validates_confirmation_of','')
-      call s:AddParenExpand('ve','validates_exclusion_of','')
-      call s:AddParenExpand('vf','validates_format_of','')
-      call s:AddParenExpand('vi','validates_inclusion_of','')
-      call s:AddParenExpand('vl','validates_length_of','')
-      call s:AddParenExpand('vn','validates_numericality_of','')
-      call s:AddParenExpand('vp','validates_presence_of','')
-      call s:AddParenExpand('vu','validates_uniqueness_of','')
-      call s:AddParenExpand('co','composed_of','')
+      Rabbrev bt(    belongs_to
+      Rabbrev ho(    has_one
+      Rabbrev hm(    has_many
+      Rabbrev habtm( has_and_belongs_to_many
+      Rabbrev co(    composed_of
+      Rabbrev va(    validates_associated
+      Rabbrev vb(    validates_acceptance_of
+      Rabbrev vc(    validates_confirmation_of
+      Rabbrev ve(    validates_exclusion_of
+      Rabbrev vf(    validates_format_of
+      Rabbrev vi(    validates_inclusion_of
+      Rabbrev vl(    validates_length_of
+      Rabbrev vn(    validates_numericality_of
+      Rabbrev vp(    validates_presence_of
+      Rabbrev vu(    validates_uniqueness_of
     endif
     if RailsFileType() =~ '^migration\>'
-      call s:AddParenExpand('mrnt','rename_table','')
-      call s:AddParenExpand('mcc','t.column','')
-      call s:AddParenExpand('mrnc','rename_column','')
-      call s:AddParenExpand('mac','add_column','')
-      call s:AddParenExpand('mdt','drop_table','')
-      call s:AddParenExpand('mrc','remove_column','')
-      "call s:AddParenExpand('mct','create_table','')
-      " ugh, stupid POS
-      call s:AddTabExpand('mct','create_table "" do \<Bar>t\<Bar>\<Esc>7hi')
+      Rabbrev mac(  add_column
+      Rabbrev mrnc( rename_column
+      Rabbrev mrc(  remove_column
+      Rabbrev mct( create_table
+      "Rabbrev mct   create_table\ :\ do\ <Bar>t<Bar><CR>end<Esc>k$6hi
+      Rabbrev mrnt( rename_table
+      Rabbrev mdt(  drop_table
+      Rabbrev mcc(  t.column
     endif
     if RailsFileType() =~ '^test\>'
-      call s:AddParenExpand('ae','assert_equal','')
-      call s:AddParenExpand('ako','assert_kind_of','')
-      call s:AddParenExpand('ann','assert_not_nil','')
-      call s:AddParenExpand('ar','assert_raise','')
-      call s:AddParenExpand('art','assert_redirected_to','')
-      call s:AddParenExpand('are','assert_response','')
+      Rabbrev ae(  assert_equal
+      Rabbrev ako( assert_kind_of
+      Rabbrev ann( assert_not_nil
+      Rabbrev ar(  assert_raise
+      Rabbrev art( assert_redirected_to
+      Rabbrev are( assert_response
     endif
     iabbr <buffer> <silent> :c <C-R>=<SID>TheMagicC()<CR>
-    call s:AddTabExpand(':a',':action => ')
-    call s:AddTabExpand(':i',':id => ')
-    call s:AddTabExpand(':o',':object => ')
-    call s:AddTabExpand(':p',':partial => ')
-    call s:AddParenExpand('logd','logger.debug','')
-    call s:AddParenExpand('logi','logger.info','')
-    call s:AddParenExpand('logw','logger.warn','')
-    call s:AddParenExpand('loge','logger.error','')
-    call s:AddParenExpand('logf','logger.fatal','')
-    call s:AddParenExpand('fi','find','')
-    call s:AddColonExpand('AR','ActiveRecord')
-    call s:AddColonExpand('AV','ActionView')
-    call s:AddColonExpand('AC','ActionController')
-    call s:AddColonExpand('AS','ActiveSupport')
-    call s:AddColonExpand('AM','ActionMailer')
-    call s:AddColonExpand('AWS','ActionWebService')
+    " Lie a little
+    if RailsFileType() =~ '^view\>'
+      let b:rails_abbreviations = b:rails_abbreviations . ":c\t:collection => \n"
+    elseif s:controller() != ''
+      let b:rails_abbreviations = b:rails_abbreviations . ":c\t:controller => \n"
+    else
+      let b:rails_abbreviations = b:rails_abbreviations . ":c\t:conditions => \n"
+    endif
+    Rabbrev :a    :action\ =>\ 
+    Rabbrev :i    :id\ =>\ 
+    Rabbrev :o    :object\ =>\ 
+    Rabbrev :p    :partial\ =>\ 
+    Rabbrev logd( logger.debug
+    Rabbrev logi( logger.info
+    Rabbrev logw( logger.warn
+    Rabbrev loge( logger.error
+    Rabbrev logf( logger.fatal
+    Rabbrev fi(   find
+    Rabbrev AR::  ActiveRecord
+    Rabbrev AV::  ActionView
+    Rabbrev AC::  ActionController
+    Rabbrev AS::  ActiveSupport
+    Rabbrev AM::  ActionMailer
+    Rabbrev AWS:: ActionWebService
   endif
 endfunction
+
+function! s:Abbrev(bang,...) abort
+  if !exists("b:rails_abbreviations")
+    let b:rails_abbreviations = "\n"
+  endif
+  if a:0 > 3 || (a:bang && (a:0 != 1))
+    return s:error("Rabbrev: invalid arguments")
+  endif
+  if a:bang
+    return s:unabbrev(a:1)
+  endif
+  if a:0 == 0
+    echo s:sub(b:rails_abbreviations,'^\n','')
+    return
+  endif
+  let lhs = a:1
+  if a:0 > 3 || a:0 < 2
+    return s:error("Rabbrev: invalid arguments")
+  endif
+  let rhs = a:2
+  silent! call s:unabbrev(lhs)
+  if lhs =~ '($'
+    let b:rails_abbreviations = b:rails_abbreviations . lhs . "\t" . rhs . "" . (a:0 > 2 ? "\t".a:3 : ""). "\n"
+    let llhs = s:sub(lhs,'($','')
+    if a:0 > 2
+      call s:AddParenExpand(llhs,rhs,a:3)
+    else
+      call s:AddParenExpand(llhs,rhs)
+    endif
+    return
+  endif
+  if a:0 > 2
+    return s:error("Rabbrev: invalid arguments")
+  endif
+  if lhs =~ ':$'
+    let llhs = s:sub(lhs,':\=:$','')
+    call s:AddColonExpand(llhs,rhs)
+  elseif lhs =~ '\[$'
+    let llhs = s:sub(lhs,'\[$','')
+    call s:AddBracketExpand(llhs,rhs)
+  elseif lhs =~ '\w$'
+    call s:AddTabExpand(lhs,rhs)
+  else
+    return s:error("Rabbrev: unimplemented")
+  endif
+  let b:rails_abbreviations = b:rails_abbreviations . lhs . "\t" . rhs . "\n"
+endfunction
+
+function s:unabbrev(abbr)
+  let abbr = s:sub(a:abbr,'\%(::\|(\|\[\)$','')
+  let pat  = s:sub(abbr,'\','\\')
+  if !exists("b:rails_abbreviations")
+    let b:rails_abbreviations = "\n"
+  endif
+  let b:rails_abbreviations = substitute(b:rails_abbreviations,'\V\C\n'.pat.'\(\t\|::\t\|(\t\|[\t\)\.\{-\}\n','\n','')
+  exe "iunabbrev <buffer> ".abbr
+endfunction
+
 " }}}1
 " Modelines {{{1
 
@@ -2545,7 +2617,7 @@ function! s:SetBasePath()
   if stridx(oldpath,rp) == 2
     let oldpath = ''
   endif
-  let &l:path = '.,'.rp.",".rp."/app/controllers,".rp."/app,".rp."/app/models,".rp."/app/helpers,".rp."/components,".rp."/config,".rp."/lib,".rp."/vendor/plugins/*/lib,".rp."/vendor,".rp."/test/unit,".rp."/test/functional,".rp."/test/integration,".rp."/app/apis,".rp."/test,"
+  let &l:path = '.,'.rp.",".rp."/app/controllers,".rp."/app,".rp."/app/models,".rp."/app/helpers,".rp."/components,".rp."/config,".rp."/lib,".rp."/vendor,".rp."/vendor/plugins/*/lib,".rp."/test/unit,".rp."/test/functional,".rp."/test/integration,".rp."/app/apis,".rp."/test,".rp."/vendor/rails/*/lib,"
   if s:controller() != ''
     if RailsFilePath() =~ '\<components/'
       let &l:path = &l:path . rp . '/components/' . s:controller() . ','

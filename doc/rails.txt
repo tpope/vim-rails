@@ -9,7 +9,7 @@ Author: Tim Pope <vimNOSPAM@tpope.info>		|rails-plugin-author|
 |rails-scripts|		Script Wrappers
 |rails-partials|	Partial Extraction
 |rails-integration|	Plugin Integration
-|rails-mappings|	Mappings
+|rails-abbreviations|	Abbreviations
 |rails-options|		Managed Vim Options
 |rails-configuration|	Configuration
 |rails-about|		About rails.vim
@@ -384,34 +384,52 @@ related (|rails-related|) and alternate (|rails-alternate|) files.  There is
 also a GUI menu, which is available in both Cream and GVim.
 
 ==============================================================================
-MAPPINGS					*rails-mappings*
+ABBREVIATIONS				*rails-abbreviations* *rails-snippets*
 
-<Plug> mappings are always available (if the plugin is loaded) and can be
-manually mapped to the key sequence of your choice.  <LocalLeader>r mappings
-are available if |g:rails_mappings| is enabled or |g:rails_level| >= 3.  (The
-<LocalLeader>r prefix can be customized with |g:rails_leader|.)  These
-mappings are still under development, and it would not be unrealistic for them
-to change.
+Abbreviations are still experimental.  They may later be extracted into a
+separate plugin, or removed entirely.
 
-					*<Plug>RailsAlternate* *rails-[f*
-<Plug>RailsAlternate	Switch to the "alternate" file.  Typically this just
-<LocalLeader>ra		adds or removes "_test" from the filename, but try it
-[f			in lots of places; you may be surprised.  Deprecated
-			in favor of |rails-:A| and friends, except for [f,
-			which is experimental.  (In Vim, |[f| and |]f| are
-			just deprecated aliases for |gf|.  This seems as good
-			of reason as any to reclaim them for another file
-			seeking operation.)  See |rails-alternate|.
+						*rails-:Rabbrev*
+:Rabbrev		List all Rails abbreviations.
 
-					*<Plug>RailsRelated* *rails-]f*
-<Plug>RailsRelated	The former <Plug>RailsMagicM. Each of these behaves
-<LocalLeader>rm		identically to |rails-:R|.  They are all deprecated
-]f			except ]f, which is experimental. See |rails-related|.
+:Rabbrev {abbr} {expn} [{extra}]
+			Define a new Rails abbreviation. {extra} is permitted
+			if and only if {expn} ends with "(".
 
-						*<Plug>RailsFind*
-<Plug>RailsFind		Find the file under the cursor, taking into account
-<LocalLeader>rf		context.  This command is quite intelligent:  See
-gf			|rails-gf| for details.
+						*rails-:Rabbrev!*
+:Rabbrev! {abbr}	Remove an abbreviation.
+
+Rails abbreviations differ from regular abbreviations in that they only expand
+after a <C-]> (see |i_CTRL-]|) or a <Tab> (if <Tab> does not work, it is
+likely mapped by another plugin).  If the abbreviation ends in certain
+punctuation marks, additional expansions are possible.  A few examples will
+hopefully clear this up (all of the following are enabled by default in
+appropriate filetypes).
+
+Command				Sequence typed		Resulting text ~
+Rabbrev rp( render :partial\ =>	rp(			render(:partial =>
+Rabbrev rp( render :partial\ =>	rp<Tab>			render :partial =>
+Rabbrev vs( validates_size_of	vs(			validates_size_of(
+Rabbrev pa[ params		pa[:id]			params[:id]
+Rabbrev pa[ params		pa<C-]>			params
+Rabbrev pa[ params		pa.inspect		params.inspect
+Rabbrev AR:: ActionRecord	AR::Base		ActiveRecord::Base
+Rabbrev :a :action\ =>\		render :a<Tab>		render :action => 
+
+In short, :: expands on :, ( expands on (, and [ expands on both . and [.
+These trailing punctuation marks are NOT part of the final abbreviation, and
+you cannot have two mappings that differ only by punctuation.
+
+You must escape spaces in your expansion, either as "\ " or as "<Space>".  For
+an abbreviation ending with "(", you may define where to insert the
+parenthesis py splitting the expansion into two parts (divided by an unescaped
+space).
+
+Many abbreviations abbreviations are provided by default: use :Rabbrev to list
+them.  They vary depending on the type of file (models have different
+abbreviations than controllers).  There is one "smart" abbreviation, :c, which
+expands to ":controller => ", ":collection => ", or ":conditions => "
+depending on context.
 
 ==============================================================================
 MANAGED VIM OPTIONS			*rails-options*
@@ -515,6 +533,10 @@ value	meaning ~
 	let g:loaded_rails=1
 Do not load the plugin. For emergency use only.
 
+						*g:rails_abbreviations*
+Enable Rails abbreviations.  See |rails-abbreviations|.  Enabled when
+|g:rails_level| >= 3.
+
 						*g:rails_dbext*  >
 	let g:rails_dbext=1
 Enable integration with the dbext plugin, if it is installed.  Defaults to the
@@ -543,13 +565,9 @@ when |g:rails_level| >= 3 (>= 4 on Windows, which runs external programs
 decidedly slower).  Windows users are encouraged to turn this option on and
 see if performance is still acceptable.
 
-						*g:rails_leader*  >
-	let g:rails_leader='<LocalLeader>r'
-Prefix for mappings.  See |rails-mappings|.
-
 						*g:rails_mappings*  >
 	let g:rails_mappings=1
-Enables a few <LocalLeader> mappings.  See |rails-mappings|. Enabled when
+Enables a few mappings (mostly for |rails-navigation|). Enabled when
 |g:rails_level| >= 3.
 
 						*g:rails_modelines*  >
@@ -640,9 +658,6 @@ This plugin is distributable under the same terms as Vim itself.  See
 
 ==============================================================================
 TODO						*rails-todo*
-
-Abbrevations.  You can enable some experimental ones with
-|g:rails_abbreviations| (but don't tell anyone).  Try pa[, AR:, and rp<Tab>.
 
 Create and maintain some sort of changelog.
 
