@@ -1,0 +1,2 @@
+To install, simply copy plugin/rails.vim and doc/rails.txt to the appropriate
+directories in ~/.vim.  It is not necessary to use rake.

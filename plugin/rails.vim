@@ -1356,17 +1356,30 @@ function! s:Alternate(bang,cmd)
     exe cmd." ".s:escarg(api)
   elseif t =~ '^helper\>'
     let controller = s:sub(s:sub(f,'/helpers/','/controllers/'),'_helper\.rb$','_controller.rb')
-    let controller =s:sub(controller,'application_controller','application')
+    let controller = s:sub(controller,'application_controller','application')
     exe cmd." ".s:escarg(controller)
   elseif t =~ '\<fixtures\>'
     let file = s:singularize(expand("%:t:r")).'_test.rb'
     exe cmd." ".s:escarg(file)
+  elseif f == ''
+    call s:warn("No filename present")
   else
-    let file = fnamemodify(f,":t:r")
+    let file = fnamemodify(f,":r")
     if file =~ '_test$'
-      exe cmd." ".s:escarg(s:sub(file,'_test$','.rb'))
+      let file = s:sub(file,'_test$','.rb')
     else
-      exe cmd." ".s:escarg(file).'_test'
+      let file = file.'_test.rb'
+    endif
+    if t =~ '^model\>'
+      exe cmd." ".s:sub(file,'app/models/','test/unit/')
+    elseif t =~ '^controller\>'
+      exe cmd." ".s:sub(file,'app/controllers/','test/functional/')
+    elseif t =~ '^test-unit\>'
+      exe cmd." ".s:sub(file,'test/unit/','app/models/')
+    elseif t =~ '^test-functional\>'
+      exe cmd." ".s:sub(file,'test/functional/','app/controllers/')
+    else
+      exe cmd." ".s:escarg(fnamemodify(file,":t"))
     endif
   endif
 endfunction
@@ -2294,9 +2307,9 @@ function! s:AddSelectiveExpand(abbr,pat,expn,...)
   let expn  = s:gsub(s:gsub(a:expn        ,'[\"|]','\\&'),'<','\\<Lt>')
   let expn2 = s:gsub(s:gsub(a:0 ? a:1 : '','[\"|]','\\&'),'<','\\<Lt>')
   if a:0
-    exe "iabbr <buffer> <silent> ".a:abbr." <C-R>=<SID>RailsSelectiveExpand(".string(a:pat).",\"".expn."\",".string(a:abbr).",\"".expn2."\")<CR>"
+    exe "inoreabbrev <buffer> <silent> ".a:abbr." <C-R>=<SID>RailsSelectiveExpand(".string(a:pat).",\"".expn."\",".string(a:abbr).",\"".expn2."\")<CR>"
   else
-    exe "iabbr <buffer> <silent> ".a:abbr." <C-R>=<SID>RailsSelectiveExpand(".string(a:pat).",\"".expn."\",".string(a:abbr).")<CR>"
+    exe "inoreabbrev <buffer> <silent> ".a:abbr." <C-R>=<SID>RailsSelectiveExpand(".string(a:pat).",\"".expn."\",".string(a:abbr).")<CR>"
   endif
 endfunction
 
@@ -2396,8 +2409,9 @@ function! s:BufAbbreviations()
       Rabbrev art( assert_redirected_to
       Rabbrev are( assert_response
     endif
-    iabbr <buffer> <silent> :c <C-R>=<SID>TheMagicC()<CR>
+    inoreabbrev <buffer> <silent> :c <C-R>=<SID>TheMagicC()<CR>
     " Lie a little
+    Rabbrev :a    :action\ =>\ 
     if RailsFileType() =~ '^view\>'
       let b:rails_abbreviations = b:rails_abbreviations . ":c\t:collection => \n"
     elseif s:controller() != ''
@@ -2405,7 +2419,6 @@ function! s:BufAbbreviations()
     else
       let b:rails_abbreviations = b:rails_abbreviations . ":c\t:conditions => \n"
     endif
-    Rabbrev :a    :action\ =>\ 
     Rabbrev :i    :id\ =>\ 
     Rabbrev :o    :object\ =>\ 
     Rabbrev :p    :partial\ =>\ 
