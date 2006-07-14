@@ -12,6 +12,7 @@ Author: Tim Pope <vimNOSPAM@tpope.info>		|rails-plugin-author|
 |rails-abbreviations|	Abbreviations
 |rails-options|		Managed Vim Options
 |rails-configuration|	Configuration
+|rails-global-settings| Global Settings
 |rails-about|		About rails.vim
 |rails-todo|		To Do
 
@@ -108,6 +109,9 @@ actually edit a file from a Rails application.
 
 						*rails-:Rlcd*
 :Rlcd [{directory}]	|:lcd| to /path/to/railsapp/{directory}.
+
+						*rails-:Redit*
+:Redit {file}		Edit {file}, relative to the application root.
 
 						*rails-:Rlog*
 :Rlog [{logfile}]	Split window and open {logfile} ($RAILS_ENV or
@@ -252,12 +256,14 @@ A limited amount of completion with <Tab> is supported.
 :Rscript {script} {options}
 			Call ruby script/{script} {options}.
 
-						*rails-:Rconsole*
-:Rconsole {options}	Start script/console.  On Windows this is launched in
-			the background with |!start|.
+				*rails-:Rbreakpointer* *rails-:Rconsole*
+:Rbreakpointer {options}
+:Rconsole {options}	Start the appropriate script.  On Windows these are
+			launched in the background with |!start|.  In the
+			terminal version GNU Screen is used if it is running
+			and |g:rails_gnu_screen| is set.
 
 						*rails-:Rbreakpointer*
-:Rbreakpointer {options}
 			Start script/breakpointer.  On Windows this is
 			launched in the background with |!start|.
 
@@ -380,7 +386,7 @@ PLUGIN INTEGRATION				*rails-integration*
 This plugin provides a few additional keybindings if it is running under
 Cream, the user friendly editor which uses Vim as a backend.  Ctrl+Enter finds
 the file under the cursor (as in |rails-gf|), and Alt+[ and Alt+] find the
-related (|rails-related|) and alternate (|rails-alternate|) files.  There is
+alternate (|rails-alternate|) and related (|rails-related|) files.  There is
 also a GUI menu, which is available in both Cream and GVim.
 
 ==============================================================================
@@ -430,6 +436,51 @@ them.  They vary depending on the type of file (models have different
 abbreviations than controllers).  There is one "smart" abbreviation, :c, which
 expands to ":controller => ", ":collection => ", or ":conditions => "
 depending on context.
+
+==============================================================================
+CONFIGURATION					*rails-configuration*
+
+Very little configuration is actually required; this plugin automatically
+detects your Rails application and adjusts Vim sensibly.
+
+					*rails-:autocmd* *rails-autocommands*
+If you would like to set your own custom Vim settings whenever a Rails file is
+loaded, you can use an autocommand like the following in your vimrc: >
+	autocmd User Rails*		silent! Rlcd
+	autocmd User Rails*		map <buffer> <F9> :Rake<CR>
+You can also have autocommands that only apply to certain types of files.
+These are based off the information shown in the statusline (see
+|rails-'statusline'|), with hyphens changed to asterisks. A few examples: >
+	autocmd User Rails*test*	iabbr <buffer> ae assert_equal
+	autocmd User Rails*model*ar*	iabbr <buffer> vfo validates_format_of
+End all Rails autocommands with asterisks, even if you have an exact
+specification.
+
+						*config/rails.vim*
+If you have settings particular to a specific project, they can be put in a
+config/rails.vim file in the root directory of the application.  The file is
+sourced in the |sandbox| for security reasons.  This only works in Vim 7 or
+newer.
+
+						*rails-:Rset*
+:Rset {option}[={value}]
+			Query or set a local option.  Currently this
+			is implemented as a buffer-local option, but in the
+			future, some options may apply to all files in
+			a project.  This command may be called directly,
+			from an autocommand, or from config/rails.vim.
+
+Option		Meaning ~
+alternate	Custom alternate file for :A, relative to the Rails root
+rake_task	Default task used with :Rake
+url		Root URL for commands like :Rpreview
+
+						*rails-modelines*
+If |g:rails_modelines| is enabled, these options can also be set from
+modelines near the beginning or end of the file.  These modelines will always
+set buffer-local options.  Examples: >
+	# Rset rake_task=db:schema:load
+	<%# Rset alternate=app/views/layouts/application.rhtml %>
 
 ==============================================================================
 MANAGED VIM OPTIONS			*rails-options*
@@ -482,29 +533,7 @@ If ri is installed, 'balloonexpr' is set up to call it.  In order to use it,
 'ballooneval' must be set.  See |balloon-eval| for details.
 
 ==============================================================================
-CONFIGURATION					*rails-configuration*
-
-Very little configuration is actually required; this plugin automatically
-detects your Rails application and adjusts Vim sensibly.
-
-					*rails-:autocmd* *rails-autocommands*
-If you would like to set your own custom Vim settings whenever a Rails file is
-loaded, you can use an autocommand like the following in your vimrc: >
-	autocmd User Rails*		silent! Rlcd
-	autocmd User Rails*		map <buffer> <F9> :Rake<CR>
-You can also have autocommands that only apply to certain types of files.
-These are based off the information shown in the statusline (see
-|rails-'statusline'|), with hyphens changed to asterisks. A few examples: >
-	autocmd User Rails*test*	iabbr <buffer> ae assert_equal
-	autocmd User Rails*model*ar*	iabbr <buffer> vfo validates_format_of
-End all Rails autocommands with asterisks, even if you have an exact
-specification.
-
-						*config/rails.vim*
-If you have settings particular to a specific project, they can be put in a
-config/rails.vim file in the root directory of the application.  The file is
-sourced in the |sandbox| for security reasons.  This only works in Vim 7 or
-newer.
+GLOBAL SETTINGS					*rails-global-settings*
 
 A few global variables control the behavior of this plugin.  In general, they
 can be enabled by setting them to 1 in your vimrc, and disabled by setting
@@ -565,6 +594,11 @@ when |g:rails_level| >= 3 (>= 4 on Windows, which runs external programs
 decidedly slower).  Windows users are encouraged to turn this option on and
 see if performance is still acceptable.
 
+					*rails-screen* *g:rails_gnu_screen*  >
+	let g:rails_gnu_screen=1
+Use GNU Screen (if it is running) to launch |:Rbreakpointer|, |:Rconsole|, and
+|:Rserver| in the background.  Enabled by default.
+
 						*g:rails_mappings*  >
 	let g:rails_mappings=1
 Enables a few mappings (mostly for |rails-navigation|). Enabled when
@@ -574,7 +608,7 @@ Enables a few mappings (mostly for |rails-navigation|). Enabled when
 	let g:rails_modelines=1
 Enable modelines like the following: >
 	# Rset rake_task=db:schema:load
-Modelines set buffer-local options using the (undocumented) :Rset command.
+Modelines set buffer-local options using the :Rset command.
 Also enables the method specific defaults for use with :Rake. >
 	  def show
 	    # rake preview:blog/show/1
