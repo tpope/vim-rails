@@ -263,14 +263,16 @@ A limited amount of completion with <Tab> is supported.
 			terminal version GNU Screen is used if it is running
 			and |g:rails_gnu_screen| is set.
 
-						*rails-:Rbreakpointer*
-			Start script/breakpointer.  On Windows this is
-			launched in the background with |!start|.
-
 						*rails-:Rrunner*
 :Rrunner {code}		Executes {code} with script/runner.  Differs from
 			:Rscript runner {code} in that the code is passed as
-			one argument.
+			one argument. Also, |system()| is used instead of
+			|:!|.  This is to help eliminate annoying "Press
+			ENTER" prompts.
+
+						*rails-:Rp*
+:Rp {code}		Like :Rrunner, but call the Ruby p method on the
+			result. Literally "begin p {code} end".
 
 						*rails-:Rgenerate*
 :Rgenerate {options}	Calls script/generate {options}, and then edits the
@@ -383,7 +385,7 @@ PLUGIN INTEGRATION				*rails-integration*
 			useful for demonstrations.
 
 						*rails-cream*
-This plugin provides a few additional keybindings if it is running under
+This plugin provides a few additional key bindings if it is running under
 Cream, the user friendly editor which uses Vim as a backend.  Ctrl+Enter finds
 the file under the cursor (as in |rails-gf|), and Alt+[ and Alt+] find the
 alternate (|rails-alternate|) and related (|rails-related|) files.  There is
@@ -410,7 +412,7 @@ after a <C-]> (see |i_CTRL-]|) or a <Tab> (if <Tab> does not work, it is
 likely mapped by another plugin).  If the abbreviation ends in certain
 punctuation marks, additional expansions are possible.  A few examples will
 hopefully clear this up (all of the following are enabled by default in
-appropriate filetypes).
+appropriate file types).
 
 Command				Sequence typed		Resulting text ~
 Rabbrev rp( render :partial\ =>	rp(			render(:partial =>
@@ -428,7 +430,7 @@ you cannot have two mappings that differ only by punctuation.
 
 You must escape spaces in your expansion, either as "\ " or as "<Space>".  For
 an abbreviation ending with "(", you may define where to insert the
-parenthesis py splitting the expansion into two parts (divided by an unescaped
+parenthesis by splitting the expansion into two parts (divided by an unescaped
 space).
 
 Many abbreviations abbreviations are provided by default: use :Rabbrev to list
@@ -449,7 +451,7 @@ loaded, you can use an autocommand like the following in your vimrc: >
 	autocmd User Rails*		silent! Rlcd
 	autocmd User Rails*		map <buffer> <F9> :Rake<CR>
 You can also have autocommands that only apply to certain types of files.
-These are based off the information shown in the statusline (see
+These are based off the information shown in the 'statusline' (see
 |rails-'statusline'|), with hyphens changed to asterisks. A few examples: >
 	autocmd User Rails*test*	iabbr <buffer> ae assert_equal
 	autocmd User Rails*model*ar*	iabbr <buffer> vfo validates_format_of
@@ -464,23 +466,48 @@ newer.
 
 						*rails-:Rset*
 :Rset {option}[={value}]
-			Query or set a local option.  Currently this
-			is implemented as a buffer-local option, but in the
-			future, some options may apply to all files in
-			a project.  This command may be called directly,
-			from an autocommand, or from config/rails.vim.
+			Query or set a local option.  This command may be
+			called directly, from an autocommand, or from
+			config/rails.vim.
+
+Options may be set set in one of four scopes, which my be indicated by an
+optional prefix.  These scopes determine how broadly an option will apply.
+
+Scope	Description ~
+a:	All files in one Rails application
+b:	Buffer (file) specific
+g:	Global to all applications
+l:	Local to method (same as b: in non-Ruby files)
+
+Options are shown below with their default scope, which should be omitted.
+While you may override the scope with a prefix, this is rarely necessary and
+oftentimes useless.  (For example, setting g:rake_task is useless because the
+default rake task will apply before considering this option.)
 
 Option		Meaning ~
-alternate	Custom alternate file for :A, relative to the Rails root
-rake_task	Default task used with :Rake
-url		Root URL for commands like :Rpreview
+b:alternate	Custom alternate file for :A, relative to the Rails root
+l:preview	URL stub for :Rpreview (e.g., blog/show/1)
+b:rake_task	Default task used with :Rake
+l:related	Custom related file for :R, relative to the Rails root
+a:root_url	Root URL for commands like :Rpreview
+
+Examples: >
+	:Rset root_url=http://localhost:12345
+	:Rset related=app/views/blog/edit.rhtml preview=blog/edit/1
+	:Rset alternate=app/models/
+	:Rset l:rake_task=preview        " Special pseudo-task
+
+Note the use of a scope prefix in the last example.
 
 						*rails-modelines*
 If |g:rails_modelines| is enabled, these options can also be set from
 modelines near the beginning or end of the file.  These modelines will always
-set buffer-local options.  Examples: >
+set buffer-local options; scope should never be specified.  Examples: >
 	# Rset rake_task=db:schema:load
 	<%# Rset alternate=app/views/layouts/application.rhtml %>
+This is an experimental feature, and is likely to be enabled by default in
+future versions, once the kinks have been worked out.  Method specific
+modelines are also planned.
 
 ==============================================================================
 MANAGED VIM OPTIONS			*rails-options*
@@ -546,7 +573,8 @@ are |g:rails_expensive|, |g:rails_subversion|, and |g:rails_default_database|.
 						*g:rails_level*  >
 	let g:rails_level=3
 This is a general control of the level of features loaded.  Behavior can be
-subsequently refined with other settings.
+subsequently refined with other settings.  This option is a candidate for
+removal; contact the |rails-plugin-author| if you still make use of it.
 
 value	meaning ~
 
@@ -612,8 +640,10 @@ Modelines set buffer-local options using the :Rset command.
 Also enables the method specific defaults for use with :Rake. >
 	  def show
 	    # rake preview:blog/show/1
-Extremely useful but may cause security concerns when editing projects from
-an untrusted source.  Enabled when |g:rails_level| >= 4.
+The latter syntax is temporary until a more flexible system is developed in a
+later version.  Modelines are extremely useful but may cause security concerns
+when editing projects from an untrusted source.  Enabled when |g:rails_level|
+>= 4.
 
 						*g:rails_menu*  >
 	let g:rails_menu=1
@@ -693,7 +723,7 @@ This plugin is distributable under the same terms as Vim itself.  See
 ==============================================================================
 TODO						*rails-todo*
 
-Create and maintain some sort of changelog.
+Create and maintain some sort of changelog.  (No seriously, I really plan to.)
 
 ==============================================================================
 vim:tw=78:ts=8:ft=help:norl:

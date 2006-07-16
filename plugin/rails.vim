@@ -64,8 +64,8 @@ endfunction
 
 function! s:escvar(r)
   let r = fnamemodify(a:r,':~')
-  let r = s:gsub(r,'^\~','0')
-  let r = s:gsub(r,'\W','_')
+  "let r = s:gsub(r,'^\~','0')
+  let r = s:gsub(r,'\W','\="_".char2nr(submatch(0))."_"')
   let r = s:gsub(r,'^\d','_&')
   return r
 endfunction
@@ -73,24 +73,6 @@ endfunction
 function! s:rv()
   " Rails root, escaped to be a variable name
   return s:escvar(RailsRoot())
-endfunction
-
-function! s:gbopt(opt)
-  " Get buffer option
-  if exists("b:".s:sname()."_".a:opt)
-    return b:{s:sname()}_{a:opt}
-  elseif exists("s:_".s:rv()."_".s:environment()."_".a:opt)
-    return s:_{s:rv()}_{s:environment()}_{a:opt}
-  elseif exists("g:".s:sname()."_".a:opt)
-    return g:{s:sname()}_{a:opt}
-  else
-    return ""
-  endif
-endfunction
-
-function! s:saopt(opt,val)
-  " Set an application option
-  let s:_{s:rv()}_{s:environment()}_{a:opt} = a:val
 endfunction
 
 function! s:sname()
@@ -119,7 +101,7 @@ endfunction
 function! s:rubyexebg(cmd)
   if has("gui_win32")
     exe "!start ".s:esccmd(s:rubyexestr(a:cmd))
-  elseif exists("$STY") && !has("gui_running") && g:rails_gnu_screen && executable("screen")
+  elseif exists("$STY") && !has("gui_running") && s:getopt("gnu_screen","abg") && executable("screen")
     silent exe "!screen -ln -fn -t ".s:sub(a:cmd,'\s.*','').' '.s:esccmd(s:rubyexestr(a:cmd))
   else
     exe "!".s:esccmd(s:rubyexestr(a:cmd))
@@ -168,7 +150,7 @@ endfunction
 function! s:lastmethod()
   let line = s:lastmethodline()
   if line
-    return matchstr(getline(line),'\%('.&define.'\)\zs\k\%(\k\|:\)*')
+    return matchstr(getline(line),'\%('.&define.'\)\zs\k\%(\k\|[:.]\)*[?!=]\=')
   else
     return ""
   endif
@@ -247,13 +229,10 @@ function! s:singularize(word)
 endfunction
 
 function! s:usesubversion()
-  if exists("b:rails_use_subversion")
-    return b:rails_use_subversion
-  else
-    let b:rails_use_subversion = g:rails_subversion && 
-          \ (RailsRoot()!="") && isdirectory(RailsRoot()."/.svn")
-    return b:rails_use_subversion
+  if !exists("b:rails_use_subversion")
+    let b:rails_use_subversion = s:getopt("subversion","abg") && (RailsRoot()!="") && isdirectory(RailsRoot()."/.svn")
   endif
+  return b:rails_use_subversion
 endfunction
 
 function! s:environment()
@@ -408,7 +387,7 @@ function! s:InitConfig()
   call s:SetOptDefault("rails_default_file","README")
   call s:SetOptDefault("rails_default_database","")
   call s:SetOptDefault("rails_leader","<LocalLeader>r")
-  call s:SetOptDefault("rails_url",'http://localhost:3000/')
+  call s:SetOptDefault("rails_root_url",'http://localhost:3000/')
   call s:SetOptDefault("rails_modelines",l>3)
   call s:SetOptDefault("rails_menu",(l>2)+(l>3))
   call s:SetOptDefault("rails_debug",0)
@@ -480,6 +459,8 @@ function! s:tabstop()
     return 0
   elseif &filetype != 'ruby' && &filetype != 'eruby' && &filetype != 'html' && &filetype != 'css' && &filetype != 'yaml'
     return 0
+  elseif 1
+    return s:getopt("tabstop","abg")
   elseif exists("b:rails_tabstop")
     return b:rails_tabstop
   else
@@ -544,6 +525,7 @@ function! s:BufCommands()
   command! -buffer -bar -nargs=* Rcontroller :call s:ControllerFunc(<bang>0,"app/controllers/","_controller.rb",<f-args>)
   command! -buffer -bar -nargs=* Rhelper     :call s:ControllerFunc(<bang>0,"app/helpers/","_helper.rb",<f-args>)
   command! -buffer -bar -nargs=* Rlayout     :call s:LayoutFunc(<bang>0,<f-args>)
+  command! -buffer -bar -nargs=* Rview       :call s:ViewFunc(<bang>0,<f-args>)
   command! -buffer -bar -nargs=0 Rtags       :call s:Tags(<bang>0)
   if exists(":Project")
     command! -buffer -bar -nargs=? -bang  Rproject :call s:Project(<bang>0,<q-args>)
@@ -605,7 +587,11 @@ endfunction
 
 function! s:NewApp(bang,...)
   if a:0 == 0
-    !rails
+    if a:bang
+      echo "rails.vim revision ".s:revision
+    else
+      !rails
+    endif
     return
   endif
   let dir = ""
@@ -654,6 +640,31 @@ function! s:findlayout(name)
   return file
 endfunction
 
+function! s:ViewFunc(bang,...)
+  " FIXME: default to current controller
+  if a:0
+    let view = a:1
+  elseif RailsFileType() == 'controller'
+    let view = s:lastmethod()
+  else
+    let view = ''
+  endif
+  if view == ''
+    return s:error("No view name given")
+  elseif view !~ '/' && s:controller() != ''
+    let view = s:controller() . '/' . view
+  endif
+  if view !~ '/'
+    return s:error("Cannot find view without controller")
+  endif
+  let file = "app/views/".view
+  if file =~ '\.\w\+$'
+    call s:edit("",file)
+  else
+    call s:findedit("",file)
+  endif
+endfunction
+
 function! s:LayoutFunc(bang,...)
   if a:0
     let c = s:sub(s:RailsIncludefind(s:sub(a:1,'^.','\u&')),'\.rb$','')
@@ -692,40 +703,113 @@ endfunction
 
 function! s:Rset(bang,...)
   let c = 1
+  let defscope = ''
   while c <= a:0
     let arg = a:{c}
     let c = c + 1
-    if arg !~ '='
-      if exists("b:".s:sname()."_".arg) || exists("s:_".s:rv()."_".s:environment()."_".arg)
-        echo arg."=".s:gbopt(arg)
-      else
+    if arg =~? '^<[abgl]\=>$'
+      let defscope = (matchstr(arg,'<\zs.*\ze>'))
+    elseif arg !~ '='
+      if defscope != '' && arg !~ '^\w:'
+        let arg = defscope.':'.opt
+      endif
+      let val = s:getopt(arg)
+      if val == '' && s:opts() !~ '\<'.arg.'\n'
         call s:error("No such rails.vim option: ".arg)
+      else
+        echo arg."=".val
       endif
     else
       let opt = matchstr(arg,'[^=]*')
       let val = s:sub(arg,'^[^=]*=','')
-      if a:bang
-        let b:rails_{opt} = val
-      else
-        "call s:saopt(opt,val)
-        let b:rails_{opt} = val
+      if defscope != '' && opt !~ '^\w:'
+        let opt = defscope.':'.opt
       endif
+      call s:setopt(opt,val)
     endif
   endwhile
+endfunction
+
+function! s:getopt(opt,...)
+  let opt = a:opt
+  if a:0
+    let scope = a:1
+  elseif opt =~ '^[abgl]:'
+    let scope = tolower(matchstr(opt,'^\w'))
+    let opt = s:sub(opt,'^\w:','')
+  else
+    let scope = 'abgl'
+  endif
+  if scope == 'l' && &filetype != 'ruby'
+    let scope = 'b'
+  endif
+  " Get buffer option
+  if scope =~ 'l' && exists("b:_".s:sname()."_".s:escvar(s:lastmethod())."_".opt)
+    return b:_{s:sname()}_{s:escvar(s:lastmethod())}_{opt}
+  elseif exists("b:".s:sname()."_".opt) && (scope =~ 'b' || (scope =~ 'l' && s:lastmethod() == ''))
+    return b:{s:sname()}_{opt}
+  elseif scope =~ 'a' && exists("s:_".s:rv()."_".s:environment()."_".opt)
+    return s:_{s:rv()}_{s:environment()}_{opt}
+  elseif scope =~ 'g' && exists("g:".s:sname()."_".opt)
+    return g:{s:sname()}_{opt}
+  else
+    return ""
+  endif
+endfunction
+
+function! s:setopt(opt,val)
+  if a:opt =~? '[abgl]:'
+    let scope = matchstr(a:opt,'^\w')
+    let opt = s:sub(a:opt,'^\w:','')
+  else
+    let scope = ''
+    let opt = a:opt
+  endif
+  let defscope = matchstr(s:opts(),'\n\zs\w\ze:'.opt,'\n')
+  if defscope == ''
+    let defscope = 'a'
+  endif
+  if scope == ''
+    let scope = defscope
+  endif
+  if &filetype == 'ruby' && (scope == 'B' || scope == 'l')
+    let scope = 'b'
+  endif
+  if opt =~ '\W'
+    return s:error("Invalid option ".a:opt)
+  elseif scope =~? 'a'
+    let s:_{s:rv()}_{s:environment()}_{opt} = a:val
+  elseif scope == 'B' && defscope == 'l'
+    let b:_{s:sname()}_{s:escvar('')}_{opt} = a:val
+  elseif scope =~? 'b'
+    let b:{s:sname()}_{opt} = a:val
+  elseif scope =~? 'g'
+    let g:{s:sname()}_{opt} = a:val
+  elseif scope =~? 'l'
+    let b:_{s:sname()}_{s:escvar(s:lastmethod())}_{opt} = a:val
+  else
+    return s:error("Invalid scope for ".a:opt)
+  endif
+endfunction
+
+function! s:opts()
+  return "\nb:alternate\na:gnu_screen\nl:preview\nb:rake_task\nl:related\na:root_url\n"
 endfunction
 
 function! s:RsetComplete(A,L,P)
   if a:A =~ '='
     let opt = matchstr(a:A,'[^=]*')
-    return opt."=".s:gbopt(opt)
+    return opt."=".s:getopt(opt)
   else
-    return "rake_task=\nurl="
+    let extra = matchstr(a:A,'^[abgl]:')
+    let opts = s:gsub(s:sub(s:gsub(s:opts(),'\n\w:','\n'.extra),'^\n',''),'\n','=\n')
+    return opts
   endif
   return ""
 endfunction
 
 function! s:RealMansGlob(path,glob)
-  " HOW COULD SUCH A SIMPLE OPERATION BE SO COMPLICATED?
+  " How could such a simple operation be so complicated?
   if a:path =~ '[\/]$'
     let path = a:path
   else
@@ -779,8 +863,8 @@ function! s:Rake(bang,arg)
     endif
   endif
   if arg == ''
-    if exists("b:rails_rake_task")
-      let arg = b:rails_rake_task
+    if s:getopt('rake_task','bl') != ''
+      let arg = s:getopt('rake_task','bl')
     elseif exists("b:rails_default_rake_target")
       call s:warn("b:rails_default_rake_target is deprecated.  :Rset rake_task=... instead")
       let arg = b:rails_default_rake_target
@@ -798,7 +882,7 @@ function! s:Rake(bang,arg)
     let arg = s:sub(arg,'^runner:','')
     let old_make = &makeprg
     let &l:makeprg = s:rubyexestr("script/runner ".s:rquote(s:esccmd(arg)))
-    echo &l:makeprg
+    "echo &l:makeprg
     make
     "exe 'Rrunner '.arg
     let &l:makeprg = old_make
@@ -844,9 +928,9 @@ endfunction
 " Preview {{{1
 
 function! s:Preview(bang,arg)
-  let root = s:gbopt("url")
+  let root = s:getopt("root_url")
   if root == ''
-    let root = s:gbopt("root_url")
+    let root = s:getopt("url")
   endif
   let root = s:sub(root,'/$','')
   if a:arg =~ '://'
@@ -854,14 +938,23 @@ function! s:Preview(bang,arg)
   elseif a:arg != ''
     let uri = root.'/'.s:sub(a:arg,'^/','')
   else
-    let uri = root.'/'
-    if s:controller() != '' && s:controller() != 'application'
+    let uri = ''
+    if s:getopt('preview','l') != ''
+      let uri = s:getopt('preview','l')
+    elseif s:controller() != '' && s:controller() != 'application'
       let uri = uri.s:controller().'/'
-      if RailsFileType() =~ '^view\%(-partial\|-layout\)\@!'
-        let uri = uri.expand('%:t:r').'/'
-      elseif RailsFileType() =~ '^controller\>' && s:lastmethod() != ''
+      if RailsFileType() =~ '^controller\>' && s:lastmethod() != ''
         let uri = uri.s:lastmethod().'/'
+      elseif s:getopt('preview','b') != ''
+        let uri = s:getopt('preview','b')
+      elseif RailsFileType() =~ '^view\%(-partial\|-layout\)\@!'
+        let uri = uri.expand('%:t:r').'/'
       endif
+    elseif s:getopt('preview','abg') != ''
+      let url = s:getopt('preview','abg')
+    endif
+    if uri !~ '://'
+      let uri = root.'/'.s:sub(uri,'^/','')
     endif
   endif
   if !exists(":OpenURL")
@@ -914,8 +1007,8 @@ function! s:BufScriptWrappers()
   command! -buffer -bar -nargs=*       -complete=custom,s:DestroyComplete  Rdestroy      :call s:Destroy(<bang>0,<f-args>)
   command! -buffer -bar -nargs=*       -complete=custom,s:PluginComplete   Rplugin       :call s:Plugin(<bang>0,<f-args>)
   command! -buffer -bar -nargs=? -bang -complete=custom,s:ServerComplete   Rserver       :call s:Server(<bang>0,<q-args>)
-  command! -buffer      -nargs=1                                           Rrunner       :call s:Script(<bang>0,"runner",<f-args>)
-  command! -buffer      -nargs=1                                           Rp            :call s:Script(<bang>0,"runner","p begin ".<f-args>." end")
+  command! -buffer      -nargs=1 -bang                                     Rrunner       :call s:Runner(<bang>0,<f-args>)
+  command! -buffer      -nargs=1                                           Rp            :call s:Runner(<bang>0,"p begin ".<f-args>." end")
 endfunction
 
 function! s:Script(bang,cmd,...)
@@ -929,6 +1022,16 @@ function! s:Script(bang,cmd,...)
     call s:rubyexebg(s:rquote("script/".a:cmd).str)
   else
     call s:rubyexe(s:rquote("script/".a:cmd).str)
+  endif
+endfunction
+
+function s:Runner(bang,args)
+  if a:bang
+    call s:Script(a:bang,"runner",a:args)
+  else
+    let str = s:rubyexestr(s:rquote("script/runner")." ".s:rquote(a:args))
+    let res = s:sub(system(str),'\n$','')
+    echo res
   endif
 endfunction
 
@@ -972,12 +1075,12 @@ function! s:Server(bang,arg)
       return
     endif
   endif
-  if has("win32") || has("win64") || (exists("$STY") && !has("gui_running") && g:rails_gnu_screen && executable("screen"))
+  if has("win32") || has("win64") || (exists("$STY") && !has("gui_running") && s:getopt("gnu_screen","abg") && executable("screen"))
     call s:rubyexebg(s:rquote("script/server")." ".a:arg)
   else
     call s:rubyexe(s:rquote("script/server")." ".a:arg." --daemon")
   endif
-  call s:saopt('url','http://'.(bind=='0.0.0.0'?'localhost': bind).':'.port.'/')
+  call s:setopt('a:root_url','http://'.(bind=='0.0.0.0'?'localhost': bind).':'.port.'/')
 endfunction
 
 function! s:Plugin(bang,...)
@@ -1382,16 +1485,27 @@ function! s:editcmdfor(cmd)
   return cmd
 endfunction
 
-function! s:findedit(cmd,file,...)
+function! s:findedit(cmd,file,...) abort
   let cmd = s:findcmdfor(a:cmd)
   let file = a:file
-  if RailsRoot() =~ '://'
+  if file =~ '@'
+    let djump = matchstr(file,'@\zs.*')
+    let file = matchstr(file,'.*\ze@')
+  else
+    let djump = ''
+  endif
+  if file == ''
+    edit
+  elseif RailsRoot() =~ '://'
     if file !~ '^/' && file !~ '^\w:' && file !~ '://'
       let file = s:ra().'/'.file
     endif
     exe s:editcmdfor(cmd).' '.(a:0 ? a:1 . ' ' : '').file
   else
     exe cmd.' '.(a:0 ? a:1 . ' ' : '').file
+  endif
+  if djump != ''
+    silent! exe 'djump '.djump
   endif
 endfunction
 
@@ -1408,8 +1522,9 @@ function! s:Alternate(bang,cmd)
   let cmd = a:cmd.(a:bang?"!":"")
   let f = RailsFilePath()
   let t = RailsFileType()
-  if exists("b:rails_alternate")
-    call s:findedit(cmd,b:rails_alternate)
+  let altopt = s:getopt("alternate","bl")
+  if altopt != ""
+    call s:findedit(cmd,altopt)
   elseif f =~ '\<config/environments/'
     call s:findedit(cmd,"config/environment.rb")
   elseif f == 'README'
@@ -1446,8 +1561,8 @@ function! s:Alternate(bang,cmd)
       call s:findedit(cmd,helper)
     elseif filereadable(RailsRoot()."/".controller)
       let jumpto = expand("%:t:r")
-      call s:findedit(cmd,controller)
-      exe "silent! djump ".jumpto
+      call s:findedit(cmd,controller.'@'.jumpto)
+      "exe "silent! djump ".jumpto
     elseif filereadable(RailsRoot()."/".model)
       call s:findedit(cmd,model)
     else
@@ -1490,7 +1605,13 @@ function! s:Related(bang,cmd)
   let cmd = a:cmd.(a:bang?"!":"")
   let f = RailsFilePath()
   let t = RailsFileType()
-  if f =~ '\<config/environments/'
+  if s:getopt("related","l") != ""
+    call s:findedit(cmd,s:getopt("related","l"))
+  elseif t =~ '^controller\>' && s:lastmethod() != ""
+    call s:findedit(cmd,s:sub(s:sub(s:sub(f,'/application\.rb$','/shared_controller.rb'),'/controllers/','/views/'),'_controller\.rb$','/'.s:lastmethod()))
+  elseif s:getopt("related","b") != ""
+    call s:findedit(cmd,s:getopt("related","b"))
+  elseif f =~ '\<config/environments/'
     call s:findedit(cmd,"config/environment.rb")
   elseif f == 'README'
     call s:findedit(cmd,"config/database.yml")
@@ -1512,7 +1633,7 @@ function! s:Related(bang,cmd)
   elseif t=~ '^view-partial\>'
     call s:warn("No related file is defined")
   elseif t =~ '^view\>'
-    call s:findedit(cmd,s:sub(s:sub(f,'/views/','/controllers/'),'/\(\k\+\)\..*$','_controller|silent! djump \1'))
+    call s:findedit(cmd,s:sub(s:sub(f,'/views/','/controllers/'),'/\(\k\+\)\..*$','_controller.rb@\1'))
   elseif t =~ '^controller-api\>'
     call s:findedit(cmd,s:sub(s:sub(f,'/controllers/','/apis/'),'_controller\.rb$','_api.rb'))
   elseif t =~ '^controller\>'
@@ -1772,7 +1893,7 @@ endfunction
 " Syntax {{{1
 
 function! s:BufSyntax()
-  if (!exists("g:rails_syntax") || g:rails_syntax) && (exists("g:syntax_on") || exists("g:syntax_manual"))
+  if (!exists("g:rails_syntax") || g:rails_syntax)
     let t = RailsFileType()
     if !exists("s:rails_view_helpers")
       if g:rails_expensive
@@ -1813,7 +1934,7 @@ function! s:BufSyntax()
       if t =~ '^controller\>' || t =~ '^view\>' || t=~ '^helper\>'
         syn keyword rubyRailsMethod params request response session headers template cookies flash
         syn match rubyRailsError '[@:]\@<!@\%(params\|request\|response\|session\|headers\|template\|cookies\|flash\)\>'
-        syn match rubyRailsError '\<render_partial\>'
+        syn match rubyRailsError '\<\%(render_partial\|puts\)\>'
         syn keyword rubyRailsRenderMethod render render_component
         syn keyword rubyRailsMethod logger
       endif
@@ -1858,6 +1979,7 @@ function! s:BufSyntax()
       syn match erubyRailsMethod '\.\@<!\<\(h\|html_escape\|u\|url_encode\)\>' contained containedin=@erubyRailsRegions
         syn keyword erubyRailsRenderMethod render render_component contained containedin=@erubyRailsRegions
       syn match rubyRailsError '[^@:]\@<!@\%(params\|request\|response\|session\|headers\|template\|cookies\|flash\)\>' contained containedin=@erubyRailsRegions
+      syn match rubyRailsError '\<\%(render_partial\|puts\)\>' contained containedin=@erubyRailsRegions
     elseif &syntax == "yaml"
       " Modeled after syntax/eruby.vim
       unlet b:current_syntax
@@ -2613,13 +2735,13 @@ function! s:BufModelines()
   if !g:rails_modelines
     return
   endif
-  let lines = getline(1)."\n".getline(2)."\n".getline(3)."\n".getline("$")."\n"
+  let lines = getline("$")."\n".getline(line("$")-1).getline(1)."\n".getline(2)."\n".getline(3)."\n"
   let pat = '\s\+\zs.\{-\}\ze\%(\n\|\s\s\|#{\@!\|%>\|-->\|$\)'
   let mat = matchstr(lines,'\<Rset'.pat)
   let mat = s:sub(mat,'\s\+$','')
   let mat = s:gsub(mat,'|','\\|')
   if mat != ''
-    silent! exe "Rset ".mat
+    silent! exe "Rset <B> ".mat
   endif
 endfunction
 
@@ -2700,7 +2822,8 @@ function! s:BufInit(path)
       setlocal filetype=yaml
     else
       " Activate custom syntax
-      exe "setlocal syntax=".&syntax
+      "exe "setlocal syntax=".&syntax
+      let &syntax = &syntax
     endif
     if expand("%:e") == "log"
       setlocal modifiable filetype=railslog
@@ -2715,8 +2838,6 @@ function! s:BufInit(path)
   endif
   call s:BufSettings()
   call s:BufCommands()
-  call s:BufMappings()
-  call s:BufAbbreviations()
   call s:BufDatabase()
   let t = RailsFileType()
   if t != ""
@@ -2731,6 +2852,8 @@ function! s:BufInit(path)
     endif
   endif
   call s:BufModelines()
+  call s:BufMappings()
+  call s:BufAbbreviations()
   let &cpo = cpo_save
   return b:rails_root
 endfunction
@@ -2834,6 +2957,7 @@ endfunction
 " }}}1
 
 let s:file = expand('<sfile>:p')
+let s:revision = s:sub(s:sub('$Rev: 109$','\$Rev\%(:\s*\)\=',''),'\$$','')
 call s:InitPlugin()
 
 let &cpo = cpo_save
