@@ -266,7 +266,11 @@ endfunction
 " }}}1
 " "Public" Interface {{{1
 
-" RailsRoot() is the only official public function
+" RailsRevision() and RailsRoot() the only official public functions
+
+function! RailsRevision()
+  return s:revision
+endfunction
 
 function! RailsRoot()
   if exists("b:rails_root")
@@ -278,6 +282,7 @@ endfunction
 
 function! RailsAppPath()
   " Deprecated
+  call s:warn("RailsAppPath() is deprecated: use RailsRoot() instead.")
   return RailsRoot()
 endfunction
 
@@ -295,6 +300,10 @@ function! RailsFilePath()
   endif
 endfunction
 
+function! RailsFile()
+  return RailsFilePath()
+endfunction
+
 function! RailsFileType()
   if !exists("b:rails_root")
     return ""
@@ -304,7 +313,7 @@ function! RailsFileType()
   let f = RailsFilePath()
   let e = fnamemodify(RailsFilePath(),':e')
   let r = ""
-  let top = getline(1)." ".getline(2)." ".getline(3)." ".getline(4)." ".getline(5)
+  let top = getline(1)." ".getline(2)." ".getline(3)." ".getline(4)." ".getline(5).getline(6)." ".getline(7)." ".getline(8)." ".getline(9)." ".getline(10)
   if f == ""
     let r = f
   elseif f =~ '_controller\.rb$' || f =~ '\<app/controllers/application\.rb$'
@@ -327,7 +336,7 @@ function! RailsFileType()
       let r = "model-".class
     elseif f =~ '_mailer\.rb$'
       let r = "model-am"
-    elseif top =~ '\<\%(validates_\w\+_of\|set_\%(table_name\|primary_key\)\)\>'
+    elseif top =~ '\<\%(validates_\w\+_of\|set_\%(table_name\|primary_key\)\|has_one\|has_many\|belongs_to\)\>'
       let r = "model-ar"
     else
       let r = "model"
@@ -360,6 +369,10 @@ function! RailsFileType()
     let r = e
   endif
   return r
+endfunction
+
+function! RailsType()
+  return RailsFileType()
 endfunction
 
 " }}}1
@@ -566,6 +579,8 @@ function! s:Log(bang,arg)
 endfunction
 
 function! s:Migration(bang,cmd,arg)
+  let cmd = s:findcmdfor(a:cmd.(a:bang?'!':''))
+  echo cmd
   if a:arg =~ '^\d$'
     let glob = '00'.a:arg.'_*.rb'
   elseif a:arg =~ '^\d\d$'
@@ -579,7 +594,7 @@ function! s:Migration(bang,cmd,arg)
   endif
   let migr = s:sub(glob(RailsRoot().'/db/migrate/'.glob),'.*\n','')
   if migr != ''
-    call s:findedit(migr)
+    call s:findedit(cmd,migr)
   else
     return s:error("Migration not found".(a:arg=='' ? '' : ': '.a:arg))
   endif
@@ -950,11 +965,16 @@ function! s:Preview(bang,arg)
       elseif RailsFileType() =~ '^view\%(-partial\|-layout\)\@!'
         let uri = uri.expand('%:t:r').'/'
       endif
-    elseif s:getopt('preview','abg') != ''
-      let url = s:getopt('preview','abg')
+    elseif s:getopt('preview','b') != ''
+      let uri = s:getopt('preview','b')
+    elseif RailsFilePath() =~ '^public/'
+      let uri = s:sub(RailsFilePath(),'^public/','')
+    elseif s:getopt('preview','ag') != ''
+      let uri = s:getopt('preview','ag')
+    elseif 
     endif
     if uri !~ '://'
-      let uri = root.'/'.s:sub(uri,'^/','')
+      let uri = root.'/'.s:sub(s:sub(uri,'^/',''),'/$','')
     endif
   endif
   if !exists(":OpenURL")
@@ -967,12 +987,18 @@ function! s:Preview(bang,arg)
   if exists(':OpenURL') && !a:bang
     exe 'OpenURL '.uri
   else
-    " Work around bug where URLs with out ? get handled as FTP
-    let url = uri.(uri =~ '?' ? '' : '?')
-    exe 'pedit '.url
+    " Work around bug where URLs ending in / get handled as FTP
+    let url = uri.(uri =~ '/$' ? '?' : '')
+    silent exe 'pedit '.url
     wincmd w
     if &filetype == ''
-      setlocal filetype=xhtml
+      if uri =~ '\.css$'
+        setlocal filetype=css
+      elseif uri =~ '\.js$'
+        setlocal filetype=javascript
+      elseif getline(1) =~ '^\s*<'
+        setlocal filetype=xhtml
+      endif
     endif
     call s:Detect(RailsRoot())
     map <buffer> <silent> q :bwipe<CR>
@@ -1025,7 +1051,7 @@ function! s:Script(bang,cmd,...)
   endif
 endfunction
 
-function s:Runner(bang,args)
+function! s:Runner(bang,args)
   if a:bang
     call s:Script(a:bang,"runner",a:args)
   else
@@ -1551,13 +1577,11 @@ function! s:Alternate(bang,cmd)
     else
       let dest = f
     endif
-    " Go to the helper, controller, or model
+    " Go to the helper, controller, or (mailer) model
     let helper     = fnamemodify(dest,":h:s?/views/?/helpers/?")."_helper.rb"
     let controller = fnamemodify(dest,":h:s?/views/?/controllers/?")."_controller.rb"
     let model      = fnamemodify(dest,":h:s?/views/?/models/?").".rb"
     if filereadable(RailsRoot()."/".helper)
-      " Would it be better to skip the helper and go straight to the
-      " controller?
       call s:findedit(cmd,helper)
     elseif filereadable(RailsRoot()."/".controller)
       let jumpto = expand("%:t:r")
@@ -1623,7 +1647,6 @@ function! s:Related(bang,cmd)
     call s:Migration(0,cmd,num)
   elseif t =~ '^test\>'
     return s:error('Use :Rake instead')
-    "Rake
   elseif f =~ '\<application\.js$'
     call s:findedit(cmd,"app/helpers/application_helper.rb")
   elseif t =~ '^js\>'
@@ -1646,6 +1669,8 @@ function! s:Related(bang,cmd)
       call s:findedit(cmd,s:sub(s:sub(f,'/helpers/','/views/layouts/'),'\%(_helper\)\=\.rb$',''))
   elseif t =~ '^model-ar\>'
     call s:Migration(0,cmd,'create_'.s:sub(expand('%:t:r'),'y$','ie').'s')
+  elseif t =~ '^model-aro\>'
+    call s:findedit(cmd,s:sub(f,'_observer\.rb$','.rb'))
   elseif t =~ '^api\>'
     call s:findedit(cmd,s:sub(s:sub(f,'/apis/','/controllers/'),'_api\.rb$','_controller.rb'))
   elseif f =~ '\<db/schema\.rb$'
@@ -1916,7 +1941,7 @@ function! s:BufSyntax()
         syn keyword rubyRailsAPIMethod api_method
       endif
       if t =~ '^model$' || t =~ '^model-ar\>'
-        syn keyword rubyRailsARMethod acts_as_list acts_as_nested_set acts_as_tree composed_of
+        syn keyword rubyRailsARMethod acts_as_list acts_as_nested_set acts_as_tree composed_of serialize
         syn keyword rubyRailsARAssociationMethod belongs_to has_one has_many has_and_belongs_to_many
         "syn match rubyRailsARCallbackMethod '\<\(before\|after\)_\(create\|destroy\|save\|update\|validation\|validation_on_create\|validation_on_update\)\>'
         syn keyword rubyRailsARCallbackMethod before_create before_destroy before_save before_update before_validation before_validation_on_create before_validation_on_update
@@ -1925,6 +1950,9 @@ function! s:BufSyntax()
         "syn keyword rubyRailsARCallbackMethod after_find after_initialize
         syn keyword rubyRailsARValidationMethod validate validate_on_create validate_on_update validates_acceptance_of validates_associated validates_confirmation_of validates_each validates_exclusion_of validates_format_of validates_inclusion_of validates_length_of validates_numericality_of validates_presence_of validates_size_of validates_uniqueness_of
         syn keyword rubyRailsMethod logger
+      endif
+      if t =~ '^model-aro\>'
+        syn keyword rubyRailsARMethod observe
       endif
       if t =~ '^model-am\>'
         syn keyword rubyRailsMethod logger
@@ -1949,7 +1977,7 @@ function! s:BufSyntax()
         syn keyword rubyRailsFilterMethod before_filter append_before_filter prepend_before_filter after_filter append_after_filter prepend_after_filter around_filter append_around_filter prepend_around_filter skip_before_filter skip_after_filter
         syn keyword rubyRailsFilterMethod verify
       endif
-      if t =~ '^migration\>'
+      if t =~ '^migration\>' || t =~ '^schema\>'
         syn keyword rubyRailsMigrationMethod create_table drop_table rename_table add_column rename_column change_column change_column_default remove_column add_index remove_index
       endif
       if t =~ '^test\>'
@@ -2065,6 +2093,7 @@ endfunction
 
 " }}}1
 " Statusline {{{1
+
 function! s:InitStatusline()
   if &statusline !~ 'Rails'
     let &statusline=substitute(&statusline,'\C%Y','%Y%{RailsSTATUSLINE()}','')
@@ -2097,6 +2126,7 @@ function! RailsSTATUSLINE()
     return ""
   endif
 endfunction
+
 " }}}1
 " Mappings {{{1
 
@@ -2130,7 +2160,6 @@ function! s:BufMappings()
     if !hasmapto("<Plug>RailsTabFind")
       nmap <buffer> <C-W>gf         <Plug>RailsTabFind
     endif
-    " Lets see if anyone complains about these next two.
     if !hasmapto("<Plug>RailsAlternate")
       nmap <buffer> [f              <Plug>RailsAlternate
     endif
@@ -2208,11 +2237,13 @@ function! s:CreateMenus() abort
     exe menucmd.g:rails_installed_menu.'.&Server\	:Rserver.&Start\	:Rserver :Rserver<CR>'
     exe menucmd.g:rails_installed_menu.'.&Server\	:Rserver.&Force\ start\	:Rserver! :Rserver!<CR>'
     exe menucmd.g:rails_installed_menu.'.&Server\	:Rserver.&Kill\	:Rserver!\ - :Rserver! -<CR>'
+    exe menucmd.'<silent> '.g:rails_installed_menu.'.&Evaluate\ Ruby\.\.\.\	:Rp :call <SID>menuprompt("Rp","Code to execute and output: ")<CR>'
     exe menucmd.g:rails_installed_menu.'.&Console\	:Rconsole :Rconsole<CR>'
     exe menucmd.g:rails_installed_menu.'.&Breakpointer\	:Rbreak :Rbreakpointer<CR>'
     exe menucmd.g:rails_installed_menu.'.&Preview\	:Rpreview :Rpreview<CR>'
-    exe menucmd.g:rails_installed_menu.'.&Log\	:Rlog :Rlog<CR>'
+    exe menucmd.g:rails_installed_menu.'.&Log\ file\	:Rlog :Rlog<CR>'
     exe s:sub(menucmd,'anoremenu','vnoremenu').' <silent> '.g:rails_installed_menu.'.E&xtract\ as\ partial\	:Rpartial :call <SID>menuprompt("'."'".'<,'."'".'>Rpartial","Partial name (e.g., template or /controller/template): ")<CR>'
+    exe menucmd.g:rails_installed_menu.'.&Migration\ writer\	:Rinvert :Rinvert<CR>'
     exe menucmd.'         '.g:rails_installed_menu.'.-HSep- :'
     exe menucmd.'<silent> '.g:rails_installed_menu.'.&Help\	:help\ rails :call <SID>prephelp()<Bar>help rails<CR>'
     exe menucmd.'<silent> '.g:rails_installed_menu.'.Abo&ut :call <SID>prephelp()<Bar>help rails-about<CR>'
@@ -2231,6 +2262,9 @@ function! s:menuBufEnter()
     if RailsFileType() !~ '^view\>'
       exe 'vmenu disable '.menu.'.Extract\ as\ partial'
     endif
+    if RailsFileType() !~ '^migration$' || RailsFilePath() =~ '\<db/schema\.rb$'
+      exe 'amenu disable '.menu.'.Migration\ writer'
+    endif
   endif
 endfunction
 
@@ -2242,6 +2276,7 @@ function! s:menuBufLeave()
     exe 'amenu enable  '.menu.'.About'
   endif
 endfunction
+
 function! s:menuprompt(vimcmd,prompt)
   let res = inputdialog(a:prompt,'','!!!')
   if res == '!!!'
@@ -2307,7 +2342,7 @@ function! RailsBalloonexpr()
     if str !~ '^\u'
       return ""
     endif
-    silent! let res = s:sub(system("ri ".s:rquote(str)),'\n$','')
+    silent! let res = s:sub(system("ri -f simple -T ".s:rquote(str)),'\n$','')
     if res =~ '^Nothing known about'
       return ''
     endif
@@ -2506,7 +2541,9 @@ function! s:RailsSelectiveExpand(pat,good,default,...)
   let c = nr2char(getchar(0))
   "let good = s:gsub(a:good,'\\<Esc>',"\<Esc>")
   let good = a:good
-  if c == "" || c == "\t"
+  if c == "" " ^]
+    return s:sub(good.(a:0 ? " ".a:1 : ''),'\s\+$','')
+  elseif c == "\t"
     return good.(a:0 ? " ".a:1 : '')
   elseif c =~ a:pat
     return good.c.(a:0 ? a:1 : '')
@@ -2838,6 +2875,7 @@ function! s:BufInit(path)
   endif
   call s:BufSettings()
   call s:BufCommands()
+  call s:BufAbbreviations()
   call s:BufDatabase()
   let t = RailsFileType()
   if t != ""
@@ -2853,7 +2891,6 @@ function! s:BufInit(path)
   endif
   call s:BufModelines()
   call s:BufMappings()
-  call s:BufAbbreviations()
   let &cpo = cpo_save
   return b:rails_root
 endfunction
@@ -2865,7 +2902,7 @@ function! s:SetBasePath()
   if stridx(oldpath,rp) == 2
     let oldpath = ''
   endif
-  let &l:path = '.,'.rp.",".rp."/app/controllers,".rp."/app,".rp."/app/models,".rp."/app/helpers,".rp."/components,".rp."/config,".rp."/lib,".rp."/vendor,".rp."/vendor/plugins/*/lib,".rp."/test/unit,".rp."/test/functional,".rp."/test/integration,".rp."/app/apis,".rp."/test,".rp."/vendor/rails/*/lib,"
+  let &l:path = '.,'.rp.",".rp."/app/controllers,".rp."/app,".rp."/app/models,".rp."/app/helpers,".rp."/components,".rp."/config,".rp."/lib,".rp."/vendor,".rp."/vendor/plugins/*/lib,".rp."/test/unit,".rp."/test/functional,".rp."/test/integration,".rp."/app/apis,".rp."/app/services,".rp."/test,".rp."/vendor/rails/*/lib,"
   if s:controller() != ''
     if RailsFilePath() =~ '\<components/'
       let &l:path = &l:path . rp . '/components/' . s:controller() . ','
@@ -2916,7 +2953,6 @@ function! s:BufSettings()
         \%-G%.%#/vendor/rails/%.%#,
         \%f:%l:\ %m,
         \%-G%.%#
-  "let &l:makeprg='rake -f '.rp.'/Rakefile $*'
   setlocal makeprg=rake
   if stridx(&tags,rp) == -1
     let &l:tags = &tags . "," . rp ."/tags"
@@ -2926,8 +2962,6 @@ function! s:BufSettings()
   endif
   " There is no rjs/rxml filetype now, but in the future, who knows...
   if &ft == "ruby" || &ft == "eruby" || &ft == "rjs" || &ft == "rxml" || &ft == "yaml"
-    " This is a strong convention in Rails, so we'll break the usual rule
-    " of considering shiftwidth to be a personal preference
     setlocal sw=2 sts=2 et
     "set include=\\<\\zsAct\\f*::Base\\ze\\>\\\|^\\s*\\(require\\\|load\\)\\s\\+['\"]\\zs\\f\\+\\ze
     setlocal includeexpr=RailsIncludeexpr()
@@ -2957,7 +2991,8 @@ endfunction
 " }}}1
 
 let s:file = expand('<sfile>:p')
-let s:revision = s:sub(s:sub('$Rev: 109$','\$Rev\%(:\s*\)\=',''),'\$$','')
+let s:revision = ' $Rev$ '
+let s:revision = s:sub(s:sub(s:revision,'^ [$]Rev:\=\s*',''),'\s*\$ $','')
 call s:InitPlugin()
 
 let &cpo = cpo_save
