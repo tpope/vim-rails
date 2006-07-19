@@ -1426,6 +1426,7 @@ function! s:RailsIncludefind(str,...)
   let str = s:sub(str,'\s*$','')
   let str = s:sub(str,'^[:@]','')
   "let str = s:sub(str,"\\([\"']\\)\\(.*\\)\\1",'\2')
+  let str = s:sub(str,':0x\x\+$','') " For #<Object:0x...> style output
   let str = s:gsub(str,"[\"']",'')
   if line =~ '\<\(require\|load\)\s*(\s*$'
     return str
@@ -1618,7 +1619,13 @@ function! s:Alternate(bang,cmd)
     elseif t =~ '^test-unit\>'
       call s:findedit(cmd,s:sub(file,'test/unit/','app/models/'))
     elseif t =~ '^test-functional\>'
-      call s:findedit(cmd,s:sub(file,'test/functional/','app/controllers/'))
+      if file =~ '_api\.rb'
+        call s:findedit(cmd,s:sub(file,'test/functional/','app/apis/'))
+      elseif file =~ '_controller\.rb'
+        call s:findedit(cmd,s:sub(file,'test/functional/','app/controllers/'))
+      else
+        call s:findedit(cmd,s:sub(file,'test/functional/',''))
+      endif
     else
       call s:findedit(cmd,fnamemodify(file,":t"))
     endif
@@ -1938,7 +1945,7 @@ function! s:BufSyntax()
         syn keyword rubyRailsMethod params request response session headers template cookies flash
       endif
       if t =~ '^api\>'
-        syn keyword rubyRailsAPIMethod api_method
+        syn keyword rubyRailsAPIMethod api_method inflect_names
       endif
       if t =~ '^model$' || t =~ '^model-ar\>'
         syn keyword rubyRailsARMethod acts_as_list acts_as_nested_set acts_as_tree composed_of serialize
@@ -2574,13 +2581,21 @@ function! s:TheMagicC()
   endif
 endfunction
 
+function! s:string(str)
+  if exists("*string")
+    return string(a:str)
+  else
+    return "'" . s:gsub(a:str,"'","''") . "'"
+  endif
+endfunction
+
 function! s:AddSelectiveExpand(abbr,pat,expn,...)
   let expn  = s:gsub(s:gsub(a:expn        ,'[\"|]','\\&'),'<','\\<Lt>')
   let expn2 = s:gsub(s:gsub(a:0 ? a:1 : '','[\"|]','\\&'),'<','\\<Lt>')
   if a:0
-    exe "inoreabbrev <buffer> <silent> ".a:abbr." <C-R>=<SID>RailsSelectiveExpand(".string(a:pat).",\"".expn."\",".string(a:abbr).",\"".expn2."\")<CR>"
+    exe "inoreabbrev <buffer> <silent> ".a:abbr." <C-R>=<SID>RailsSelectiveExpand(".s:string(a:pat).",\"".expn."\",".s:string(a:abbr).",\"".expn2."\")<CR>"
   else
-    exe "inoreabbrev <buffer> <silent> ".a:abbr." <C-R>=<SID>RailsSelectiveExpand(".string(a:pat).",\"".expn."\",".string(a:abbr).")<CR>"
+    exe "inoreabbrev <buffer> <silent> ".a:abbr." <C-R>=<SID>RailsSelectiveExpand(".s:string(a:pat).",\"".expn."\",".s:string(a:abbr).")<CR>"
   endif
 endfunction
 
