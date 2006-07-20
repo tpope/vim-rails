@@ -580,7 +580,6 @@ endfunction
 
 function! s:Migration(bang,cmd,arg)
   let cmd = s:findcmdfor(a:cmd.(a:bang?'!':''))
-  echo cmd
   if a:arg =~ '^\d$'
     let glob = '00'.a:arg.'_*.rb'
   elseif a:arg =~ '^\d\d$'
@@ -897,7 +896,6 @@ function! s:Rake(bang,arg)
     let arg = s:sub(arg,'^runner:','')
     let old_make = &makeprg
     let &l:makeprg = s:rubyexestr("script/runner ".s:rquote(s:esccmd(arg)))
-    "echo &l:makeprg
     make
     "exe 'Rrunner '.arg
     let &l:makeprg = old_make
@@ -1162,7 +1160,7 @@ function! s:Generate(bang,...)
     if file == ""
       let file = matchstr(res,'\s\+\%(exists\)\s\+\zs\f\+\.rb\ze\n')
     endif
-    echo file
+    "echo file
   else
     let file = ""
   endif
