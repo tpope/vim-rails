@@ -1313,11 +1313,11 @@ function! s:RailsFind()
   " UGH
   let res = s:findit('\s*\<require\s*(\=\s*File.dirname(__FILE__)\s*+\s*[:'."'".'"]\(\f\+\)\>.\=',expand('%:h').'/\1')
   if res != ""|return res.(fnamemodify(res,':e') == '' ? '.rb' : '')|endif
-  let res = s:findit('\<File.dirname(__FILE__)\s*+\s*[:''"]\(\f\+\)\>[''"]\=',expand('%:h').'\1')
+  let res = s:findit('\<File.dirname(__FILE__)\s*+\s*[:'."'".'"]\(\f\+\)\>['."'".'"]\=',expand('%:h').'\1')
   if res != ""|return res|endif
   let res = s:findamethod('require','\1')
   if res != ""|return res.(fnamemodify(res,':e') == '' ? '.rb' : '')|endif
-  let res = s:findamethod('belongs_to\|has_one\|composed_of','app/models/\1.rb')
+  let res = s:findamethod('belongs_to\|has_one\|composed_of\|validates_associated','app/models/\1.rb')
   if res != ""|return res|endif
   let res = s:singularize(s:findamethod('has_many\|has_and_belongs_to_many','app/models/\1'))
   if res != ""|return res.".rb"|endif
@@ -2592,7 +2592,7 @@ function! s:string(str)
   if exists("*string")
     return string(a:str)
   else
-    return "'" . s:gsub(a:str,"'","''") . "'"
+    return "'" . s:gsub(a:str,"'","'.\"'\".'") . "'"
   endif
 endfunction
 
