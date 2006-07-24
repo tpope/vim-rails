@@ -84,9 +84,9 @@ automatically activated.  This sets various options and defines a few
 buffer-specific commands.
 
 If you are in a hurry to get started, with a minimal amount of reading, you
-are encouraged to at least skim through most this file, to get a better idea
-of what is offered.  If you only read one thing, make sure it is the
-navigation section: |rails-navigation|.
+are encouraged to at least skim through the headings and command names in this
+file, to get a better idea of what is offered.  If you only read one thing,
+make sure it is the navigation section: |rails-navigation|.
 
 ==============================================================================
 GENERAL COMMANDS				*rails-commands*
@@ -109,6 +109,16 @@ actually edit a file from a Rails application.
 
 						*rails-:Rlcd*
 :Rlcd [{directory}]	|:lcd| to /path/to/railsapp/{directory}.
+
+						*rails-:Rdoc*
+:Rdoc			Browse to the Rails API, either in doc/api in the
+			current Rails application, gem_server if it is
+			running, or http://api.rubyonrails.org/ .  Requires
+			:OpenURL to be defined (see |rails-:OpenURL|).
+
+						*rails-:Rdoc!*
+:Rdoc!			Make the appropriate |:helptags| call and invoke
+			|:help| rails.
 
 						*rails-:Redit*
 :Redit {file}		Edit {file}, relative to the application root.
@@ -141,13 +151,8 @@ actually edit a file from a Rails application.
 			account).  The not too useful default is to then edit
 			this URL using Vim itself, allowing |netrw| to
 			download it.  More useful is to define a :OpenURL
-			command, which will be used instead.  An example
-			command on a Mac might be: >
-		:command -bar -nargs=1 OpenURL :!open <args>
-<			The following appears to work on Windows: >
-		:command -bar -nargs=1 OpenURL :!start cmd /cstart /b <args>
-<			Other operating systems are left as an exercise to the
-			reader.
+			command, which will be used instead (see
+			|rails-:OpenURL|).
 			
 						*rails-:Rpreview!*
 :Rpreview! [{path}]	As with :Rpreview, only :OpenURL is never used.
@@ -155,6 +160,24 @@ actually edit a file from a Rails application.
 						*rails-:Rtags*
 :Rtags			Calls ctags -R on the current application root.
 			Exuberant ctags must be installed.
+
+						*rails-:OpenURL*
+:OpenURL {url}		This is not a command provided by the plugin, but
+			rather provided by user and utilized by other plugin
+			features.  This command should be defined to open the
+			provided {url} in a web browser.  An example command
+			on a Mac might be: >
+		:command -bar -nargs=1 OpenURL :!open <args>
+<			The following appears to work on Windows: >
+		:command -bar -nargs=1 OpenURL :!start cmd /cstart /b <args>
+<			On Debian compatible distributions, the following is
+			the preferred method: >
+		:command -bar -nargs=1 OpenURL :!sensible-browser <args>
+<			If has("mac_gui"), has("win32_gui"), or
+			executable("sensible-browser") is true, the
+			corresponding command above will be automatically
+			defined.  Otherwise, you must provide your own (which
+			is recommended anyways).
 
 ==============================================================================
 NAVIGATION					*rails-navigation*
@@ -452,11 +475,17 @@ loaded, you can use an autocommand like the following in your vimrc: >
 	autocmd User Rails*		map <buffer> <F9> :Rake<CR>
 You can also have autocommands that only apply to certain types of files.
 These are based off the information shown in the 'statusline' (see
-|rails-'statusline'|), with hyphens changed to asterisks. A few examples: >
-	autocmd User Rails*test*	iabbr <buffer> ae assert_equal
-	autocmd User Rails*model*ar*	iabbr <buffer> vfo validates_format_of
+|rails-'statusline'|), with hyphens changed to periods. A few examples: >
+	autocmd User Rails.controller*	iabbr <buffer> wsn wsdl_service_name
+	autocmd User Rails.model.arb*	iabbr <buffer> vfo validates_format_of
+	autocmd User Rails.view*rhtml*  imap  <buffer> <C-Z> <%=  %><C-O>3h
 End all Rails autocommands with asterisks, even if you have an exact
-specification.
+specification.  There is also a filename matching syntax: >
+	autocmd User Rails*/db/schema.rb Rset rake_task=db:schema:dump
+The two forms can be combined, as in the following highly redundant example: >
+	autocmd User Rails.helper*/app/helpers/*_helper.rb ...
+Use the filetype based syntax whenever possible, reserving the filename based
+syntax for more advanced cases.
 
 						*config/rails.vim*
 If you have settings particular to a specific project, they can be put in a
@@ -538,10 +567,9 @@ others.  This allows shortening the above example: >
 The 'includeexpr' option is set to enable the magic described in |rails-gf|.
 
 					*rails-'statusline'*	*rails-'stl'*
-Useful information is added to the 'statusline', but only when the existing
-statusline contains the file type (this is not the default) and
-|g:rails_statusline| is enabled.  This option is set globally because it
-appears to have no side effects.
+Useful information is added to the 'statusline', when |g:rails_statusline| is
+enabled.  This option is set globally because it appears to have no side
+effects.
 
 					*rails-'makeprg'*	*rails-'mp'*
 					*rails-'errorformat'*	*rails-'efm'*
@@ -661,8 +689,7 @@ b:rails_url.
 
 						*g:rails_statusline*  >
 	let g:rails_statusline=1
-Give a clue in the statusline when this plugin is enabled.  This requires that
-the current filetype is in your existing 'statusline'.  Enabled when
+Give a clue in the statusline when this plugin is enabled.  Enabled when
 |g:rails_level| >= 3.
 
 						*g:rails_subversion*  >

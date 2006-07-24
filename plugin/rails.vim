@@ -351,7 +351,7 @@ function! RailsFileType()
   elseif f =~ '\<app/models\>'
     let class = matchstr(top,'\<Acti\w\w\u\w\+\%(::\h\w*\)\+\>')
     if class != ''
-      let class = s:sub(class,'::Base$','')
+      "let class = s:sub(class,'::Base$','')
       let class = tolower(s:gsub(class,'[^A-Z]',''))
       let r = "model-".class
     elseif f =~ '_mailer\.rb$'
@@ -409,7 +409,7 @@ endfunction
 function! s:InitConfig()
   call s:SetOptDefault("rails_level",3)
   let l = g:rails_level
-  call s:SetOptDefault("rails_statusline",l>2)
+  call s:SetOptDefault("rails_statusline",(l>2)+(l>3))
   call s:SetOptDefault("rails_syntax",l>1)
   call s:SetOptDefault("rails_isfname",0)
   call s:SetOptDefault("rails_mappings",l>2)
@@ -562,7 +562,8 @@ function! s:BufCommands()
   command! -buffer -bar -nargs=* Rlayout     :call s:LayoutFunc(<bang>0,<f-args>)
   command! -buffer -bar -nargs=* Rview       :call s:ViewFunc(<bang>0,<f-args>)
   command! -buffer -bar -nargs=0 Rtags       :call s:Tags(<bang>0)
-  command! -buffer -bar -nargs=0 Rapi        :call s:Api()
+  command! -buffer -bar -nargs=0 -bang Rdoc  :if <bang>0 | call s:prephelp() | help rails | else | call s:Doc(<bang>0) | endif
+  command! -buffer -bar -nargs=0 Rapi        :Rdoc
   if exists(":Project")
     command! -buffer -bar -nargs=? -bang  Rproject :call s:Project(<bang>0,<q-args>)
   endif
@@ -573,12 +574,12 @@ function! s:BufCommands()
   if ext == "rhtml" || ext == "rxml" || ext == "rjs" || ext == "mab"
     command! -buffer -bar -nargs=? -range Rpartial :<line1>,<line2>call s:Partial(<bang>0,<f-args>)
   endif
-  if RailsFileType() =~ '^migration\>' && expand("%:t:r") != "schema"
+  if RailsFileType() =~ '^\%(db-\)\=migration\>' && RailsFilePath() !~ '\<db/schema\.rb$'
     command! -buffer -bar                 Rinvert  :call s:Invert(<bang>0)
   endif
 endfunction
 
-function! s:Api()
+function! s:Doc(bang)
   if isdirectory(RailsRoot()."/doc/api/classes")
     let url = RailsRoot()."/doc/api/index.html"
   elseif s:getpidfor("0.0.0.0","8808") > 0
@@ -753,7 +754,7 @@ function! s:ControllerFunc(bang,prefix,suffix,...)
   endif
 endfunction
 
-function! s:RealMansGlob(path,glob)
+function! s:relglob(path,glob)
   " How could such a simple operation be so complicated?
   if a:path =~ '[\/]$'
     let path = a:path
@@ -862,7 +863,7 @@ function! s:Rake(bang,arg)
     else
       call s:makewithruby("\"%:p\"".call)
     endif
-  elseif t=~ '^migration\>' && RailsFilePath() !~ '\<db/schema\.rb$'
+  elseif t=~ '^\%(db-\)\=migration\>' && RailsFilePath() !~ '\<db/schema\.rb$'
     make db:migrate
   elseif t=~ '^model\>'
     make test:units TEST="%:p:r:s?[\/]app[\/]models[\/]?/test/unit/?_test.rb"
@@ -1150,7 +1151,7 @@ function! s:ScriptComplete(ArgLead,CmdLine,P)
     return "-p\n-b\n-e\n-m\n-d\n-c\n-h\n--port=\n--binding=\n--environment=\n--mime-types=\n--daemon\n--charset=\n--help\n"
   endif
   return ""
-"  return s:RealMansGlob(RailsRoot()."/script",a:ArgLead."*")
+"  return s:relglob(RailsRoot()."/script",a:ArgLead."*")
 endfunction
 
 function! s:CustomComplete(A,L,P,cmd)
@@ -1943,7 +1944,7 @@ function! s:BufSyntax()
       if t =~ '^model-aro\>'
         syn keyword rubyRailsARMethod observe
       endif
-      if t =~ '^model-am\>'
+      if t =~ '^model-amb\=\>'
         syn keyword rubyRailsMethod logger
         " Misnomer but who cares
         syn keyword rubyRailsControllerMethod helper helper_attr helper_method
@@ -1966,7 +1967,7 @@ function! s:BufSyntax()
         syn keyword rubyRailsFilterMethod before_filter append_before_filter prepend_before_filter after_filter append_after_filter prepend_after_filter around_filter append_around_filter prepend_around_filter skip_before_filter skip_after_filter
         syn keyword rubyRailsFilterMethod verify
       endif
-      if t =~ '^migration\>' || t =~ '^schema\>'
+      if t =~ '^\%(db-\)\=\%(migration\|schema\)\>'
         syn keyword rubyRailsMigrationMethod create_table drop_table rename_table add_column rename_column change_column change_column_default remove_column add_index remove_index
       endif
       if t =~ '^test\>'
@@ -2083,10 +2084,34 @@ endfunction
 " }}}1
 " Statusline {{{1
 
+function! s:addtostatus(letter)
+  if &statusline !~ 'Rails' && g:rails_statusline
+    let   &statusline=substitute(&statusline,'\C%'.tolower(a:letter),'%'.tolower(a:letter).'%{RailsStatusline()}','')
+    if &statusline !~ 'Rails'
+      let &statusline=substitute(&statusline,'\C%'.toupper(a:letter),'%'.toupper(a:letter).'%{RailsSTATUSLINE()}','')
+    endif
+  endif
+endfunction
+
 function! s:InitStatusline()
-  if &statusline !~ 'Rails'
-    let &statusline=substitute(&statusline,'\C%Y','%Y%{RailsSTATUSLINE()}','')
-    let &statusline=substitute(&statusline,'\C%y','%y%{RailsStatusline()}','')
+  if &statusline == '' && g:rails_statusline
+    let &statusline='%<%f %h%m%r%='
+    if &ruler
+      let &statusline = &statusline . '%-16( %l,%c-%v %)%P'
+    endif
+  endif
+  if &statusline !~ 'Rails' && g:rails_statusline
+    call s:addtostatus('y')
+    call s:addtostatus('r')
+    call s:addtostatus('m')
+    call s:addtostatus('w')
+    call s:addtostatus('h')
+    if &statusline !~ 'Rails'
+      let &statusline=substitute(&statusline,'%=','%{RailsStatusline()}%=','')
+    endif
+    if &statusline !~ 'Rails' && &statusline != ''
+      let &statusline=&statusline.'%{RailsStatusline()}'
+    endif
   endif
 endfunction
 
@@ -2251,7 +2276,7 @@ function! s:menuBufEnter()
     if RailsFileType() !~ '^view\>'
       exe 'vmenu disable '.menu.'.Extract\ as\ partial'
     endif
-    if RailsFileType() !~ '^migration$' || RailsFilePath() =~ '\<db/schema\.rb$'
+    if RailsFileType() !~ '^\%(db-\)\=migration$' || RailsFilePath() =~ '\<db/schema\.rb$'
       exe 'amenu disable '.menu.'.Migration\ writer'
     endif
   endif
@@ -2409,7 +2434,7 @@ function! s:NewProjectTemplate(proj,rr,fancy)
   let str = str."  models=models filter=\"**\" {\n  }\n"
   if a:fancy
     let str = str."  views=views {\n"
-    let views = s:RealMansGlob(a:rr.'/app/views','*')."\n"
+    let views = s:relglob(a:rr.'/app/views','*')."\n"
     while views != ''
       let dir = matchstr(views,'^.\{-\}\ze\n')
       let views = s:sub(views,'^.\{-\}\n','')
@@ -2659,7 +2684,7 @@ function! s:BufAbbreviations()
       Rabbrev vp(    validates_presence_of
       Rabbrev vu(    validates_uniqueness_of
     endif
-    if RailsFileType() =~ '^migration\>'
+    if RailsFileType() =~ '^\%(db-\)\=\%(migration\|schema\)\>'
       Rabbrev mac(  add_column
       Rabbrev mrnc( rename_column
       Rabbrev mrc(  remove_column
@@ -3020,10 +3045,14 @@ function! s:BufInit(path)
   call s:BufAbbreviations()
   call s:BufDatabase()
   let t = RailsFileType()
-  if t != ""
+  "if t != ""
     let t = "-".t
+  "endif
+  let f = '/'.RailsFilePath()
+  if f =~ '[ !#$%\,]'
+    let f = ''
   endif
-  exe "silent doautocmd User Rails".s:gsub(t,'-','.')."."
+  exe "silent doautocmd User Rails".s:gsub(t,'-','.')."/".f
   if filereadable(b:rails_root."/config/rails.vim")
     if exists(":sandbox")
       sandbox exe "source ".s:rp()."/config/rails.vim"
