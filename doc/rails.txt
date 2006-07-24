@@ -495,7 +495,7 @@ Examples: >
 	:Rset root_url=http://localhost:12345
 	:Rset related=app/views/blog/edit.rhtml preview=blog/edit/1
 	:Rset alternate=app/models/
-	:Rset l:rake_task=preview        " Special pseudo-task
+	:Rset l:rake_task=preview        " Special pseudo-task for :Rake
 
 Note the use of a scope prefix in the last example.
 
@@ -505,9 +505,12 @@ modelines near the beginning or end of the file.  These modelines will always
 set buffer-local options; scope should never be specified.  Examples: >
 	# Rset rake_task=db:schema:load
 	<%# Rset alternate=app/views/layouts/application.rhtml %>
-This is an experimental feature, and is likely to be enabled by default in
-future versions, once the kinks have been worked out.  Method specific
-modelines are also planned.
+Modelines can also be local to a method.  Example: >
+	def test_comment
+	  # rset alternate=app/models/comment.rb
+These two forms differ only in case.  Modelines are an experimental feature,
+and are enabled for this interim release.  They will likely be enabled by
+default in the upcoming stable release if no issues are reported.
 
 ==============================================================================
 MANAGED VIM OPTIONS			*rails-options*
@@ -637,13 +640,13 @@ Enables a few mappings (mostly for |rails-navigation|). Enabled when
 Enable modelines like the following: >
 	# Rset rake_task=db:schema:load
 Modelines set buffer-local options using the :Rset command.
-Also enables the method specific defaults for use with :Rake. >
+Also enables method specific modelines (note the case difference): >
 	  def show
-	    # rake preview:blog/show/1
-The latter syntax is temporary until a more flexible system is developed in a
-later version.  Modelines are extremely useful but may cause security concerns
-when editing projects from an untrusted source.  Enabled when |g:rails_level|
->= 4.
+	    # rset preview=blog/show/1
+Modelines are extremely useful but may cause security concerns when editing
+projects from an untrusted source.  Please report any issues now so that they
+may be resolved before the next stable release. Enabled when |g:rails_level|
+>= 3.
 
 						*g:rails_menu*  >
 	let g:rails_menu=1

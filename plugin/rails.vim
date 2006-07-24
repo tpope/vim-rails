@@ -166,8 +166,12 @@ function! s:endof(lnum)
   return 0
 endfunction
 
-function! s:lastmethodline()
-  let line = line(".")
+function! s:lastmethodline(...)
+  if a:0
+    let line = a:1
+  else
+    let line = line(".")
+  endif
   while line > 0 && getline(line) !~ &l:define
     let line = line - 1
   endwhile
@@ -410,7 +414,7 @@ function! s:InitConfig()
   call s:SetOptDefault("rails_isfname",0)
   call s:SetOptDefault("rails_mappings",l>2)
   call s:SetOptDefault("rails_abbreviations",l>2)
-  call s:SetOptDefault("rails_expensive",l>(2+(has("win32")||has("win32unix"))))
+  call s:SetOptDefault("rails_expensive",l>2+(has("win32")||has("win32unix")))
   call s:SetOptDefault("rails_dbext",g:rails_expensive)
   call s:SetOptDefault("rails_avim_commands",l>2)
   call s:SetOptDefault("rails_subversion",l>3)
@@ -419,7 +423,7 @@ function! s:InitConfig()
   call s:SetOptDefault("rails_default_database","")
   call s:SetOptDefault("rails_leader","<LocalLeader>r")
   call s:SetOptDefault("rails_root_url",'http://localhost:3000/')
-  call s:SetOptDefault("rails_modelines",l>3)
+  call s:SetOptDefault("rails_modelines",l>2)
   call s:SetOptDefault("rails_menu",(l>2)+(l>3))
   call s:SetOptDefault("rails_debug",0)
   call s:SetOptDefault("rails_gnu_screen",1)
@@ -690,7 +694,6 @@ function! s:findlayout(name)
 endfunction
 
 function! s:ViewFunc(bang,...)
-  " FIXME: default to current controller
   if a:0
     let view = a:1
   elseif RailsFileType() == 'controller'
@@ -748,113 +751,6 @@ function! s:ControllerFunc(bang,prefix,suffix,...)
   if a:0 > 1
     exe "silent! djump ".a:2
   endif
-endfunction
-
-function! s:Set(bang,...)
-  let c = 1
-  let defscope = ''
-  while c <= a:0
-    let arg = a:{c}
-    let c = c + 1
-    if arg =~? '^<[abgl]\=>$'
-      let defscope = (matchstr(arg,'<\zs.*\ze>'))
-    elseif arg !~ '='
-      if defscope != '' && arg !~ '^\w:'
-        let arg = defscope.':'.opt
-      endif
-      let val = s:getopt(arg)
-      if val == '' && s:opts() !~ '\<'.arg.'\n'
-        call s:error("No such rails.vim option: ".arg)
-      else
-        echo arg."=".val
-      endif
-    else
-      let opt = matchstr(arg,'[^=]*')
-      let val = s:sub(arg,'^[^=]*=','')
-      if defscope != '' && opt !~ '^\w:'
-        let opt = defscope.':'.opt
-      endif
-      call s:setopt(opt,val)
-    endif
-  endwhile
-endfunction
-
-function! s:getopt(opt,...)
-  let opt = a:opt
-  if a:0
-    let scope = a:1
-  elseif opt =~ '^[abgl]:'
-    let scope = tolower(matchstr(opt,'^\w'))
-    let opt = s:sub(opt,'^\w:','')
-  else
-    let scope = 'abgl'
-  endif
-  if scope == 'l' && &filetype != 'ruby'
-    let scope = 'b'
-  endif
-  " Get buffer option
-  if scope =~ 'l' && exists("b:_".s:sname()."_".s:escvar(s:lastmethod())."_".opt)
-    return b:_{s:sname()}_{s:escvar(s:lastmethod())}_{opt}
-  elseif exists("b:".s:sname()."_".opt) && (scope =~ 'b' || (scope =~ 'l' && s:lastmethod() == ''))
-    return b:{s:sname()}_{opt}
-  elseif scope =~ 'a' && exists("s:_".s:rv()."_".s:environment()."_".opt)
-    return s:_{s:rv()}_{s:environment()}_{opt}
-  elseif scope =~ 'g' && exists("g:".s:sname()."_".opt)
-    return g:{s:sname()}_{opt}
-  else
-    return ""
-  endif
-endfunction
-
-function! s:setopt(opt,val)
-  if a:opt =~? '[abgl]:'
-    let scope = matchstr(a:opt,'^\w')
-    let opt = s:sub(a:opt,'^\w:','')
-  else
-    let scope = ''
-    let opt = a:opt
-  endif
-  let defscope = matchstr(s:opts(),'\n\zs\w\ze:'.opt,'\n')
-  if defscope == ''
-    let defscope = 'a'
-  endif
-  if scope == ''
-    let scope = defscope
-  endif
-  if &filetype == 'ruby' && (scope == 'B' || scope == 'l')
-    let scope = 'b'
-  endif
-  if opt =~ '\W'
-    return s:error("Invalid option ".a:opt)
-  elseif scope =~? 'a'
-    let s:_{s:rv()}_{s:environment()}_{opt} = a:val
-  elseif scope == 'B' && defscope == 'l'
-    let b:_{s:sname()}_{s:escvar('')}_{opt} = a:val
-  elseif scope =~? 'b'
-    let b:{s:sname()}_{opt} = a:val
-  elseif scope =~? 'g'
-    let g:{s:sname()}_{opt} = a:val
-  elseif scope =~? 'l'
-    let b:_{s:sname()}_{s:escvar(s:lastmethod())}_{opt} = a:val
-  else
-    return s:error("Invalid scope for ".a:opt)
-  endif
-endfunction
-
-function! s:opts()
-  return "\nb:alternate\na:gnu_screen\nl:preview\nb:rake_task\nl:related\na:root_url\n"
-endfunction
-
-function! s:SetComplete(A,L,P)
-  if a:A =~ '='
-    let opt = matchstr(a:A,'[^=]*')
-    return opt."=".s:getopt(opt)
-  else
-    let extra = matchstr(a:A,'^[abgl]:')
-    let opts = s:gsub(s:sub(s:gsub(s:opts(),'\n\w:','\n'.extra),'^\n',''),'\n','=\n')
-    return opts
-  endif
-  return ""
 endfunction
 
 function! s:RealMansGlob(path,glob)
@@ -919,11 +815,9 @@ function! s:Rake(bang,arg)
     endif
   endif
   if arg == ''
-    if s:getopt('rake_task','bl') != ''
-      let arg = s:getopt('rake_task','bl')
-    elseif exists("b:rails_default_rake_target")
-      call s:warn("b:rails_default_rake_target is deprecated.  :Rset rake_task=... instead")
-      let arg = b:rails_default_rake_target
+    let opt = s:getopt('rake_task','bl')
+    if opt != ''
+      let arg = opt
     endif
   endif
   if arg == "stats"
@@ -934,11 +828,19 @@ function! s:Rake(bang,arg)
   elseif arg =~ '^preview\>'
     exe 'R'.s:gsub(arg,':','/')
   elseif arg =~ '^runner:'
-    " FIXME: set a proper 'efm'
+    " TODO: set a proper 'efm'
     let arg = s:sub(arg,'^runner:','')
     call s:makewithruby("script/runner ".s:rquote(s:esccmd(arg)))
+  elseif arg == 'run'
+    call s:makewithruby(expand("%"))
+  elseif arg =~ '^run:'
+    let arg = s:sub(arg,'^run:','')
+    let arg = s:sub(arg,'^%:h',expand('%:h'))
+    let arg = s:sub(arg,'^\%(%\|$\|@\@=\)',expand('%'))
+    let arg = s:sub(arg,'@\(\w\+\)$',' -n\1')
+    call s:makewithruby(arg)
   elseif arg != ''
-    exe 'make '.a:arg
+    exe 'make '.arg
   elseif t =~ '^task\>'
     let lnum = s:lastmethodline()
     let line = getline(ln)
@@ -955,8 +857,11 @@ function! s:Rake(bang,arg)
     else
       let call = ""
     endif
-    "exe "make ".s:sub(s:gsub(t,'-',':'),'unit$\|functional$','&s')." TEST=\"%:p\"".call
-    call s:makewithruby("\"%:p\"".call)
+    if t =~ '^test-\%(unit\|functional\|integration\)$'
+      exe "make ".s:sub(s:gsub(t,'-',':'),'unit$\|functional$','&s')." TEST=\"%:p\"".s:sub(call,'^ ',' TESTOPTS=')
+    else
+      call s:makewithruby("\"%:p\"".call)
+    endif
   elseif t=~ '^migration\>' && RailsFilePath() !~ '\<db/schema\.rb$'
     make db:migrate
   elseif t=~ '^model\>'
@@ -1449,7 +1354,7 @@ function! s:RailsFind()
   endif
   let isf_keep = &isfname
   set isfname=@,48-57,/,-,_,: ",\",'
-  " FIXME: grab visual selection in visual mode
+  " TODO: grab visual selection in visual mode
   let cfile = expand("<cfile>")
   let res = s:RailsIncludefind(cfile,1)
   let &isfname = isf_keep
@@ -2858,20 +2763,166 @@ function! s:unabbrev(abbr)
 endfunction
 
 " }}}1
-" Modelines {{{1
+" Settings {{{1
+
+function! s:Set(bang,...)
+  let c = 1
+  let defscope = ''
+  while c <= a:0
+    let arg = a:{c}
+    let c = c + 1
+    if arg =~? '^<[abgl]\=>$'
+      let defscope = (matchstr(arg,'<\zs.*\ze>'))
+    elseif arg !~ '='
+      if defscope != '' && arg !~ '^\w:'
+        let arg = defscope.':'.opt
+      endif
+      let val = s:getopt(arg)
+      if val == '' && s:opts() !~ '\<'.arg.'\n'
+        call s:error("No such rails.vim option: ".arg)
+      else
+        echo arg."=".val
+      endif
+    else
+      let opt = matchstr(arg,'[^=]*')
+      let val = s:sub(arg,'^[^=]*=','')
+      if defscope != '' && opt !~ '^\w:'
+        let opt = defscope.':'.opt
+      endif
+      call s:setopt(opt,val)
+    endif
+  endwhile
+endfunction
+
+function! s:getopt(opt,...)
+  let opt = a:opt
+  if a:0
+    let scope = a:1
+  elseif opt =~ '^[abgl]:'
+    let scope = tolower(matchstr(opt,'^\w'))
+    let opt = s:sub(opt,'^\w:','')
+  else
+    let scope = 'abgl'
+  endif
+  if scope =~ 'l' && &filetype != 'ruby'
+    let scope = s:sub(scope,'l','b')
+  endif
+  if scope =~ 'l'
+    call s:LocalModelines()
+  endif
+  let opt = s:sub(opt,'\<\%(rake\|task\|rake_target\)$','rake_task')
+  " Get buffer option
+  if scope =~ 'l' && exists("b:_".s:sname()."_".s:escvar(s:lastmethod())."_".opt)
+    return b:_{s:sname()}_{s:escvar(s:lastmethod())}_{opt}
+  elseif exists("b:".s:sname()."_".opt) && (scope =~ 'b' || (scope =~ 'l' && s:lastmethod() == ''))
+    return b:{s:sname()}_{opt}
+  elseif scope =~ 'a' && exists("s:_".s:rv()."_".s:environment()."_".opt)
+    return s:_{s:rv()}_{s:environment()}_{opt}
+  elseif scope =~ 'g' && exists("g:".s:sname()."_".opt)
+    return g:{s:sname()}_{opt}
+  else
+    return ""
+  endif
+endfunction
+
+function! s:setopt(opt,val)
+  if a:opt =~? '[abgl]:'
+    let scope = matchstr(a:opt,'^\w')
+    let opt = s:sub(a:opt,'^\w:','')
+  else
+    let scope = ''
+    let opt = a:opt
+  endif
+  let opt = s:sub(opt,'\<\%(rake\|task\|rake_target\)$','rake_task')
+  let defscope = matchstr(s:opts(),'\n\zs\w\ze:'.opt,'\n')
+  if defscope == ''
+    let defscope = 'a'
+  endif
+  if scope == ''
+    let scope = defscope
+  endif
+  if &filetype == 'ruby' && (scope == 'B' || scope == 'l')
+    let scope = 'b'
+  endif
+  if opt =~ '\W'
+    return s:error("Invalid option ".a:opt)
+  elseif scope =~? 'a'
+    let s:_{s:rv()}_{s:environment()}_{opt} = a:val
+  elseif scope == 'B' && defscope == 'l'
+    let b:_{s:sname()}_{s:escvar('')}_{opt} = a:val
+  elseif scope =~? 'b'
+    let b:{s:sname()}_{opt} = a:val
+  elseif scope =~? 'g'
+    let g:{s:sname()}_{opt} = a:val
+  elseif scope =~? 'l'
+    let b:_{s:sname()}_{s:escvar(s:lastmethod())}_{opt} = a:val
+  else
+    return s:error("Invalid scope for ".a:opt)
+  endif
+endfunction
+
+function! s:opts()
+  return "\nb:alternate\na:gnu_screen\nl:preview\nb:rake_task\nl:related\na:root_url\n"
+endfunction
+
+function! s:SetComplete(A,L,P)
+  if a:A =~ '='
+    let opt = matchstr(a:A,'[^=]*')
+    return opt."=".s:getopt(opt)
+  else
+    let extra = matchstr(a:A,'^[abgl]:')
+    let opts = s:gsub(s:sub(s:gsub(s:opts(),'\n\w:','\n'.extra),'^\n',''),'\n','=\n')
+    return opts
+  endif
+  return ""
+endfunction
 
 function! s:BufModelines()
   if !g:rails_modelines
     return
   endif
-  let lines = getline("$")."\n".getline(line("$")-1).getline(1)."\n".getline(2)."\n".getline(3)."\n"
+  let lines = getline("$")."\n".getline(line("$")-1)."\n".getline(1)."\n".getline(2)."\n".getline(3)."\n"
   let pat = '\s\+\zs.\{-\}\ze\%(\n\|\s\s\|#{\@!\|%>\|-->\|$\)'
-  let mat = matchstr(lines,'\<Rset'.pat)
-  let mat = s:sub(mat,'\s\+$','')
-  let mat = s:gsub(mat,'|','\\|')
-  if mat != ''
-    silent! exe "Rset <B> ".mat
+  let cnt = 1
+  let mat = matchstr(lines,'\C\<Rset'.pat)
+  while mat != "" && cnt < 10
+    let mat = s:sub(mat,'\s\+$','')
+    let mat = s:gsub(mat,'|','\\|')
+    if mat != ''
+      silent! exe "Rset <B> ".mat
+    endif
+    let cnt = cnt + 1
+    let mat = matchstr(lines,'\C\<Rset'.pat,0,cnt)
+  endwhile
+endfunction
+
+function! s:LocalModelines()
+  if !g:rails_modelines
+    return
   endif
+  let lbeg = s:lastmethodline()
+  let lend = s:endof(lbeg)
+  if lbeg == 0 || lend == 0
+    return
+  endif
+  let lines = "\n"
+  let lnum = lbeg
+  while lnum < lend && lnum < lbeg + 5
+    let lines = lines . getline(lnum) . "\n"
+    let lnum = lnum + 1
+  endwhile
+  let pat = '\s\+\zs.\{-\}\ze\%(\n\|\s\s\|#{\@!\|%>\|-->\|$\)'
+  let cnt = 1
+  let mat = matchstr(lines,'\C\<rset'.pat)
+  while mat != "" && cnt < 10
+    let mat = s:sub(mat,'\s\+$','')
+    let mat = s:gsub(mat,'|','\\|')
+    if mat != ''
+      silent! exe "Rset <l> ".mat
+    endif
+    let mat = matchstr(lines,'\C\<rset'.pat,0,cnt)
+    let cnt = cnt + 1
+  endwhile
 endfunction
 
 " }}}1
