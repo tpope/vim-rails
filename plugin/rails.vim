@@ -192,10 +192,13 @@ function! s:lastmethod()
   endif
 endfunction
 
-function! s:controller()
+function! s:controller(...)
   let t = RailsFileType()
   let f = RailsFilePath()
-  if f =~ '\<app/views/layouts/'
+  let o = s:getopt("controller","lb")
+  if o != ""
+    return o
+  elseif f =~ '\<app/views/layouts/'
     return s:sub(f,'.*\<app/views/layouts/\(.\{-\}\)\.\k\+$','\1')
   elseif f =~ '\<app/views/'
     return s:sub(f,'.*\<app/views/\(.\{-\}\)/\k\+\.\k\+$','\1')
@@ -211,6 +214,31 @@ function! s:controller()
     return s:sub(f,'.*\<components/\(.\{-\}\)_controller\.rb$','\1')
   elseif f =~ '\<components/.*\.\(rhtml\|rxml\|rjs\|mab\)$'
     return s:sub(f,'.*\<components/\(.\{-\}\)/\k\+\.\k\+$','\1')
+  elseif f =~ '\<app/models/.*\.rb$' && t =~ '^model-amb\=\>'
+    return s:sub(f,'.*\<app/models/\(.\{-\}\)\.rb$','\1')
+  elseif a:0 && a:1
+    return s:pluralize(s:model())
+  endif
+  return ""
+endfunction
+
+function! s:model(...)
+  let f = RailsFilePath()
+  let o = s:getopt("controller","lb")
+  if o != ""
+    return o
+  elseif f =~ '\<app/models/.*_observer.rb$'
+    return s:sub(f,'.*\<app/models/\(.*\)_observer\.rb$','\1')
+  elseif f =~ '\<app/models/.*\.rb$'
+    return s:sub(f,'.*\<app/models/\(.*\)\.rb$','\1')
+  elseif f =~ '\<test/unit/.*_observer_test\.rb$'
+    return s:sub(f,'.*\<test/unit/\(.*\)_observer_test\.rb$','\1')
+  elseif f =~ '\<test/unit/.*_test\.rb$'
+    return s:sub(f,'.*\<test/unit/\(.*\)_test\.rb$','\1')
+  elseif f =~ '\<test/fixtures/.*\.\w*\~\=$'
+    return s:singularize(s:sub(f,'.*\<test/fixtures/\(.*\)\.\w*\~\=$','\1'))
+  elseif a:0 && a:1
+    return s:singularize(s:controller())
   endif
   return ""
 endfunction
@@ -228,15 +256,28 @@ function! s:singularize(word)
   " Probably not worth it to be as comprehensive as Rails but we can
   " still hit the common cases.
   let word = a:word
-  if word =~? '\.js$'
+  if word =~? '\.js$' || word == ''
     return word
   endif
-  let word = s:sub(word,'eople$','erson')
+  let word = s:sub(word,'eople$','ersons')
   let word = s:sub(word,'[aeio]\@<!ies$','ys')
   let word = s:sub(word,'xe[ns]$','xs')
   let word = s:sub(word,'ves$','fs')
   let word = s:sub(word,'ss\%(es\)\=$','sss')
   let word = s:sub(word,'s$','')
+  return word
+endfunction
+
+function! s:pluralize(word)
+  let word = a:word
+  if word == ''
+    return word
+  endif
+  let word = s:sub(word,'[aeio]\@<!y$','ie')
+  let word = s:sub(word,'[sx]$','&e')
+  let word = s:sub(word,'f$','ve')
+  let word = word."s"
+  let word = s:sub(word,'ersons$','eople')
   return word
 endfunction
 
@@ -256,7 +297,12 @@ function! s:environment()
 endfunction
 
 function! s:environments(...)
-  return "development\ntest\nproduction"
+  let e = s:getopt("environment","abg")
+  if e == ''
+    return "development\ntest\nproduction"
+  else
+    return s:gsub(e,'[:;,- ]',"\n")
+  endif
 endfunction
 
 function! s:warn(str)
@@ -556,14 +602,8 @@ function! s:BufCommands()
   command! -buffer -bar -nargs=? -bang -complete=custom,s:PreviewComplete Rpreview :call s:Preview(<bang>0,<q-args>)
   command! -buffer -bar -nargs=? -bang -complete=custom,s:environments    Rlog     :call s:Log(<bang>0,<q-args>)
   command! -buffer -bar -nargs=* -bang -complete=custom,s:SetComplete     Rset     :call s:Set(<bang>0,<f-args>)
-  command! -buffer -bar -nargs=? Rmigration  :call s:Migration(<bang>0,"edit",<q-args>)
-  command! -buffer -bar -nargs=* Rcontroller :call s:ControllerFunc(<bang>0,"app/controllers/","_controller.rb",<f-args>)
-  command! -buffer -bar -nargs=* Rhelper     :call s:ControllerFunc(<bang>0,"app/helpers/","_helper.rb",<f-args>)
-  command! -buffer -bar -nargs=* Rlayout     :call s:LayoutFunc(<bang>0,<f-args>)
-  command! -buffer -bar -nargs=* Rview       :call s:ViewFunc(<bang>0,<f-args>)
   command! -buffer -bar -nargs=0 Rtags       :call s:Tags(<bang>0)
   command! -buffer -bar -nargs=0 -bang Rdoc  :if <bang>0 | call s:prephelp() | help rails | else | call s:Doc(<bang>0) | endif
-  command! -buffer -bar -nargs=0 Rapi        :Rdoc
   if exists(":Project")
     command! -buffer -bar -nargs=? -bang  Rproject :call s:Project(<bang>0,<q-args>)
   endif
@@ -618,27 +658,6 @@ function! s:Log(bang,arg)
   endif
 endfunction
 
-function! s:Migration(bang,cmd,arg)
-  let cmd = s:findcmdfor(a:cmd.(a:bang?'!':''))
-  if a:arg =~ '^\d$'
-    let glob = '00'.a:arg.'_*.rb'
-  elseif a:arg =~ '^\d\d$'
-    let glob = '0'.a:arg.'_*.rb'
-  elseif a:arg =~ '^\d\d\d$'
-    let glob = ''.a:arg.'_*.rb'
-  elseif a:arg == ''
-    let glob = '*.rb'
-  else
-    let glob = '*'.a:arg.'*.rb'
-  endif
-  let migr = s:sub(glob(RailsRoot().'/db/migrate/'.glob),'.*\n','')
-  if migr != ''
-    call s:findedit(cmd,migr)
-  else
-    return s:error("Migration not found".(a:arg=='' ? '' : ': '.a:arg))
-  endif
-endfunction
-
 function! s:NewApp(bang,...)
   if a:0 == 0
     if a:bang
@@ -666,7 +685,7 @@ function! s:NewApp(bang,...)
   if isdirectory(fnamemodify(dir,':h')."/.svn") && g:rails_subversion
     let append = " -c"
   else
-    let append = ""
+    let append = " "
   endif
   if g:rails_default_database != "" && str !~ '-d \|--database='
     let append = append." -d ".g:rails_default_database
@@ -678,101 +697,6 @@ function! s:NewApp(bang,...)
   if filereadable(dir."/".g:rails_default_file)
     exe "edit ".s:escarg(dir)."/".g:rails_default_file
   endif
-endfunction
-
-function! s:findlayout(name)
-  let c = a:name
-  if filereadable(RailsRoot()."/app/views/layouts/".c.".rhtml")
-    let file = "/app/views/layouts/".c.".rhtml"
-  elseif filereadable(RailsRoot()."/app/views/layouts/".c.".rxml")
-    let file = "/app/views/layouts/".c.".rxml"
-  elseif filereadable(RailsRoot()."/app/views/layouts/".c.".mab")
-    let file = "/app/views/layouts/".c.".mab"
-  else
-    let file = ""
-  endif
-  return file
-endfunction
-
-function! s:ViewFunc(bang,...)
-  if a:0
-    let view = a:1
-  elseif RailsFileType() == 'controller'
-    let view = s:lastmethod()
-  else
-    let view = ''
-  endif
-  if view == ''
-    return s:error("No view name given")
-  elseif view !~ '/' && s:controller() != ''
-    let view = s:controller() . '/' . view
-  endif
-  if view !~ '/'
-    return s:error("Cannot find view without controller")
-  endif
-  let file = "app/views/".view
-  if file =~ '\.\w\+$'
-    call s:edit("",file)
-  else
-    call s:findedit("",file)
-  endif
-endfunction
-
-function! s:LayoutFunc(bang,...)
-  if a:0
-    let c = s:sub(s:RailsIncludefind(s:sub(a:1,'^.','\u&')),'\.rb$','')
-  else
-    let c = s:controller()
-  endif
-  if c == ""
-    return s:error("No layout name given")
-  endif
-  let file = s:findlayout(c)
-  if file == ""
-    let file = s:findlayout("application")
-  endif
-  if file == ""
-    let file = "/app/views/layouts/application.rhtml"
-  endif
-  let cmd = "edit".(a:bang?"! ":' ').s:ra().file
-  exe cmd
-endfunction
-
-function! s:ControllerFunc(bang,prefix,suffix,...)
-  if a:0
-    let c = s:sub(s:RailsIncludefind(s:sub(a:1,'^.','\u&')),'\.rb$','')
-  else
-    let c = s:controller()
-  endif
-  if c == ""
-    return s:error("No controller name given")
-  endif
-  let cmd = "edit".(a:bang?"! ":' ').s:ra().'/'.a:prefix.c.a:suffix
-  exe cmd
-  if a:0 > 1
-    exe "silent! djump ".a:2
-  endif
-endfunction
-
-function! s:relglob(path,glob)
-  " How could such a simple operation be so complicated?
-  if a:path =~ '[\/]$'
-    let path = a:path
-  else
-    let path = a:path . '/'
-  endif
-  let badres = glob(path.a:glob)
-  let goodres = ""
-  while strlen(badres) > 0
-    let idx = stridx(badres,"\n")
-    if idx == -1
-      let idx = strlen(badres)
-    endif
-    let tmp = strpart(badres,0,idx+1)
-    let badres = strpart(badres,idx+1)
-    let goodres = goodres.strpart(tmp,strlen(path))
-  endwhile
-  return goodres
 endfunction
 
 function! s:Tags(bang)
@@ -795,7 +719,7 @@ endfunction
 " }}}1
 " Rake {{{1
 
-function s:makewithruby(arg)
+function! s:makewithruby(arg)
   let old_make = &makeprg
   let &l:makeprg = s:rubyexestr(a:arg)
   make
@@ -885,7 +809,7 @@ endfunction
 " }}}1
 " Preview {{{1
 
-function s:initOpenURL()
+function! s:initOpenURL()
   if !exists(":OpenURL")
     if has("gui_mac")
       command -bar -nargs=1 OpenURL :!open <args>
@@ -1033,7 +957,7 @@ function! s:getpidfor(bind,port)
 endfunction
 
 function! s:Server(bang,arg)
-  let port = matchstr(a:arg,'-p\s*\zs\d\+')
+  let port = matchstr(a:arg,'\%(-p\|--port=\=\)\s*\zs\d\+')
   if port == ''
     let port = "3000"
   endif
@@ -1063,6 +987,11 @@ function! s:Server(bang,arg)
 endfunction
 
 function! s:Plugin(bang,...)
+  if a:0 == 1 && !(a:1 =~ '^\%(discover\|list\|install\|update\|remove\|source\|unsource\|sources\)$')
+    if filereadable(RailsRoot()."/vendor/plugins/".a:1."/init.rb")
+      return s:findedit(a:bang?'!':'',"vendor/plugins/".a:1."/init.rb")
+    endif
+  endif
   let str = ""
   let c = 1
   while c <= a:0
@@ -1131,27 +1060,64 @@ endfunction
 function! s:ScriptComplete(ArgLead,CmdLine,P)
   "  return s:gsub(glob(RailsRoot()."/script/**"),'\%(.\%(\n\)\@<!\)*[\/]script[\/]','')
   let cmd = s:sub(a:CmdLine,'^\u\w*\s\+','')
-"  let g:A = a:ArgLead
-"  let g:L = cmd
-"  let g:P = a:P
+  let P = a:P - strlen(a:CmdLine)+strlen(cmd)
+  let g:A = a:ArgLead
+  let g:L = cmd
+  let g:P = P
+  let g:foo = strlen(cmd)-P
   if cmd !~ '^[ A-Za-z0-9_=-]*$'
     " You're on your own, bud
     return ""
   elseif cmd =~ '^\w*$'
     return "about\nbreakpointer\nconsole\ndestroy\ngenerate\nperformance/benchmarker\nperformance/profiler\nplugin\nproccess/reaper\nprocess/spawner\nrunner\nserver"
-  elseif cmd =~ '^\%(generate\|destroy\)\s\+'.a:ArgLead."$"
+  elseif cmd =~ '^\%(plugin\)\s\+'.a:ArgLead.'$'
+    return "discover\nlist\ninstall\nupdate\nremove\nsource\nunsource\nsources"
+  elseif cmd =~ '\%(plugin\)\s\+\%(install\|remove\)\s\+'.a:ArgLead.'$' || cmd =~ '\%(generate\|destroy\)\s\+plugin\s\+'.a:ArgLead.'$'
+      return s:relglob('vendor/plugins/',"*","/init.rb")
+  elseif cmd =~ '^\%(generate\|destroy\)\s\+'.a:ArgLead.'$'
     return s:generators()
+  elseif cmd =~ '^\%(generate\|destroy\)\s\+\w\+\s\+'.a:ArgLead.'$'
+    let target = matchstr(cmd,'^\w\+\s\+\zs\w\+\ze\s\+')
+    let pattern = "" " TODO
+    if target == 'controller'
+      return s:sub(s:controllerList(pattern,"",""),'^application\n\=','')
+    elseif target == 'model' || target == 'scaffold' || target == 'mailer'
+      return s:modelList(pattern,"","")
+    elseif target == 'migration' || target == 'session_migration'
+      return s:migrationList(pattern,"","")
+    elseif target == 'integration_test'
+      return s:integrationtestList(pattern,"","")
+    elseif target == 'observer'
+      " script/generate observer is in Edge Rails
+      let observers = s:observerList(pattern,"","")
+      let models = s:modelList(pattern,"","")
+      if cmd =~ '^destroy\>'
+        let models = ""
+      endif
+      while strlen(models) > 0
+        let tmp = matchstr(models."\n",'.\{-\}\ze\n')
+        let models = s:sub(models,'.\{-\}\%(\n\|$\)','')
+        if stridx("\n".observers."\n","\n".tmp."\n") == -1 && tmp !~'_observer$'
+          let observers = observers."\n".tmp
+        endif
+      endwhile
+      return s:sub(observers,'^\n','')
+    elseif target == 'web_service'
+      return s:apiList(pattern,"","")
+    else
+      return ""
+    endif
+  elseif cmd =~ '^\%(generate\|destroy\)\s\+scaffold\s\+\w\+\s\+'.a:ArgLead.'$'
+    return s:sub(s:controllerList("","",""),'^application\n\=','')
   elseif cmd =~ '^\%(console\)\s\+\(--\=\w\+\s\+\)\='.a:ArgLead."$"
     return s:environments()."\n-s\n--sandbox"
-  elseif cmd =~ '^\%(plugin\)\s\+'.a:ArgLead."$"
-    return "discover\nlist\ninstall\nupdate\nremove\nsource\nunsource\nsources"
   elseif cmd =~ '^\%(server\)\s\+.*-e\s\+'.a:ArgLead."$"
     return s:environments()
   elseif cmd =~ '^\%(server\)\s\+'
     return "-p\n-b\n-e\n-m\n-d\n-c\n-h\n--port=\n--binding=\n--environment=\n--mime-types=\n--daemon\n--charset=\n--help\n"
   endif
   return ""
-"  return s:relglob(RailsRoot()."/script",a:ArgLead."*")
+"  return s:relglob(RailsRoot()."/script/",a:ArgLead."*")
 endfunction
 
 function! s:CustomComplete(A,L,P,cmd)
@@ -1188,12 +1154,15 @@ function! s:BufNavCommands()
   silent exe "command! -bar -buffer -nargs=? Rlcd :lcd ".s:rp()."/<args>"
   command!   -buffer -bar -nargs=* -count=1 -complete=custom,s:FindList Rfind       :call s:Find(<bang>0,<count>,"",<f-args>)
   command!   -buffer -bar -nargs=* -count=1 -complete=custom,s:FindList Rsfind      :call s:Find(<bang>0,<count>,"S",<f-args>)
-  command!   -buffer -bar -nargs=* -count=1 -complete=custom,s:FindList Rsplitfind  :call s:error('Use :Rsfind instead')
+  command!   -buffer -bar -nargs=* -count=1 -complete=custom,s:FindList RSfind      :call s:Find(<bang>0,<count>,"S",<f-args>)
   command!   -buffer -bar -nargs=* -count=1 -complete=custom,s:FindList Rvsfind     :call s:Find(<bang>0,<count>,"V",<f-args>)
-  command!   -buffer -bar -nargs=* -count=1 -complete=custom,s:FindList Rvsplitfind :call s:error('Use :Rvsfind instead')
+  command!   -buffer -bar -nargs=* -count=1 -complete=custom,s:FindList RVfind      :call s:Find(<bang>0,<count>,"V",<f-args>)
   command!   -buffer -bar -nargs=* -count=1 -complete=custom,s:FindList Rtabfind    :call s:Find(<bang>0,<count>,"T",<f-args>)
+  command!   -buffer -bar -nargs=* -count=1 -complete=custom,s:FindList RTfind      :call s:Find(<bang>0,<count>,"T",<f-args>)
   command!   -buffer -bar -nargs=* -bang    -complete=custom,s:EditList Redit       :call s:Find(<bang>0,<count>,"e",<f-args>)
-  command!   -buffer -bar -nargs=0                                      Ralternate  :call s:error('Use :A instead')
+  command!   -buffer -bar -nargs=* -bang    -complete=custom,s:EditList RSedit      :call s:Find(<bang>0,<count>,"eS",<f-args>)
+  command!   -buffer -bar -nargs=* -bang    -complete=custom,s:EditList RVedit      :call s:Find(<bang>0,<count>,"eV",<f-args>)
+  command!   -buffer -bar -nargs=* -bang    -complete=custom,s:EditList RTedit      :call s:Find(<bang>0,<count>,"eT",<f-args>)
   if g:rails_avim_commands
     command! -buffer -bar -nargs=0 A  :call s:Alternate(<bang>0,"")
     command! -buffer -bar -nargs=0 AS :call s:Alternate(<bang>0,"S")
@@ -1204,8 +1173,9 @@ function! s:BufNavCommands()
     command! -buffer -bar -nargs=0 RS :call s:Related(<bang>0,"S")
     command! -buffer -bar -nargs=0 RV :call s:Related(<bang>0,"V")
     command! -buffer -bar -nargs=0 RT :call s:Related(<bang>0,"T")
-    command! -buffer -bar -nargs=0 RN :call s:Alternate(<bang>0,"")
+    "command! -buffer -bar -nargs=0 RN :call s:Alternate(<bang>0,"")
   endif
+  call s:BufFinderCommands()
 endfunction
 
 function! s:Find(bang,count,arg,...)
@@ -1444,6 +1414,309 @@ function! s:RailsIncludefind(str,...)
 endfunction
 
 " }}}1
+" File Finders {{{1
+
+function! s:addfilecmds(type)
+  let u = s:sub(a:type,'^.','\u&')
+  let l = s:sub(a:type,'^.','\l&')
+  let cmds = 'SVT'
+  let cmd = ''
+  while cmds != ''
+    exe "command! -buffer -bar -nargs=* -complete=custom,s:".l."List R".cmd.l." :call s:Edit".u.'(<bang>0,"'.cmd.'",<f-args>)'
+    let cmd = strpart(cmds,0,1)
+    let cmds = strpart(cmds,1)
+  endwhile
+endfunction
+
+function! s:BufFinderCommands()
+  call s:addfilecmds("model")
+  call s:addfilecmds("view")
+  call s:addfilecmds("controller")
+  call s:addfilecmds("migration")
+  call s:addfilecmds("observer")
+  call s:addfilecmds("helper")
+  call s:addfilecmds("api")
+  call s:addfilecmds("layout")
+  call s:addfilecmds("fixture")
+  call s:addfilecmds("unittest")
+  call s:addfilecmds("functionaltest")
+  call s:addfilecmds("integrationtest")
+endfunction
+
+function! s:relglob(path,glob,...)
+  " How could such a simple operation be so complicated?
+  if a:path =~ '[\/]$'
+    let path = a:path
+  else
+    let path = a:path . ''
+  endif
+  if path !~ '^/' && path !~ '^\w:' && RailsRoot() != ''
+    let path = RailsRoot() . '/' . path
+  endif
+  let suffix = a:0 ? a:1 : ''
+  let badres = glob(path.a:glob.suffix)."\n"
+  let goodres = ""
+  let striplen = strlen(path)
+  let stripend = strlen(suffix)
+  while strlen(badres) > 0
+    let idx = stridx(badres,"\n")
+    "if idx == -1
+      "let idx = strlen(badres)
+    "endif
+    let tmp = strpart(badres,0,idx)
+    let badres = strpart(badres,idx+1)
+    let goodres = goodres.strpart(tmp,striplen,strlen(tmp)-striplen-stripend)
+    if suffix == '' && isdirectory(tmp)
+      let goodres = goodres."/"
+    endif
+    let goodres = goodres."\n"
+  endwhile
+  return s:sub(goodres,'\n$','')
+endfunction
+
+function! s:helperList(A,L,P)
+  return s:relglob("app/helpers/",a:A."**","_helper.rb")
+endfunction
+
+function! s:controllerList(A,L,P)
+  let con = s:relglob("app/controllers/",a:A."*","_controller.rb")
+  if con != ''
+    return "application\n".con
+  else
+    return "application"
+  endif
+endfunction
+
+function! s:viewList(A,L,P)
+  let c = s:controller(1)
+  let top = s:relglob("app/views/",a:A."*")
+  if c != ''
+    let local = s:relglob("app/views/".c."/",a:A."*.*[^~]")
+    if local != ''
+      return local."\n".top
+    endif
+  endif
+  return top
+endfunction
+
+function! s:layoutList(A,L,P)
+  return s:relglob("app/views/layouts/",a:A."*")
+endfunction
+
+function! s:modelList(A,L,P)
+  let models = s:relglob("app/models/",a:A."**",".rb")."\n"
+  let models = s:gsub(models,'\n.\{-\}_observer\%(\n\@=\|$\)',"")
+  return s:sub(models,'^\n','')
+endfunction
+
+function! s:observerList(A,L,P)
+  return s:relglob("app/models/",a:A."**","_observer.rb")
+endfunction
+
+function! s:fixtureList(A,L,P)
+  return s:relglob("test/fixtures/",a:A."*[^~]")
+endfunction
+
+function! s:migrationList(A,L,P)
+  return s:relglob("db/migrate/???_",a:A."*",".rb")
+endfunction
+
+function! s:apiList(A,L,P)
+  return s:relglob("app/apis/",a:A."**","_api.rb")
+endfunction
+
+function! s:unittestList(A,L,P)
+  return s:relglob("test/unit/",a:A."**","_test.rb")
+endfunction
+
+function! s:functionaltestList(A,L,P)
+  return s:relglob("test/functional/",a:A."**","_test.rb")
+endfunction
+
+function! s:integrationtestList(A,L,P)
+  return s:relglob("test/integration/",a:A."**","_test.rb")
+endfunction
+
+function! s:EditSimpleRb(bang,cmd,name,target,prefix,suffix)
+  let cmd = s:findcmdfor(a:cmd.(a:bang?'!':''))
+  if a:target == ""
+    " Good idea to emulate error numbers like this?
+    return s:error("E471: Argument required") " : R',a:name)
+  endif
+  let f = a:prefix.s:underscore(a:target).a:suffix.".rb"
+  return s:findedit(cmd,f)
+endfunction
+
+function! s:EditMigration(bang,cmd,...)
+  let cmd = s:findcmdfor(a:cmd.(a:bang?'!':''))
+  let tryagain = 0
+  let arg = a:0 ? a:1 : ''
+  if arg =~ '^\d$'
+    let glob = '00'.arg.'_*.rb'
+  elseif arg =~ '^\d\d$'
+    let glob = '0'.arg.'_*.rb'
+  elseif arg =~ '^\d\d\d$'
+    let glob = ''.arg.'_*.rb'
+  elseif arg == ''
+    if s:model(1) != ''
+      let glob = '*_'.s:pluralize(s:model(1)).'.rb'
+      let tryagain = 1
+    else
+      let glob = '*.rb'
+    endif
+  else
+    let glob = '*'.arg.'*.rb'
+  endif
+  let migr = s:sub(glob(RailsRoot().'/db/migrate/'.glob),'.*\n','')
+  if migr == '' && tryagain
+    let migr = s:sub(glob(RailsRoot().'/db/migrate/*.rb'),'.*\n','')
+  endif
+  if migr != ''
+    call s:findedit(cmd,migr)
+  else
+    return s:error("Migration not found".(arg=='' ? '' : ': '.arg))
+  endif
+endfunction
+
+function! s:EditFixture(bang,cmd,...)
+  if a:0
+    let c = s:underscore(a:1)
+  else
+    let c = s:model(1)
+  endif
+  if c == ""
+    return s:error("No fixture name given")
+  endif
+  let e = fnamemodify(c,':e')
+  let e = e == '' ? e : '.'.e
+  let c = fnamemodify(c,':r')
+  let file = 'test/fixtures/'.s:pluralize(c).e
+  if file =~ '\.\w\+$'
+    call s:edit(a:cmd.(a:bang?'!':''),file)
+  else
+    call s:findedit(a:cmd.(a:bang?'!':''),file)
+  endif
+endfunction
+
+function! s:EditModel(bang,cmd,...)
+  call s:EditSimpleRb(a:bang,a:cmd,"model",a:0? a:1 : s:model(1),"app/models/","")
+endfunction
+
+function! s:EditObserver(bang,cmd,...)
+  call s:EditSimpleRb(a:bang,a:cmd,"observer",a:0? a:1 : s:model(1),"app/models/","_observer")
+endfunction
+
+function! s:EditView(bang,cmd,...)
+  if a:0
+    let view = a:1
+  elseif RailsFileType() == 'controller'
+    let view = s:lastmethod()
+  else
+    let view = ''
+  endif
+  if view == ''
+    return s:error("No view name given")
+  elseif view !~ '/' && s:controller(1) != ''
+    let view = s:controller(1) . '/' . view
+  endif
+  if view !~ '/'
+    return s:error("Cannot find view without controller")
+  endif
+  let file = "app/views/".view
+  if file =~ '\.\w\+$'
+    call s:edit(a:cmd.(a:bang?'!':''),file)
+  else
+    call s:findedit(a:cmd.(a:bang?'!':''),file)
+  endif
+endfunction
+
+function! s:findlayout(name)
+  let c = a:name
+  if c =~ '\.'
+    return "/app/views/layouts/".c
+  elseif filereadable(RailsRoot()."/app/views/layouts/".c.".rhtml")
+    let file = "/app/views/layouts/".c.".rhtml"
+  elseif filereadable(RailsRoot()."/app/views/layouts/".c.".rxml")
+    let file = "/app/views/layouts/".c.".rxml"
+  elseif filereadable(RailsRoot()."/app/views/layouts/".c.".mab")
+    let file = "/app/views/layouts/".c.".mab"
+  else
+    let file = ""
+  endif
+  return file
+endfunction
+
+function! s:EditLayout(bang,cmd,...)
+  if a:0
+    let c = s:underscore(a:1)
+  else
+    let c = s:controller(1)
+  endif
+  if c == ""
+    return s:error("No layout name given")
+  endif
+  let file = s:findlayout(c)
+  if file == ""
+    let file = s:findlayout("application")
+  endif
+  if file == ""
+    let file = "/app/views/layouts/application.rhtml"
+  endif
+  call s:findedit(a:cmd.(a:bang?'!':''),s:sub(file,'^/',''))
+  "let cmd = "edit".(a:bang?"! ":' ').s:ra().file
+  "exe cmd
+endfunction
+
+function! s:EditController(bang,cmd,...)
+  return s:EditSimpleRb(a:bang,a:cmd,"controller",a:0? a:1 : s:controller(1),"app/controllers/","_controller")
+endfunction
+
+function! s:EditHelper(bang,cmd,...)
+  return s:EditSimpleRb(a:bang,a:cmd,"helper",a:0? a:1 : s:controller(1),"app/helpers/","_helper")
+endfunction
+
+function! s:EditApi(bang,cmd,...)
+  return s:EditSimpleRb(a:bang,a:cmd,"api",a:0 ? a:1 : s:controller(1),"app/apis/","_api")
+endfunction
+
+function! s:EditUnittest(bang,cmd,...)
+  let f = a:0 ? a:1 : s:model(1)
+  if !a:0 && RailsFileType() =~ '^model-aro\>' && f != '' && f !~ '_observer$'
+    if filereadable(RailsRoot()."/test/unit/".f."_observer.rb") || !filereadable(RailsRoot()."/test/unit/".f.".rb")
+      let f = f . "_observer"
+    endif
+  endif
+  return s:EditSimpleRb(a:bang,a:cmd,"unittest",f,"test/unit/","_test")
+endfunction
+
+function! s:EditFunctionaltest(bang,cmd,...)
+  if a:0
+    let f = a:1
+  else
+    let f = s:controller()
+  endif
+  if f != '' && !filereadable(RailsRoot()."/test/functional/".f."_test.rb")
+    if filereadable(RailsRoot()."/test/functional/".f."_controller_test.rb")
+      let f = f . "_controller"
+    elseif filereadable(RailsRoot()."/test/functional/".f."_api_test.rb")
+      let f = f . "_api"
+    endif
+  endif
+  return s:EditSimpleRb(a:bang,a:cmd,"functionaltest",f,"test/functional/","_test")
+endfunction
+
+function! s:EditIntegrationtest(bang,cmd,...)
+  if a:0
+    let f = a:1
+  elseif s:model() != ''
+    let f = s:model()
+  else
+    let f = s:controller()
+  endif
+  return s:EditSimpleRb(a:bang,a:cmd,"integrationtest",f,"test/integration/","_test")
+endfunction
+
+" }}}1
 " Alternate/Related {{{1
 
 function! s:findcmdfor(cmd)
@@ -1474,7 +1747,7 @@ function! s:editcmdfor(cmd)
   return cmd
 endfunction
 
-function s:try(cmd) abort
+function! s:try(cmd) abort
   if !exists(":try")
     " I've seen at least one weird setup without :try
     exe a:cmd
@@ -1490,6 +1763,7 @@ function s:try(cmd) abort
 endfunction
 
 function! s:findedit(cmd,file,...) abort
+  " TODO: consider rewriting for components
   let cmd = s:findcmdfor(a:cmd)
   let file = a:file
   if file =~ '@'
@@ -1539,7 +1813,7 @@ function! s:Alternate(bang,cmd)
   elseif f =~ '\<db/migrate/\d\d\d_'
     let num = matchstr(f,'\<db/migrate/0*\zs\d\+\ze_')-1
     if num
-      call s:Migration(0,cmd,num)
+      call s:EditMigration(0,cmd,num)
     else
       call s:findedit(cmd,"db/schema.rb")
     endif
@@ -1548,7 +1822,7 @@ function! s:Alternate(bang,cmd)
   elseif t =~ '^js\>'
     call s:findedit(cmd,"public/javascripts/application.js")
   elseif f =~ '\<db/schema\.rb$'
-    call s:Migration(0,cmd,"")
+    call s:EditMigration(0,cmd,"")
   elseif t =~ '^view\>'
     if t =~ '\<layout\>'
       let dest = fnamemodify(f,':r:s?/layouts\>??').'/layout'
@@ -1634,9 +1908,11 @@ function! s:Related(bang,cmd)
   elseif f =~ '\<config/environment\.rb$' | call s:findedit(cmd,"config/routes.rb")
   elseif f =~ '\<db/migrate/\d\d\d_'
     let num = matchstr(f,'\<db/migrate/0*\zs\d\+\ze_')+1
-    call s:Migration(0,cmd,num)
-  elseif t =~ '^test\>'
-    return s:error('Use :Rake instead')
+    call s:EditMigration(0,cmd,num)
+  elseif t =~ '^test\>' && f =~ '\<test/\w\+/'
+    let target = s:sub(f,'.*\<test/\w\+/','test/mocks/test/')
+    let target = s:sub(target,'_test\.rb$','.rb')
+    call s:findedit(cmd,target)
   elseif f =~ '\<application\.js$'
     call s:findedit(cmd,"app/helpers/application_helper.rb")
   elseif t =~ '^js\>'
@@ -1658,13 +1934,13 @@ function! s:Related(bang,cmd)
   elseif t=~ '^helper\>'
       call s:findedit(cmd,s:sub(s:sub(f,'/helpers/','/views/layouts/'),'\%(_helper\)\=\.rb$',''))
   elseif t =~ '^model-arb\=\>'
-    call s:Migration(0,cmd,'create_'.s:sub(expand('%:t:r'),'y$','ie').'s')
+    call s:EditMigration(0,cmd,'create_'.s:pluralize(expand('%:t:r')))
   elseif t =~ '^model-aro\>'
     call s:findedit(cmd,s:sub(f,'_observer\.rb$','.rb'))
   elseif t =~ '^api\>'
     call s:findedit(cmd,s:sub(s:sub(f,'/apis/','/controllers/'),'_api\.rb$','_controller.rb'))
   elseif f =~ '\<db/schema\.rb$'
-    call s:Migration(0,cmd,"1")
+    call s:EditMigration(0,cmd,"1")
   else
     call s:warn("No related file is defined")
   endif
@@ -2434,7 +2710,7 @@ function! s:NewProjectTemplate(proj,rr,fancy)
   let str = str."  models=models filter=\"**\" {\n  }\n"
   if a:fancy
     let str = str."  views=views {\n"
-    let views = s:relglob(a:rr.'/app/views','*')."\n"
+    let views = s:relglob(a:rr.'/app/views/','*')."\n"
     while views != ''
       let dir = matchstr(views,'^.\{-\}\ze\n')
       let views = s:sub(views,'^.\{-\}\n','')
@@ -2887,7 +3163,7 @@ function! s:setopt(opt,val)
 endfunction
 
 function! s:opts()
-  return "\nb:alternate\na:gnu_screen\nl:preview\nb:rake_task\nl:related\na:root_url\n"
+  return "\nb:alternate\nb:controller\na:gnu_screen\nb:model\nl:preview\nb:rake_task\nl:related\na:root_url\n"
 endfunction
 
 function! s:SetComplete(A,L,P)

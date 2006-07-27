@@ -264,9 +264,32 @@ Suggestions for further contexts to consider for the alternate file, related
 file, and file under the cursor are welcome.  They are subtly tweaked from
 release to release.
 
-Finally, one Vim feature that proves helpful in conjunction with the above is
-|CTRL-^|.  This keystroke edits the previous file, and is helpful to back out
-of any of the above commands.
+For the less common cases, a more deliberate set of commands are provided.
+Each of the following takes an optional argument (with tab completion) but
+defaults to a reasonable guess that follows Rails conventions.  For example,
+when editing app/models/employee.rb, :Rcontroller will default to
+app/controllers/employees_controller.rb.
+
+:Rmodel						*rails-:Rmodel*
+:Rview						*rails-:Rview*
+:Rcontroller					*rails-:Rcontroller*
+:Rmigration					*rails-:Rmigration*
+:Robserver					*rails-:Robserver*
+:Rlayout					*rails-:Rlayout*
+:Rhelper					*rails-:Rhelper*
+:Rapi						*rails-:Rapi*
+:Rfixture					*rails-:Rfixture*
+:Runittest					*rails-:Runittest*
+:Rfunctionaltest				*rails-:Rfunctionaltest*
+:Rintegrationtest				*rails-:Rintegrationtest*
+
+Each of these commands has variants for splitting, vertical splitting and
+opening in a new tab.  For :Rmodel, those variants would be :RSmodel,
+:RVmodel, and :RTmodel.
+
+Finally, one Vim feature that proves helpful in conjunction with all of the
+above is |CTRL-^|.  This keystroke edits the previous file, and is helpful to
+back out of any of the above commands.
 
 ==============================================================================
 SCRIPT WRAPPERS					*rails-scripts*
@@ -515,6 +538,8 @@ default rake task will apply before considering this option.)
 
 Option		Meaning ~
 b:alternate	Custom alternate file for :A, relative to the Rails root
+b:controller	Default controller for certain commands (e.g., :Rhelper)
+b:model		Default model for certain commands (e.g., :Rmigration)
 l:preview	URL stub for :Rpreview (e.g., blog/show/1)
 b:rake_task	Default task used with :Rake
 l:related	Custom related file for :R, relative to the Rails root
