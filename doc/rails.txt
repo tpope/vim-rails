@@ -278,14 +278,15 @@ app/controllers/employees_controller.rb.
 :Rlayout					*rails-:Rlayout*
 :Rhelper					*rails-:Rhelper*
 :Rapi						*rails-:Rapi*
-:Rfixture					*rails-:Rfixture*
+:Rfixtures					*rails-:Rfixtures*
 :Runittest					*rails-:Runittest*
 :Rfunctionaltest				*rails-:Rfunctionaltest*
 :Rintegrationtest				*rails-:Rintegrationtest*
 
 Each of these commands has variants for splitting, vertical splitting and
 opening in a new tab.  For :Rmodel, those variants would be :RSmodel,
-:RVmodel, and :RTmodel.
+:RVmodel, and :RTmodel.  There is also :REmodel which is a synonym for :Rmodel
+(future versions might allow customization of the behavior of :Rmodel).
 
 Finally, one Vim feature that proves helpful in conjunction with all of the
 above is |CTRL-^|.  This keystroke edits the previous file, and is helpful to

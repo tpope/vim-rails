@@ -768,7 +768,7 @@ function! s:Rake(bang,arg)
     exe 'make '.arg
   elseif t =~ '^task\>'
     let lnum = s:lastmethodline()
-    let line = getline(ln)
+    let line = getline(lnum)
     " We can't grab the namespace so only run tasks at the start of the line
     if line =~ '^\%(task\|file\)\>'
       exe 'make '.s:lastmethod()
@@ -1152,24 +1152,28 @@ endfunction
 function! s:BufNavCommands()
   silent exe "command! -bar -buffer -nargs=? Rcd :cd ".s:rp()."/<args>"
   silent exe "command! -bar -buffer -nargs=? Rlcd :lcd ".s:rp()."/<args>"
-  command!   -buffer -bar -nargs=* -count=1 -complete=custom,s:FindList Rfind       :call s:Find(<bang>0,<count>,"",<f-args>)
-  command!   -buffer -bar -nargs=* -count=1 -complete=custom,s:FindList Rsfind      :call s:Find(<bang>0,<count>,"S",<f-args>)
+  command!   -buffer -bar -nargs=* -count=1 -complete=custom,s:FindList Rfind       :call s:Find(<bang>0,<count>,"" ,<f-args>)
+  command!   -buffer -bar -nargs=* -count=1 -complete=custom,s:FindList REfind      :call s:Find(<bang>0,<count>,"E",<f-args>)
   command!   -buffer -bar -nargs=* -count=1 -complete=custom,s:FindList RSfind      :call s:Find(<bang>0,<count>,"S",<f-args>)
-  command!   -buffer -bar -nargs=* -count=1 -complete=custom,s:FindList Rvsfind     :call s:Find(<bang>0,<count>,"V",<f-args>)
   command!   -buffer -bar -nargs=* -count=1 -complete=custom,s:FindList RVfind      :call s:Find(<bang>0,<count>,"V",<f-args>)
-  command!   -buffer -bar -nargs=* -count=1 -complete=custom,s:FindList Rtabfind    :call s:Find(<bang>0,<count>,"T",<f-args>)
   command!   -buffer -bar -nargs=* -count=1 -complete=custom,s:FindList RTfind      :call s:Find(<bang>0,<count>,"T",<f-args>)
-  command!   -buffer -bar -nargs=* -bang    -complete=custom,s:EditList Redit       :call s:Find(<bang>0,<count>,"e",<f-args>)
+  command!   -buffer -bar -nargs=* -count=1 -complete=custom,s:FindList Rsfind      :<count>RSfind<bang> <args>
+  command!   -buffer -bar -nargs=* -count=1 -complete=custom,s:FindList Rvsfind     :<count>RVfind<bang> <args>
+  command!   -buffer -bar -nargs=* -count=1 -complete=custom,s:FindList Rtabfind    :<count>RTfind<bang> <args>
+  command!   -buffer -bar -nargs=* -bang    -complete=custom,s:EditList Redit       :call s:Find(<bang>0,<count>,"e" ,<f-args>)
+  command!   -buffer -bar -nargs=* -bang    -complete=custom,s:EditList REedit      :call s:Find(<bang>0,<count>,"eE",<f-args>)
   command!   -buffer -bar -nargs=* -bang    -complete=custom,s:EditList RSedit      :call s:Find(<bang>0,<count>,"eS",<f-args>)
   command!   -buffer -bar -nargs=* -bang    -complete=custom,s:EditList RVedit      :call s:Find(<bang>0,<count>,"eV",<f-args>)
   command!   -buffer -bar -nargs=* -bang    -complete=custom,s:EditList RTedit      :call s:Find(<bang>0,<count>,"eT",<f-args>)
   if g:rails_avim_commands
     command! -buffer -bar -nargs=0 A  :call s:Alternate(<bang>0,"")
+    command! -buffer -bar -nargs=0 AE :call s:Alternate(<bang>0,"E")
     command! -buffer -bar -nargs=0 AS :call s:Alternate(<bang>0,"S")
     command! -buffer -bar -nargs=0 AV :call s:Alternate(<bang>0,"V")
     command! -buffer -bar -nargs=0 AT :call s:Alternate(<bang>0,"T")
     command! -buffer -bar -nargs=0 AN :call s:Related(<bang>0,"")
     command! -buffer -bar -nargs=0 R  :call s:Related(<bang>0,"")
+    command! -buffer -bar -nargs=0 RE :call s:Related(<bang>0,"E")
     command! -buffer -bar -nargs=0 RS :call s:Related(<bang>0,"S")
     command! -buffer -bar -nargs=0 RV :call s:Related(<bang>0,"V")
     command! -buffer -bar -nargs=0 RT :call s:Related(<bang>0,"T")
@@ -1208,7 +1212,9 @@ function! s:Find(bang,count,arg,...)
   if file =~ '^\%(app\|components\|config\|db\|public\|test\|vendor\)/.*\.' || do_edit || !a:0
     call s:findedit(cmd,file,str)
   else
-    exe (a:count==1?'' : a:count).s:findcmdfor(cmd).' '.str.s:escarg(file)
+    let fcmd = (a:count==1?'' : a:count).s:findcmdfor(cmd)
+    let fcmd = s:sub(fcmd,'\(\d\+\)vert ','vert \1')
+    exe fcmd.' '.str.s:escarg(file)
   endif
 endfunction
 
@@ -1419,7 +1425,7 @@ endfunction
 function! s:addfilecmds(type)
   let u = s:sub(a:type,'^.','\u&')
   let l = s:sub(a:type,'^.','\l&')
-  let cmds = 'SVT'
+  let cmds = 'ESVT'
   let cmd = ''
   while cmds != ''
     exe "command! -buffer -bar -nargs=* -complete=custom,s:".l."List R".cmd.l." :call s:Edit".u.'(<bang>0,"'.cmd.'",<f-args>)'
@@ -1437,7 +1443,7 @@ function! s:BufFinderCommands()
   call s:addfilecmds("helper")
   call s:addfilecmds("api")
   call s:addfilecmds("layout")
-  call s:addfilecmds("fixture")
+  call s:addfilecmds("fixtures")
   call s:addfilecmds("unittest")
   call s:addfilecmds("functionaltest")
   call s:addfilecmds("integrationtest")
@@ -1513,7 +1519,7 @@ function! s:observerList(A,L,P)
   return s:relglob("app/models/",a:A."**","_observer.rb")
 endfunction
 
-function! s:fixtureList(A,L,P)
+function! s:fixturesList(A,L,P)
   return s:relglob("test/fixtures/",a:A."*[^~]")
 endfunction
 
@@ -1578,14 +1584,14 @@ function! s:EditMigration(bang,cmd,...)
   endif
 endfunction
 
-function! s:EditFixture(bang,cmd,...)
+function! s:EditFixtures(bang,cmd,...)
   if a:0
     let c = s:underscore(a:1)
   else
     let c = s:model(1)
   endif
   if c == ""
-    return s:error("No fixture name given")
+    return s:error("E471: Argument required")
   endif
   let e = fnamemodify(c,':e')
   let e = e == '' ? e : '.'.e
@@ -1727,7 +1733,7 @@ function! s:findcmdfor(cmd)
   else
     let cmd = a:cmd
   endif
-  if cmd == ''
+  if cmd == '' || cmd == 'E' || cmd == 'F'
     return 'find'.bang
   elseif cmd == 'S'
     return 'sfind'.bang
@@ -2429,12 +2435,12 @@ function! s:leadermap(key,mapping)
 endfunction
 
 function! s:BufMappings()
-  map <buffer> <silent> <Plug>RailsAlternate :A<CR>
-  map <buffer> <silent> <Plug>RailsFind      :Rfind<CR>
-  map <buffer> <silent> <Plug>RailsSplitFind :Rsfind<CR>
-  map <buffer> <silent> <Plug>RailsVSplitFind :Rvsfind<CR>
-  map <buffer> <silent> <Plug>RailsTabFind   :Rtabfind<CR>
-  map <buffer> <silent> <Plug>RailsRelated   :call <SID>Related(0,"find")<CR>
+  map <buffer> <silent> <Plug>RailsAlternate  :A<CR>
+  map <buffer> <silent> <Plug>RailsRelated    :R<CR>
+  map <buffer> <silent> <Plug>RailsFind       :REfind<CR>
+  map <buffer> <silent> <Plug>RailsSplitFind  :RSfind<CR>
+  map <buffer> <silent> <Plug>RailsVSplitFind :RVfind<CR>
+  map <buffer> <silent> <Plug>RailsTabFind    :RTfind<CR>
   if g:rails_mappings
     " Unmap so hasmapto doesn't get confused by stale bindings
     call s:leaderunmap('f','<Plug>RailsFind')
@@ -3295,7 +3301,7 @@ function! s:BufInit(path)
   if g:rails_level > 0
     if &ft == "mason"
       setlocal filetype=eruby
-    elseif &ft == "" && expand("%:e") =~ '^\%(rjs\|rxml\|rake\|mab\)$'
+    elseif &ft =~ '^\%(conf\)\=$' && expand("%:e") =~ '^\%(rjs\|rxml\|rake\|mab\)$'
       setlocal filetype=ruby
     elseif &ft == "" && expand("%:e") == 'rhtml'
       setlocal filetype=eruby
