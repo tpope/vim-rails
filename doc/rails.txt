@@ -44,9 +44,10 @@ Rails application development.
 
 4. Easy navigation of the Rails directory structure.  |gf| considers context
    and knows about partials, fixtures, and much more.  There are two commands,
-   :A and :R, for easy jumping between files, including favorites like model
-   to migration, template to helper, and controller to functional test.
-   |rails-navigation|
+   :A (alternate) and :R (related) for easy jumping between files, including
+   favorites like model to migration, template to helper, and controller to
+   functional test.  For more advanced usage, there exists :Rmodel, :Rview,
+   :Rcontroller, and several others.  |rails-navigation|
 
 5. Enhanced syntax highlighting.  From has_and_belongs_to_many to
    distance_of_time_in_words, it's here.  For Vim 7 users, 'completefunc' is
@@ -155,7 +156,7 @@ actually edit a file from a Rails application.
 			|rails-:OpenURL|).
 			
 						*rails-:Rpreview!*
-:Rpreview! [{path}]	As with :Rpreview, only :OpenURL is never used.
+:Rpreview! [{path}]	As with :Rpreview, except :OpenURL is never used.
 
 						*rails-:Rtags*
 :Rtags			Calls ctags -R on the current application root.
@@ -177,7 +178,7 @@ actually edit a file from a Rails application.
 			executable("sensible-browser") is true, the
 			corresponding command above will be automatically
 			defined.  Otherwise, you must provide your own (which
-			is recommended anyways).
+			is recommended, regardless).
 
 ==============================================================================
 NAVIGATION					*rails-navigation*
@@ -192,8 +193,8 @@ The 'path' has been modified to include all the best places to be.
 <
 						*rails-gf*
 The |gf| command, which normally edits the current file under the cursor, has
-been remapped to take context into account (|CTRL-W_f| and |CTRL-W_gf| are
-also remapped).
+been remapped to take context into account. |CTRL-W_f|(open in new window) and
+|CTRL-W_gf| (open in new tab) are also remapped.
 
 Example uses of |gf|, and where they might lead.
 (* indicates cursor position)
@@ -232,17 +233,20 @@ Example uses of |gf|, and where they might lead.
 Two commands, :A and :R, are used quickly jump to an "alternate" and a
 "related" file, defined below.
 
-			*rails-:A* *rails-:AS* *rails-:AV* *:rails-:AT*
+		*rails-:A* *rails-:AE* *rails-:AS* *rails-:AV* *:rails-:AT*
 :A			These commands were picked to mimic Michael Sharpe's
-:AS			a.vim.  Briefly, they edit, split, vertical split, and
-:AV			edit in a new tab the "alternate" file.  An
-:AT			experimental mapping for :A is [f .
+:AE			a.vim.  Briefly, they edit the "alternate" file, in
+:AS			either the same window (:A and :AE), a new split
+:AV			window (:AS), a new vertically split window (:AV), or
+:AT			a new tab (:AT).  An experimental mapping for :A is
+			[f .
 
-			*rails-:R* *rails-:RS* *rails-:RV* *:rails-:RT*
+		*rails-:R* *rails-:RE* *rails-:RS* *rails-:RV* *:rails-:RT*
 :R			These are similar |rails-:A| and friends above, only
-:RS			they jump to the "related" file rather than the
-:RV			"alternate."  An experimental mapping for :R is ]f .
-:RT			
+:RE			they jump to the "related" file rather than the
+:RS			"alternate."  An experimental mapping for :R is ]f .
+:RV			
+:RT
 
 					*rails-alternate* *rails-related*
 The alternate file is most frequently the test file, though there are
@@ -264,11 +268,14 @@ Suggestions for further contexts to consider for the alternate file, related
 file, and file under the cursor are welcome.  They are subtly tweaked from
 release to release.
 
-For the less common cases, a more deliberate set of commands are provided.
+For the more uncommon cases, a more deliberate set of commands are provided.
 Each of the following takes an optional argument (with tab completion) but
 defaults to a reasonable guess that follows Rails conventions.  For example,
 when editing app/models/employee.rb, :Rcontroller will default to
-app/controllers/employees_controller.rb.
+app/controllers/employees_controller.rb.  The controller and model options,
+ideally set from  |rails-modelines|,  can override the mapping from model
+related files to controller related files (Rset controller=hiring) and vice
+versa (Rset model=employee).  See |rails-:Rset|.
 
 :Rmodel						*rails-:Rmodel*
 :Rview						*rails-:Rview*
@@ -525,6 +532,7 @@ newer.
 
 Options may be set set in one of four scopes, which my be indicated by an
 optional prefix.  These scopes determine how broadly an option will apply.
+Generally, the default scope is sufficient
 
 Scope	Description ~
 a:	All files in one Rails application
@@ -540,7 +548,7 @@ default rake task will apply before considering this option.)
 Option		Meaning ~
 b:alternate	Custom alternate file for :A, relative to the Rails root
 b:controller	Default controller for certain commands (e.g., :Rhelper)
-b:model		Default model for certain commands (e.g., :Rmigration)
+b:model		Default model for certain commands (e.g., :Rfixtures)
 l:preview	URL stub for :Rpreview (e.g., blog/show/1)
 b:rake_task	Default task used with :Rake
 l:related	Custom related file for :R, relative to the Rails root
