@@ -512,7 +512,7 @@ These are based off the information shown in the 'statusline' (see
 	autocmd User Rails.view*rhtml*  imap  <buffer> <C-Z> <%=  %><C-O>3h
 End all Rails autocommands with asterisks, even if you have an exact
 specification.  There is also a filename matching syntax: >
-	autocmd User Rails*/db/schema.rb Rset rake_task=db:schema:dump
+	autocmd User Rails*/db/schema.rb Rset task=db:schema:dump
 The two forms can be combined, as in the following highly redundant example: >
 	autocmd User Rails.helper*/app/helpers/*_helper.rb ...
 Use the filetype based syntax whenever possible, reserving the filename based
@@ -542,7 +542,7 @@ l:	Local to method (same as b: in non-Ruby files)
 
 Options are shown below with their default scope, which should be omitted.
 While you may override the scope with a prefix, this is rarely necessary and
-oftentimes useless.  (For example, setting g:rake_task is useless because the
+oftentimes useless.  (For example, setting g:task is useless because the
 default rake task will apply before considering this option.)
 
 Option		Meaning ~
@@ -550,7 +550,7 @@ b:alternate	Custom alternate file for :A, relative to the Rails root
 b:controller	Default controller for certain commands (e.g., :Rhelper)
 b:model		Default model for certain commands (e.g., :Rfixtures)
 l:preview	URL stub for :Rpreview (e.g., blog/show/1)
-b:rake_task	Default task used with :Rake
+b:task		Default task used with :Rake
 l:related	Custom related file for :R, relative to the Rails root
 a:root_url	Root URL for commands like :Rpreview
 
@@ -558,7 +558,7 @@ Examples: >
 	:Rset root_url=http://localhost:12345
 	:Rset related=app/views/blog/edit.rhtml preview=blog/edit/1
 	:Rset alternate=app/models/
-	:Rset l:rake_task=preview        " Special pseudo-task for :Rake
+	:Rset l:task=preview        " Special pseudo-task for :Rake
 
 Note the use of a scope prefix in the last example.
 
@@ -566,14 +566,12 @@ Note the use of a scope prefix in the last example.
 If |g:rails_modelines| is enabled, these options can also be set from
 modelines near the beginning or end of the file.  These modelines will always
 set buffer-local options; scope should never be specified.  Examples: >
-	# Rset rake_task=db:schema:load
+	# Rset task=db:schema:load
 	<%# Rset alternate=app/views/layouts/application.rhtml %>
 Modelines can also be local to a method.  Example: >
 	def test_comment
 	  # rset alternate=app/models/comment.rb
-These two forms differ only in case.  Modelines are an experimental feature,
-and are enabled for this interim release.  They will likely be enabled by
-default in the upcoming stable release if no issues are reported.
+These two forms differ only in case.
 
 ==============================================================================
 MANAGED VIM OPTIONS			*rails-options*
@@ -700,15 +698,13 @@ Enables a few mappings (mostly for |rails-navigation|). Enabled when
 						*g:rails_modelines*  >
 	let g:rails_modelines=1
 Enable modelines like the following: >
-	# Rset rake_task=db:schema:load
+	# Rset task=db:schema:load
 Modelines set buffer-local options using the :Rset command.
 Also enables method specific modelines (note the case difference): >
 	  def show
 	    # rset preview=blog/show/1
 Modelines are extremely useful but may cause security concerns when editing
-projects from an untrusted source.  Please report any issues now so that they
-may be resolved before the next stable release. Enabled when |g:rails_level|
->= 3.
+projects from an untrusted source. Enabled when |g:rails_level| >= 3.
 
 						*g:rails_menu*  >
 	let g:rails_menu=1

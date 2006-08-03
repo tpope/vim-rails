@@ -212,9 +212,9 @@ function! s:controller(...)
     return s:sub(f,'.*\<test/functional/\(.\{-\}\)_controller_test\.rb$','\1')
   elseif f =~ '\<components/.*_controller\.rb$'
     return s:sub(f,'.*\<components/\(.\{-\}\)_controller\.rb$','\1')
-  elseif f =~ '\<components/.*\.\(rhtml\|rxml\|rjs\|mab\)$'
+  elseif f =~ '\<components/.*\.\(rhtml\|rxml\|rjs\|mab\|liquid\)$'
     return s:sub(f,'.*\<components/\(.\{-\}\)/\k\+\.\k\+$','\1')
-  elseif f =~ '\<app/models/.*\.rb$' && t =~ '^model-amb\=\>'
+  elseif f =~ '\<app/models/.*\.rb$' && t =~ '^model-mailer\>'
     return s:sub(f,'.*\<app/models/\(.\{-\}\)\.rb$','\1')
   elseif a:0 && a:1
     return s:pluralize(s:model())
@@ -373,6 +373,8 @@ endfunction
 function! RailsFileType()
   if !exists("b:rails_root")
     return ""
+  elseif exists("b:rails_type")
+    return b:rails_type
   elseif exists("b:rails_file_type")
     return b:rails_file_type
   endif
@@ -399,11 +401,11 @@ function! RailsFileType()
     if class != ''
       "let class = s:sub(class,'::Base$','')
       let class = tolower(s:gsub(class,'[^A-Z]',''))
-      let r = "model-".class
+      let r = "model-".s:sub(class,'^amb\>','mailer')
     elseif f =~ '_mailer\.rb$'
-      let r = "model-am"
+      let r = "model-mailer"
     elseif top =~ '\<\%(validates_\w\+_of\|set_\%(table_name\|primary_key\)\|has_one\|has_many\|belongs_to\)\>'
-      let r = "model-ar"
+      let r = "model-arb"
     else
       let r = "model"
     endif
@@ -411,7 +413,7 @@ function! RailsFileType()
     let r = "view-layout-" . e
   elseif f =~ '\<\%(app/views\|components\)/.*/_\k\+\.\k\+$'
     let r = "view-partial-" . e
-  elseif f =~ '\<app/views\>.*\.' || f =~ '\<components/.*/.*\.\(rhtml\|rxml\|rjs\|mab\)'
+  elseif f =~ '\<app/views\>.*\.' || f =~ '\<components/.*/.*\.\(rhtml\|rxml\|rjs\|mab\|liquid\)'
     let r = "view-" . e
   elseif f =~ '\<test/unit/.*_test\.rb'
     let r = "test-unit"
@@ -611,7 +613,7 @@ function! s:BufCommands()
     command! -buffer -bar -nargs=? -bang  Rdbext   :call s:BufDatabase(2,<q-args>,<bang>0)
   endif
   let ext = expand("%:e")
-  if ext == "rhtml" || ext == "rxml" || ext == "rjs" || ext == "mab"
+  if ext == "rhtml" || ext == "rxml" || ext == "rjs" || ext == "mab" || ext == "liquid"
     command! -buffer -bar -nargs=? -range Rpartial :<line1>,<line2>call s:Partial(<bang>0,<f-args>)
   endif
   if RailsFileType() =~ '^\%(db-\)\=migration\>' && RailsFilePath() !~ '\<db/schema\.rb$'
@@ -740,7 +742,7 @@ function! s:Rake(bang,arg)
     endif
   endif
   if arg == ''
-    let opt = s:getopt('rake_task','bl')
+    let opt = s:getopt('task','bl')
     if opt != ''
       let arg = opt
     endif
@@ -850,7 +852,6 @@ function! s:Preview(bang,arg)
       let uri = s:sub(RailsFilePath(),'^public/','')
     elseif s:getopt('preview','ag') != ''
       let uri = s:getopt('preview','ag')
-    elseif 
     endif
     if uri !~ '://'
       let uri = root.'/'.s:sub(s:sub(uri,'^/',''),'/$','')
@@ -1054,7 +1055,7 @@ function! s:Generate(bang,...)
 endfunction
 
 function! s:generators()
-  return "controller\nintegration_test\nmailer\nmigration\nmodel\nplugin\nscaffold\nsession_migration\nweb_service"
+  return "controller\nintegration_test\nmailer\nmigration\nmodel\nobserver\nplugin\nscaffold\nsession_migration\nweb_service"
 endfunction
 
 function! s:ScriptComplete(ArgLead,CmdLine,P)
@@ -1651,6 +1652,8 @@ function! s:findlayout(name)
     let file = pre.c.".rxml"
   elseif filereadable(RailsRoot(). pre.c.".mab")
     let file = pre.c.".mab"
+  elseif filereadable(RailsRoot(). pre.c.".liquid")
+    let file = pre.c.".liquid"
   else
     let file = ""
   endif
@@ -1905,7 +1908,7 @@ function! s:Related(bang,cmd)
   let t = RailsFileType()
   if s:getopt("related","l") != ""
     call s:findedit(cmd,s:getopt("related","l"))
-  elseif t =~ '^\%(controller\|model-amb\)\>' && s:lastmethod() != ""
+  elseif t =~ '^\%(controller\|model-mailer\)\>' && s:lastmethod() != ""
     call s:findedit(cmd,s:sub(s:sub(s:sub(f,'/application\.rb$','/shared_controller.rb'),'/\%(controllers\|models\)/','/views/'),'\%(_controller\)\=\.rb$','/'.s:lastmethod()))
   elseif s:getopt("related","b") != ""
     call s:findedit(cmd,s:getopt("related","b"))
@@ -1978,7 +1981,19 @@ function! s:Partial(bang,...) range abort
   let first = a:firstline
   let last = a:lastline
   let range = first.",".last
-  let curdir = expand("%:p:h")
+  if RailsFileType() =~ '^view-layout\>'
+    if RailsFilePath() =~ '\<app/views/layouts/application\>'
+      let curdir = 'app/views/shared'
+      if file !~ '/'
+        let file = "shared/" .file
+      endif
+    else
+      let curdir = s:sub(RailsFilePath(),'.*\<app/views/layouts/\(.*\)\%(\.\w*\)$','app/views/\1')
+    endif
+  else
+    let curdir = fnamemodify(RailsFilePath(),':h')
+  endif
+  let curdir = RailsRoot()."/".curdir
   let dir = fnamemodify(file,":h")
   let fname = fnamemodify(file,":t")
   if fnamemodify(fname,":e") == ""
@@ -2238,7 +2253,7 @@ function! s:BufSyntax()
       if t =~ '^model-aro\>'
         syn keyword rubyRailsARMethod observe
       endif
-      if t =~ '^model-amb\=\>'
+      if t =~ '^model-mailer\>'
         syn keyword rubyRailsMethod logger
         " Misnomer but who cares
         syn keyword rubyRailsControllerMethod helper helper_attr helper_method
@@ -2556,7 +2571,7 @@ function! s:CreateMenus() abort
     exe menucmd.g:rails_installed_menu.'.&Migration\ writer\	:Rinvert :Rinvert<CR>'
     exe menucmd.'         '.g:rails_installed_menu.'.-HSep- :'
     exe menucmd.'<silent> '.g:rails_installed_menu.'.&Help\	:help\ rails :call <SID>prephelp()<Bar>help rails<CR>'
-    exe menucmd.'<silent> '.g:rails_installed_menu.'.Abo&ut :call <SID>prephelp()<Bar>help rails-about<CR>'
+    exe menucmd.'<silent> '.g:rails_installed_menu.'.Abo&ut\	 :call <SID>prephelp()<Bar>help rails-about<CR>'
     let g:rails_did_menus = 1
     call s:menuBufLeave()
     if exists("b:rails_root")
@@ -2582,8 +2597,8 @@ function! s:menuBufLeave()
   if exists("g:rails_installed_menu") && g:rails_installed_menu != ""
     let menu = s:gsub(g:rails_installed_menu,'&','')
     exe 'amenu disable '.menu.'.*'
-    exe 'amenu enable  '.menu.'.Help'
-    exe 'amenu enable  '.menu.'.About'
+    exe 'amenu enable  '.menu.'.Help\	'
+    exe 'amenu enable  '.menu.'.About\	'
   endif
 endfunction
 
@@ -3131,7 +3146,7 @@ function! s:getopt(opt,...)
   if scope =~ 'l'
     call s:LocalModelines()
   endif
-  let opt = s:sub(opt,'\<\%(rake\|task\|rake_target\)$','rake_task')
+  let opt = s:sub(opt,'\<\%(rake\|rake_task\|rake_target\)$','task')
   " Get buffer option
   if scope =~ 'l' && exists("b:_".s:sname()."_".s:escvar(s:lastmethod())."_".opt)
     return b:_{s:sname()}_{s:escvar(s:lastmethod())}_{opt}
@@ -3154,7 +3169,7 @@ function! s:setopt(opt,val)
     let scope = ''
     let opt = a:opt
   endif
-  let opt = s:sub(opt,'\<\%(rake\|task\|rake_target\)$','rake_task')
+  let opt = s:sub(opt,'\<\%(rake\|rake_task\|rake_target\)$','task')
   let defscope = matchstr(s:opts(),'\n\zs\w\ze:'.opt,'\n')
   if defscope == ''
     let defscope = 'a'
@@ -3183,7 +3198,7 @@ function! s:setopt(opt,val)
 endfunction
 
 function! s:opts()
-  return "\nb:alternate\nb:controller\na:gnu_screen\nb:model\nl:preview\nb:rake_task\nl:related\na:root_url\n"
+  return "\nb:alternate\nb:controller\na:gnu_screen\nb:model\nl:preview\nb:task\nl:related\na:root_url\n"
 endfunction
 
 function! s:SetComplete(A,L,P)
@@ -3350,6 +3365,8 @@ function! s:BufInit(path)
       setlocal filetype=eruby
     elseif &ft =~ '^\%(conf\)\=$' && expand("%:e") =~ '^\%(rjs\|rxml\|rake\|mab\)$'
       setlocal filetype=ruby
+    elseif &ft == "" && expand("%:e") == "liquid"
+      setlocal filetype=liquid
     elseif &ft == "" && expand("%:e") == 'rhtml'
       setlocal filetype=eruby
     elseif &ft == "" && expand("%:e") == 'yml'
@@ -3447,10 +3464,10 @@ function! s:BufSettings()
   else
     " Does this cause problems in any filetypes?
     setlocal includeexpr=RailsIncludeexpr()
-    setlocal suffixesadd=.rb,.rhtml,.rxml,.rjs,.mab,.css,.js,.yml,.csv,.rake,.sql,.html
+    setlocal suffixesadd=.rb,.rhtml,.rxml,.rjs,.mab,.liquid,.css,.js,.yml,.csv,.rake,.sql,.html
   endif
   if &filetype == "ruby"
-    setlocal suffixesadd=.rb,.rhtml,.rxml,.rjs,.mab,.yml,.csv,.rake,s.rb
+    setlocal suffixesadd=.rb,.rhtml,.rxml,.rjs,.mab,.liquid,.yml,.csv,.rake,s.rb
     if expand('%:e') == 'rake'
       setlocal define=^\\s*def\\s\\+\\(self\\.\\)\\=\\\|^\\s*\\%(task\\\|file\\)\\s\\+[:'\"]
     else
@@ -3458,7 +3475,7 @@ function! s:BufSettings()
     endif
   elseif &filetype == "eruby"
     "set include=\\<\\zsAct\\f*::Base\\ze\\>\\\|^\\s*\\(require\\\|load\\)\\s\\+['\"]\\zs\\f\\+\\ze\\\|\\zs<%=\\ze
-    setlocal suffixesadd=.rhtml,.rxml,.rjs,.mab,.rb,.css,.js,.html
+    setlocal suffixesadd=.rhtml,.rxml,.rjs,.mab,.liquid,.rb,.css,.js,.html
   endif
 endfunction
 
