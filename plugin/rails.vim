@@ -600,7 +600,7 @@ function! s:BufCommands()
   let rp = s:ra()
   call s:BufScriptWrappers()
   call s:BufNavCommands()
-  command! -buffer -bar -nargs=?       -complete=custom,s:RakeComplete    Rake     :call s:Rake(<bang>0,<q-args>)
+  command! -buffer -bar -nargs=? -bang -complete=custom,s:RakeComplete    Rake     :call s:Rake(<bang>0,<q-args>)
   command! -buffer -bar -nargs=? -bang -complete=custom,s:PreviewComplete Rpreview :call s:Preview(<bang>0,<q-args>)
   command! -buffer -bar -nargs=? -bang -complete=custom,s:environments    Rlog     :call s:Log(<bang>0,<q-args>)
   command! -buffer -bar -nargs=* -bang -complete=custom,s:SetComplete     Rset     :call s:Set(<bang>0,<f-args>)
@@ -615,6 +615,8 @@ function! s:BufCommands()
   let ext = expand("%:e")
   if ext == "rhtml" || ext == "rxml" || ext == "rjs" || ext == "mab" || ext == "liquid"
     command! -buffer -bar -nargs=? -range Rpartial :<line1>,<line2>call s:Partial(<bang>0,<f-args>)
+    " In case we one day we make Rpartial act like Rview
+    command! -buffer -bar -nargs=? -range Rextract :<line1>,<line2>call s:Partial(<bang>0,<f-args>)
   endif
   if RailsFileType() =~ '^\%(db-\)\=migration\>' && RailsFilePath() !~ '\<db/schema\.rb$'
     command! -buffer -bar                 Rinvert  :call s:Invert(<bang>0)
@@ -729,6 +731,13 @@ function! s:makewithruby(arg)
 endfunction
 
 function! s:Rake(bang,arg)
+  let oldefm = ""
+  if a:bang
+    let oldefm = &efm
+    "errorformat=%*[^"]"%f"%*\D%l: %m,"%f"%*\D%l: %m,%-G%f:%l: (Each undeclared identifier is reported only once,%-G%f:%l: for each function it appears in.),%f:%l:%c:%m,%f(%l):%m,%f:%l:%m,"%f"\, line %l%*\D%c%*[^ ] %m,%D%*\a[%*\d]: Entering directory `%f',%X%*\a[%*\d]: Leaving directory `%f',%D%*\a: Entering directory `%
+    setlocal efm=\%+E%f:%l:\ parse\ error,%W%f:%l:\ warning:\ %m,%E%f:%l:in\ %*[^:]:\ %m,%E%f:%l:\ %m,%-C%\tfrom\ %f:%l:in\ %.%#,%-Z%\tfrom\ %f:%l,%-Z%p^,%-G%.%#
+    " Want an error format for a full stack backtrace
+  endif
   let t = RailsFileType()
   let arg = a:arg
   if &filetype == "ruby" && arg == '' && g:rails_modelines
@@ -748,7 +757,7 @@ function! s:Rake(bang,arg)
     endif
   endif
   if arg == "stats"
-    " So you can see it in Windows
+    " So you can see the output even with an inadequate redirect
     call s:QuickFixCmdPre()
     exe "!".&makeprg." stats"
     call s:QuickFixCmdPost()
@@ -797,6 +806,9 @@ function! s:Rake(bang,arg)
     make test:functionals
   else
     make
+  endif
+  if oldefm != ''
+    let &efm = oldefm
   endif
 endfunction
 

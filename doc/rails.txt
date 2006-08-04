@@ -46,8 +46,8 @@ Rails application development.
    and knows about partials, fixtures, and much more.  There are two commands,
    :A (alternate) and :R (related) for easy jumping between files, including
    favorites like model to migration, template to helper, and controller to
-   functional test.  For more advanced usage, there exists :Rmodel, :Rview,
-   :Rcontroller, and several others.  |rails-navigation|
+   functional test.  For more advanced usage, :Rmodel, :Rview, :Rcontroller,
+   and several other commands are provided.  |rails-navigation|
 
 5. Enhanced syntax highlighting.  From has_and_belongs_to_many to
    distance_of_time_in_words, it's here.  For Vim 7 users, 'completefunc' is
@@ -67,7 +67,7 @@ Rails application development.
 8. Integration with other plugins.  |:Rproject| creates a new project.vim
    project.  |:Rdbext| loads database settings from database.yml for dbext.vim
    (and this happens by default under most situations).  Cream users get some
-   additional keybindings, and all GUI users get a menu.
+   additional mappings, and all GUI users get a menu.
 
 ==============================================================================
 INSTALLATION AND USAGE				*rails-installation*
