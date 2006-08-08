@@ -18,7 +18,7 @@ if exists("g:loaded_rails") && (g:loaded_rails && !g:rails_debug) || &cp
 endif
 let g:loaded_rails = 1
 
-let cpo_save = &cpo
+let s:cpo_save = &cpo
 set cpo&vim
 
 " Utility Functions {{{1
@@ -614,9 +614,8 @@ function! s:BufCommands()
   endif
   let ext = expand("%:e")
   if ext == "rhtml" || ext == "rxml" || ext == "rjs" || ext == "mab" || ext == "liquid"
-    command! -buffer -bar -nargs=? -range Rpartial :<line1>,<line2>call s:Partial(<bang>0,<f-args>)
-    " In case we one day we make Rpartial act like Rview
     command! -buffer -bar -nargs=? -range Rextract :<line1>,<line2>call s:Partial(<bang>0,<f-args>)
+    command! -buffer -bar -nargs=? -range Rpartial :call s:warn("Warning: :Rpartial has been deprecated in favor of :Rextract") | <line1>,<line2>Rextract<bang> <args>
   endif
   if RailsFileType() =~ '^\%(db-\)\=migration\>' && RailsFilePath() !~ '\<db/schema\.rb$'
     command! -buffer -bar                 Rinvert  :call s:Invert(<bang>0)
@@ -2579,7 +2578,7 @@ function! s:CreateMenus() abort
     exe menucmd.g:rails_installed_menu.'.&Breakpointer\	:Rbreak :Rbreakpointer<CR>'
     exe menucmd.g:rails_installed_menu.'.&Preview\	:Rpreview :Rpreview<CR>'
     exe menucmd.g:rails_installed_menu.'.&Log\ file\	:Rlog :Rlog<CR>'
-    exe s:sub(menucmd,'anoremenu','vnoremenu').' <silent> '.g:rails_installed_menu.'.E&xtract\ as\ partial\	:Rpartial :call <SID>menuprompt("'."'".'<,'."'".'>Rpartial","Partial name (e.g., template or /controller/template): ")<CR>'
+    exe s:sub(menucmd,'anoremenu','vnoremenu').' <silent> '.g:rails_installed_menu.'.E&xtract\ as\ partial\	:Rextract :call <SID>menuprompt("'."'".'<,'."'".'>Rextract","Partial name (e.g., template or /controller/template): ")<CR>'
     exe menucmd.g:rails_installed_menu.'.&Migration\ writer\	:Rinvert :Rinvert<CR>'
     exe menucmd.'         '.g:rails_installed_menu.'.-HSep- :'
     exe menucmd.'<silent> '.g:rails_installed_menu.'.&Help\	:help\ rails :call <SID>prephelp()<Bar>help rails<CR>'
@@ -2736,6 +2735,15 @@ function! s:NewProject(proj,rr,fancy)
     exe line
     " Ugh. how else can I force detecting folds?
     setlocal foldmethod=manual
+    norm! $%
+    silent exe "doautocmd User ".s:escarg(a:rr)."/Rproject"
+    let newline = line('.')
+    exe line
+    norm! $%
+    if line('.') != newline
+      call s:warn("Warning: Rproject autocommand failed to leave cursor at end of project")
+    endif
+    exe line
     setlocal foldmethod=marker
     setlocal nomodified
     " FIXME: make undo stop here
@@ -2781,6 +2789,9 @@ function! s:NewProjectTemplate(proj,rr,fancy)
     let str = str . "  integration=integration filter=\"**\" {\n  }\n"
   endif
   let str = str . "  mocks=mocks filter=\"**\" {\n  }\n  unit=unit filter=\"**\" {\n  }\n }\n}\n"
+  if exists("*RailsProcessProject")
+    let str = call RailsProcessProject(a:rr,str)
+  endif
   return str
 endfunction
 
@@ -3410,12 +3421,18 @@ function! s:BufInit(path)
   if f =~ '[ !#$%\,]'
     let f = ''
   endif
-  exe "silent doautocmd User Rails".s:gsub(t,'-','.')."/".f
+  silent doautocmd User Rails
+  if t != '-'
+    exe "silent doautocmd User Rails".s:gsub(t,'-','.')
+  endif
+  if f != ''
+    exe "silent doautocmd User Rails".f
+  endif
   if filereadable(b:rails_root."/config/rails.vim")
     if exists(":sandbox")
-      sandbox exe "source ".s:rp()."/config/rails.vim"
+      sandbox exe "source ".s:ra()."/config/rails.vim"
     elseif g:rails_modelines
-      exe "source ".s:rp()."/config/rails.vim"
+      exe "source ".s:ra()."/config/rails.vim"
     endif
   endif
   call s:BufModelines()
@@ -3498,6 +3515,6 @@ let s:revision = ' $Rev$ '
 let s:revision = s:sub(s:sub(s:revision,'^ [$]Rev:\=\s*',''),'\s*\$ $','')
 call s:InitPlugin()
 
-let &cpo = cpo_save
+let &cpo = s:cpo_save
 
 " vim:set sw=2 sts=2:

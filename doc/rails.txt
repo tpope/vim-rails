@@ -59,7 +59,7 @@ Rails application development.
    ":Rgenerate controller Blog" generates a blog controller and edits
    app/controllers/blog_controller.rb.  |rails-scripts|
 
-7. Partial extraction.  |:Rpartial| {file} replaces the desired range (ideally
+7. Partial extraction.  |:Rextract| {file} replaces the desired range (ideally
    selected in visual line mode) with "render :partial => '{file}'", which is
    automatically created with your content.  The @{file} instance variable is
    replaced with the {file} local variable. |rails-partials|
@@ -353,12 +353,16 @@ A limited amount of completion with <Tab> is supported.
 ==============================================================================
 PARTIAL EXTRACTION				*rails-partials*
 
-The :Rpartial command can be used to extract a partial to a new file.
+The :Rextract command can be used to extract a partial to a new file.
+
+						*rails-:Rextract*
+:[range]Rextract [{controller}/]{name}	
+			Create a {name} partial from [range] lines (default:
+			current line).
 
 						*rails-:Rpartial*
 :[range]Rpartial [{controller}/]{name}	
-			Create a {name} partial from [range] lines (default:
-			current line).
+			Deprecated alias for :Rextract.
 
 If this is your file, in app/views/blog/show.rhtml: >
 
@@ -369,7 +373,7 @@ If this is your file, in app/views/blog/show.rhtml: >
 
 And you issue this command: >
 
-	:2,3Rpartial post
+	:2,3Rextract post
 
 Your file will change to this: >
 
@@ -395,7 +399,7 @@ The end result would have been this: >
 <
 The easiest way to choose what to extract is to use |linewise-visual| mode.
 Then, a simple >
-	:'<,'>Rpartial blog/post
+	:'<,'>Rextract blog/post
 will suffice. (Note the use of a controller name in this example.)
 
 ==============================================================================
@@ -415,7 +419,7 @@ PLUGIN INTEGRATION				*rails-integration*
 			project is convoluted and possibly erroneous; report
 			any problems to the |rails-plugin-author|.  A handy
 			mapping might look something like: >
-		autocmd User Rails* map <buffer> <F6> :Rproject!|silent w<CR>
+		autocmd User Rails map <buffer> <F6> :Rproject!|silent w<CR>
 <			As a bonus, this command organizes views into separate
 			directories for easier navigation.  The downside of
 			this is that you will have to regenerate your project
@@ -502,19 +506,18 @@ detects your Rails application and adjusts Vim sensibly.
 					*rails-:autocmd* *rails-autocommands*
 If you would like to set your own custom Vim settings whenever a Rails file is
 loaded, you can use an autocommand like the following in your vimrc: >
-	autocmd User Rails*		silent! Rlcd
-	autocmd User Rails*		map <buffer> <F9> :Rake<CR>
+	autocmd User Rails		silent! Rlcd
+	autocmd User Rails		map <buffer> <F9> :Rake<CR>
 You can also have autocommands that only apply to certain types of files.
 These are based off the information shown in the 'statusline' (see
 |rails-'statusline'|), with hyphens changed to periods. A few examples: >
 	autocmd User Rails.controller*	iabbr <buffer> wsn wsdl_service_name
 	autocmd User Rails.model.arb*	iabbr <buffer> vfo validates_format_of
-	autocmd User Rails.view*rhtml*  imap  <buffer> <C-Z> <%=  %><C-O>3h
-End all Rails autocommands with asterisks, even if you have an exact
+	autocmd User Rails.view.rhtml*  imap  <buffer> <C-Z> <%=  %><C-O>3h
+End all such Rails autocommands with asterisks, even if you have an exact
 specification.  There is also a filename matching syntax: >
-	autocmd User Rails*/db/schema.rb Rset task=db:schema:dump
-The two forms can be combined, as in the following highly redundant example: >
-	autocmd User Rails.helper*/app/helpers/*_helper.rb ...
+	autocmd User Rails/db/schema.rb  Rset task=db:schema:dump
+	autocmd User Rails/**/foo_bar.rb Rabbrev FB:: FooBar
 Use the filetype based syntax whenever possible, reserving the filename based
 syntax for more advanced cases.
 
@@ -747,13 +750,13 @@ load, to convert the initial indent from spaces to tabs.  Then, 'tabstop' and
 write.  Thus, one can use a custom indent when editing files, yet conform to
 Rails conventions when saving them.  There is also a local buffer version
 of this option, to allow for things like: >
-	autocmd User Rails* if &ft == 'ruby' | let b:rails_tabstop = 4 | endif
+	autocmd User Rails if &ft == 'ruby' | let b:rails_tabstop = 4 | endif
 This option defaults to 0, which is the recommended value.
 
 If instead of all this magic, you would prefer to just override this plugin's
 settings and use your own custom 'shiftwidth', adjust things manually in an
 autocommand: >
-	autocmd User Rails* set sw=4 sts=4 noet
+	autocmd User Rails set sw=4 sts=4 noet
 This is highly discouraged: don't fight Rails.
 
 ==============================================================================
