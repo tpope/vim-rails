@@ -966,6 +966,7 @@ function! s:getpidfor(bind,port)
     else
       let pid = ""
     endif
+    return pid
 endfunction
 
 function! s:Server(bang,arg)
@@ -1162,6 +1163,7 @@ endfunction
 " Navigation {{{1
 
 function! s:BufNavCommands()
+  " TODO: completion
   silent exe "command! -bar -buffer -nargs=? Rcd :cd ".s:rp()."/<args>"
   silent exe "command! -bar -buffer -nargs=? Rlcd :lcd ".s:rp()."/<args>"
   command!   -buffer -bar -nargs=* -count=1 -complete=custom,s:FindList Rfind       :call s:Find(<bang>0,<count>,"" ,<f-args>)
@@ -1197,7 +1199,7 @@ endfunction
 function! s:Find(bang,count,arg,...)
   let do_edit = 0
   let cmd = a:arg . (a:bang ? '!' : '')
-  if cmd =~ '^e'
+  if cmd =~ '\C^e'
     let do_edit = 1
     let cmd = s:sub(cmd,'^e','')
   endif
