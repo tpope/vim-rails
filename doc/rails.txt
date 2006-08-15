@@ -2,19 +2,23 @@
 
 Author: Tim Pope <vimNOSPAM@tpope.info>		|rails-plugin-author|
 
-|rails-introduction|	Introduction and Feature Summary
-|rails-installation|	Installation and Usage
-|rails-commands|	General Commands
-|rails-navigation|	Navigation
-|rails-scripts|		Script Wrappers
-|rails-partials|	Partial Extraction
-|rails-integration|	Plugin Integration
-|rails-abbreviations|	Abbreviations
-|rails-options|		Managed Vim Options
-|rails-configuration|	Configuration
-|rails-global-settings| Global Settings
-|rails-about|		About rails.vim
-|rails-todo|		To Do
+|rails-introduction|		Introduction and Feature Summary
+|rails-installation|		Installation and Usage
+|rails-commands|		General Commands
+|rails-navigation|		Navigation
+|rails-gf|			    File Under Cursor - gf
+|rails-alternate-related|	    Alternate and Related Files
+|rails-model-navigation|	    Model Navigation Commands
+|rails-controller-navigation|	    Controller Navigation Commands
+|rails-scripts|			Script Wrappers
+|rails-partials|		Partial Extraction
+|rails-integration|		Plugin Integration
+|rails-abbreviations|		Abbreviations
+|rails-options|			Managed Vim Options
+|rails-configuration|		Configuration
+|rails-global-settings| 	Global Settings
+|rails-about|			About rails.vim
+|rails-todo|			To Do
 
 This plugin is only available if 'compatible' is not set.
 
@@ -191,6 +195,14 @@ The 'path' has been modified to include all the best places to be.
 	:find blog_controller
 	:find book_test
 <
+						*rails-:Rfind*
+:Rfind [{file}]		Find {file}.  Very similar to :find, but things like
+			BlogController are properly handled, and if
+			genutils.vim is installed, tab complete works.  The
+			default filename is taken from under the cursor in a
+			manner quite similar to gf, described below.
+
+File Under Cursor - gf ~
 						*rails-gf*
 The |gf| command, which normally edits the current file under the cursor, has
 been remapped to take context into account. |CTRL-W_f|(open in new window) and
@@ -230,6 +242,8 @@ Example uses of |gf|, and where they might lead.
 	def li*st
 <	app/views/blog/list.rhtml ~
 
+Alternate and Related Files ~
+						*rails-alternate-related*
 Two commands, :A and :R, are used quickly jump to an "alternate" and a
 "related" file, defined below.
 
@@ -277,23 +291,107 @@ ideally set from  |rails-modelines|,  can override the mapping from model
 related files to controller related files (Rset controller=hiring) and vice
 versa (Rset model=employee).  See |rails-:Rset|.
 
-:Rmodel						*rails-:Rmodel*
-:Rview						*rails-:Rview*
-:Rcontroller					*rails-:Rcontroller*
-:Rmigration					*rails-:Rmigration*
-:Robserver					*rails-:Robserver*
-:Rlayout					*rails-:Rlayout*
-:Rhelper					*rails-:Rhelper*
-:Rapi						*rails-:Rapi*
-:Rfixtures					*rails-:Rfixtures*
-:Runittest					*rails-:Runittest*
-:Rfunctionaltest				*rails-:Rfunctionaltest*
-:Rintegrationtest				*rails-:Rintegrationtest*
-
-Each of these commands has variants for splitting, vertical splitting and
-opening in a new tab.  For :Rmodel, those variants would be :RSmodel,
+Each of the following commands has variants for splitting, vertical splitting
+and opening in a new tab.  For :Rmodel, those variants would be :RSmodel,
 :RVmodel, and :RTmodel.  There is also :REmodel which is a synonym for :Rmodel
 (future versions might allow customization of the behavior of :Rmodel).
+
+
+Model Navigation Commands ~
+						*rails-model-naviagtion*
+The default for model navigation commands is the current model, if it can be
+determined.  For example, test/unit/post_test.rb would have a current model
+of post.  Otherwise, if a controller name can be determined, said controller
+name will be singularized and used.  To override this, use a command or
+modeline like: >
+	Rset model=comment
+
+:Rmodel						|rails-:Rmodel|
+:Rmigration					|rails-:Rmigration|
+:Robserver					|rails-:Robserver|
+:Rfixtures					|rails-:Rfixtures|
+:Runittest					|rails-:Runittest|
+
+						*rails-:Rmodel*
+:Rmodel [{name}]	Edit the specified model.
+
+						*rails-:Rmigration*
+:Rmigration [{pattern}]	If {pattern} is a number, find the migration for that
+			particular set of digits, zero-padding if necessary.
+			Otherwise, find the newest migration containing the
+			given pattern.  The pattern defaults to the current
+			model name, pluralized.  So when editing the Post
+			model, :Rmigration with no arguments might find
+			create_posts.rb, or add_date_to_posts.rb.
+
+						*rails-:Robserver*
+:Robserver [{name}]	Find the observer with a name like
+			{model}_observer.rb.  When in an observer, most
+			commands (like :Rmodel) will seek based on the
+			observed model ({model}) and not the actual observer
+			({model}_observer).  However, for the command
+			:Runittest, a file of the form
+			{model}_observer_test.rb will be found.
+
+:Rfixtures [{name}]	Edit the fixtures for the given model.  If an argument
+			is given, it must be pluralized, like the final
+			filename (this may change in the future).  If omitted,
+			the current model is pluralized automatically.  An
+			optional extension can be given, to distinguish
+			between YAML and CSV fixtures.
+
+						*rails-:Runittest*
+:Runittest [{name}]	Edit the unit test for the specified model.
+
+Controller Navigation Commands  ~
+						*rails-controller-naviagtion*
+The default for model navigation commands is the current controller, if it can
+be determined.  For example, test/functional/blog_test.rb would have a current
+controller of blog.  Otherwise, if a model name can be determined, said model
+name will be pluralized and used.  To override this, use a command or modeline
+like: >
+	Rset controller=blog
+
+:Rcontroller					|rails-:Rcontroller|
+:Rhelper					|rails-:Rhelper|
+:Rview						|rails-:Rview|
+:Rlayout					|rails-:Rlayout|
+:Rapi						|rails-:Rapi|
+:Rfunctionaltest				|rails-:Rfunctionaltest|
+:Rintegrationtest				|rails-:Rintegrationtest|
+
+						*rails-:Rcontroller*
+:Rcontroller [{name}]	Edit the specified controller.
+
+						*rails-:Rhelper*
+:Rhelper [{name}]	Edit the helper for the specified controller.
+
+						*rails-:Rview*
+:Rview [[{controller}/]{view}]
+			Edit the specified view.  The controller will default
+			sensibly, and the view name can be omitted when
+			editing a method of a controller.  If a view name is
+			given with an extension, a new file will be created.
+			This is a quick way to create a new view.
+
+						*rails-:Rlayout*
+:Rlayout [{name}]	Edit the specified layout.  Defaults to the layout for
+			the current controller, or the application layout if
+			that cannot be found.  A new layout will be created if
+			an extension is given.
+
+						*rails-:Rapi*
+:Rapi [{name}]		Edit the API for the specified controller.
+
+						*rails-:Rfunctionaltest*
+:Rfunctionaltest [{name}]
+			Edit the functional test for the specified controller.
+
+						*rails-:Rintegrationtest*
+:Rintegrationtest [{name}]
+			Edit the integration test specified.  The default
+			is based on the current controller or model, with no
+			singularization or pluralization done.
 
 Finally, one Vim feature that proves helpful in conjunction with all of the
 above is |CTRL-^|.  This keystroke edits the previous file, and is helpful to
