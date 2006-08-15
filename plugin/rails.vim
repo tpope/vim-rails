@@ -464,7 +464,6 @@ function! s:InitConfig()
   call s:SetOptDefault("rails_abbreviations",l>2)
   call s:SetOptDefault("rails_expensive",l>2+(has("win32")||has("win32unix")))
   call s:SetOptDefault("rails_dbext",g:rails_expensive)
-  call s:SetOptDefault("rails_avim_commands",l>1)
   call s:SetOptDefault("rails_subversion",l>3)
   call s:SetOptDefault("rails_tabstop",0)
   call s:SetOptDefault("rails_default_file","README")
@@ -473,8 +472,8 @@ function! s:InitConfig()
   call s:SetOptDefault("rails_root_url",'http://localhost:3000/')
   call s:SetOptDefault("rails_modelines",l>2)
   call s:SetOptDefault("rails_menu",(l>2)+(l>3))
-  call s:SetOptDefault("rails_debug",0)
   call s:SetOptDefault("rails_gnu_screen",1)
+  call s:SetOptDefault("rails_debug",0)
   if l > 2
     if exists("g:loaded_dbext") && executable("sqlite3") && ! executable("sqlite")
       " Since dbext can't find it by itself
@@ -579,11 +578,7 @@ endfunction
 function! s:fixtabs()
   let ts = s:tabstop()
   if ts && ! &l:expandtab && !exists("s:retab_in_process")
-    if 0
-      undojoin
-    else
-      let s:retab_in_process = 1
-    endif
+    let s:retab_in_process = 1
     let &l:tabstop = 2
     setlocal expandtab
     let line = line('.')
@@ -1174,35 +1169,28 @@ function! s:BufNavCommands()
   command!   -buffer -bar -nargs=* -count=1 -complete=custom,s:FindList Rsfind      :<count>RSfind<bang> <args>
   command!   -buffer -bar -nargs=* -count=1 -complete=custom,s:FindList Rvsfind     :<count>RVfind<bang> <args>
   command!   -buffer -bar -nargs=* -count=1 -complete=custom,s:FindList Rtabfind    :<count>RTfind<bang> <args>
-  command!   -buffer -bar -nargs=* -bang    -complete=custom,s:EditList Redit       :call s:Find(<bang>0,<count>,"e" ,<f-args>)
-  command!   -buffer -bar -nargs=* -bang    -complete=custom,s:EditList REedit      :call s:Find(<bang>0,<count>,"eE",<f-args>)
-  command!   -buffer -bar -nargs=* -bang    -complete=custom,s:EditList RSedit      :call s:Find(<bang>0,<count>,"eS",<f-args>)
-  command!   -buffer -bar -nargs=* -bang    -complete=custom,s:EditList RVedit      :call s:Find(<bang>0,<count>,"eV",<f-args>)
-  command!   -buffer -bar -nargs=* -bang    -complete=custom,s:EditList RTedit      :call s:Find(<bang>0,<count>,"eT",<f-args>)
-  if g:rails_avim_commands
-    command! -buffer -bar -nargs=0 A  :call s:Alternate(<bang>0,"")
-    command! -buffer -bar -nargs=0 AE :call s:Alternate(<bang>0,"E")
-    command! -buffer -bar -nargs=0 AS :call s:Alternate(<bang>0,"S")
-    command! -buffer -bar -nargs=0 AV :call s:Alternate(<bang>0,"V")
-    command! -buffer -bar -nargs=0 AT :call s:Alternate(<bang>0,"T")
-    command! -buffer -bar -nargs=0 AN :call s:Related(<bang>0,"")
-    command! -buffer -bar -nargs=0 R  :call s:Related(<bang>0,"")
-    command! -buffer -bar -nargs=0 RE :call s:Related(<bang>0,"E")
-    command! -buffer -bar -nargs=0 RS :call s:Related(<bang>0,"S")
-    command! -buffer -bar -nargs=0 RV :call s:Related(<bang>0,"V")
-    command! -buffer -bar -nargs=0 RT :call s:Related(<bang>0,"T")
-    "command! -buffer -bar -nargs=0 RN :call s:Alternate(<bang>0,"")
-  endif
+  command!   -buffer -bar -nargs=* -bang    -complete=custom,s:EditList Redit       :call s:Edit(<bang>0,<count>,"" ,<f-args>)
+  command!   -buffer -bar -nargs=* -bang    -complete=custom,s:EditList REedit      :call s:Edit(<bang>0,<count>,"E",<f-args>)
+  command!   -buffer -bar -nargs=* -bang    -complete=custom,s:EditList RSedit      :call s:Edit(<bang>0,<count>,"S",<f-args>)
+  command!   -buffer -bar -nargs=* -bang    -complete=custom,s:EditList RVedit      :call s:Edit(<bang>0,<count>,"V",<f-args>)
+  command!   -buffer -bar -nargs=* -bang    -complete=custom,s:EditList RTedit      :call s:Edit(<bang>0,<count>,"T",<f-args>)
+  command! -buffer -bar -nargs=0 A  :call s:Alternate(<bang>0,"")
+  command! -buffer -bar -nargs=0 AE :call s:Alternate(<bang>0,"E")
+  command! -buffer -bar -nargs=0 AS :call s:Alternate(<bang>0,"S")
+  command! -buffer -bar -nargs=0 AV :call s:Alternate(<bang>0,"V")
+  command! -buffer -bar -nargs=0 AT :call s:Alternate(<bang>0,"T")
+  command! -buffer -bar -nargs=0 AN :call s:Related(<bang>0,"")
+  command! -buffer -bar -nargs=0 R  :call s:Related(<bang>0,"")
+  command! -buffer -bar -nargs=0 RE :call s:Related(<bang>0,"E")
+  command! -buffer -bar -nargs=0 RS :call s:Related(<bang>0,"S")
+  command! -buffer -bar -nargs=0 RV :call s:Related(<bang>0,"V")
+  command! -buffer -bar -nargs=0 RT :call s:Related(<bang>0,"T")
+  "command! -buffer -bar -nargs=0 RN :call s:Alternate(<bang>0,"")
   call s:BufFinderCommands()
 endfunction
 
 function! s:Find(bang,count,arg,...)
-  let do_edit = 0
   let cmd = a:arg . (a:bang ? '!' : '')
-  if cmd =~ '\C^e'
-    let do_edit = 1
-    let cmd = s:sub(cmd,'^e','')
-  endif
   let str = ""
   if a:0
     let i = 1
@@ -1210,25 +1198,46 @@ function! s:Find(bang,count,arg,...)
       let str = str . s:escarg(a:{i}) . " "
       let i = i + 1
     endwhile
-    if do_edit
-      let file = a:{i}
-    else
-      let file = s:RailsIncludefind(a:{i},1)
+    let file = a:{i}
+    let tail = matchstr(file,'[@#].*$')
+    if tail != ""
+      let file = s:sub(file,'[@#].*$','')
+    endif
+    if file != ""
+      let file = s:RailsIncludefind(file,1)
     endif
   else
-    if do_edit
-      exe s:editcmdfor(cmd)
-      return
-    else
-      let file = s:RailsFind()
-    endif
+    let file = s:RailsFind()
+    let tail = ""
   endif
-  if file =~ '^\%(app\|components\|config\|db\|public\|test\|vendor\)/.*\.' || do_edit || !a:0
-    call s:findedit(cmd,file,str)
+  if file =~ '^\%(app\|components\|config\|db\|public\|test\|vendor\)/.*\.' || !a:0 || 1
+    call s:findedit((a:count==1?'' : a:count).cmd,file.tail,str)
   else
+    " Old way
     let fcmd = (a:count==1?'' : a:count).s:findcmdfor(cmd)
     let fcmd = s:sub(fcmd,'\(\d\+\)vert ','vert \1')
-    exe fcmd.' '.str.s:escarg(file)
+    if file != ""
+      exe fcmd.' '.str.s:escarg(file)
+    endif
+    if tail != ""
+      silent! exe "djump ".matchstr(tail,'[@#]\zs.*$')
+    endif
+  endif
+endfunction
+
+function! s:Edit(bang,count,arg,...)
+  let cmd = a:arg . (a:bang ? '!' : '')
+  let str = ""
+  if a:0
+    let i = 1
+    while i < a:0
+      let str = str . s:escarg(a:{i}) . " "
+      let i = i + 1
+    endwhile
+    let file = a:{i}
+    call s:findedit(cmd,file,str)
+  else
+    exe s:editcmdfor(cmd)
   endif
 endfunction
 
@@ -1571,10 +1580,9 @@ function! s:EditSimpleRb(bang,cmd,name,target,prefix,suffix)
   return s:findedit(cmd,f)
 endfunction
 
-function! s:migrationEdit(bang,cmd,...)
-  let cmd = s:findcmdfor(a:cmd.(a:bang?'!':''))
+function! s:migrationfor(file)
   let tryagain = 0
-  let arg = a:0 ? a:1 : ''
+  let arg = a:file
   if arg =~ '^\d$'
     let glob = '00'.arg.'_*.rb'
   elseif arg =~ '^\d\d$'
@@ -1595,6 +1603,13 @@ function! s:migrationEdit(bang,cmd,...)
   if migr == '' && tryagain
     let migr = s:sub(glob(RailsRoot().'/db/migrate/*.rb'),'.*\n','')
   endif
+  return migr
+endfunction
+
+function! s:migrationEdit(bang,cmd,...)
+  let cmd = s:findcmdfor(a:cmd.(a:bang?'!':''))
+  let arg = a:0 ? a:1 : ''
+  let migr = s:migrationfor(arg)
   if migr != ''
     call s:findedit(cmd,migr)
   else
@@ -1753,16 +1768,22 @@ function! s:findcmdfor(cmd)
   else
     let cmd = a:cmd
   endif
-  if cmd == '' || cmd == 'E' || cmd == 'F'
-    return 'find'.bang
-  elseif cmd == 'S'
-    return 'sfind'.bang
-  elseif cmd == 'V'
-    return 'vert sfind'.bang
-  elseif cmd == 'T'
-    return 'tabfind'.bang
+  if cmd =~ '^\d'
+    let num = matchstr(cmd,'^\d\+')
+    let cmd = s:sub(cmd,'^\d\+','')
   else
-    return cmd.bang
+    let num = ''
+  endif
+  if cmd == '' || cmd == 'E' || cmd == 'F'
+    return num.'find'.bang
+  elseif cmd == 'S'
+    return num.'sfind'.bang
+  elseif cmd == 'V'
+    return 'vert '.num.'sfind'.bang
+  elseif cmd == 'T'
+    return num.'tabfind'.bang
+  else
+    return num.cmd.bang
   endif
 endfunction
 
@@ -1824,31 +1845,36 @@ endfunction
 
 function! s:Alternate(bang,cmd)
   let cmd = a:cmd.(a:bang?"!":"")
+  let file = s:AlternateFile()
+  if file != ""
+    call s:findedit(cmd,file)
+  else
+    call s:warn("No alternate file is defined")
+  endif
+endfunction
+
+function! s:AlternateFile()
   let f = RailsFilePath()
   let t = RailsFileType()
   let altopt = s:getopt("alternate","bl")
   if altopt != ""
-    call s:findedit(cmd,altopt)
+    return altopt
   elseif f =~ '\<config/environments/'
-    call s:findedit(cmd,"config/environment.rb")
+    return "config/environment.rb"
   elseif f == 'README'
-    call s:findedit(cmd,"config/database.yml")
-  elseif f =~ '\<config/database\.yml$'   | call s:findedit(cmd,"config/routes.rb")
-  elseif f =~ '\<config/routes\.rb$'      | call s:findedit(cmd,"config/environment.rb")
-  elseif f =~ '\<config/environment\.rb$' | call s:findedit(cmd,"config/database.yml")
+    return "config/database.yml"
+  elseif f =~ '\<config/database\.yml$'   | return "config/routes.rb"
+  elseif f =~ '\<config/routes\.rb$'      | return "config/environment.rb"
+  elseif f =~ '\<config/environment\.rb$' | return "config/database.yml"
   elseif f =~ '\<db/migrate/\d\d\d_'
     let num = matchstr(f,'\<db/migrate/0*\zs\d\+\ze_')-1
-    if num
-      call s:migrationEdit(0,cmd,num)
-    else
-      call s:findedit(cmd,"db/schema.rb")
-    endif
+    return num ? s:migrationfor(num) : "db/schema.rb"
   elseif f =~ '\<application\.js$'
-    call s:findedit(cmd,"app/helpers/application_helper.rb")
+    return "app/helpers/application_helper.rb"
   elseif t =~ '^js\>'
-    call s:findedit(cmd,"public/javascripts/application.js")
+    return "public/javascripts/application.js"
   elseif f =~ '\<db/schema\.rb$'
-    call s:migrationEdit(0,cmd,"")
+    return s:migrationfor("")
   elseif t =~ '^view\>'
     if t =~ '\<layout\>'
       let dest = fnamemodify(f,':r:s?/layouts\>??').'/layout'
@@ -1860,26 +1886,26 @@ function! s:Alternate(bang,cmd)
     let controller = fnamemodify(dest,":h:s?/views/?/controllers/?")."_controller.rb"
     let model      = fnamemodify(dest,":h:s?/views/?/models/?").".rb"
     if filereadable(RailsRoot()."/".helper)
-      call s:findedit(cmd,helper)
+      return helper
     elseif filereadable(RailsRoot()."/".controller)
       let jumpto = expand("%:t:r")
-      call s:findedit(cmd,controller.'@'.jumpto)
+      return controller.'@'.jumpto
       "exe "silent! djump ".jumpto
     elseif filereadable(RailsRoot()."/".model)
-      call s:findedit(cmd,model)
+      return model
     else
-      call s:findedit(cmd,helper)
+      return helper
     endif
   elseif t =~ '^controller-api\>'
     let api = s:sub(s:sub(f,'/controllers/','/apis/'),'_controller\.rb$','_api.rb')
-    call s:findedit(cmd,api)
+    return api
   elseif t =~ '^helper\>'
     let controller = s:sub(s:sub(f,'/helpers/','/controllers/'),'_helper\.rb$','_controller.rb')
     let controller = s:sub(controller,'application_controller','application')
-    call s:findedit(cmd,controller)
+    return controller
   elseif t =~ '\<fixtures\>'
     let file = s:singularize(expand("%:t:r")).'_test.rb' " .expand('%:e')
-    call s:findedit(cmd,file)
+    return file
   elseif f == ''
     call s:warn("No filename present")
   elseif fnamemodify(f,":e") == "rb"
@@ -1890,93 +1916,105 @@ function! s:Alternate(bang,cmd)
       let file = file.'_test.rb'
     endif
     if t =~ '^model\>'
-      call s:findedit(cmd,s:sub(file,'app/models/','test/unit/'))
+      return s:sub(file,'app/models/','test/unit/')
     elseif t =~ '^controller\>'
-      call s:findedit(cmd,s:sub(file,'app/controllers/','test/functional/'))
+      return s:sub(file,'app/controllers/','test/functional/')
     elseif t =~ '^test-unit\>'
-      call s:findedit(cmd,s:sub(file,'test/unit/','app/models/'))
+      return s:sub(file,'test/unit/','app/models/')
     elseif t =~ '^test-functional\>'
       if file =~ '_api\.rb'
-        call s:findedit(cmd,s:sub(file,'test/functional/','app/apis/'))
+        return s:sub(file,'test/functional/','app/apis/')
       elseif file =~ '_controller\.rb'
-        call s:findedit(cmd,s:sub(file,'test/functional/','app/controllers/'))
+        return s:sub(file,'test/functional/','app/controllers/')
       else
-        call s:findedit(cmd,s:sub(file,'test/functional/',''))
+        return s:sub(file,'test/functional/','')
       endif
     elseif file =~ '\<vendor/.*/lib/'
-      call s:findedit(cmd,s:sub(file,'\<vendor/.\{-\}/\zslib/','test/'))
+      return s:sub(file,'\<vendor/.\{-\}/\zslib/','test/')
     elseif file =~ '\<vendor/.*/test/'
-      call s:findedit(cmd,s:sub(file,'\<vendor/.\{-\}/\zstest/','lib/'))
+      return s:sub(file,'\<vendor/.\{-\}/\zstest/','lib/')
     else
-      call s:findedit(cmd,fnamemodify(file,":t"))
+      return fnamemodify(file,":t")
     endif
   else
-    call s:warn("No alternate file is defined")
+    return ""
   endif
 endfunction
 
 function! s:Related(bang,cmd)
   let cmd = a:cmd.(a:bang?"!":"")
+  let file = s:RelatedFile()
+  if file != ""
+    call s:findedit(cmd,file)
+  else
+    call s:warn("No related file is defined")
+  endif
+endfunction
+
+function! s:RelatedFile()
   let f = RailsFilePath()
   let t = RailsFileType()
   if s:getopt("related","l") != ""
-    call s:findedit(cmd,s:getopt("related","l"))
+    return s:getopt("related","l")
   elseif t =~ '^\%(controller\|model-mailer\)\>' && s:lastmethod() != ""
-    call s:findedit(cmd,s:sub(s:sub(s:sub(f,'/application\.rb$','/shared_controller.rb'),'/\%(controllers\|models\)/','/views/'),'\%(_controller\)\=\.rb$','/'.s:lastmethod()))
+    return s:sub(s:sub(s:sub(f,'/application\.rb$','/shared_controller.rb'),'/\%(controllers\|models\)/','/views/'),'\%(_controller\)\=\.rb$','/'.s:lastmethod())
   elseif s:getopt("related","b") != ""
-    call s:findedit(cmd,s:getopt("related","b"))
+    return s:getopt("related","b")
   elseif f =~ '\<config/environments/'
-    call s:findedit(cmd,"config/environment.rb")
+    return "config/environment.rb"
   elseif f == 'README'
-    call s:findedit(cmd,"config/database.yml")
-  elseif f =~ '\<config/database\.yml$'   | call s:findedit(cmd,"config/environment.rb")
-  elseif f =~ '\<config/routes\.rb$'      | call s:findedit(cmd,"config/database.yml")
-  elseif f =~ '\<config/environment\.rb$' | call s:findedit(cmd,"config/routes.rb")
+    return "config/database.yml"
+  elseif f =~ '\<config/database\.yml$'   | return "config/environment.rb"
+  elseif f =~ '\<config/routes\.rb$'      | return "config/database.yml"
+  elseif f =~ '\<config/environment\.rb$' | return "config/routes.rb"
   elseif f =~ '\<db/migrate/\d\d\d_'
     let num = matchstr(f,'\<db/migrate/0*\zs\d\+\ze_')+1
-    call s:migrationEdit(0,cmd,num)
+    let migr = s:migrationfor(num)
+    return migr == '' ? "db/schema.rb" : migr
   elseif t =~ '^test\>' && f =~ '\<test/\w\+/'
     let target = s:sub(f,'.*\<test/\w\+/','test/mocks/test/')
     let target = s:sub(target,'_test\.rb$','.rb')
-    call s:findedit(cmd,target)
+    return target
   elseif f =~ '\<application\.js$'
-    call s:findedit(cmd,"app/helpers/application_helper.rb")
+    return "app/helpers/application_helper.rb"
   elseif t =~ '^js\>'
-    call s:findedit(cmd,"public/javascripts/application.js")
+    return "public/javascripts/application.js"
   elseif t =~ '^view-layout\>'
-    call s:findedit(cmd,s:sub(s:sub(s:sub(f,'/views/','/controllers/'),'/layouts/\(\k\+\)\..*$','/\1_controller.rb'),'application_controller\.rb$','application.rb'))
+    return s:sub(s:sub(s:sub(f,'/views/','/controllers/'),'/layouts/\(\k\+\)\..*$','/\1_controller.rb'),'application_controller\.rb$','application.rb')
   elseif t=~ '^view-partial\>'
     call s:warn("No related file is defined")
   elseif t =~ '^view\>'
     let controller = s:sub(s:sub(f,'/views/','/controllers/'),'/\(\k\+\)\..*$','_controller.rb@\1')
     let model      = s:sub(s:sub(f,'/views/','/models/'),'/\(\k\+\)\..*$','.rb@\1')
     if filereadable(s:sub(controller,'@.\{-\}$',''))
-      call s:findedit(cmd,controller)
+      return controller
     elseif filereadable(s:sub(model,'@.\{-\}$','')) || model =~ '_mailer\.rb@'
-      call s:findedit(cmd,model)
+      return model
     else
-      call s:findedit(cmd,controller)
+      return controller
     endif
   elseif t =~ '^controller-api\>'
-    call s:findedit(cmd,s:sub(s:sub(f,'/controllers/','/apis/'),'_controller\.rb$','_api.rb'))
+    return s:sub(s:sub(f,'/controllers/','/apis/'),'_controller\.rb$','_api.rb')
   elseif t =~ '^controller\>'
     if s:lastmethod() != ""
-      call s:findedit(cmd,s:sub(s:sub(s:sub(f,'/application\.rb$','/shared_controller.rb'),'/controllers/','/views/'),'_controller\.rb$','/'.s:lastmethod()))
+      return s:sub(s:sub(s:sub(f,'/application\.rb$','/shared_controller.rb'),'/controllers/','/views/'),'_controller\.rb$','/'.s:lastmethod())
     else
-      call s:findedit(cmd,s:sub(s:sub(f,'/controllers/','/helpers/'),'\%(_controller\)\=\.rb$','_helper.rb'))
+      return s:sub(s:sub(f,'/controllers/','/helpers/'),'\%(_controller\)\=\.rb$','_helper.rb')
     endif
   elseif t=~ '^helper\>'
-      call s:findedit(cmd,s:sub(s:sub(f,'/helpers/','/views/layouts/'),'\%(_helper\)\=\.rb$',''))
+      return s:sub(s:sub(f,'/helpers/','/views/layouts/'),'\%(_helper\)\=\.rb$','')
   elseif t =~ '^model-arb\=\>'
-    call s:migrationEdit(0,cmd,'create_'.s:pluralize(expand('%:t:r')))
+    "call s:migrationEdit(0,cmd,'create_'.s:pluralize(expand('%:t:r')))
+    return s:migrationfor('create_'.s:pluralize(expand('%:t:r')))
   elseif t =~ '^model-aro\>'
-    call s:findedit(cmd,s:sub(f,'_observer\.rb$','.rb'))
+    return s:sub(f,'_observer\.rb$','.rb')
   elseif t =~ '^api\>'
-    call s:findedit(cmd,s:sub(s:sub(f,'/apis/','/controllers/'),'_api\.rb$','_controller.rb'))
+    return s:sub(s:sub(f,'/apis/','/controllers/'),'_api\.rb$','_controller.rb')
   elseif f =~ '\<db/schema\.rb$'
-    call s:migrationEdit(0,cmd,"1")
+    return s:migrationfor(1)
   else
     call s:warn("No related file is defined")
+    return ""
   endif
 endfunction
 
