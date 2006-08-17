@@ -730,7 +730,7 @@ function! s:Rake(bang,arg)
     let oldefm = &efm
     "errorformat=%*[^"]"%f"%*\D%l: %m,"%f"%*\D%l: %m,%-G%f:%l: (Each undeclared identifier is reported only once,%-G%f:%l: for each function it appears in.),%f:%l:%c:%m,%f(%l):%m,%f:%l:%m,"%f"\, line %l%*\D%c%*[^ ] %m,%D%*\a[%*\d]: Entering directory `%f',%X%*\a[%*\d]: Leaving directory `%f',%D%*\a: Entering directory `%
     setlocal efm=\%+E%f:%l:\ parse\ error,%W%f:%l:\ warning:\ %m,%E%f:%l:in\ %*[^:]:\ %m,%E%f:%l:\ %m,%-C%\tfrom\ %f:%l:in\ %.%#,%-Z%\tfrom\ %f:%l,%-Z%p^,%-G%.%#
-    " Want an error format for a full stack backtrace
+    " Need an error format for a full stack backtrace
   endif
   let t = RailsFileType()
   let arg = a:arg
@@ -796,8 +796,14 @@ function! s:Rake(bang,arg)
     make db:migrate
   elseif t=~ '^model\>'
     make test:units TEST="%:p:r:s?[\/]app[\/]models[\/]?/test/unit/?_test.rb"
+  elseif t=~ '^api\>'
+    make test:units TEST="%:p:r:s?[\/]app[\/]apis[\/]?/test/functional/?_test.rb"
   elseif t=~ '^\<\%(controller\|helper\|view\)\>'
-    make test:functionals
+    if RailsFilePath() =~ '\<app/' && s:controller() != ""
+      exe 'make test:functionals TEST="'.s:ra().'/test/functional/'.s:controller().'_controller_test.rb"'
+    else
+      make test:functionals
+    endif
   else
     make
   endif
@@ -1621,7 +1627,7 @@ function! s:fixturesEdit(bang,cmd,...)
   if a:0
     let c = s:underscore(a:1)
   else
-    let c = s:model(1)
+    let c = s:pluralize(s:model(1))
   endif
   if c == ""
     return s:error("E471: Argument required")
@@ -1629,7 +1635,7 @@ function! s:fixturesEdit(bang,cmd,...)
   let e = fnamemodify(c,':e')
   let e = e == '' ? e : '.'.e
   let c = fnamemodify(c,':r')
-  let file = 'test/fixtures/'.s:pluralize(c).e
+  let file = 'test/fixtures/'.c.e
   if file =~ '\.\w\+$'
     call s:edit(a:cmd.(a:bang?'!':''),file)
   else
@@ -3535,7 +3541,7 @@ function! s:BufSettings()
     setlocal includeexpr=RailsIncludeexpr()
     setlocal suffixesadd=.rb,.rhtml,.rxml,.rjs,.mab,.liquid,.css,.js,.yml,.csv,.rake,.sql,.html
   endif
-  if &filetype == "ruby"
+  if &filetype == "ruby" || &ft == "rjs" || &ft == "rxml"
     setlocal suffixesadd=.rb,.rhtml,.rxml,.rjs,.mab,.liquid,.yml,.csv,.rake,s.rb
     if expand('%:e') == 'rake'
       setlocal define=^\\s*def\\s\\+\\(self\\.\\)\\=\\\|^\\s*\\%(task\\\|file\\)\\s\\+[:'\"]
@@ -3544,7 +3550,9 @@ function! s:BufSettings()
     endif
   elseif &filetype == "eruby"
     "set include=\\<\\zsAct\\f*::Base\\ze\\>\\\|^\\s*\\(require\\\|load\\)\\s\\+['\"]\\zs\\f\\+\\ze\\\|\\zs<%=\\ze
-    setlocal suffixesadd=.rhtml,.rxml,.rjs,.mab,.liquid,.rb,.css,.js,.html
+    setlocal suffixesadd=.rhtml,.rxml,.rjs,.mab,.liquid,.rb,.css,.js,.html,.yml,.csv
+  elseif &filetype == "yaml"
+    setlocal suffixesadd=.yml,.csv,.rb,.rhtml,.rxml,.rjs,.mab,.liquid,.rake,s.rb
   endif
 endfunction
 
