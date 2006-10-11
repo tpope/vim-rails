@@ -359,6 +359,7 @@ function! RailsFilePath()
     return b:rails_file_path
   endif
   let f = s:gsub(expand("%:p"),'\\ \@!','/')
+  let f = s:sub(f,'/$','')
   if s:gsub(b:rails_root,'\\ \@!','/') == strpart(f,0,strlen(b:rails_root))
     return strpart(f,strlen(b:rails_root)+1)
   else
@@ -1439,7 +1440,7 @@ function! s:RailsIncludefind(str,...)
     elseif filereadable(str.".rjs")
       let str = str . ".rjs"
     endif
-  else
+  elseif str !~ '/'
     " If we made it this far, we'll risk making it singular.
     let str = s:singularize(str)
     let str = s:sub(str,'_id$','')
@@ -1581,8 +1582,15 @@ function! s:EditSimpleRb(bang,cmd,name,target,prefix,suffix)
   if a:target == ""
     " Good idea to emulate error numbers like this?
     return s:error("E471: Argument required") " : R',a:name)
+  else
+    let g:target = a:target
   endif
-  let f = a:prefix.s:underscore(a:target).a:suffix.".rb"
+  let f = a:prefix.s:underscore(a:target)
+  if f =~ '[\/]\.$'
+    let f = s:sub(f,'[\/]\.$','')
+  else
+    let f = f.a:suffix.".rb"
+  endif
   return s:findedit(cmd,f)
 endfunction
 
@@ -1661,6 +1669,8 @@ function! s:viewEdit(bang,cmd,...)
   endif
   if view == ''
     return s:error("No view name given")
+  elseif view == '.'
+    return s:edit(a:cmd.(a:bang?'!':''),'app/views')
   elseif view !~ '/' && s:controller(1) != ''
     let view = s:controller(1) . '/' . view
   endif
@@ -1677,7 +1687,7 @@ endfunction
 
 function! s:findlayout(name)
   let c = a:name
-  let pre = "app/views/layouts/"
+  let pre = "/app/views/layouts/"
   if c =~ '\.'
     return pre.c
   elseif filereadable(RailsRoot(). pre.c.".rhtml")
@@ -1832,6 +1842,10 @@ function! s:findedit(cmd,file,...) abort
       let file = s:ra().'/'.file
     endif
     let testcmd = s:editcmdfor(cmd).' '.(a:0 ? a:1 . ' ' : '').file
+  elseif isdirectory(RailsRoot().'/'.file)
+    let testcmd = s:editcmdfor(cmd).' '.(a:0 ? a:1 . ' ' : '').s:ra().'/'.file
+    exe testcmd
+    return
   else
     let testcmd = cmd.' '.(a:0 ? a:1 . ' ' : '').file
   endif
@@ -3494,7 +3508,7 @@ function! s:SetBasePath()
   if stridx(oldpath,rp) == 2
     let oldpath = ''
   endif
-  let &l:path = '.,'.rp.",".rp."/app/controllers,".rp."/app,".rp."/app/models,".rp."/app/helpers,".rp."/components,".rp."/config,".rp."/lib,".rp."/vendor,".rp."/vendor/plugins/*/lib,".rp."/test/unit,".rp."/test/functional,".rp."/test/integration,".rp."/app/apis,".rp."/app/services,".rp."/test,"."/vendor/plugins/*/test,".rp."/vendor/rails/*/lib,".rp."/vendor/rails/*/test,"
+  let &l:path = '.,'.rp.",".rp."/app/controllers,".rp."/app,".rp."/app/models,".rp."/app/models/*,".rp."/app/helpers,".rp."/components,".rp."/config,".rp."/lib,".rp."/vendor,".rp."/vendor/plugins/*/lib,".rp."/test/unit,".rp."/test/functional,".rp."/test/integration,".rp."/app/apis,".rp."/app/services,".rp."/test,"."/vendor/plugins/*/test,".rp."/vendor/rails/*/lib,".rp."/vendor/rails/*/test,"
   if s:controller() != ''
     if RailsFilePath() =~ '\<components/'
       let &l:path = &l:path . rp . '/components/' . s:controller() . ','

@@ -18,6 +18,7 @@ Author: Tim Pope <vimNOSPAM@tpope.info>		|rails-plugin-author|
 |rails-configuration|		Configuration
 |rails-global-settings| 	Global Settings
 |rails-about|			About rails.vim
+|rails-license|			    License
 |rails-todo|			To Do
 
 This plugin is only available if 'compatible' is not set.
@@ -880,6 +881,7 @@ and contains the very latest features and bugs.
 Feedback is highly desired on this plugin.  Please send all comments,
 complaints, and compliments to the author.
 
+						*rails-license*
 This plugin is distributable under the same terms as Vim itself.  See
 |license|.  No warranties, expressed or implied.
 

@@ -1,4 +1,8 @@
 # $Id$
+
+require 'rake'
+require 'rake/contrib/sshpublisher'
+
 files = ['plugin/rails.vim', 'doc/rails.txt']
 
 desc "Make zip file"
@@ -24,6 +28,10 @@ file 'rails.vba' => files do |t|
       end
     end
   end
+end
+
+task :publish => [:zip,:vimball] do
+  Rake::SshFilePublisher.new("tpope.us","/var/www",".","rails.zip","rails.vba").upload
 end
 
 task 'zip' => 'rails.zip'
