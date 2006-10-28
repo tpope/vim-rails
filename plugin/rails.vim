@@ -963,7 +963,7 @@ function! s:getpidfor(bind,port)
       let netstat = system("netstat -anop tcp")
       let pid = matchstr(netstat,'\<'.a:bind.':'.a:port.'\>.\{-\}LISTENING\s\+\zs\d\+')
     elseif executable('lsof')
-      let pid = system("lsof -ti 4tcp@".a:bind.":".a:port)
+      let pid = system("lsof -i 4tcp@".a:bind.':'.a:port."|grep LISTEN|awk '{print $2}'")
       let pid = s:sub(pid,'\n','')
     else
       let pid = ""
@@ -2576,6 +2576,8 @@ function! s:BufMappings()
     call s:leadermap('r',':R<CR>')
     call s:leadermap('m',':Rake<CR>')
   endif
+  " SelectBuf you're a dirty hack
+  let v:errmsg = ""
 endfunction
 
 " }}}1
