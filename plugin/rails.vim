@@ -814,7 +814,7 @@ function! s:Rake(bang,arg)
 endfunction
 
 function! s:raketasks()
-  return "db:fixtures:load\ndb:migrate\ndb:schema:dump\ndb:schema:load\ndb:sessions:clear\ndb:sessions:create\ndb:structure:dump\ndb:test:clone\ndb:test:clone_structure\ndb:test:prepare\ndb:test:purge\ndoc:app\ndoc:clobber_app\ndoc:clobber_plugins\ndoc:clobber_rails\ndoc:plugins\ndoc:rails\ndoc:reapp\ndoc:rerails\nlog:clear\nrails:freeze:edge\nrails:freeze:gems\nrails:unfreeze\nrails:update\nrails:update:configs\nrails:update:javascripts\nrails:update:scripts\nstats\ntest\ntest:functionals\ntest:integration\ntest:plugins\ntest:recent\ntest:uncommitted\ntest:units\ntmp:cache:clear\ntmp:clear\ntmp:create\ntmp:sessions:clear\ntmp:sockets:clear"
+  return "db:fixtures:load\ndb:migrate\ndb:schema:dump\ndb:schema:load\ndb:sessions:clear\ndb:sessions:create\ndb:structure:dump\ndb:test:clone\ndb:test:clone_structure\ndb:test:prepare\ndb:test:purge\ndoc:app\ndoc:clobber_app\ndoc:clobber_plugins\ndoc:clobber_rails\ndoc:plugins\ndoc:rails\ndoc:reapp\ndoc:rerails\nlog:clear\nrails:freeze:edge\nrails:freeze:gems\nrails:unfreeze\nrails:update\nrails:update:configs\nrails:update:javascripts\nrails:update:scripts\nstats\ntest\ntest:functionals\ntest:integration\ntest:plugins\ntest:recent\ntest:uncommitted\ntest:units\ntmp:cache:clear\ntmp:clear\ntmp:create\ntmp:pids:clear\ntmp:sessions:clear\ntmp:sockets:clear"
 endfunction
 
 function! s:RakeComplete(A,L,P)
@@ -1076,10 +1076,9 @@ function! s:ScriptComplete(ArgLead,CmdLine,P)
   "  return s:gsub(glob(RailsRoot()."/script/**"),'\%(.\%(\n\)\@<!\)*[\/]script[\/]','')
   let cmd = s:sub(a:CmdLine,'^\u\w*\s\+','')
   let P = a:P - strlen(a:CmdLine)+strlen(cmd)
-  let g:A = a:ArgLead
-  let g:L = cmd
-  let g:P = P
-  let g:foo = strlen(cmd)-P
+  "let g:A = a:ArgLead
+  "let g:L = cmd
+  "let g:P = P
   if cmd !~ '^[ A-Za-z0-9_=-]*$'
     " You're on your own, bud
     return ""
@@ -1343,9 +1342,9 @@ function! s:RailsFind()
   if res != ""|return res|endif
   let res = s:findasymbol('action','\1')
   if res != ""|return res|endif
-  let res = s:sub(s:findasymbol('partial','\1'),'\k\+$','_&')
+  let res = s:sub(s:sub(s:findasymbol('partial','\1'),'\k\+$','_&'),'^/','')
   if res != ""|return res|endif
-  let res = s:sub(s:findfromview('render\s*(\=\s*:partial\s\+=>\s*','\1'),'\k\+$','_&')
+  let res = s:sub(s:sub(s:findfromview('render\s*(\=\s*:partial\s\+=>\s*','\1'),'\k\+$','_&'),'^/','')
   if res != ""|return res|endif
   let res = s:findamethod('render\s*:\%(template\|action\)\s\+=>\s*','\1')
   if res != ""|return res|endif
@@ -1377,7 +1376,6 @@ function! s:RailsIncludefind(str,...)
     " Probably a silly idea
     return "action_view.rb"
   endif
-  let g:mymode = mode()
   let str = a:str
   if a:0 == 1
     " Get the text before the filename under the cursor.
@@ -1582,8 +1580,8 @@ function! s:EditSimpleRb(bang,cmd,name,target,prefix,suffix)
   if a:target == ""
     " Good idea to emulate error numbers like this?
     return s:error("E471: Argument required") " : R',a:name)
-  else
-    let g:target = a:target
+  "else
+    "let g:target = a:target
   endif
   let f = a:prefix.s:underscore(a:target)
   if f =~ '[\/]\.$'
@@ -2543,11 +2541,13 @@ function! s:BufMappings()
   map <buffer> <silent> <Plug>RailsTabFind    :RTfind<CR>
   if g:rails_mappings
     " Unmap so hasmapto doesn't get confused by stale bindings
-    call s:leaderunmap('f','<Plug>RailsFind')
-    call s:leaderunmap('a','<Plug>RailsAlternate')
-    call s:leaderunmap('r','<Plug>RailsRelated')
-    call s:leaderunmap('m',':Rake<CR>')
-    silent! unmap <buffer> <Plug>RailsMagicM
+    if g:rails_leader != ""
+      call s:leaderunmap('f','<Plug>RailsFind')
+      call s:leaderunmap('a','<Plug>RailsAlternate')
+      call s:leaderunmap('r','<Plug>RailsRelated')
+      call s:leaderunmap('m',':Rake<CR>')
+    endif
+    "silent! unmap <buffer> <Plug>RailsMagicM
     if !hasmapto("<Plug>RailsFind")
       nmap <buffer> gf              <Plug>RailsFind
     endif
@@ -2570,11 +2570,12 @@ function! s:BufMappings()
       imap <buffer> <M-]>  <C-O><Plug>RailsRelated
     endif
     map <buffer> <silent> <Plug>RailsMagicM    :echoerr "Obsolete: Use <Plug>RailsRelated instead"<CR>
-    let g:rails_leader = "<LocalLeader>r"
-    call s:leadermap('f','<Plug>RailsFind')
-    call s:leadermap('a',':A<CR>')
-    call s:leadermap('r',':R<CR>')
-    call s:leadermap('m',':Rake<CR>')
+    if g:rails_leader != ""
+      call s:leadermap('f','<Plug>RailsFind')
+      call s:leadermap('a',':A<CR>')
+      call s:leadermap('r',':R<CR>')
+      call s:leadermap('m',':Rake<CR>')
+    endif
   endif
   " SelectBuf you're a dirty hack
   let v:errmsg = ""
@@ -3564,11 +3565,44 @@ function! s:BufSettings()
     else
       setlocal define=^\\s*def\\s\\+\\(self\\.\\)\\=
     endif
+    " This really belongs in after/ftplugin/ruby.vim but we'll be nice
+    if !exists("b:surround_101")
+      let b:surround_101 = "\r\nend"
+    endif
   elseif &filetype == "eruby"
-    "set include=\\<\\zsAct\\f*::Base\\ze\\>\\\|^\\s*\\(require\\\|load\\)\\s\\+['\"]\\zs\\f\\+\\ze\\\|\\zs<%=\\ze
     setlocal suffixesadd=.rhtml,.rxml,.rjs,.mab,.liquid,.rb,.css,.js,.html,.yml,.csv
+    if exists("b:loaded_allml")
+      " allml is currently unreleased as of writing this comment but can be
+      " found in my config file CVS repository if you dig around.
+      let b:allml_stylesheet_link_tag = "<%= stylesheet_link_tag '\r' %>"
+      let b:allml_javascript_include_tag = "<%= javascript_include_tag '\r' %>"
+      let b:allml_doctype_index = 10
+    endif
   elseif &filetype == "yaml"
     setlocal suffixesadd=.yml,.csv,.rb,.rhtml,.rxml,.rjs,.mab,.liquid,.rake,s.rb
+  endif
+  if &filetype == "eruby" || &filetype == "yaml"
+    " surround.vim
+    if exists("g:loaded_surround")
+      " The idea behind the || part here is that one can normally define the
+      " surrounding to omit the hyphen (since standard ERuby does not use it)
+      " but have it added in Rails ERuby files.  Unfortunately, this makes it
+      " difficult if you really don't want a hyphen in Rails ERuby files.  If
+      " this is your desire, you will need to accomplish it via a rails.vim
+      " autocommand.
+      if !exists("b:surround_45") || b:surround_45 == "<% \r %>" " -
+        let b:surround_45 = "<% \r -%>"
+      endif
+      if !exists("b:surround_61") " =
+        let b:surround_61 = "<%= \r %>"
+      endif
+      if !exists("b:surround_35") " #
+        let b:surround_35 = "<%# \r %>"
+      endif
+      if !exists("b:surround_101") " e
+        let b:surround_101 = "<% \r -%>\n<% end -%>"
+      endif
+    endif
   endif
 endfunction
 

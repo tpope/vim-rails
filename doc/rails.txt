@@ -19,7 +19,6 @@ Author: Tim Pope <vimNOSPAM@tpope.info>		|rails-plugin-author|
 |rails-global-settings| 	Global Settings
 |rails-about|			About rails.vim
 |rails-license|			    License
-|rails-todo|			To Do
 
 This plugin is only available if 'compatible' is not set.
 
@@ -550,6 +549,30 @@ finds the file under the cursor (as in |rails-gf|), and Alt+[ and Alt+] find
 the alternate (|rails-alternate|) and related (|rails-related|) files.  There
 is also a GUI menu, which is available in both Cream and GVim.
 
+						*rails-surround*
+The |surround| plugin available from vim.org enables adding and removing
+"surroundings" like parentheses, quotes, and HTML tags.  Even by itself, it is
+quite useful for Rails development, particularly ERuby editing.  When coupled
+with this plugin, a few additional replacement surroundings are available in
+ERuby files.  See the |surround| documentation for details on how to use them.
+The table below uses ^ to represent the position of the surrounded text.
+
+Key	Surrounding ~
+=	<%= ^ %>
+-	<% ^ -%>
+#	<%# ^ %>
+e	<% ^ -%>\n<% end -%>
+
+The last surrounding is particularly useful in insert mode with the following
+map in one's vimrc.  Use Alt+o to open a new line below the current one.  This
+works nicely even in a terminal (where most alt/meta maps will fail) because
+most terminals send <M-o> as <Esc>o anyways.
+>
+  imap <M-o> <Esc>o
+>
+One can also use the "e" surrounding in a plain Ruby file to append a bare
+"end" on the following line.
+
 ==============================================================================
 ABBREVIATIONS				*rails-abbreviations* *rails-snippets*
 
@@ -755,7 +778,7 @@ value	meaning ~
 
 						*g:loaded_rails*  >
 	let g:loaded_rails=1
-Do not load the plugin. For emergency use only.
+Do not load the plugin.  For emergency use only.
 
 						*g:rails_abbreviations*
 Enable Rails abbreviations.  See |rails-abbreviations|.  Enabled when
@@ -884,11 +907,6 @@ complaints, and compliments to the author.
 						*rails-license*
 This plugin is distributable under the same terms as Vim itself.  See
 |license|.  No warranties, expressed or implied.
-
-==============================================================================
-TODO						*rails-todo*
-
-Create and maintain some sort of changelog.  (No seriously, I really plan to.)
 
 ==============================================================================
 vim:tw=78:ts=8:ft=help:norl:
