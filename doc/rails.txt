@@ -59,7 +59,7 @@ Rails application development.
    to complete such long method names.
 
 6. Interface to script/*.  Generally, use ":Rscript about" to call
-   "script/about".  Many commands have wrappers with additional features:
+   "script/about".  Most commands have wrappers with additional features:
    ":Rgenerate controller Blog" generates a blog controller and edits
    app/controllers/blog_controller.rb.  |rails-scripts|
 

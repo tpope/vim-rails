@@ -13,7 +13,7 @@
 " Exit quickly when:
 " - this plugin was already loaded (or disabled)
 " - when 'compatible' is set
-if exists("g:loaded_rails") && (g:loaded_rails && !g:rails_debug) || &cp
+if &cp || (exists("g:loaded_rails") && g:loaded_rails) && !(exists("g:rails_debug") && g:rails_debug)
   finish
 endif
 let g:loaded_rails = 1
