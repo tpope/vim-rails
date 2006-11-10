@@ -127,7 +127,7 @@ function! s:rubyeval(ruby,...)
   if !executable("ruby")
     return def
   endif
-  let cmd = s:rubyexestr('-e '.s:rquote('require %{rubygems} rescue nil; require %{active_support} rescue nil; '.a:ruby))
+  let cmd = s:rubyexestr('-e '.s:rquote('begin; require %{rubygems}; rescue LoadError; end; begin; require %{active_support}; rescue LoadError; end; '.a:ruby))
   "let g:rails_last_ruby_command = cmd
   " If the shell is messed up, this command could cause an error message
   silent! let results = system(cmd)
@@ -216,6 +216,8 @@ function! s:controller(...)
     return s:sub(f,'.*\<components/\(.\{-\}\)/\k\+\.\k\+$','\1')
   elseif f =~ '\<app/models/.*\.rb$' && t =~ '^model-mailer\>'
     return s:sub(f,'.*\<app/models/\(.\{-\}\)\.rb$','\1')
+  elseif f =~ '\<public/stylesheets/.*\.css$'
+    return s:sub(f,'.*\<public/stylesheets/\(.\{-\}\)\.css$','\1')
   elseif a:0 && a:1
     return s:pluralize(s:model())
   endif
@@ -426,7 +428,7 @@ function! RailsFileType()
     if e == "yml"
       let r = "fixtures-yaml"
     else
-      let r = "fixtures-" . e
+      let r = "fixtures" . (e == "" ? "" : "-" . e)
     endif
   elseif f =~ '\<test/.*_test\.rb'
     let r = "test"
@@ -996,7 +998,8 @@ function! s:Server(bang,arg)
   if has("win32") || has("win64") || (exists("$STY") && !has("gui_running") && s:getopt("gnu_screen","abg") && executable("screen"))
     call s:rubyexebg(s:rquote("script/server")." ".a:arg)
   else
-    call s:rubyexe(s:rquote("script/server")." ".a:arg." --daemon")
+    "--daemon would be more descriptive but lighttpd does not support it
+    call s:rubyexe(s:rquote("script/server")." ".a:arg." -d")
   endif
   call s:setopt('a:root_url','http://'.(bind=='0.0.0.0'?'localhost': bind).':'.port.'/')
 endfunction
@@ -1093,9 +1096,9 @@ function! s:ScriptComplete(ArgLead,CmdLine,P)
   elseif cmd =~ '^\%(generate\|destroy\)\s\+\w\+\s\+'.a:ArgLead.'$'
     let target = matchstr(cmd,'^\w\+\s\+\zs\w\+\ze\s\+')
     let pattern = "" " TODO
-    if target == 'controller'
+    if target =~# '^\%(\w*_\)\=controller$'
       return s:sub(s:controllerList(pattern,"",""),'^application\n\=','')
-    elseif target == 'model' || target == 'scaffold' || target == 'mailer'
+    elseif target =~# '^\%(\w*_\)\=model$' || target == 'scaffold' || target == 'mailer'
       return s:modelList(pattern,"","")
     elseif target == 'migration' || target == 'session_migration'
       return s:migrationList(pattern,"","")
@@ -1256,11 +1259,11 @@ function! s:FindList(ArgLead, CmdLine, CursorPos)
 endfunction
 
 function! s:EditList(ArgLead, CmdLine, CursorPos)
-  if exists("*UserFileComplete") " genutils.vim
-    return UserFileComplete(s:RailsIncludefind(a:ArgLead), a:CmdLine, a:CursorPos, 1, s:rp())
-  else
-    return ""
-  endif
+  "if exists("*UserFileComplete") " genutils.vim
+    "return UserFileComplete(s:RailsIncludefind(a:ArgLead), a:CmdLine, a:CursorPos, 1, s:rp())
+  "else
+    return s:relglob("",a:ArgLead."*[^~]")
+  "endif
 endfunction
 
 function! RailsIncludeexpr()
@@ -1410,9 +1413,9 @@ function! s:RailsIncludefind(str,...)
   elseif line =~ '\<layout\s*(\=\s*' || line =~ '\(:layout\|"layout"\|'."'layout'".'\)\s*=>\s*'
     let str = s:sub(str,'^/\=','views/layouts/')
   elseif line =~ '\(:controller\|"controller"\|'."'controller'".'\)\s*=>\s*'
-    let str = 'controllers/'.str.'_controller.rb'
+    let str = 'app/controllers/'.str.'_controller.rb'
   elseif line =~ '\<helper\s*(\=\s*'
-    let str = 'helpers/'.str.'_helper.rb'
+    let str = 'app/helpers/'.str.'_helper.rb'
   elseif line =~ '\<fixtures\s*(\='.fpat
     let str = s:sub(str,'^/\@!','test/fixtures/')
   elseif line =~ '\<stylesheet_\(link_tag\|path\)\s*(\='.fpat
@@ -1425,9 +1428,9 @@ function! s:RailsIncludefind(str,...)
     let str = s:sub(str,'^/\@!','/javascripts/')
     let str = 'public'.s:sub(str,'^[^.]*$','&.js')
   elseif line =~ '\<\(has_one\|belongs_to\)\s*(\=\s*'
-    let str = 'models/'.str.'.rb'
+    let str = 'app/models/'.str.'.rb'
   elseif line =~ '\<has_\(and_belongs_to_\)\=many\s*(\=\s*'
-    let str = 'models/'.s:singularize(str).'.rb'
+    let str = 'app/models/'.s:singularize(str).'.rb'
   elseif line =~ '\<def\s\+' && expand("%:t") =~ '_controller\.rb'
     let str = s:sub(s:sub(RailsFilePath(),'/controllers/','/views/'),'_controller\.rb$','/'.str)
     "let str = s:sub(expand("%:p"),'.*[\/]app[\/]controllers[\/]\(.\{-\}\)_controller.rb','views/\1').'/'.str
@@ -1457,7 +1460,7 @@ endfunction
 
 function! s:addfilecmds(type)
   let l = s:sub(a:type,'^.','\l&')
-  let cmds = 'ESVT'
+  let cmds = 'ESVT '
   let cmd = ''
   while cmds != ''
     exe "command! -buffer -bar -nargs=* -complete=custom,s:".l."List R".cmd.l." :call s:".l.'Edit(<bang>0,"'.cmd.'",<f-args>)'
@@ -1479,6 +1482,8 @@ function! s:BufFinderCommands()
   call s:addfilecmds("unittest")
   call s:addfilecmds("functionaltest")
   call s:addfilecmds("integrationtest")
+  call s:addfilecmds("stylesheet")
+  call s:addfilecmds("javascript")
 endfunction
 
 function! s:relglob(path,glob,...)
@@ -1504,20 +1509,21 @@ function! s:relglob(path,glob,...)
     let tmp = strpart(badres,0,idx)
     let badres = strpart(badres,idx+1)
     let goodres = goodres.strpart(tmp,striplen,strlen(tmp)-striplen-stripend)
-    if suffix == '' && isdirectory(tmp)
+    if suffix == '' && isdirectory(tmp) && goodres !~ '/$'
       let goodres = goodres."/"
     endif
     let goodres = goodres."\n"
   endwhile
-  return s:sub(goodres,'\n$','')
+  "let goodres = s:gsub("\n".goodres,'\n.\{-\}\~\n','\n')
+  return s:sub(s:sub(goodres,'\n$',''),'^\n','')
 endfunction
 
 function! s:helperList(A,L,P)
-  return s:relglob("app/helpers/",a:A."**","_helper.rb")
+  return s:relglob("app/helpers/","**/*","_helper.rb")
 endfunction
 
 function! s:controllerList(A,L,P)
-  let con = s:relglob("app/controllers/",a:A."*","_controller.rb")
+  let con = s:relglob("app/controllers/","**/*","_controller.rb")
   if con != ''
     return "application\n".con
   else
@@ -1527,7 +1533,7 @@ endfunction
 
 function! s:viewList(A,L,P)
   let c = s:controller(1)
-  let top = s:relglob("app/views/",a:A."*")
+  let top = s:relglob("app/views/",a:A."*[^~]")
   if c != ''
     let local = s:relglob("app/views/".c."/",a:A."*.*[^~]")
     if local != ''
@@ -1541,14 +1547,22 @@ function! s:layoutList(A,L,P)
   return s:relglob("app/views/layouts/",a:A."*")
 endfunction
 
+function! s:stylesheetList(A,L,P)
+  return s:relglob("public/stylesheets/","**/*",".css")
+endfunction
+
+function! s:javascriptList(A,L,P)
+  return s:relglob("public/javascripts/","**/*",".js")
+endfunction
+
 function! s:modelList(A,L,P)
-  let models = s:relglob("app/models/",a:A."**",".rb")."\n"
+  let models = s:relglob("app/models/","**/*",".rb")."\n"
   let models = s:gsub(models,'\n.\{-\}_observer\%(\n\@=\|$\)',"")
-  return s:sub(models,'^\n','')
+  return s:sub(s:sub(models,'^\n',''),'\n$','')
 endfunction
 
 function! s:observerList(A,L,P)
-  return s:relglob("app/models/",a:A."**","_observer.rb")
+  return s:relglob("app/models/","**/*","_observer.rb")
 endfunction
 
 function! s:fixturesList(A,L,P)
@@ -1560,19 +1574,19 @@ function! s:migrationList(A,L,P)
 endfunction
 
 function! s:apiList(A,L,P)
-  return s:relglob("app/apis/",a:A."**","_api.rb")
+  return s:relglob("app/apis/","**/*","_api.rb")
 endfunction
 
 function! s:unittestList(A,L,P)
-  return s:relglob("test/unit/",a:A."**","_test.rb")
+  return s:relglob("test/unit/","**/*","_test.rb")
 endfunction
 
 function! s:functionaltestList(A,L,P)
-  return s:relglob("test/functional/",a:A."**","_test.rb")
+  return s:relglob("test/functional/","**/*","_test.rb")
 endfunction
 
 function! s:integrationtestList(A,L,P)
-  return s:relglob("test/integration/",a:A."**","_test.rb")
+  return s:relglob("test/integration/","**/*","_test.rb")
 endfunction
 
 function! s:EditSimpleRb(bang,cmd,name,target,prefix,suffix)
@@ -1587,7 +1601,10 @@ function! s:EditSimpleRb(bang,cmd,name,target,prefix,suffix)
   if f =~ '[\/]\.$'
     let f = s:sub(f,'[\/]\.$','')
   else
-    let f = f.a:suffix.".rb"
+    let f = f.a:suffix
+    if a:suffix !~ '\.'
+      let f = f.".rb"
+    endif
   endif
   return s:findedit(cmd,f)
 endfunction
@@ -1732,6 +1749,14 @@ endfunction
 
 function! s:apiEdit(bang,cmd,...)
   return s:EditSimpleRb(a:bang,a:cmd,"api",a:0 ? a:1 : s:controller(1),"app/apis/","_api")
+endfunction
+
+function! s:stylesheetEdit(bang,cmd,...)
+  return s:EditSimpleRb(a:bang,a:cmd,"stylesheet",a:0? a:1 : s:controller(1),"public/stylesheets/",".css")
+endfunction
+
+function! s:javascriptEdit(bang,cmd,...)
+  return s:EditSimpleRb(a:bang,a:cmd,"javascript",a:0? a:1 : "application","public/javascripts/",".js")
 endfunction
 
 function! s:unittestEdit(bang,cmd,...)
@@ -2462,35 +2487,60 @@ endfunction
 " }}}1
 " Statusline {{{1
 
-function! s:addtostatus(letter)
-  if &statusline !~ 'Rails' && g:rails_statusline
-    let   &statusline=substitute(&statusline,'\C%'.tolower(a:letter),'%'.tolower(a:letter).'%{RailsStatusline()}','')
-    if &statusline !~ 'Rails'
-      let &statusline=substitute(&statusline,'\C%'.toupper(a:letter),'%'.toupper(a:letter).'%{RailsSTATUSLINE()}','')
+function! s:addtostatus(letter,status)
+  let status = a:status
+  if status !~ 'Rails' && g:rails_statusline
+    let   status=substitute(status,'\C%'.tolower(a:letter),'%'.tolower(a:letter).'%{RailsStatusline()}','')
+    if status !~ 'Rails'
+      let status=substitute(status,'\C%'.toupper(a:letter),'%'.toupper(a:letter).'%{RailsSTATUSLINE()}','')
     endif
+  endif
+  return status
+endfunction
+
+function! s:BufInitStatusline()
+  if g:rails_statusline
+    if &l:statusline == ""
+      let &l:statusline = &g:statusline
+    endif
+    if &l:statusline == ''
+      let &l:statusline='%<%f %h%m%r%='
+      if &ruler
+        let &l:statusline = &l:statusline . '%-16( %l,%c-%v %)%P'
+      endif
+    endif
+    let &l:statusline = s:InjectIntoStatusline(&l:statusline)
   endif
 endfunction
 
 function! s:InitStatusline()
-  if &statusline == '' && g:rails_statusline
-    let &statusline='%<%f %h%m%r%='
-    if &ruler
-      let &statusline = &statusline . '%-16( %l,%c-%v %)%P'
+  if g:rails_statusline
+    if &g:statusline == ''
+      let &l:statusline='%<%f %h%m%r%='
+      if &ruler
+        let &g:statusline = &g:statusline . '%-16( %l,%c-%v %)%P'
+      endif
+    endif
+    let &g:statusline = s:InjectIntoStatusline(&g:statusline)
+  endif
+endfunction
+
+function! s:InjectIntoStatusline(status)
+  let status = a:status
+  if status !~ 'Rails'
+    let status = s:addtostatus('y',status)
+    let status = s:addtostatus('r',status)
+    let status = s:addtostatus('m',status)
+    let status = s:addtostatus('w',status)
+    let status = s:addtostatus('h',status)
+    if status !~ 'Rails'
+      let status=substitute(status,'%=','%{RailsStatusline()}%=','')
+    endif
+    if status !~ 'Rails' && status != ''
+      let status=status.'%{RailsStatusline()}'
     endif
   endif
-  if &statusline !~ 'Rails' && g:rails_statusline
-    call s:addtostatus('y')
-    call s:addtostatus('r')
-    call s:addtostatus('m')
-    call s:addtostatus('w')
-    call s:addtostatus('h')
-    if &statusline !~ 'Rails'
-      let &statusline=substitute(&statusline,'%=','%{RailsStatusline()}%=','')
-    endif
-    if &statusline !~ 'Rails' && &statusline != ''
-      let &statusline=&statusline.'%{RailsStatusline()}'
-    endif
-  endif
+  return status
 endfunction
 
 function! RailsStatusline()
@@ -3461,10 +3511,12 @@ function! s:BufInit(path)
       " Activate custom syntax
       let &syntax = &syntax
     endif
+    if firsttime
+      "call s:BufInitStatusline()
+    endif
     if expand("%:e") == "log"
       setlocal modifiable filetype=railslog
       silent! %s/\%(\e\[[0-9;]*m\|\r$\)//g
-      "silent! exe "%s/\r$//"
       setlocal readonly nomodifiable noswapfile autoread foldmethod=syntax
       nnoremap <buffer> <silent> R :checktime<CR>
       nnoremap <buffer> <silent> G :checktime<Bar>$<CR>
@@ -3566,12 +3618,12 @@ function! s:BufSettings()
       setlocal define=^\\s*def\\s\\+\\(self\\.\\)\\=
     endif
     " This really belongs in after/ftplugin/ruby.vim but we'll be nice
-    if !exists("b:surround_101")
+    if exists("g:loaded_surround") && !exists("b:surround_101")
       let b:surround_101 = "\r\nend"
     endif
   elseif &filetype == "eruby"
     setlocal suffixesadd=.rhtml,.rxml,.rjs,.mab,.liquid,.rb,.css,.js,.html,.yml,.csv
-    if exists("b:loaded_allml")
+    if exists("g:loaded_allml")
       " allml is currently unreleased as of writing this comment but can be
       " found in my config file CVS repository if you dig around.
       let b:allml_stylesheet_link_tag = "<%= stylesheet_link_tag '\r' %>"
@@ -3599,7 +3651,7 @@ function! s:BufSettings()
       if !exists("b:surround_35") " #
         let b:surround_35 = "<%# \r %>"
       endif
-      if !exists("b:surround_101") " e
+      if !exists("b:surround_101") || b:surround_101 == "<% \r %>\n<% end %>" "e
         let b:surround_101 = "<% \r -%>\n<% end -%>"
       endif
     endif
