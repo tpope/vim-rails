@@ -210,6 +210,8 @@ function! s:controller(...)
     return s:sub(f,'.*\<app/apis/\(.\{-\}\)_api\.rb$','\1')
   elseif f =~ '\<test/functional/.*_controller_test\.rb$'
     return s:sub(f,'.*\<test/functional/\(.\{-\}\)_controller_test\.rb$','\1')
+  elseif f =~ '\<spec/controllers/.*_controller_spec\.rb$'
+    return s:sub(f,'.*\<spec/controllers/\(.\{-\}\)_controller_spec\.rb$','\1')
   elseif f =~ '\<components/.*_controller\.rb$'
     return s:sub(f,'.*\<components/\(.\{-\}\)_controller\.rb$','\1')
   elseif f =~ '\<components/.*\.\(rhtml\|rxml\|rjs\|mab\|liquid\)$'
@@ -237,8 +239,10 @@ function! s:model(...)
     return s:sub(f,'.*\<test/unit/\(.*\)_observer_test\.rb$','\1')
   elseif f =~ '\<test/unit/.*_test\.rb$'
     return s:sub(f,'.*\<test/unit/\(.*\)_test\.rb$','\1')
-  elseif f =~ '\<test/fixtures/.*\.\w*\~\=$'
-    return s:singularize(s:sub(f,'.*\<test/fixtures/\(.*\)\.\w*\~\=$','\1'))
+  elseif f =~ '\<spec/models/.*_spec\.rb$'
+    return s:sub(f,'.*\<spec/models/\(.*\)_spec\.rb$','\1')
+  elseif f =~ '\<\%(test\|spec\)/fixtures/.*\.\w*\~\=$'
+    return s:singularize(s:sub(f,'.*\<\%(test\|spec\)/fixtures/\(.*\)\.\w*\~\=$','\1'))
   elseif a:0 && a:1
     return s:singularize(s:controller())
   endif
@@ -395,7 +399,7 @@ function! RailsFileType()
     endif
   elseif f =~ '_api\.rb'
     let r = "api"
-  elseif f =~ '\<test/test_helper\.rb$'
+  elseif f =~ '\<test/test_helper\.rb$' || f =~ '\<spec/spec_helper\.rb$'
     let r = "test"
   elseif f =~ '_helper\.rb$'
     let r = "helper"
@@ -418,13 +422,13 @@ function! RailsFileType()
     let r = "view-partial-" . e
   elseif f =~ '\<app/views\>.*\.' || f =~ '\<components/.*/.*\.\(rhtml\|rxml\|rjs\|mab\|liquid\)'
     let r = "view-" . e
-  elseif f =~ '\<test/unit/.*_test\.rb'
+  elseif f =~ '\<test/unit/.*_test\.rb$' || f =~ '\<spec/models/.*_spec\.rb$'
     let r = "test-unit"
-  elseif f =~ '\<test/functional/.*_test\.rb'
+  elseif f =~ '\<test/functional/.*_test\.rb$' || f =~ '\<spec/controllers/.*_spec\.rb$'
     let r = "test-functional"
-  elseif f =~ '\<test/integration/.*_test\.rb'
+  elseif f =~ '\<test/integration/.*_test\.rb$'
     let r = "test-integration"
-  elseif f =~ '\<test/fixtures\>'
+  elseif f =~ '\<\%(test\|spec\)/fixtures\>'
     if e == "yml"
       let r = "fixtures-yaml"
     else
@@ -1219,7 +1223,7 @@ function! s:Find(bang,count,arg,...)
     let file = s:RailsFind()
     let tail = ""
   endif
-  if file =~ '^\%(app\|components\|config\|db\|public\|test\|vendor\)/.*\.' || !a:0 || 1
+  if file =~ '^\%(app\|components\|config\|db\|public\|spec\|test\|vendor\)/.*\.' || !a:0 || 1
     call s:findedit((a:count==1?'' : a:count).cmd,file.tail,str)
   else
     " Old way
@@ -1333,7 +1337,7 @@ function! s:RailsFind()
   if res != ""|return res.".rb"|endif
   let res = s:singularize(s:findasymbol('through','app/models/\1'))
   if res != ""|return res.".rb"|endif
-  let res = s:findamethod('fixtures','test/fixtures/\1')
+  let res = s:findamethod('fixtures','fixtures/\1')
   if res != ""|return res|endif
   let res = s:findamethod('layout','app/views/layouts/\1')
   if res != ""|return res|endif
@@ -1417,7 +1421,11 @@ function! s:RailsIncludefind(str,...)
   elseif line =~ '\<helper\s*(\=\s*'
     let str = 'app/helpers/'.str.'_helper.rb'
   elseif line =~ '\<fixtures\s*(\='.fpat
-    let str = s:sub(str,'^/\@!','test/fixtures/')
+    if RailsFilePath() =~ '\<spec/'
+      let str = s:sub(str,'^/\@!','spec/fixtures/')
+    else
+      let str = s:sub(str,'^/\@!','test/fixtures/')
+    endif
   elseif line =~ '\<stylesheet_\(link_tag\|path\)\s*(\='.fpat
     let str = s:sub(str,'^/\@!','/stylesheets/')
     let str = 'public'.s:sub(str,'^[^.]*$','&.css')
@@ -1597,15 +1605,17 @@ function! s:EditSimpleRb(bang,cmd,name,target,prefix,suffix)
   "else
     "let g:target = a:target
   endif
-  let f = a:prefix.s:underscore(a:target)
-  if f =~ '[\/]\.$'
-    let f = s:sub(f,'[\/]\.$','')
+  let f = s:underscore(a:target)
+  if f == '.'
+    let f = s:sub(f,'\.$','')
   else
     let f = f.a:suffix
     if a:suffix !~ '\.'
       let f = f.".rb"
     endif
   endif
+  let f = s:gsub(a:prefix,'\n',f.'\n').f
+  let g:f = f
   return s:findedit(cmd,f)
 endfunction
 
@@ -1631,6 +1641,9 @@ function! s:migrationfor(file)
   let migr = s:sub(glob(RailsRoot().'/db/migrate/'.glob),'.*\n','')
   if migr == '' && tryagain
     let migr = s:sub(glob(RailsRoot().'/db/migrate/*.rb'),'.*\n','')
+  endif
+  if strpart(migr,0,strlen(RailsRoot())) == RailsRoot()
+    let migr = strpart(migr,1+strlen(RailsRoot()))
   endif
   return migr
 endfunction
@@ -1662,7 +1675,7 @@ function! s:fixturesEdit(bang,cmd,...)
   if file =~ '\.\w\+$'
     call s:edit(a:cmd.(a:bang?'!':''),file)
   else
-    call s:findedit(a:cmd.(a:bang?'!':''),file)
+    call s:findedit(a:cmd.(a:bang?'!':''),file."\nspec/fixtures/".c.e)
   endif
 endfunction
 
@@ -1740,7 +1753,7 @@ endfunction
 
 function! s:controllerEdit(bang,cmd,...)
   let controller = a:0 ? a:1 : s:controller(1)
-  return s:EditSimpleRb(a:bang,a:cmd,"controller",controller,"app/controllers/",controller == "application" ? "" : "_controller")
+  return s:EditSimpleRb(a:bang,a:cmd,"controller",controller,"app/controllers/\ncomponents/",controller == "application" ? "" : "_controller")
 endfunction
 
 function! s:helperEdit(bang,cmd,...)
@@ -1851,7 +1864,22 @@ endfunction
 function! s:findedit(cmd,file,...) abort
   " TODO: consider rewriting for components
   let cmd = s:findcmdfor(a:cmd)
-  let file = a:file
+  if a:file =~ '\n'
+    let filelist = a:file . "\n"
+    let file = ''
+    while file == '' && filelist != ''
+      let maybe = matchstr(filelist,'^.\{-\}\ze\n')
+      let filelist = s:sub(filelist,'^.\{-\}\n','')
+      if filereadable(RailsRoot().'/'.s:sub(maybe,'[@#].*',''))
+        let file = maybe
+      endif
+    endwhile
+    if file == ''
+      let file = matchstr(a:file."\n",'^.\{-\}\ze\n')
+    endif
+  else
+    let file = a:file
+  endif
   if file =~ '[@#]'
     let djump = matchstr(file,'[@#]\zs.*')
     let file = matchstr(file,'.*\ze[@#]')
@@ -1953,24 +1981,25 @@ function! s:AlternateFile()
     call s:warn("No filename present")
   elseif fnamemodify(f,":e") == "rb"
     let file = fnamemodify(f,":r")
-    if file =~ '_test$'
-      let file = s:sub(file,'_test$','.rb')
+    if file =~ '_\%(test\|spec\)$'
+      let file = s:sub(file,'_\%(test\|spec\)$','.rb')
     else
       let file = file.'_test.rb'
     endif
     if t =~ '^model\>'
-      return s:sub(file,'app/models/','test/unit/')
+      return s:sub(file,'app/models/','test/unit/')."\n".s:sub(s:sub(file,'_test\.rb$','_spec.rb'),'app/models/','spec/models/')
     elseif t =~ '^controller\>'
       return s:sub(file,'app/controllers/','test/functional/')
+      return s:sub(file,'app/controllers/','test/functional/')."\n".s:sub(s:sub(file,'_test\.rb$','_spec.rb'),'app/controllers/','spec/controllers/')
     elseif t =~ '^test-unit\>'
-      return s:sub(file,'test/unit/','app/models/')
+      return s:sub(file,'\%(test/unit/\|spec/models\)','app/models/')
     elseif t =~ '^test-functional\>'
       if file =~ '_api\.rb'
-        return s:sub(file,'test/functional/','app/apis/')
+        return s:sub(file,'test/functional/\|spec/controllers/','app/apis/')
       elseif file =~ '_controller\.rb'
-        return s:sub(file,'test/functional/','app/controllers/')
+        return s:sub(file,'test/functional/\|spec/controllers/','app/controllers/')
       else
-        return s:sub(file,'test/functional/','')
+        return s:sub(file,'test/functional/\|spec/controllers/','')
       endif
     elseif file =~ '\<vendor/.*/lib/'
       return s:sub(file,'\<vendor/.\{-\}/\zslib/','test/')
@@ -2024,8 +2053,8 @@ function! s:RelatedFile()
     return "public/javascripts/application.js"
   elseif t =~ '^view-layout\>'
     return s:sub(s:sub(s:sub(f,'/views/','/controllers/'),'/layouts/\(\k\+\)\..*$','/\1_controller.rb'),'application_controller\.rb$','application.rb')
-  elseif t=~ '^view-partial\>'
-    call s:warn("No related file is defined")
+  "elseif t=~ '^view-partial\>'
+    "call s:warn("No related file is defined")
   elseif t =~ '^view\>'
     let controller = s:sub(s:sub(f,'/views/','/controllers/'),'/\(\k\+\)\..*$','_controller.rb@\1')
     let model      = s:sub(s:sub(f,'/views/','/models/'),'/\(\k\+\)\..*$','.rb@\1')
@@ -2056,7 +2085,7 @@ function! s:RelatedFile()
   elseif f =~ '\<db/schema\.rb$'
     return s:migrationfor(1)
   else
-    call s:warn("No related file is defined")
+    "call s:warn("No related file is defined")
     return ""
   endif
 endfunction
@@ -2374,7 +2403,7 @@ function! s:BufSyntax()
         syn keyword rubyRailsMigrationMethod create_table drop_table rename_table add_column rename_column change_column change_column_default remove_column add_index remove_index
       endif
       if t =~ '^test\>'
-        syn keyword rubyRailsTestMethod add_assertion assert assert_block assert_equal assert_in_delta assert_instance_of assert_kind_of assert_match assert_nil assert_no_match assert_not_equal assert_not_nil assert_not_same assert_nothing_raised assert_nothing_thrown assert_operator assert_raise assert_respond_to assert_same assert_send assert_throws flunk fixtures use_transactional_fixtures use_instantiated_fixtures
+        syn keyword rubyRailsTestMethod add_assertion assert assert_block assert_equal assert_in_delta assert_instance_of assert_kind_of assert_match assert_nil assert_no_match assert_not_equal assert_not_nil assert_not_same assert_nothing_raised assert_nothing_thrown assert_operator assert_raise assert_respond_to assert_same assert_send assert_throws flunk fixtures fixture_path use_transactional_fixtures use_instantiated_fixtures
         if t !~ '^test-unit\>'
           syn match   rubyRailsTestControllerMethod  '\.\@<!\<\%(get\|post\|put\|delete\|head\|process\)\>'
           syn keyword rubyRailsTestControllerMethod assert_response assert_redirected_to assert_template assert_recognizes assert_generates assert_routing assert_tag assert_no_tag assert_dom_equal assert_dom_not_equal assert_valid
@@ -2951,6 +2980,12 @@ function! s:BufDatabase(...)
       let s:dbext_type = toupper(adapter)
       let s:dbext_user = s:extractvar(out,'username')
       let s:dbext_passwd = s:extractvar(out,'password')
+      if s:dbext_passwd == '' && adapter == 'mysql'
+        " Hack to override password from .my.cnf
+        let s:dbext_extra = ' --password='
+      else
+        let s:dbext_extra = ''
+      endif
       let s:dbext_dbname = s:extractvar(out,'database')
       if s:dbext_dbname != '' && s:dbext_dbname !~ '^:' && adapter =~? '^sqlite'
         let s:dbext_dbname = RailsRoot().'/'.s:dbext_dbname
@@ -2978,6 +3013,7 @@ function! s:BufDatabase(...)
     silent! let b:dbext_host    = s:dbext_host
     silent! let b:dbext_port    = s:dbext_port
     silent! let b:dbext_dsnname = s:dbext_dsnname
+    silent! let b:dbext_extra   = s:dbext_extra
     silent! let b:dbext_integratedlogin = s:dbext_integratedlogin
   endif
   if a:0 >= 3 && a:3 && exists(":Create")
@@ -3142,16 +3178,21 @@ function! s:BufAbbreviations()
       Rabbrev mcc(  t.column
     endif
     if RailsFileType() =~ '^test\>'
-      Rabbrev ae(  assert_equal
-      Rabbrev ako( assert_kind_of
-      Rabbrev ann( assert_not_nil
-      Rabbrev ar(  assert_raise
-      Rabbrev art( assert_redirected_to
-      Rabbrev are( assert_response
+      Rabbrev ae(   assert_equal
+      Rabbrev ase(  assert_equal
+      Rabbrev ako(  assert_kind_of
+      Rabbrev asko( assert_kind_of
+      Rabbrev ann(  assert_not_nil
+      Rabbrev asnn( assert_not_nil
+      Rabbrev ar(   assert_raise
+      Rabbrev asr(  assert_raise
+      Rabbrev are(  assert_response
+      Rabbrev asre( assert_response
+      Rabbrev art(  assert_redirected_to
     endif
+    Rabbrev :a    :action\ =>\ 
     inoreabbrev <buffer> <silent> :c <C-R>=<SID>TheMagicC()<CR>
     " Lie a little
-    Rabbrev :a    :action\ =>\ 
     if RailsFileType() =~ '^view\>'
       let b:rails_abbreviations = b:rails_abbreviations . ":c\t:collection => \n"
     elseif s:controller() != ''
@@ -3406,9 +3447,9 @@ endfunction
 
 function! s:InitPlugin()
   call s:InitConfig()
-  if g:rails_statusline
-    call s:InitStatusline()
-  endif
+  "if g:rails_statusline
+    "call s:InitStatusline()
+  "endif
   if has("autocmd") && g:rails_level >= 0
     augroup railsPluginDetect
       autocmd!
@@ -3485,7 +3526,7 @@ function! s:Detect(filename)
       return s:BufInit(fn)
     endif
     let ofn = fn
-    let fn = fnamemodify(ofn,':s?\(.*\)[\/]\(app\|components\|config\|db\|doc\|lib\|log\|public\|script\|test\|tmp\|vendor\)\($\|[\/].*$\)?\1?')
+    let fn = fnamemodify(ofn,':s?\(.*\)[\/]\(app\|components\|config\|db\|doc\|lib\|log\|public\|script\|spec\|test\|tmp\|vendor\)\($\|[\/].*$\)?\1?')
   endwhile
   return 0
 endfunction
@@ -3512,7 +3553,7 @@ function! s:BufInit(path)
       let &syntax = &syntax
     endif
     if firsttime
-      "call s:BufInitStatusline()
+      call s:BufInitStatusline()
     endif
     if expand("%:e") == "log"
       setlocal modifiable filetype=railslog
@@ -3563,7 +3604,7 @@ function! s:SetBasePath()
   if stridx(oldpath,rp) == 2
     let oldpath = ''
   endif
-  let &l:path = '.,'.rp.",".rp."/app/controllers,".rp."/app,".rp."/app/models,".rp."/app/models/*,".rp."/app/helpers,".rp."/components,".rp."/config,".rp."/lib,".rp."/vendor,".rp."/vendor/plugins/*/lib,".rp."/test/unit,".rp."/test/functional,".rp."/test/integration,".rp."/app/apis,".rp."/app/services,".rp."/test,"."/vendor/plugins/*/test,".rp."/vendor/rails/*/lib,".rp."/vendor/rails/*/test,"
+  let &l:path = '.,'.rp.",".rp."/app/controllers,".rp."/app,".rp."/app/models,".rp."/app/helpers,".rp."/components,".rp."/config,".rp."/lib,".rp."/vendor,".rp."/vendor/plugins/*/lib,".rp."/test/unit,".rp."/test/functional,".rp."/test/integration,".rp."/app/apis,".rp."/app/services,".rp."/test,"."/vendor/plugins/*/test,".rp."/vendor/rails/*/lib,".rp."/vendor/rails/*/test,".rp."/spec,".rp."/spec/*,"
   if s:controller() != ''
     if RailsFilePath() =~ '\<components/'
       let &l:path = &l:path . rp . '/components/' . s:controller() . ','

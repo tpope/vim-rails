@@ -31,7 +31,7 @@ file 'rails.vba' => files do |t|
 end
 
 task :publish => [:zip,:vimball] do
-  Rake::SshFilePublisher.new("tpope.us","/var/www",".","rails.zip","rails.vba").upload
+  Rake::SshFilePublisher.new("tpope.us","/var/www/railsvim",".","rails.zip","rails.vba").upload
 end
 
 task 'zip' => 'rails.zip'

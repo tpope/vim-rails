@@ -313,6 +313,7 @@ modeline like: >
 :Robserver					|rails-:Robserver|
 :Rfixtures					|rails-:Rfixtures|
 :Runittest					|rails-:Runittest|
+:Rintegrationtest				|rails-:Rintegrationtest|
 
 						*rails-:Rmodel*
 :Rmodel [{name}]	Edit the specified model.
@@ -345,6 +346,12 @@ modeline like: >
 						*rails-:Runittest*
 :Runittest [{name}]	Edit the unit test for the specified model.
 
+						*rails-:Rintegrationtest*
+:Rintegrationtest [{name}]
+			Edit the integration test specified.  The default
+			is based on the current controller or model, with no
+			singularization or pluralization done.
+
 Controller Navigation Commands  ~
 						*rails-controller-navigation*
 The default for model navigation commands is the current controller, if it can
@@ -360,7 +367,8 @@ like: >
 :Rlayout					|rails-:Rlayout|
 :Rapi						|rails-:Rapi|
 :Rfunctionaltest				|rails-:Rfunctionaltest|
-:Rintegrationtest				|rails-:Rintegrationtest|
+:Rstylesheet					|rails-:Rstylesheet|
+:Rjavascript					|rails-:Rjavascript|
 
 						*rails-:Rcontroller*
 :Rcontroller [{name}]	Edit the specified controller.
@@ -389,11 +397,13 @@ like: >
 :Rfunctionaltest [{name}]
 			Edit the functional test for the specified controller.
 
-						*rails-:Rintegrationtest*
-:Rintegrationtest [{name}]
-			Edit the integration test specified.  The default
-			is based on the current controller or model, with no
-			singularization or pluralization done.
+						*rails-:Rstylesheet*
+:Rstylesheet [{name}]	Edit the stylesheet for the specified name, defaulting
+			to the current controller's name.
+
+						*rails-:Rjavascript*
+:Rjavascript [{name}]	Edit the javascript for the specified name, defaulting
+			to the current controller's name.
 
 Finally, one Vim feature that proves helpful in conjunction with all of the
 above is |CTRL-^|.  This keystroke edits the previous file, and is helpful to
@@ -727,8 +737,7 @@ The 'includeexpr' option is set to enable the magic described in |rails-gf|.
 
 					*rails-'statusline'*	*rails-'stl'*
 Useful information is added to the 'statusline', when |g:rails_statusline| is
-enabled.  This option is set globally because it appears to have no side
-effects.
+enabled.
 
 					*rails-'makeprg'*	*rails-'mp'*
 					*rails-'errorformat'*	*rails-'efm'*
@@ -763,8 +772,8 @@ are |g:rails_expensive|, |g:rails_subversion|, and |g:rails_default_database|.
 						*g:rails_level*  >
 	let g:rails_level=3
 This is a general control of the level of features loaded.  Behavior can be
-subsequently refined with other settings.  This option is a candidate for
-removal; contact the |rails-plugin-author| if you still make use of it.
+subsequently refined with other settings.  This option is considered obsolete.
+One can instead adjust the desired settings directly.
 
 value	meaning ~
 
@@ -781,8 +790,7 @@ value	meaning ~
 Do not load the plugin.  For emergency use only.
 
 						*g:rails_abbreviations*
-Enable Rails abbreviations.  See |rails-abbreviations|.  Enabled when
-|g:rails_level| >= 3.
+Enable Rails abbreviations.  See |rails-abbreviations|.  Enabled by default.
 
 						*g:rails_dbext*  >
 	let g:rails_dbext=1
@@ -808,9 +816,9 @@ Database to use for new applications.  Defaults to letting Rails decide.
 	let g:rails_expensive=1
 Enables or disables expensive (slow) features (typically involving calls to
 the Ruby interpreter).  Recommended for moderately fast computers.  Enabled
-when |g:rails_level| >= 3 (>= 4 on Windows, which runs external programs
-decidedly slower).  Windows users are encouraged to turn this option on and
-see if performance is still acceptable.
+by default except on Windows, which runs external programs decidedly slower.
+Windows users are encouraged to turn this option on and see if performance is
+still acceptable.
 
 					*rails-screen* *g:rails_gnu_screen*  >
 	let g:rails_gnu_screen=1
@@ -819,8 +827,7 @@ Use GNU Screen (if it is running) to launch |:Rbreakpointer|, |:Rconsole|, and
 
 						*g:rails_mappings*  >
 	let g:rails_mappings=1
-Enables a few mappings (mostly for |rails-navigation|). Enabled when
-|g:rails_level| >= 3.
+Enables a few mappings (mostly for |rails-navigation|). Enabled by default.
 
 						*g:rails_modelines*  >
 	let g:rails_modelines=1
@@ -831,13 +838,12 @@ Also enables method specific modelines (note the case difference): >
 	  def show
 	    # rset preview=blog/show/1
 Modelines are extremely useful but may cause security concerns when editing
-projects from an untrusted source. Enabled when |g:rails_level| >= 3.
+projects from an untrusted source. Enabled by default.
 
 						*g:rails_menu*  >
 	let g:rails_menu=1
 When 2, a Rails menu is created.  When 1, this menu is a submenu under the
-Plugin menu.  The default is 0, 1, or 2, depending on whether |g:rails_level|
-is less than, equal to, or greater than 3.
+Plugin menu.  The default is 1.
 
 						*g:rails_url*  >
 	let g:rails_url='http://localhost:3000/'
@@ -846,20 +852,19 @@ b:rails_url.
 
 						*g:rails_statusline*  >
 	let g:rails_statusline=1
-Give a clue in the statusline when this plugin is enabled.  Enabled when
-|g:rails_level| >= 3.
+Give a clue in the statusline when this plugin is enabled.  Enabled by
+default.
 
 						*g:rails_subversion*  >
 	let g:rails_subversion=1
 Automatically add/remove files to the subversion repository for commands like
 |:Rgenerate| and |:Rdestroy| (but not |:Rscript|).  Ignored when the
-application is not part of a subversion repository.  Enabled with
-|g:rails_level| >= 4.
+application is not part of a subversion repository.  Disabled by default.
 
 						*g:rails_syntax*  >
 	let g:rails_syntax=1
 When enabled, this tweaks the syntax highlighting to be more Rails friendly.
-Enabled when |g:rails_level| >= 2.
+Enabled by default.
 
 When g:rails_syntax is enabled, you may find your Ruby files to be a bit heavy
 on the cyan (or however your Identifiers are highlighted).  You may want to
