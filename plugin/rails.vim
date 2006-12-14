@@ -2396,6 +2396,7 @@ function! s:BufSyntax()
         syn keyword rubyRailsControllerMethod helper helper_attr helper_method filter layout url_for scaffold observer service model serialize
         syn match rubyRailsControllerDeprecatedMethod '\<render_\%(action\|text\|file\|template\|nothing\|without_layout\)\>'
         syn keyword rubyRailsRenderMethod render_to_string render_component_as_string redirect_to
+        syn match   rubyRailsRenderMethod '\<respond_to\>?\@!'
         syn keyword rubyRailsFilterMethod before_filter append_before_filter prepend_before_filter after_filter append_after_filter prepend_after_filter around_filter append_around_filter prepend_around_filter skip_before_filter skip_after_filter
         syn keyword rubyRailsFilterMethod verify
       endif
@@ -2418,13 +2419,14 @@ function! s:BufSyntax()
       syn keyword rubyRailsMethod cattr_accessor mattr_accessor
       syn keyword rubyRailsInclude require_dependency require_gem
     elseif &syntax == "eruby" " && t =~ '^view\>'
-      syn match rubyRailsError ':order_by\>'
-      "syn match rubyRailsError '@content_for_\w*\>'
       syn cluster erubyRailsRegions contains=erubyOneLiner,erubyBlock,erubyExpression
+      syn match rubyRailsError ':order_by\>' containedin=@erubyRailsRegions
+      syn match rubyRailsError '[@:]\@<!@\%(params\|request\|response\|session\|headers\|template\|cookies\|flash\)\>' containedin=@erubyRailsRegions
+      "syn match rubyRailsError '@content_for_\w*\>'
       "exe "syn match erubyRailsHelperMethod ".rails_view_helpers." contained containedin=@erubyRailsRegions"
         exe "syn keyword erubyRailsHelperMethod ".s:sub(s:rails_view_helpers,'\<select\s\+','')." contained containedin=@erubyRailsRegions"
         syn match erubyRailsHelperMethod '\<select\>\%(\s*{\|\s*do\>\|\s*(\=\s*&\)\@!' contained containedin=@erubyRailsRegions
-      syn keyword erubyRailsMethod breakpoint logger
+      syn keyword erubyRailsMethod breakpoint logger containedin=@erubyRailsRegions
       syn keyword erubyRailsMethod params request response session headers template cookies flash contained containedin=@erubyRailsRegions
       syn match erubyRailsMethod '\.\@<!\<\(h\|html_escape\|u\|url_encode\)\>' contained containedin=@erubyRailsRegions
         syn keyword erubyRailsRenderMethod render render_component contained containedin=@erubyRailsRegions
@@ -2497,6 +2499,7 @@ function! s:RailslogSyntax()
   syn match   railslogSuccess     '\<2\d\d \u[A-Za-z0-9 ]*\>'
   syn match   railslogRedirect    '\<3\d\d \u[A-Za-z0-9 ]*\>'
   syn match   railslogError       '\<[45]\d\d \u[A-Za-z0-9 ]*\>'
+  syn match   railslogError       '^DEPRECATION WARNING\>'
   syn keyword railslogHTTP        OPTIONS GET HEAD POST PUT DELETE TRACE CONNECT
   syn region  railslogStackTrace  start=":\d\+:in `\w\+'$" end="^\s*$" keepend fold
   hi def link railslogComment     Comment
@@ -3149,6 +3152,7 @@ function! s:BufAbbreviations()
       "let b:rails_abbreviations = b:rails_abbreviations . "rn\trender :nothing => true\n"
       Rabbrev rea( redirect_to :action\ =>\ 
       Rabbrev rec( redirect_to :controller\ =>\ 
+      Rabbrev rst  respond_to\ 
     endif
     if RailsFileType() =~ '^model-arb\=\>' || RailsFileType() =~ '^model$'
       Rabbrev bt(    belongs_to
@@ -3540,13 +3544,13 @@ function! s:BufInit(path)
   if g:rails_level > 0
     if &ft == "mason"
       setlocal filetype=eruby
-    elseif &ft =~ '^\%(conf\)\=$' && expand("%:e") =~ '^\%(rjs\|rxml\|rake\|mab\)$'
+    elseif &ft =~ '^\%(conf\|ruby\)\=$' && expand("%:e") =~ '^\%(rjs\|rxml\|rake\|mab\)$'
       setlocal filetype=ruby
-    elseif &ft == "" && expand("%:e") == "liquid"
+    elseif &ft =~ '^\%(liquid\)\=$' && expand("%:e") == "liquid"
       setlocal filetype=liquid
-    elseif &ft == "" && expand("%:e") == 'rhtml'
+    elseif (&ft == "" || v:version < 700) && expand("%:e") == 'rhtml'
       setlocal filetype=eruby
-    elseif &ft == "" && expand("%:e") == 'yml'
+    elseif (&ft == "" || v:version < 700) && expand("%:e") == 'yml'
       setlocal filetype=yaml
     elseif firsttime
       " Activate custom syntax
