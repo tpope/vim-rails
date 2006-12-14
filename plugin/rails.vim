@@ -1496,6 +1496,10 @@ endfunction
 
 function! s:relglob(path,glob,...)
   " How could such a simple operation be so complicated?
+  if exists("+shellslash") && ! &shellslash
+    let old_ss = &shellslash
+    let &shellslash = 1
+  endif
   if a:path =~ '[\/]$'
     let path = a:path
   else
@@ -1523,6 +1527,8 @@ function! s:relglob(path,glob,...)
     let goodres = goodres."\n"
   endwhile
   "let goodres = s:gsub("\n".goodres,'\n.\{-\}\~\n','\n')
+  if exists("old_ss")
+    let &shellslash = old_ss
   return s:sub(s:sub(goodres,'\n$',''),'^\n','')
 endfunction
 
@@ -2344,7 +2350,14 @@ function! s:BufSyntax()
     let t = RailsFileType()
     if !exists("s:rails_view_helpers")
       if g:rails_expensive
-        let s:rails_view_helpers = s:rubyeval('require %{action_view}; puts ActionView::Helpers.constants.grep(/Helper$/).collect {|c|ActionView::Helpers.const_get c}.collect {|c| c.public_instance_methods(false)}.flatten.sort.uniq.reject {|m| m =~ /[=?]$/}.join(%{ })',"link_to")
+        let s:rails_view_helpers = ""
+        if has("ruby")
+          ruby begin; require 'rubygems'; rescue LoadError; end
+          ruby begin; require 'active_support'; require 'action_view'; VIM::command('let s:rails_view_helpers = "%s"' % ActionView::Helpers.constants.grep(/Helper$/).collect {|c|ActionView::Helpers.const_get c}.collect {|c| c.public_instance_methods(false)}.flatten.sort.uniq.reject {|m| m =~ /[=?]$/}.join(" ")); rescue Exception; end
+        endif
+        if s:rails_view_helpers == ""
+          let s:rails_view_helpers = s:rubyeval('require %{action_view}; puts ActionView::Helpers.constants.grep(/Helper$/).collect {|c|ActionView::Helpers.const_get c}.collect {|c| c.public_instance_methods(false)}.flatten.sort.uniq.reject {|m| m =~ /[=?]$/}.join(%{ })',"link_to")
+        endif
       else
         let s:rails_view_helpers = "link_to"
       endif
@@ -2444,7 +2457,7 @@ function! s:BufSyntax()
       syn region  yamlRailsBlock      matchgroup=yamlRailsDelimiter start="<%%\@!" end="%>" contains=@rubyTop		containedin=ALLBUT,@yamlRailsRegions
       syn region  yamlRailsExpression matchgroup=yamlRailsDelimiter start="<%="    end="%>" contains=@rubyTop		containedin=ALLBUT,@yamlRailsRegions
       syn region  yamlRailsComment    matchgroup=yamlRailsDelimiter start="<%#"    end="%>" contains=rubyTodo,@Spell	containedin=ALLBUT,@yamlRailsRegions keepend
-        syn match yamlRailsMethod '\.\@<!\<\(h\|html_escape\|u\|url_encode\)\>' containedin=@erubyRailsRegions
+      syn match yamlRailsMethod '\.\@<!\<\(h\|html_escape\|u\|url_encode\)\>' containedin=@erubyRailsRegions
       let b:current_syntax = "yaml"
     endif
   endif
@@ -2961,9 +2974,16 @@ function! s:BufDatabase(...)
     if exists("g:loaded_dbext") && (g:rails_dbext + (a:0 ? a:1 : 0)) > 0
       " Ideally we would filter this through ERB but that could be insecure.
       " It might be possible to make use of taint checking.
-      let cmdb = 'require %{yaml}; y = File.open(%q{'.RailsRoot().'/config/database.yml}) {|f| YAML::load(f)}; e = y[%{'
-      let cmde = '}]; i=0; e=y[e] while e.respond_to?(:to_str) && (i+=1)<16; e.each{|k,v|puts k+%{=}+v if v}'
-      let out = s:rubyeval(cmdb.env.cmde,'')
+      let out = ""
+      if has("ruby")
+        ruby require "yaml"
+        ruby VIM::command('let out = %s' % File.open(VIM::evaluate("RailsRoot()")+"/config/database.yml") {|f| y = YAML::load(f); e = y[VIM::evaluate("env")]; i=0; e=y[e] while e.respond_to?(:to_str) && (i+=1)<16; e.map {|k,v| "#{k}=#{v}\n" if v}.compact.join }.inspect)
+      endif
+      if out == ""
+        let cmdb = 'require %{yaml}; File.open(%q{'.RailsRoot().'/config/database.yml}) {|f| y = YAML::load(f); e = y[%{'
+        let cmde = '}]; i=0; e=y[e] while e.respond_to?(:to_str) && (i+=1)<16; e.each{|k,v|puts k+%{=}+v if v}}'
+        let out = s:rubyeval(cmdb.env.cmde,'')
+      endif
       let adapter = s:extractvar(out,'adapter')
       let s:dbext_bin = ''
       let s:dbext_integratedlogin = ''
