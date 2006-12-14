@@ -1529,6 +1529,7 @@ function! s:relglob(path,glob,...)
   "let goodres = s:gsub("\n".goodres,'\n.\{-\}\~\n','\n')
   if exists("old_ss")
     let &shellslash = old_ss
+  endif
   return s:sub(s:sub(goodres,'\n$',''),'^\n','')
 endfunction
 
