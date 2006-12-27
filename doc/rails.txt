@@ -556,9 +556,16 @@ PLUGIN INTEGRATION				*rails-integration*
 This plugin provides a few additional key bindings if it is running under
 Cream, the user friendly editor which uses Vim as a back-end.  Ctrl+Enter
 finds the file under the cursor (as in |rails-gf|), and Alt+[ and Alt+] find
-the alternate (|rails-alternate|) and related (|rails-related|) files.  There
-is also a GUI menu, which is available in both Cream and GVim.
+the alternate (|rails-alternate|) and related (|rails-related|) files.
 
+						*rails-menu*
+If the GUI is running, a menu for several commonly used features is provided.
+Also on this menu is a list of recently accessed projects.  This list of
+projects can persist across restarts if a 'viminfo' flag is set to enable
+retaining certain global variables.  If this interests you, add something like
+the following to your vimrc: >
+	set viminfo^=!
+<
 						*rails-surround*
 The |surround| plugin available from vim.org enables adding and removing
 "surroundings" like parentheses, quotes, and HTML tags.  Even by itself, it is
@@ -578,8 +585,8 @@ map in one's vimrc.  Use Alt+o to open a new line below the current one.  This
 works nicely even in a terminal (where most alt/meta maps will fail) because
 most terminals send <M-o> as <Esc>o anyways.
 >
-  imap <M-o> <Esc>o
->
+	imap <M-o> <Esc>o
+<
 One can also use the "e" surrounding in a plain Ruby file to append a bare
 "end" on the following line.
 
@@ -751,7 +758,7 @@ identified as Mason sources are changed back to ERuby files (but only when
 they are part of a Rails application).
 
 					*rails-'completefunc'*	*rails-'cfu'*
-A 'completefunc' is provided (if not already set).  It is pretty simple, as it
+A 'completefunc' is provided (if not already set).  It is very simple, as it
 uses syntax highlighting to make its guess.  See |i_CTRL-X_CTRL-U|.
 
 					*rails-'balloonexpr'*  *rails-'bexpr'*
@@ -824,6 +831,11 @@ still acceptable.
 	let g:rails_gnu_screen=1
 Use GNU Screen (if it is running) to launch |:Rbreakpointer|, |:Rconsole|, and
 |:Rserver| in the background.  Enabled by default.
+
+						*g:rails_history_size*  >
+	let g:rails_history_size=5
+Number of projects to remember.  Set to 0 to disable.  See |rails-menu| for
+information on retaining these projects across a restart.
 
 						*g:rails_mappings*  >
 	let g:rails_mappings=1

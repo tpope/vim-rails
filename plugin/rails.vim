@@ -480,6 +480,7 @@ function! s:InitConfig()
   call s:SetOptDefault("rails_modelines",l>2)
   call s:SetOptDefault("rails_menu",(l>2)+(l>3))
   call s:SetOptDefault("rails_gnu_screen",1)
+  call s:SetOptDefault("rails_history_size",5)
   call s:SetOptDefault("rails_debug",0)
   if l > 2
     if exists("g:loaded_dbext") && executable("sqlite3") && ! executable("sqlite")
@@ -2546,7 +2547,7 @@ endfunction
 
 function! s:BufInitStatusline()
   if g:rails_statusline
-    if &l:statusline == ""
+    if &l:statusline == ''
       let &l:statusline = &g:statusline
     endif
     if &l:statusline == ''
@@ -2562,7 +2563,7 @@ endfunction
 function! s:InitStatusline()
   if g:rails_statusline
     if &g:statusline == ''
-      let &l:statusline='%<%f %h%m%r%='
+      let &g:statusline='%<%f %h%m%r%='
       if &ruler
         let &g:statusline = &g:statusline . '%-16( %l,%c-%v %)%P'
       endif
@@ -2693,11 +2694,13 @@ function! s:CreateMenus() abort
     endif
     if exists("$CREAM")
       let menucmd = '87anoremenu <script> '
+      exe menucmd.g:rails_installed_menu.'.-PSep- :'
       exe menucmd.g:rails_installed_menu.'.&Related\ file\	:R\ /\ Alt+] :R<CR>'
       exe menucmd.g:rails_installed_menu.'.&Alternate\ file\	:A\ /\ Alt+[ :A<CR>'
       exe menucmd.g:rails_installed_menu.'.&File\ under\ cursor\	Ctrl+Enter :Rfind<CR>'
     else
       let menucmd = 'anoremenu <script> '
+      exe menucmd.g:rails_installed_menu.'.-PSep- :'
       "exe menucmd.g:rails_installed_menu.'.&Related\ file\	:R :R<CR>'
       "exe menucmd.g:rails_installed_menu.'.&Alternate\ file\	:A :A<CR>'
       exe menucmd.g:rails_installed_menu.'.&Related\ file\	:R\ /\ ]f :R<CR>'
@@ -2743,10 +2746,30 @@ function! s:CreateMenus() abort
     exe menucmd.'<silent> '.g:rails_installed_menu.'.&Help\	:help\ rails :call <SID>prephelp()<Bar>help rails<CR>'
     exe menucmd.'<silent> '.g:rails_installed_menu.'.Abo&ut\	 :call <SID>prephelp()<Bar>help rails-about<CR>'
     let g:rails_did_menus = 1
+    call s:ProjectMenu()
     call s:menuBufLeave()
     if exists("b:rails_root")
       call s:menuBufEnter()
     endif
+  endif
+endfunction
+
+function! s:ProjectMenu()
+  if g:rails_history_size > 0
+    if !exists("g:RAILS_HISTORY")
+      let g:RAILS_HISTORY = ""
+    endif
+    let history = g:RAILS_HISTORY
+    let menu = s:gsub(g:rails_installed_menu,'&','')
+    silent! exe "aunmenu <script> ".menu.".Projects"
+    let dots = s:gsub(menu,'[^.]','')
+    exe 'anoremenu <script> <silent> '.(exists("$CREAM") ? '87' : '').dots.'.100 '.menu.'.Pro&jects.&New\.\.\.\	:Rails :call <SID>menuprompt("Rails","New application path and additional arguments: ")<CR>'
+    exe 'anoremenu <script> '.menu.'.Pro&jects.-FSep- :'
+    while history =~ '\n'
+      let proj = matchstr(history,'^.\{-\}\ze\n')
+      let history = s:sub(history,'^.\{-\}\n','')
+      exe 'anoremenu <script> '.menu.'.Pro&jects.'.s:gsub(proj,'[\\ ]','\\&').' :e '.s:escarg(proj."/".g:rails_default_file)."<CR>"
+    endwhile
   endif
 endfunction
 
@@ -2760,6 +2783,7 @@ function! s:menuBufEnter()
     if RailsFileType() !~ '^\%(db-\)\=migration$' || RailsFilePath() =~ '\<db/schema\.rb$'
       exe 'amenu disable '.menu.'.Migration\ writer'
     endif
+    call s:ProjectMenu()
   endif
 endfunction
 
@@ -2769,6 +2793,7 @@ function! s:menuBufLeave()
     exe 'amenu disable '.menu.'.*'
     exe 'amenu enable  '.menu.'.Help\	'
     exe 'amenu enable  '.menu.'.About\	'
+    exe 'amenu enable  '.menu.'.Projects'
   endif
 endfunction
 
@@ -2978,7 +3003,7 @@ function! s:BufDatabase(...)
       let out = ""
       if has("ruby")
         ruby require "yaml"
-        ruby VIM::command('let out = %s' % File.open(VIM::evaluate("RailsRoot()")+"/config/database.yml") {|f| y = YAML::load(f); e = y[VIM::evaluate("env")]; i=0; e=y[e] while e.respond_to?(:to_str) && (i+=1)<16; e.map {|k,v| "#{k}=#{v}\n" if v}.compact.join }.inspect)
+        ruby VIM::command('let out = %s' % File.open(VIM::evaluate("RailsRoot()")+"/config/database.yml") {|f| y = YAML::load(f); e = y[VIM::evaluate("env")]; i=0; e=y[e] while e.respond_to?(:to_str) && (i+=1)<16; e.map {|k,v| "#{k}=#{v}\n" if v}.compact.join }.inspect) rescue nil
       endif
       if out == ""
         let cmdb = 'require %{yaml}; File.open(%q{'.RailsRoot().'/config/database.yml}) {|f| y = YAML::load(f); e = y[%{'
@@ -3472,9 +3497,7 @@ endfunction
 
 function! s:InitPlugin()
   call s:InitConfig()
-  "if g:rails_statusline
-    "call s:InitStatusline()
-  "endif
+  "call s:InitStatusline()
   if has("autocmd") && g:rails_level >= 0
     augroup railsPluginDetect
       autocmd!
@@ -3556,12 +3579,42 @@ function! s:Detect(filename)
   return 0
 endfunction
 
+function! s:scrub(collection,item)
+  " Removes item from a newline separated collection
+  let col = "\n" . a:collection
+  let idx = stridx(col,"\n".a:item."\n")
+  let cnt = 0
+  while idx != -1 && cnt < 100
+    let col = strpart(col,0,idx).strpart(col,idx+strlen(a:item)+1)
+    let idx = stridx(col,"\n".a:item."\n")
+    let cnt = cnt + 1
+  endwhile
+  return strpart(col,1)
+endfunction
+
 function! s:BufInit(path)
   let cpo_save = &cpo
   set cpo&vim
   let firsttime = !(exists("b:rails_root") && b:rails_root == a:path)
   let b:rails_root = a:path
   let s:_{s:rv()} = 1
+  if g:rails_history_size > 0
+    if !exists("g:RAILS_HISTORY")
+      let g:RAILS_HISTORY = ""
+    endif
+    let path = a:path
+    let g:RAILS_HISTORY = s:scrub(g:RAILS_HISTORY,path)
+    if has("win32")
+      let g:RAILS_HISTORY = s:scrub(g:RAILS_HISTORY,s:gsub(path,'\\','/'))
+    endif
+    let path = fnamemodify(path,':p:~:h')
+    let g:RAILS_HISTORY = s:scrub(g:RAILS_HISTORY,path)
+    if has("win32")
+      let g:RAILS_HISTORY = s:scrub(g:RAILS_HISTORY,s:gsub(path,'\\','/'))
+    endif
+    let g:RAILS_HISTORY = path."\n".g:RAILS_HISTORY
+    let g:RAILS_HISTORY = s:sub(g:RAILS_HISTORY,'\%(.\{-\}\n\)\{,'.g:rails_history_size.'\}\zs.*','')
+  endif
   if g:rails_level > 0
     if &ft == "mason"
       setlocal filetype=eruby
