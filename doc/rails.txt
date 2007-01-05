@@ -72,8 +72,8 @@ Rails application development.
 
 8. Integration with other plugins.  |:Rproject| creates a new project.vim
    project.  |:Rdbext| loads database settings from database.yml for dbext.vim
-   (and this happens by default under most situations).  Cream users get some
-   additional mappings, and all GUI users get a menu.
+   (and this happens by default under most circumstances).  Cream users get
+   some additional mappings, and all GUI users get a menu.
 
 ==============================================================================
 INSTALLATION AND USAGE				*rails-installation*
@@ -143,12 +143,11 @@ actually edit a file from a Rails application.
 			might like :Rake log:clear.
 
 						*rails-:Rinvert*
-:Rinvert		Experimental command available only in migrations.
-			Rewrite the self.up method into a self.down method.
-			If self.up is empty, the process is reversed.  The
-			chokes on more complicated instructions, but works
-			reasonably well for simple calls to create_table,
-			add_column, and the like.
+:Rinvert		In a migration, rewrite the self.up method into a
+			self.down method.  If self.up is empty, the process is
+			reversed.  This chokes on more complicated
+			instructions, but works reasonably well for simple
+			calls to create_table, add_column, and the like.
 
 						*rails-:Rpreview*
 :Rpreview [{path}]	Creates a URL from http://localhost:3000/ and the
@@ -813,7 +812,8 @@ Vim 7).
 
 						*g:rails_default_file*  >
 	let g:rails_default_file='config/database.yml'
-File to load when a new Rails application is created.  Defaults to the README.
+File to load when a new Rails application is created, or when loading an
+existing project from the menu.  Defaults to the README.
 
 						*g:rails_default_database*  >
 	let g:rails_default_database='sqlite3'
@@ -822,10 +822,12 @@ Database to use for new applications.  Defaults to letting Rails decide.
 					*rails-slow* *g:rails_expensive*  >
 	let g:rails_expensive=1
 Enables or disables expensive (slow) features (typically involving calls to
-the Ruby interpreter).  Recommended for moderately fast computers.  Enabled
-by default except on Windows, which runs external programs decidedly slower.
-Windows users are encouraged to turn this option on and see if performance is
-still acceptable.
+the Ruby interpreter).  Recommended for moderately fast computers.  This
+option used to be disabled by default on Windows, but now it is enabled by
+default everywhere.  If the Vim Ruby interface is available, this option is
+mostly ignored, as spawning a new process is generally the bottleneck for most
+expensive operations.  Set this option to 0 if you experience painful delays
+when first editing a file from a Rails application.
 
 					*rails-screen* *g:rails_gnu_screen*  >
 	let g:rails_gnu_screen=1
@@ -907,6 +909,8 @@ This plugin was written by Tim Pope.  Email him at <vimNOSPAM@tpope.info>.  He
 can also be found on Freenode's IRC network, hanging out in #rubyonrails and
 #vim as tpope.
 
+The official homepage is
+    http://rails.vim.tpope.net
 The latest stable version can be found at
     http://www.vim.org/scripts/script.php?script_id=1567
 In Vim 7.0, you can keep up to date with |GetLatestVimScripts|.
