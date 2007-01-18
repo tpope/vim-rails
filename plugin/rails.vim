@@ -444,6 +444,10 @@ function! RailsFileType()
     let r = "log"
   elseif e == "css" || e == "js" || e == "html"
     let r = e
+  elseif f =~ '\<config/routes\>.*\.rb$'
+    let r = "config-routes"
+  elseif f =~ '\<config/'
+    let r = "config"
   endif
   return r
 endfunction
@@ -2432,6 +2436,9 @@ function! s:BufSyntax()
       if t =~ '^model-awss\>'
         syn keyword rubyRailsMethod member
       endif
+      if t =~ '^config-routes\>'
+        syn match rubyRailsMethod '\.\zs\%(connect\|resource\|resources\|root\|named_route\)\>'
+      endif
       syn keyword rubyRailsMethod cattr_accessor mattr_accessor
       syn keyword rubyRailsInclude require_dependency require_gem
     elseif &syntax == "eruby" " && t =~ '^view\>'
@@ -3181,19 +3188,20 @@ function! s:BufAbbreviations()
       Rabbrev te[ template
       Rabbrev co[ cookies
       Rabbrev fl[ flash
-      Rabbrev rr(   render
-      Rabbrev ra(   render :action\ =>\ 
-      Rabbrev rc(   render :controller\ =>\ 
-      Rabbrev rf(   render :file\ =>\ 
-      Rabbrev ri(   render :inline\ =>\ 
-      Rabbrev rj(   render :json\ =>\ 
-      Rabbrev rl(   render :layout\ =>\ 
-      "Rabbrev rtlt( render :layout\ =>\ true,\ :text\ =>\ 
-      Rabbrev rp(   render :partial\ =>\ 
-      Rabbrev rt(   render :text\ =>\ 
-      Rabbrev rx(   render :xml\ =>\ 
+      Rabbrev rr( render
+      Rabbrev ra( render :action\ =>\ 
+      Rabbrev rc( render :controller\ =>\ 
+      Rabbrev rf( render :file\ =>\ 
+      Rabbrev ri( render :inline\ =>\ 
+      Rabbrev rj( render :json\ =>\ 
+      Rabbrev rl( render :layout\ =>\ 
+      Rabbrev rp( render :partial\ =>\ 
+      Rabbrev rt( render :text\ =>\ 
+      Rabbrev rx( render :xml\ =>\ 
     endif
     if RailsFileType() =~ '^\%(view\|helper\)\>'
+      iabbr <buffer> human_size number_to_human_size
+      iabbr <buffer> start_form_tag form_tag
       Rabbrev dotiw distance_of_time_in_words
       Rabbrev taiw  time_ago_in_words
     endif
