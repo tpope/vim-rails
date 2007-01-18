@@ -102,7 +102,7 @@ function! s:rubyexebg(cmd)
   if has("gui_win32")
     exe "!start ".s:esccmd(s:rubyexestr(a:cmd))
   elseif exists("$STY") && !has("gui_running") && s:getopt("gnu_screen","abg") && executable("screen")
-    silent exe "!screen -ln -fn -t ".s:sub(a:cmd,'\s.*','').' '.s:esccmd(s:rubyexestr(a:cmd))
+    silent exe "!screen -ln -fn -t ".s:sub(s:sub(a:cmd,'\s.*',''),'^script/','rails-').' '.s:esccmd(s:rubyexestr(a:cmd))
   else
     exe "!".s:esccmd(s:rubyexestr(a:cmd))
   endif
@@ -155,7 +155,7 @@ function! s:endof(lnum)
     if getline(endl) =~ '^'.spc.endpat
       return endl
     elseif getline(endl) =~ '^=begin\>'
-      while getline(endl) ~! '^=end\>' && endl <= line('$')
+      while getline(endl) !~ '^=end\>' && endl <= line('$')
         let endl = endl + 1
       endwhile
       let endl = endl + 1
@@ -1077,7 +1077,7 @@ function! s:Generate(bang,...)
 endfunction
 
 function! s:generators()
-  return "controller\nintegration_test\nmailer\nmigration\nmodel\nobserver\nplugin\nscaffold\nsession_migration\nweb_service"
+  return "controller\nintegration_test\nmailer\nmigration\nmodel\nobserver\nplugin\nresource\nscaffold\nscaffold_resource\nsession_migration\nweb_service"
 endfunction
 
 function! s:ScriptComplete(ArgLead,CmdLine,P)
@@ -1997,7 +1997,7 @@ function! s:AlternateFile()
     if t =~ '^model\>'
       return s:sub(file,'app/models/','test/unit/')."\n".s:sub(s:sub(file,'_test\.rb$','_spec.rb'),'app/models/','spec/models/')
     elseif t =~ '^controller\>'
-      return s:sub(file,'app/controllers/','test/functional/')
+      "return s:sub(file,'app/controllers/','test/functional/')
       return s:sub(file,'app/controllers/','test/functional/')."\n".s:sub(s:sub(file,'_test\.rb$','_spec.rb'),'app/controllers/','spec/controllers/')
     elseif t =~ '^test-unit\>'
       return s:sub(file,'\%(test/unit/\|spec/models\)','app/models/')
@@ -2272,12 +2272,12 @@ function! s:invertrange(beg,end)
       else
         let mat = matchstr(line,'\<add_index\>[^,]*,\s*\zs\%(\[[^]]*\]\|[:"'."'".']\w*["'."'".']\=\)')
         if mat != ''
-          let add = s:sub(add,')\=$',', :columns => '.mat.'&')
+          let add = s:sub(add,')\=$',', :column => '.mat.'&')
         endif
       endif
       let add = add.s:mkeep(line)
     elseif line =~ '\<remove_index\>'
-      let add = s:sub(s:sub(line,'\<remove_index','add_index'),':columns\s*=>\s*','')
+      let add = s:sub(s:sub(line,'\<remove_index','add_index'),':column\s*=>\s*','')
     elseif line =~ '\<rename_\%(table\|column\)\>'
       let add = s:sub(line,'\<rename_\%(table\s*(\=\s*\|column\s*(\=\s*[^,]*,\s*\)\zs\([^,]*\)\(,\s*\)\([^,]*\)','\3\2\1')
     elseif line =~ '\<change_column\>'
@@ -2355,10 +2355,10 @@ function! s:BufSyntax()
         let s:rails_view_helpers = ""
         if has("ruby")
           ruby begin; require 'rubygems'; rescue LoadError; end
-          ruby begin; require 'active_support'; require 'action_view'; VIM::command('let s:rails_view_helpers = "%s"' % ActionView::Helpers.constants.grep(/Helper$/).collect {|c|ActionView::Helpers.const_get c}.collect {|c| c.public_instance_methods(false)}.flatten.sort.uniq.reject {|m| m =~ /[=?]$/}.join(" ")); rescue Exception; end
+          ruby begin; require 'active_support'; require 'action_controller'; require 'action_view'; VIM::command('let s:rails_view_helpers = "%s"' % ActionView::Helpers.constants.grep(/Helper$/).collect {|c|ActionView::Helpers.const_get c}.collect {|c| c.public_instance_methods(false)}.flatten.sort.uniq.reject {|m| m =~ /[=?]$/}.join(" ")); rescue Exception; end
         endif
         if s:rails_view_helpers == ""
-          let s:rails_view_helpers = s:rubyeval('require %{action_view}; puts ActionView::Helpers.constants.grep(/Helper$/).collect {|c|ActionView::Helpers.const_get c}.collect {|c| c.public_instance_methods(false)}.flatten.sort.uniq.reject {|m| m =~ /[=?]$/}.join(%{ })',"link_to")
+          let s:rails_view_helpers = s:rubyeval('require %{action_controller}; require %{action_view}; puts ActionView::Helpers.constants.grep(/Helper$/).collect {|c|ActionView::Helpers.const_get c}.collect {|c| c.public_instance_methods(false)}.flatten.sort.uniq.reject {|m| m =~ /[=?]$/}.join(%{ })',"link_to")
         endif
       else
         let s:rails_view_helpers = "link_to"
@@ -2407,10 +2407,11 @@ function! s:BufSyntax()
         "exe "syn match rubyRailsHelperMethod ".rails_view_helpers
         exe "syn keyword rubyRailsHelperMethod ".s:sub(s:rails_view_helpers,'\<select\s\+','')
         syn match rubyRailsHelperMethod '\<select\>\%(\s*{\|\s*do\>\|\s*(\=\s*&\)\@!'
+        syn keyword rubyRailsDeprecatedMethod start_form_tag end_form_tag link_to_image human_size update_element_function
       elseif t =~ '^controller\>'
-        syn keyword rubyRailsControllerMethod helper helper_attr helper_method filter layout url_for scaffold observer service model serialize
-        syn match rubyRailsControllerDeprecatedMethod '\<render_\%(action\|text\|file\|template\|nothing\|without_layout\)\>'
-        syn keyword rubyRailsRenderMethod render_to_string render_component_as_string redirect_to
+        syn keyword rubyRailsControllerMethod helper helper_attr helper_method filter layout url_for scaffold serialize exempt_from_layout filter_parameter_logging
+        syn match rubyRailsDeprecatedMethod '\<render_\%(action\|text\|file\|template\|nothing\|without_layout\)\>'
+        syn keyword rubyRailsRenderMethod render_to_string render_component_as_string redirect_to head
         syn match   rubyRailsRenderMethod '\<respond_to\>?\@!'
         syn keyword rubyRailsFilterMethod before_filter append_before_filter prepend_before_filter after_filter append_after_filter prepend_after_filter around_filter append_around_filter prepend_around_filter skip_before_filter skip_after_filter
         syn keyword rubyRailsFilterMethod verify
@@ -2422,7 +2423,7 @@ function! s:BufSyntax()
         syn keyword rubyRailsTestMethod add_assertion assert assert_block assert_equal assert_in_delta assert_instance_of assert_kind_of assert_match assert_nil assert_no_match assert_not_equal assert_not_nil assert_not_same assert_nothing_raised assert_nothing_thrown assert_operator assert_raise assert_respond_to assert_same assert_send assert_throws flunk fixtures fixture_path use_transactional_fixtures use_instantiated_fixtures
         if t !~ '^test-unit\>'
           syn match   rubyRailsTestControllerMethod  '\.\@<!\<\%(get\|post\|put\|delete\|head\|process\)\>'
-          syn keyword rubyRailsTestControllerMethod assert_response assert_redirected_to assert_template assert_recognizes assert_generates assert_routing assert_tag assert_no_tag assert_dom_equal assert_dom_not_equal assert_valid
+          syn keyword rubyRailsTestControllerMethod assert_response assert_redirected_to assert_template assert_recognizes assert_generates assert_routing assert_dom_equal assert_dom_not_equal assert_valid assert_select assert_select_rjs assert_select_encoded assert_select_email
         endif
       endif
       if t =~ '^task\>'
@@ -2440,6 +2441,7 @@ function! s:BufSyntax()
       "syn match rubyRailsError '@content_for_\w*\>'
       "exe "syn match erubyRailsHelperMethod ".rails_view_helpers." contained containedin=@erubyRailsRegions"
         exe "syn keyword erubyRailsHelperMethod ".s:sub(s:rails_view_helpers,'\<select\s\+','')." contained containedin=@erubyRailsRegions"
+        syn keyword rubyRailsDeprecatedMethod start_form_tag end_form_tag link_to_image human_size update_element_function contained containedin=@erubyRailsRegions
         syn match erubyRailsHelperMethod '\<select\>\%(\s*{\|\s*do\>\|\s*(\=\s*&\)\@!' contained containedin=@erubyRailsRegions
       syn keyword erubyRailsMethod breakpoint logger containedin=@erubyRailsRegions
       syn keyword erubyRailsMethod params request response session headers template cookies flash contained containedin=@erubyRailsRegions
@@ -2477,7 +2479,7 @@ function! s:HiDefaults()
   hi def link rubyRailsHelperMethod           rubyRailsMethod
   hi def link rubyRailsMigrationMethod        rubyRailsMethod
   hi def link rubyRailsControllerMethod       rubyRailsMethod
-  hi def link rubyRailsControllerDeprecatedMethod rubyRailsError
+  hi def link rubyRailsDeprecatedMethod       rubyRailsError
   hi def link rubyRailsFilterMethod           rubyRailsMethod
   hi def link rubyRailsTestControllerMethod   rubyRailsTestMethod
   hi def link rubyRailsTestMethod             rubyRailsMethod
@@ -2502,7 +2504,7 @@ function! s:RailslogSyntax()
   syn region  railslogModelNum    start='(' end=')' contains=railslogNumber contained skipwhite nextgroup=railslogSQL
   syn match   railslogSQL         '\u.*$' contained
   " Destroy generates multiline SQL, ugh
-  syn match   railslogSQL         '^ WHERE .*$'
+  syn match   railslogSQL         '^ \%(FROM\|WHERE\|ON\|AND\|OR\|ORDER\) .*$'
   syn match   railslogNumber      '\<\d\+\>%'
   syn match   railslogNumber      '[ (]\@<=\<\d\+\.\d\+\>'
   syn region  railslogString      start='"' skip='\\"' end='"' oneline contained
@@ -2953,7 +2955,7 @@ function! s:NewProjectTemplate(proj,rr,fancy)
     while views != ''
       let dir = matchstr(views,'^.\{-\}\ze\n')
       let views = s:sub(views,'^.\{-\}\n','')
-      let str = str."   ".dir."=".dir.' glob="**" {'."\n   }\n"
+      let str = str."   ".dir."=".dir.' filter="**" {'."\n   }\n"
     endwhile
     let str = str."  }\n"
   else
@@ -3180,14 +3182,16 @@ function! s:BufAbbreviations()
       Rabbrev co[ cookies
       Rabbrev fl[ flash
       Rabbrev rr(   render
-      Rabbrev rp(   render :partial\ =>\ 
-      Rabbrev ri(   render :inline\ =>\ 
-      Rabbrev rt(   render :text\ =>\ 
-      "Rabbrev rtlt( render :layout\ =>\ true,\ :text\ =>\ 
-      Rabbrev rl(   render :layout\ =>\ 
       Rabbrev ra(   render :action\ =>\ 
       Rabbrev rc(   render :controller\ =>\ 
       Rabbrev rf(   render :file\ =>\ 
+      Rabbrev ri(   render :inline\ =>\ 
+      Rabbrev rj(   render :json\ =>\ 
+      Rabbrev rl(   render :layout\ =>\ 
+      "Rabbrev rtlt( render :layout\ =>\ true,\ :text\ =>\ 
+      Rabbrev rp(   render :partial\ =>\ 
+      Rabbrev rt(   render :text\ =>\ 
+      Rabbrev rx(   render :xml\ =>\ 
     endif
     if RailsFileType() =~ '^\%(view\|helper\)\>'
       Rabbrev dotiw distance_of_time_in_words
