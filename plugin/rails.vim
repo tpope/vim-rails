@@ -1177,15 +1177,16 @@ endfunction
 
 function! s:BufNavCommands()
   " TODO: completion
-  silent exe "command! -bar -buffer -nargs=? Rcd :cd ".s:rp()."/<args>"
-  silent exe "command! -bar -buffer -nargs=? Rlcd :lcd ".s:rp()."/<args>"
+  silent exe "command! -bar -buffer -nargs=? Rcd :cd ".s:ra()."/<args>"
+  silent exe "command! -bar -buffer -nargs=? Rlcd :lcd ".s:ra()."/<args>"
   command!   -buffer -bar -nargs=* -count=1 -complete=custom,s:FindList Rfind       :call s:Find(<bang>0,<count>,"" ,<f-args>)
   command!   -buffer -bar -nargs=* -count=1 -complete=custom,s:FindList REfind      :call s:Find(<bang>0,<count>,"E",<f-args>)
   command!   -buffer -bar -nargs=* -count=1 -complete=custom,s:FindList RSfind      :call s:Find(<bang>0,<count>,"S",<f-args>)
   command!   -buffer -bar -nargs=* -count=1 -complete=custom,s:FindList RVfind      :call s:Find(<bang>0,<count>,"V",<f-args>)
   command!   -buffer -bar -nargs=* -count=1 -complete=custom,s:FindList RTfind      :call s:Find(<bang>0,<count>,"T",<f-args>)
   command!   -buffer -bar -nargs=* -count=1 -complete=custom,s:FindList Rsfind      :<count>RSfind<bang> <args>
-  command!   -buffer -bar -nargs=* -count=1 -complete=custom,s:FindList Rvsfind     :<count>RVfind<bang> <args>
+  "command!   -buffer -bar -nargs=* -count=1 -complete=custom,s:FindList Rvsfind     :<count>RVfind<bang> <args>
+  command!   -buffer -bar -nargs=* -count=1 -complete=custom,s:FindList Rvsfind     :echoerr "Obsolete: Use :RVfind instead"
   command!   -buffer -bar -nargs=* -count=1 -complete=custom,s:FindList Rtabfind    :<count>RTfind<bang> <args>
   command!   -buffer -bar -nargs=* -bang    -complete=custom,s:EditList Redit       :call s:Edit(<bang>0,<count>,"" ,<f-args>)
   command!   -buffer -bar -nargs=* -bang    -complete=custom,s:EditList REedit      :call s:Edit(<bang>0,<count>,"E",<f-args>)
@@ -1453,6 +1454,21 @@ function! s:RailsIncludefind(str,...)
       let str = str . ".rxml"
     elseif filereadable(str.".rjs")
       let str = str . ".rjs"
+    endif
+  elseif str =~ '_\%(path\|url\)$'
+    " REST helpers
+    let str = s:sub(str,'_\%(path\|url\)$','')
+    " TODO: handle formats
+    let str = s:sub(str,'^formatted_','')
+    if str =~ '^\%(new\|edit\)_'
+      let str = 'app/views/'.s:sub(s:pluralize(str),'^\(new\|edit\)_\(.*\)','\2/\1')
+    elseif str == s:singularize(str)
+      " If the word can't be singularized, it's probably a link to the show
+      " method.  We should verify by checking for an argument, but that's
+      " difficult the way things here are currently structured.
+      let str = 'app/views/'.s:pluralize(str).'/show'
+    else
+      let str = 'app/views/'.str.'/index'
     endif
   elseif str !~ '/'
     " If we made it this far, we'll risk making it singular.
@@ -1874,7 +1890,6 @@ function! s:try(cmd) abort
 endfunction
 
 function! s:findedit(cmd,file,...) abort
-  " TODO: consider rewriting for components
   let cmd = s:findcmdfor(a:cmd)
   if a:file =~ '\n'
     let filelist = a:file . "\n"
@@ -2357,7 +2372,7 @@ function! s:BufSyntax()
     if !exists("s:rails_view_helpers")
       if g:rails_expensive
         let s:rails_view_helpers = ""
-        if has("ruby")
+        if has("ruby") && (has("win32") || has("win32unix"))
           ruby begin; require 'rubygems'; rescue LoadError; end
           ruby begin; require 'active_support'; require 'action_controller'; require 'action_view'; VIM::command('let s:rails_view_helpers = "%s"' % ActionView::Helpers.constants.grep(/Helper$/).collect {|c|ActionView::Helpers.const_get c}.collect {|c| c.public_instance_methods(false)}.flatten.sort.uniq.reject {|m| m =~ /[=?]$/}.join(" ")); rescue Exception; end
         endif
@@ -2424,7 +2439,7 @@ function! s:BufSyntax()
         syn keyword rubyRailsMigrationMethod create_table drop_table rename_table add_column rename_column change_column change_column_default remove_column add_index remove_index
       endif
       if t =~ '^test\>'
-        syn keyword rubyRailsTestMethod add_assertion assert assert_block assert_equal assert_in_delta assert_instance_of assert_kind_of assert_match assert_nil assert_no_match assert_not_equal assert_not_nil assert_not_same assert_nothing_raised assert_nothing_thrown assert_operator assert_raise assert_respond_to assert_same assert_send assert_throws flunk fixtures fixture_path use_transactional_fixtures use_instantiated_fixtures
+        syn keyword rubyRailsTestMethod add_assertion assert assert_block assert_equal assert_in_delta assert_instance_of assert_kind_of assert_match assert_nil assert_no_match assert_not_equal assert_not_nil assert_not_same assert_nothing_raised assert_nothing_thrown assert_operator assert_raise assert_respond_to assert_same assert_send assert_throws assert_recognizes assert_generates assert_routing flunk fixtures fixture_path use_transactional_fixtures use_instantiated_fixtures
         if t !~ '^test-unit\>'
           syn match   rubyRailsTestControllerMethod  '\.\@<!\<\%(get\|post\|put\|delete\|head\|process\)\>'
           syn keyword rubyRailsTestControllerMethod assert_response assert_redirected_to assert_template assert_recognizes assert_generates assert_routing assert_dom_equal assert_dom_not_equal assert_valid assert_select assert_select_rjs assert_select_encoded assert_select_email
@@ -2437,7 +2452,7 @@ function! s:BufSyntax()
         syn keyword rubyRailsMethod member
       endif
       if t =~ '^config-routes\>'
-        syn match rubyRailsMethod '\.\zs\%(connect\|resource\|resources\|root\|named_route\)\>'
+        syn match rubyRailsMethod '\.\zs\%(connect\|resources\|root\|named_route\)\>'
       endif
       syn keyword rubyRailsMethod cattr_accessor mattr_accessor
       syn keyword rubyRailsInclude require_dependency require_gem
@@ -2968,7 +2983,8 @@ function! s:NewProjectTemplate(proj,rr,fancy)
   else
     let str = str."  views=views filter=\"**\" {\n  }\n"
   endif
-  let str = str . " }\n components=components filter=\"**\" {\n }\n"
+  let str = str . " }\n"
+  "let str = str . " components=components filter=\"**\" {\n }\n"
   let str = str . " config=config {\n  environments=environments {\n  }\n }\n"
   let str = str . " db=db {\n"
   if isdirectory(a:rr.'/db/migrate')
@@ -2982,9 +2998,9 @@ function! s:NewProjectTemplate(proj,rr,fancy)
     let str = str . "  integration=integration filter=\"**\" {\n  }\n"
   endif
   let str = str . "  mocks=mocks filter=\"**\" {\n  }\n  unit=unit filter=\"**\" {\n  }\n }\n}\n"
-  if exists("*RailsProcessProject")
-    let str = call RailsProcessProject(a:rr,str)
-  endif
+  "if exists("*RailsProcessProject")
+    "let str = call RailsProcessProject(a:rr,str)
+  "endif
   return str
 endfunction
 
@@ -3010,7 +3026,7 @@ function! s:BufDatabase(...)
       " Ideally we would filter this through ERB but that could be insecure.
       " It might be possible to make use of taint checking.
       let out = ""
-      if has("ruby")
+      if has("ruby") && (has("win32") || has("win32unix"))
         ruby require "yaml"
         ruby VIM::command('let out = %s' % File.open(VIM::evaluate("RailsRoot()")+"/config/database.yml") {|f| y = YAML::load(f); e = y[VIM::evaluate("env")]; i=0; e=y[e] while e.respond_to?(:to_str) && (i+=1)<16; e.map {|k,v| "#{k}=#{v}\n" if v}.compact.join }.inspect) rescue nil
       endif
