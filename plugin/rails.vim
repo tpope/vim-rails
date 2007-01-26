@@ -380,10 +380,10 @@ endfunction
 function! RailsFileType()
   if !exists("b:rails_root")
     return ""
-  elseif exists("b:rails_type")
-    return b:rails_type
   elseif exists("b:rails_file_type")
     return b:rails_file_type
+  elseif exists("b:rails_cached_file_type")
+    return b:rails_cached_file_type
   endif
   let f = RailsFilePath()
   let e = fnamemodify(RailsFilePath(),':e')
@@ -624,7 +624,7 @@ function! s:BufCommands()
     command! -buffer -bar -nargs=? -range Rextract :<line1>,<line2>call s:Partial(<bang>0,<f-args>)
     command! -buffer -bar -nargs=? -range Rpartial :call s:warn("Warning: :Rpartial has been deprecated in favor of :Rextract") | <line1>,<line2>Rextract<bang> <args>
   endif
-  if RailsFileType() =~ '^\%(db-\)\=migration\>' && RailsFilePath() !~ '\<db/schema\.rb$'
+  if RailsFilePath() =~ '\<db/migrate/.*\.rb$'
     command! -buffer -bar                 Rinvert  :call s:Invert(<bang>0)
   endif
 endfunction
@@ -2372,7 +2372,8 @@ function! s:BufSyntax()
     if !exists("s:rails_view_helpers")
       if g:rails_expensive
         let s:rails_view_helpers = ""
-        if has("ruby") && (has("win32") || has("win32unix"))
+        if has("ruby")
+          " && (has("win32") || has("win32unix"))
           ruby begin; require 'rubygems'; rescue LoadError; end
           ruby begin; require 'active_support'; require 'action_controller'; require 'action_view'; VIM::command('let s:rails_view_helpers = "%s"' % ActionView::Helpers.constants.grep(/Helper$/).collect {|c|ActionView::Helpers.const_get c}.collect {|c| c.public_instance_methods(false)}.flatten.sort.uniq.reject {|m| m =~ /[=?]$/}.join(" ")); rescue Exception; end
         endif
@@ -3026,8 +3027,7 @@ function! s:BufDatabase(...)
       " Ideally we would filter this through ERB but that could be insecure.
       " It might be possible to make use of taint checking.
       let out = ""
-      if has("ruby") && (has("win32") || has("win32unix"))
-        ruby require "yaml"
+      if has("ruby")
         ruby VIM::command('let out = %s' % File.open(VIM::evaluate("RailsRoot()")+"/config/database.yml") {|f| y = YAML::load(f); e = y[VIM::evaluate("env")]; i=0; e=y[e] while e.respond_to?(:to_str) && (i+=1)<16; e.map {|k,v| "#{k}=#{v}\n" if v}.compact.join }.inspect) rescue nil
       endif
       if out == ""
@@ -3187,8 +3187,9 @@ function! s:BufAbbreviations()
   command! -buffer -bar -nargs=* -bang Rabbrev :call s:Abbrev(<bang>0,<f-args>)
   " Some of these were cherry picked from the TextMate snippets
   if g:rails_abbreviations
+    let t = RailsFileType()
     " Limit to the right filetypes.  But error on the liberal side
-    if RailsFileType() =~ '^\(controller\|view\|helper\|test-functional\|test-integration\)\>'
+    if t =~ '^\(controller\|view\|helper\|test-functional\|test-integration\)\>'
       iabbr <buffer> render_partial render :partial =>
       iabbr <buffer> render_action render :action =>
       iabbr <buffer> render_text render :text =>
@@ -3215,20 +3216,21 @@ function! s:BufAbbreviations()
       Rabbrev rt( render :text\ =>\ 
       Rabbrev rx( render :xml\ =>\ 
     endif
-    if RailsFileType() =~ '^\%(view\|helper\)\>'
+    if t =~ '^\%(view\|helper\)\>'
       iabbr <buffer> human_size number_to_human_size
       iabbr <buffer> start_form_tag form_tag
       Rabbrev dotiw distance_of_time_in_words
       Rabbrev taiw  time_ago_in_words
     endif
-    if RailsFileType() =~ '^controller\>'
+    if t =~ '^controller\>'
       "call s:AddSelectiveExpand('rn','[,\r]','render :nothing => true')
       "let b:rails_abbreviations = b:rails_abbreviations . "rn\trender :nothing => true\n"
+      Rabbrev re(  redirect_to\ 
       Rabbrev rea( redirect_to :action\ =>\ 
       Rabbrev rec( redirect_to :controller\ =>\ 
       Rabbrev rst  respond_to\ 
     endif
-    if RailsFileType() =~ '^model-arb\=\>' || RailsFileType() =~ '^model$'
+    if t =~ '^model-arb\=\>' || t =~ '^model$'
       Rabbrev bt(    belongs_to
       Rabbrev ho(    has_one
       Rabbrev hm(    has_many
@@ -3245,7 +3247,7 @@ function! s:BufAbbreviations()
       Rabbrev vp(    validates_presence_of
       Rabbrev vu(    validates_uniqueness_of
     endif
-    if RailsFileType() =~ '^\%(db-\)\=\%(migration\|schema\)\>'
+    if t =~ '^\%(db-\)\=\%(migration\|schema\)\>'
       Rabbrev mac(  add_column
       Rabbrev mrnc( rename_column
       Rabbrev mrc(  remove_column
@@ -3255,7 +3257,7 @@ function! s:BufAbbreviations()
       Rabbrev mdt(  drop_table
       Rabbrev mcc(  t.column
     endif
-    if RailsFileType() =~ '^test\>'
+    if t =~ '^test\>'
       Rabbrev ae(   assert_equal
       Rabbrev ase(  assert_equal
       Rabbrev ako(  assert_kind_of
@@ -3271,7 +3273,7 @@ function! s:BufAbbreviations()
     Rabbrev :a    :action\ =>\ 
     inoreabbrev <buffer> <silent> :c <C-R>=<SID>TheMagicC()<CR>
     " Lie a little
-    if RailsFileType() =~ '^view\>'
+    if t =~ '^view\>'
       let b:rails_abbreviations = b:rails_abbreviations . ":c\t:collection => \n"
     elseif s:controller() != ''
       let b:rails_abbreviations = b:rails_abbreviations . ":c\t:controller => \n"
@@ -3575,6 +3577,12 @@ function! s:InitPlugin()
         \.'%-G%.%#'
   command! -bar -bang -nargs=* -complete=dir Rails :call s:NewApp(<bang>0,<f-args>)
   call s:CreateMenus()
+  " Apparently, the nesting level within Vim when the Ruby interface is
+  " initialized determines how much stack space Ruby gets.  In previous
+  " versions of rails.vim, sporadic stack overflows occured when omnicomplete
+  " was used.  This was apparently due to rails.vim having first initialized
+  " ruby deep in a nested function call.
+  silent! ruby nil
 endfunction
 
 function! s:Detect(filename)
@@ -3626,6 +3634,12 @@ function! s:BufInit(path)
   let firsttime = !(exists("b:rails_root") && b:rails_root == a:path)
   let b:rails_root = a:path
   let s:_{s:rv()} = 1
+  " Apparently RailsFileType() can be slow if the underlying file system is
+  " slow (even though it doesn't really do anything IO related).  This caching
+  " is a temporary hack; if it doesn't cause problems it should probably be
+  " refactored.
+  unlet! b:rails_cached_file_type
+  let b:rails_cached_file_type = RailsFileType()
   if g:rails_history_size > 0
     if !exists("g:RAILS_HISTORY")
       let g:RAILS_HISTORY = ""
@@ -3676,9 +3690,7 @@ function! s:BufInit(path)
   call s:BufAbbreviations()
   call s:BufDatabase()
   let t = RailsFileType()
-  "if t != ""
-    let t = "-".t
-  "endif
+  let t = "-".t
   let f = '/'.RailsFilePath()
   if f =~ '[ !#$%\,]'
     let f = ''
@@ -3699,6 +3711,7 @@ function! s:BufInit(path)
   endif
   call s:BufModelines()
   call s:BufMappings()
+  "unlet! b:rails_cached_file_type
   let &cpo = cpo_save
   return b:rails_root
 endfunction
@@ -3740,7 +3753,7 @@ function! s:BufSettings()
     let &l:tags = &tags . "," . rp ."/tags"
   endif
   if has("balloon_eval") && exists("+balloonexpr") && executable('ri')
-    setlocal balloonexpr=RailsBalloonexpr()
+    "setlocal balloonexpr=RailsBalloonexpr()
   endif
   " There is no rjs/rxml filetype now, but in the future, who knows...
   if &ft == "ruby" || &ft == "eruby" || &ft == "rjs" || &ft == "rxml" || &ft == "yaml"
