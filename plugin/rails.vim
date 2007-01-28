@@ -1185,8 +1185,7 @@ function! s:BufNavCommands()
   command!   -buffer -bar -nargs=* -count=1 -complete=custom,s:FindList RVfind      :call s:Find(<bang>0,<count>,"V",<f-args>)
   command!   -buffer -bar -nargs=* -count=1 -complete=custom,s:FindList RTfind      :call s:Find(<bang>0,<count>,"T",<f-args>)
   command!   -buffer -bar -nargs=* -count=1 -complete=custom,s:FindList Rsfind      :<count>RSfind<bang> <args>
-  "command!   -buffer -bar -nargs=* -count=1 -complete=custom,s:FindList Rvsfind     :<count>RVfind<bang> <args>
-  command!   -buffer -bar -nargs=* -count=1 -complete=custom,s:FindList Rvsfind     :echoerr "Obsolete: Use :RVfind instead"
+  "command!   -buffer -bar -nargs=* -count=1 -complete=custom,s:FindList Rvsfind     :echoerr "Obsolete: Use :RVfind instead"
   command!   -buffer -bar -nargs=* -count=1 -complete=custom,s:FindList Rtabfind    :<count>RTfind<bang> <args>
   command!   -buffer -bar -nargs=* -bang    -complete=custom,s:EditList Redit       :call s:Edit(<bang>0,<count>,"" ,<f-args>)
   command!   -buffer -bar -nargs=* -bang    -complete=custom,s:EditList REedit      :call s:Edit(<bang>0,<count>,"E",<f-args>)
@@ -1254,7 +1253,7 @@ function! s:Edit(bang,count,arg,...)
       let i = i + 1
     endwhile
     let file = a:{i}
-    call s:findedit(cmd,file,str)
+    call s:findedit(s:editcmdfor(cmd),file,str)
   else
     exe s:editcmdfor(cmd)
   endif
@@ -2455,8 +2454,9 @@ function! s:BufSyntax()
       if t =~ '^config-routes\>'
         syn match rubyRailsMethod '\.\zs\%(connect\|resources\|root\|named_route\)\>'
       endif
-      syn keyword rubyRailsMethod cattr_accessor mattr_accessor
-      syn keyword rubyRailsInclude require_dependency require_gem
+      syn keyword rubyRailsMethod alias_attribute alias_method_chain attr_accessor_with_default attr_internal attr_internal_accessor attr_internal_reader attr_internal_writer delegate mattr_accessor mattr_reader mattr_writer
+      syn keyword rubyRailsMethod cattr_accessor cattr_reader cattr_writer class_inheritable_accessor class_inheritable_array class_inheritable_array_writer class_inheritable_hash class_inheritable_hash_writer class_inheritable_option class_inheritable_reader class_inheritable_writer inheritable_attributes read_inheritable_attribute reset_inheritable_attributes write_inheritable_array write_inheritable_attribute write_inheritable_hash
+      syn keyword rubyRailsInclude require_dependency gem
     elseif &syntax == "eruby" " && t =~ '^view\>'
       syn cluster erubyRailsRegions contains=erubyOneLiner,erubyBlock,erubyExpression
       syn match rubyRailsError ':order_by\>' containedin=@erubyRailsRegions
@@ -3258,15 +3258,15 @@ function! s:BufAbbreviations()
       Rabbrev mcc(  t.column
     endif
     if t =~ '^test\>'
-      Rabbrev ae(   assert_equal
+      "Rabbrev ae(   assert_equal
       Rabbrev ase(  assert_equal
-      Rabbrev ako(  assert_kind_of
+      "Rabbrev ako(  assert_kind_of
       Rabbrev asko( assert_kind_of
-      Rabbrev ann(  assert_not_nil
+      "Rabbrev ann(  assert_not_nil
       Rabbrev asnn( assert_not_nil
-      Rabbrev ar(   assert_raise
+      "Rabbrev ar(   assert_raise
       Rabbrev asr(  assert_raise
-      Rabbrev are(  assert_response
+      "Rabbrev are(  assert_response
       Rabbrev asre( assert_response
       Rabbrev art(  assert_redirected_to
     endif
