@@ -2005,6 +2005,8 @@ function! s:AlternateFile()
     return file
   elseif f == ''
     call s:warn("No filename present")
+  elseif f =~ '\<test/unit/routing_test\.rb$'
+    return 'config/routes.rb'
   elseif fnamemodify(f,":e") == "rb"
     let file = fnamemodify(f,":r")
     if file =~ '_\%(test\|spec\)$'
