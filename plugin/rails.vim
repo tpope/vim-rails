@@ -3691,6 +3691,12 @@ function! s:BufInit(path)
   call s:BufCommands()
   call s:BufAbbreviations()
   call s:BufDatabase()
+  " snippetsEmu.vim
+  if exists('g:loaded_snippet')
+    silent! runtime! ftplugin/rails_snippets.vim
+    " filetype snippets need to come last for higher priority
+    exe "silent! runtime! ftplugin/".&filetype."_snippets.vim"
+  endif
   let t = RailsFileType()
   let t = "-".t
   let f = '/'.RailsFilePath()
@@ -3781,6 +3787,8 @@ function! s:BufSettings()
     endif
     " This really belongs in after/ftplugin/ruby.vim but we'll be nice
     if exists("g:loaded_surround") && !exists("b:surround_101")
+      let b:surround_5   = "\r\nend"
+      let b:surround_69  = "\1expr: \1\rend"
       let b:surround_101 = "\r\nend"
     endif
   elseif &filetype == "eruby"
@@ -3814,6 +3822,8 @@ function! s:BufSettings()
         let b:surround_35 = "<%# \r %>"
       endif
       if !exists("b:surround_101") || b:surround_101 == "<% \r %>\n<% end %>" "e
+        let b:surround_5   = "<% \r -%>\n<% end -%>"
+        let b:surround_69  = "<% \1expr: \1 -%>\r<% end -%>"
         let b:surround_101 = "<% \r -%>\n<% end -%>"
       endif
     endif

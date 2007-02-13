@@ -577,7 +577,7 @@ Key	Surrounding ~
 =	<%= ^ %>
 -	<% ^ -%>
 #	<%# ^ %>
-e	<% ^ -%>\n<% end -%>
+<C-E>	<% ^ -%>\n<% end -%>
 
 The last surrounding is particularly useful in insert mode with the following
 map in one's vimrc.  Use Alt+o to open a new line below the current one.  This
