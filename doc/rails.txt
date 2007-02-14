@@ -111,6 +111,11 @@ actually edit a file from a Rails application.
 			omitted, :Rake defaults to something sensible (like
 			db:migrate in a migration, or your current test).
 
+						*rails-:Rake!*
+:Rake! {targets}	Called with a bang, :Rake will use an alternate
+			'errorformat' which attempts to parse the full stack
+			backtrace.
+
 						*rails-:Rcd*
 :Rcd [{directory}]	|:cd| to /path/to/railsapp/{directory}.
 
@@ -923,7 +928,7 @@ The first is a |vimball| for Vim 7.0.  The third is a subversion repository
 and contains the very latest features and bugs.
 
 Feedback is highly desired on this plugin.  Please send all comments,
-complaints, and compliments to the author.
+complaints, and compliments to the author.  No bug is too small to report.
 
 						*rails-license*
 This plugin is distributable under the same terms as Vim itself.  See

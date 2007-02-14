@@ -730,6 +730,10 @@ endfunction
 " Rake {{{1
 
 function! s:makewithruby(arg)
+  if &efm == s:efm
+    " Straight from complier/ruby.vim
+    setlocal efm=\%+E%f:%l:\ parse\ error,%W%f:%l:\ warning:\ %m,%E%f:%l:in\ %*[^:]:\ %m,%E%f:%l:\ %m,%-C%\tfrom\ %f:%l:in\ %.%#,%-Z%\tfrom\ %f:%l,%-Z%p^,%-G%.%#
+  endif
   let old_make = &makeprg
   let &l:makeprg = s:rubyexestr(a:arg)
   make
@@ -737,12 +741,10 @@ function! s:makewithruby(arg)
 endfunction
 
 function! s:Rake(bang,arg)
-  let oldefm = ""
+  let oldefm = &efm
   if a:bang
-    let oldefm = &efm
+    let &efm = s:efm_backtrace
     "errorformat=%*[^"]"%f"%*\D%l: %m,"%f"%*\D%l: %m,%-G%f:%l: (Each undeclared identifier is reported only once,%-G%f:%l: for each function it appears in.),%f:%l:%c:%m,%f(%l):%m,%f:%l:%m,"%f"\, line %l%*\D%c%*[^ ] %m,%D%*\a[%*\d]: Entering directory `%f',%X%*\a[%*\d]: Leaving directory `%f',%D%*\a: Entering directory `%
-    setlocal efm=\%+E%f:%l:\ parse\ error,%W%f:%l:\ warning:\ %m,%E%f:%l:in\ %*[^:]:\ %m,%E%f:%l:\ %m,%-C%\tfrom\ %f:%l:in\ %.%#,%-Z%\tfrom\ %f:%l,%-Z%p^,%-G%.%#
-    " Need an error format for a full stack backtrace
   endif
   let t = RailsFileType()
   let arg = a:arg
@@ -1914,7 +1916,7 @@ function! s:findedit(cmd,file,...) abort
   endif
   if file == ''
     let testcmd = "edit"
-  elseif RailsRoot() =~ '://'
+  elseif RailsRoot() =~ '://' || cmd =~ 'edit'
     if file !~ '^/' && file !~ '^\w:' && file !~ '://'
       let file = s:ra().'/'.file
     endif
@@ -3548,35 +3550,72 @@ function! s:InitPlugin()
       silent! autocmd QuickFixCmdPost make* call s:QuickFixCmdPost()
     augroup END
   endif
-  let s:efm=''
-        \.'%D(in\ %f),'
+  " Current directory
+  let s:efm='%D(in\ %f),'
+  " Failure and Error headers, start a multiline message
+  let s:efm=s:efm
         \.'%A\ %\\+%\\d%\\+)\ Failure:,'
-        \.'%C%.%#\ [%f:%l]:,'
         \.'%A\ %\\+%\\d%\\+)\ Error:,'
-        \.'%CActionView::TemplateError:\ compile\ error,'
-        \.'%C%.%#/lib/gems/%\\d.%\\d/gems/%.%#,'
-        \.'%C%.%#/vendor/rails/%.%#,'
+  " Exclusions
+  let s:efm=s:efm
         \.'%C%.%#(eval)%.%#,'
+        \.'%C%.%#/lib/gems/%\\d.%\\d/gems/%.%#,'
+        \.'%C%.%#/lib/ruby/%\\d.%\\d/%.%#,'
+        \.'%C%.%#/vendor/rails/%.%#,'
+  " Specific to template errors
+  let s:efm=s:efm
+        \.'%C\ %\\+On\ line\ #%l\ of\ %f,'
+        \.'%CActionView::TemplateError:\ compile\ error,'
+  " stack backtrace is in brackets. if multiple lines, it starts on a new line.
+  let s:efm=s:efm
+        \.'%Ctest_%.%#(%.%#):%#,'
+        \.'%C%.%#\ [%f:%l]:,'
+        \.'%C\ \ \ \ [%f:%l:%.%#,'
+        \.'%C\ \ \ \ %f:%l:%.%#,'
+        \.'%C\ \ \ \ \ %f:%l:%.%#]:,'
+        \.'%C\ \ \ \ \ %f:%l:%.%#,'
+  " Catch all
+  let s:efm=s:efm
+        \.'%Z%f:%l:\ %#%m,'
+        \.'%C%m,'
+  " Syntax errors in the test itself
+  let s:efm=s:efm
+        \.'%.%#/rake_test_loader.rb:%\\d%\\+:in\ `load'."'".':\ %f:%l:\ syntax\ error\\\, %m,'
+        \.'%.%#/rake_test_loader.rb:%\\d%\\+:in\ `load'."'".':\ %f:%l:\ %m,'
+  " And required files
+  let s:efm=s:efm
+        \.'%.%#:in\ `require'."'".':in\ `require'."'".':\ %f:%l:\ syntax\ error\\\, %m,'
+        \.'%.%#:in\ `require'."'".':in\ `require'."'".':\ %f:%l:\ %m,'
+  " Exclusions
+  let s:efm=s:efm
+        \.'%-G%.%#/lib/gems/%\\d.%\\d/gems/%.%#,'
+        \.'%-G%.%#/lib/ruby/%\\d.%\\d/%.%#,'
+        \.'%-G%.%#/vendor/rails/%.%#,'
+        \.'%-G%.%#%\\d%\\d:%\\d%\\d:%\\d%\\d%.%#,'
+  " Final catch all for one line errors
+  let s:efm=s:efm
+        \.'%f:%l:\ %#%m,'
+  " Drop everything else
+  let s:efm=s:efm
+        \.'%-G%.%#'
+  " OLD
+  let s:efm_old=''
         \.'%Z%f:%l:\ syntax\ error\\,\ %m,'
-        \.'%Z%f:%l:\ %m,'
         \.'%Z\ %#,'
         \.'%Z%p^,'
-        \.'%C\ %\\+On\ line\ #%l\ of\ %f,'
-        \.'%C\ \ \ \ %f:%l:%.%#,'
-        \.'%Ctest_%.%#:,'
         \.'%CActionView::TemplateError:\ %f:%l:in\ `%.%#'."'".':\ %m,'
         \.'%CActionView::TemplateError:\ You\ have\ a\ %m!,'
         \.'%CNoMethodError:\ You\ have\ a\ %m!,'
         \.'%CActionView::TemplateError:\ %m,'
         \.'%CThe\ error\ occured\ while\ %m,'
-        \.'%C%m,'
         \.'ActionView::TemplateError\ (%m)\ on\ line\ #%l\ of\ %f:,'
         \.'%AActionView::TemplateError\ (compile\ error,'
-        \.'%.%#/rake_test_loader.rb:%\\d%\\+:in\ `load'."'".':\ %f:%l:\ %m,'
-        \.'%-G%.%#/lib/gems/%\\d.%\\d/gems/%.%#,'
-        \.'%-G%.%#/vendor/rails/%.%#,'
-        \.'%f:%l:\ %m,'
-        \.'%-G%.%#'
+  "        from 
+  let s:efm_backtrace='%D(in\ %f),'
+        \.'%\\s%#from\ %f:%l:%m,'
+        \.'%\\s#{RAILS_ROOT}/%f:%l:\ %#%m,'
+        \.'%\\s%#[%f:%l:\ %#%m,'
+        \.'%\\s%#%f:%l:\ %#%m'
   command! -bar -bang -nargs=* -complete=dir Rails :call s:NewApp(<bang>0,<f-args>)
   call s:CreateMenus()
   " Apparently, the nesting level within Vim when the Ruby interface is
