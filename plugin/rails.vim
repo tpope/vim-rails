@@ -3017,6 +3017,10 @@ function! s:extractvar(str,arg)
 endfunction
 
 function! s:BufDatabase(...)
+  if exists("s:lock_database")
+    return
+  endif
+  let s:lock_database = 1
   if (a:0 && a:1 > 1) || !exists("s:dbext_last_root")
     let s:dbext_last_root = '*'
   endif
@@ -3097,11 +3101,19 @@ function! s:BufDatabase(...)
   if a:0 >= 3 && a:3 && exists(":Create")
     if exists("b:dbext_dbname") && exists("b:dbext_type") && b:dbext_type !~? 'sqlite'
       let db = b:dbext_dbname
-      let b:dbext_dbname = ''
+      if b:dbext_type == 'PGSQL'
+        " I don't always have a default database for a user so using the
+        " default user's database is a better choice for my setup.  It
+        " probably won't work for everyone but nothing will.
+        let b:dbext_dbname = 'postgres'
+      else
+        let b:dbext_dbname = ''
+      endif
       exe "Create database ".db
       let b:dbext_dbname = db
     endif
   endif
+  unlet! s:lock_database
 endfunction
 
 " }}}1
@@ -3803,7 +3815,7 @@ function! s:BufSettings()
     "setlocal balloonexpr=RailsBalloonexpr()
   endif
   " There is no rjs/rxml filetype now, but in the future, who knows...
-  if &ft == "ruby" || &ft == "eruby" || &ft == "rjs" || &ft == "rxml" || &ft == "yaml"
+  if &ft == "ruby" || &ft == "eruby" || &ft == "rjs" || &ft == "rxml" || &ft == "yaml" || &ft == "javascript" || &ft == "css"
     setlocal sw=2 sts=2 et
     "set include=\\<\\zsAct\\f*::Base\\ze\\>\\\|^\\s*\\(require\\\|load\\)\\s\\+['\"]\\zs\\f\\+\\ze
     setlocal includeexpr=RailsIncludeexpr()
