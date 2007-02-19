@@ -214,7 +214,7 @@ function! s:controller(...)
     return s:sub(f,'.*\<spec/controllers/\(.\{-\}\)_controller_spec\.rb$','\1')
   elseif f =~ '\<components/.*_controller\.rb$'
     return s:sub(f,'.*\<components/\(.\{-\}\)_controller\.rb$','\1')
-  elseif f =~ '\<components/.*\.\(rhtml\|rxml\|rjs\|mab\|liquid\)$'
+  elseif f =~ '\<components/.*\.\(rhtml\|'.s:gsub(s:view_types,',','\\|').'\)$'
     return s:sub(f,'.*\<components/\(.\{-\}\)/\k\+\.\k\+$','\1')
   elseif f =~ '\<app/models/.*\.rb$' && t =~ '^model-mailer\>'
     return s:sub(f,'.*\<app/models/\(.\{-\}\)\.rb$','\1')
@@ -420,7 +420,7 @@ function! RailsFileType()
     let r = "view-layout-" . e
   elseif f =~ '\<\%(app/views\|components\)/.*/_\k\+\.\k\+$'
     let r = "view-partial-" . e
-  elseif f =~ '\<app/views\>.*\.' || f =~ '\<components/.*/.*\.\(rhtml\|rxml\|rjs\|mab\|liquid\)'
+  elseif f =~ '\<app/views\>.*\.' || f =~ '\<components/.*/.*\.\(rhtml\|'.s:sub(s:view_types,',','\\|').'\)$'
     let r = "view-" . e
   elseif f =~ '\<test/unit/.*_test\.rb$' || f =~ '\<spec/models/.*_spec\.rb$'
     let r = "test-unit"
@@ -551,7 +551,7 @@ endfunction
 function! s:tabstop()
   if !exists("b:rails_root")
     return 0
-  elseif &filetype != 'ruby' && &filetype != 'eruby' && &filetype != 'html' && &filetype != 'css' && &filetype != 'yaml'
+  elseif &filetype !~ '^\%(ruby\|eruby\|html\|css\|yaml\|javascript\)$'
     return 0
   elseif 1
     return s:getopt("tabstop","abg")
@@ -620,7 +620,7 @@ function! s:BufCommands()
     command! -buffer -bar -nargs=? -bang  Rdbext   :call s:BufDatabase(2,<q-args>,<bang>0)
   endif
   let ext = expand("%:e")
-  if ext == "rhtml" || ext == "rxml" || ext == "rjs" || ext == "mab" || ext == "liquid"
+  if ext =~ '^\%(rhtml\|'.s:sub(s:view_types,',','\\|').'\)$'
     command! -buffer -bar -nargs=? -range Rextract :<line1>,<line2>call s:Partial(<bang>0,<f-args>)
     command! -buffer -bar -nargs=? -range Rpartial :call s:warn("Warning: :Rpartial has been deprecated in favor of :Rextract") | <line1>,<line2>Rextract<bang> <args>
   endif
@@ -1755,6 +1755,8 @@ function! s:findlayout(name)
     let file = pre.c.".mab"
   elseif filereadable(RailsRoot(). pre.c.".liquid")
     let file = pre.c.".liquid"
+  elseif filereadable(RailsRoot(). pre.c.".haml")
+    let file = pre.c.".haml"
   else
     let file = ""
   endif
@@ -1916,7 +1918,7 @@ function! s:findedit(cmd,file,...) abort
   endif
   if file == ''
     let testcmd = "edit"
-  elseif RailsRoot() =~ '://' || cmd =~ 'edit'
+  elseif RailsRoot() =~ '://' || cmd =~ 'edit' || cmd =~ 'split'
     if file !~ '^/' && file !~ '^\w:' && file !~ '://'
       let file = s:ra().'/'.file
     endif
@@ -2372,6 +2374,40 @@ endfunction
 function! s:BufSyntax()
   if (!exists("g:rails_syntax") || g:rails_syntax)
     let t = RailsFileType()
+    " From the Prototype bundle for TextMate
+    let s:prototype_classes = "Prototype Class Abstract Try PeriodicalExecuter Enumerable Hash ObjectRange Element Ajax Responders Base Request Updater PeriodicalUpdater Toggle Insertion Before Top Bottom After ClassNames Form Serializers TimedObserver Observer EventObserver Event Position Effect Effect2 Transitions ScopedQueue Queues DefaultOptions Parallel Opacity Move MoveBy Scale Highlight ScrollTo Fade Appear Puff BlindUp BlindDown SwitchOff DropOut Shake SlideDown SlideUp Squish Grow Shrink Pulsate Fold"
+    let s:prototype_functions = ""
+          \." Version ScriptFragment emptyFunction K create"
+          \." toColorPart succ times these initialize registerCallback"
+          \." onTimerEvent stripTags stripScripts extractScripts"
+          \." evalScripts escapeHTML unescapeHTML toQueryParams"
+          \." toArray camelize inspect each all any collect detect"
+          \." findAll grep include inject invoke max min partition"
+          \." pluck reject sortBy toArray zip inspect map find select"
+          \." member entries _each _reverse reverse clear first last"
+          \." compact flatten without indexOf reverse shift inspect"
+          \." keys values merge toQueryString inspect include"
+          \." getTransport activeRequestCount responders register"
+          \." unregister dispatch onComplete setOptions"
+          \." responseIsSuccess responseIsFailure request"
+          \." setRequestHeaders onStateChange header evalJSON"
+          \." evalResponse respondToReadyState dispatchException"
+          \." updateContent start stop updateComplete toggle hide show"
+          \." remove update getHeight classNames hasClassName"
+          \." addClassName removeClassName cleanWhitespace empty"
+          \." scrollTo getStyle setStyle getDimensions makePositioned"
+          \." undoPositioned makeClipping undoClipping"
+          \." contentFromAnonymousTable initializeRange insertContent"
+          \." set add toString focus present activate serialize"
+          \." getElements getInputs disable enable findFirstElement"
+          \." focusFirstElement reset getValue input inputSelector"
+          \." textarea selectOne selectMany onElementEvent"
+          \." registerFormCallbacks element isLeftClick pointerX"
+          \." pointerY findElement observers unloadCache observe"
+          \." stopObserving includeScrollOffsets prepare realOffset"
+          \." cumulativeOffset positionedOffset offsetParent within"
+          \." withinIncludingScrolloffsets overlap clone page clone"
+          \." absolutize relativize"
     if !exists("s:rails_view_helpers")
       if g:rails_expensive
         let s:rails_view_helpers = ""
@@ -2467,15 +2503,19 @@ function! s:BufSyntax()
       syn match rubyRailsError '[@:]\@<!@\%(params\|request\|response\|session\|headers\|template\|cookies\|flash\)\>' containedin=@erubyRailsRegions
       "syn match rubyRailsError '@content_for_\w*\>'
       "exe "syn match erubyRailsHelperMethod ".rails_view_helpers." contained containedin=@erubyRailsRegions"
-        exe "syn keyword erubyRailsHelperMethod ".s:sub(s:rails_view_helpers,'\<select\s\+','')." contained containedin=@erubyRailsRegions"
-        syn keyword rubyRailsDeprecatedMethod start_form_tag end_form_tag link_to_image human_size update_element_function contained containedin=@erubyRailsRegions
-        syn match erubyRailsHelperMethod '\<select\>\%(\s*{\|\s*do\>\|\s*(\=\s*&\)\@!' contained containedin=@erubyRailsRegions
+      exe "syn keyword erubyRailsHelperMethod ".s:sub(s:rails_view_helpers,'\<select\s\+','')." contained containedin=@erubyRailsRegions"
+      syn keyword rubyRailsDeprecatedMethod start_form_tag end_form_tag link_to_image human_size update_element_function contained containedin=@erubyRailsRegions
+      syn match erubyRailsHelperMethod '\<select\>\%(\s*{\|\s*do\>\|\s*(\=\s*&\)\@!' contained containedin=@erubyRailsRegions
       syn keyword erubyRailsMethod breakpoint logger containedin=@erubyRailsRegions
       syn keyword erubyRailsMethod params request response session headers template cookies flash contained containedin=@erubyRailsRegions
       syn match erubyRailsMethod '\.\@<!\<\(h\|html_escape\|u\|url_encode\)\>' contained containedin=@erubyRailsRegions
         syn keyword erubyRailsRenderMethod render render_component contained containedin=@erubyRailsRegions
       syn match rubyRailsError '[^@:]\@<!@\%(params\|request\|response\|session\|headers\|template\|cookies\|flash\)\>' contained containedin=@erubyRailsRegions
       syn match rubyRailsError '\<\%(render_partial\|puts\)\>' contained containedin=@erubyRailsRegions
+      syn case match
+      exe "syn keyword javascriptRailsClass contained ".s:prototype_classes
+      exe "syn keyword javascriptRailsFunction contained ".s:prototype_functions
+      syn cluster htmlJavaScript add=javascriptRailsClass,javascriptRailsFunction
     elseif &syntax == "yaml"
       " Modeled after syntax/eruby.vim
       unlet b:current_syntax
@@ -2490,6 +2530,16 @@ function! s:BufSyntax()
       syn region  yamlRailsComment    matchgroup=yamlRailsDelimiter start="<%#"    end="%>" contains=rubyTodo,@Spell	containedin=ALLBUT,@yamlRailsRegions keepend
       syn match yamlRailsMethod '\.\@<!\<\(h\|html_escape\|u\|url_encode\)\>' containedin=@erubyRailsRegions
       let b:current_syntax = "yaml"
+    elseif &syntax == "html"
+      syn case match
+      exe "syn keyword javascriptRailsClass contained ".s:prototype_classes
+      exe "syn keyword javascriptRailsFunction contained ".s:prototype_functions
+      syn cluster htmlJavaScript add=javascriptRailsClass,javascriptRailsFunction
+    elseif &syntax == "javascript"
+      " UGH, the syntax file included with Vim sets syn case ignore. WRONG
+      syn case match
+      exe "syn keyword javascriptRailsClass ".s:prototype_classes
+      exe "syn keyword javascriptRailsFunction ".s:prototype_functions
     endif
   endif
   call s:HiDefaults()
@@ -2514,13 +2564,16 @@ function! s:HiDefaults()
   hi def link rubyRailsMethod                 railsMethod
   hi def link rubyRailsError                  rubyError
   hi def link rubyRailsInclude                rubyInclude
-  hi def link railsMethod                     Function
   hi def link erubyRailsHelperMethod          erubyRailsMethod
   hi def link erubyRailsRenderMethod          erubyRailsMethod
   hi def link erubyRailsMethod                railsMethod
   hi def link yamlRailsDelimiter              Delimiter
   hi def link yamlRailsMethod                 railsMethod
   hi def link yamlRailsComment                Comment
+  hi def link javascriptRailsClass            railsClass
+  hi def link javascriptRailsFunction         railsMethod
+  hi def link railsMethod                     Function
+  hi def link railsClass                      Type
 endfunction
 
 function! s:RailslogSyntax()
@@ -3557,11 +3610,12 @@ function! s:InitPlugin()
       autocmd FileType railslog call s:RailslogSyntax()
       autocmd FileType * if exists("b:rails_root") | call s:BufSettings() | endif
       autocmd FileType netrw call s:Detect(expand("<afile>:p"))
-      autocmd Syntax ruby,eruby,yaml,railslog if exists("b:rails_root") | call s:BufSyntax() | endif
+      autocmd Syntax ruby,eruby,yaml,javascript,railslog if exists("b:rails_root") | call s:BufSyntax() | endif
       silent! autocmd QuickFixCmdPre  make* call s:QuickFixCmdPre()
       silent! autocmd QuickFixCmdPost make* call s:QuickFixCmdPost()
     augroup END
   endif
+  let s:view_types = 'rxml,rjs,mab,liquid,haml'
   " Current directory
   let s:efm='%D(in\ %f),'
   " Failure and Error headers, start a multiline message
@@ -3717,6 +3771,8 @@ function! s:BufInit(path)
       setlocal filetype=ruby
     elseif &ft =~ '^\%(liquid\)\=$' && expand("%:e") == "liquid"
       setlocal filetype=liquid
+    elseif &ft =~ '^\%(haml\)\=$' && expand("%:e") == "haml"
+      setlocal filetype=haml
     elseif (&ft == "" || v:version < 700) && expand("%:e") == 'rhtml'
       setlocal filetype=eruby
     elseif (&ft == "" || v:version < 700) && expand("%:e") == 'yml'
@@ -3815,7 +3871,7 @@ function! s:BufSettings()
     "setlocal balloonexpr=RailsBalloonexpr()
   endif
   " There is no rjs/rxml filetype now, but in the future, who knows...
-  if &ft == "ruby" || &ft == "eruby" || &ft == "rjs" || &ft == "rxml" || &ft == "yaml" || &ft == "javascript" || &ft == "css"
+  if &ft =~ '^\%(ruby\|eruby\|rjs\|rxml\|yaml\|javascript\|css\)$'
     setlocal sw=2 sts=2 et
     "set include=\\<\\zsAct\\f*::Base\\ze\\>\\\|^\\s*\\(require\\\|load\\)\\s\\+['\"]\\zs\\f\\+\\ze
     setlocal includeexpr=RailsIncludeexpr()
@@ -3827,10 +3883,10 @@ function! s:BufSettings()
   else
     " Does this cause problems in any filetypes?
     setlocal includeexpr=RailsIncludeexpr()
-    setlocal suffixesadd=.rb,.rhtml,.rxml,.rjs,.mab,.liquid,.css,.js,.yml,.csv,.rake,.sql,.html
+    let &l:suffixesadd=".rb,.rhtml,.".s:gsub(s:view_types,',',',.').",.css,.js,.yml,.csv,.rake,.sql,.html"
   endif
   if &filetype == "ruby" || &ft == "rjs" || &ft == "rxml"
-    setlocal suffixesadd=.rb,.rhtml,.rxml,.rjs,.mab,.liquid,.yml,.csv,.rake,s.rb
+    let &l:suffixesadd=".rb,.rhtml,.".s:gsub(s:view_types,',',',.').",.yml,.csv,.rake,s.rb"
     if expand('%:e') == 'rake'
       setlocal define=^\\s*def\\s\\+\\(self\\.\\)\\=\\\|^\\s*\\%(task\\\|file\\)\\s\\+[:'\"]
     else
@@ -3843,7 +3899,7 @@ function! s:BufSettings()
       let b:surround_101 = "\r\nend"
     endif
   elseif &filetype == "eruby"
-    setlocal suffixesadd=.rhtml,.rxml,.rjs,.mab,.liquid,.rb,.css,.js,.html,.yml,.csv
+    let &l:suffixesadd=".rhtml,.".s:gsub(s:view_types,',',',.').",.rb,.css,.js,.html,.yml,.csv"
     if exists("g:loaded_allml")
       " allml is currently unreleased as of writing this comment but can be
       " found in my config file CVS repository if you dig around.
@@ -3852,7 +3908,7 @@ function! s:BufSettings()
       let b:allml_doctype_index = 10
     endif
   elseif &filetype == "yaml"
-    setlocal suffixesadd=.yml,.csv,.rb,.rhtml,.rxml,.rjs,.mab,.liquid,.rake,s.rb
+    let &l:suffixesadd=".yml,.csv,.rb,.rhtml,.".s:gsub(s:view_types,',',',.').",.rake,s.rb"
   endif
   if &filetype == "eruby" || &filetype == "yaml"
     " surround.vim
