@@ -438,7 +438,7 @@ function! RailsFileType()
     let r = "test"
   elseif f =~ '\<db/migrate\>' || f=~ '\<db/schema\.rb$'
     let r = "migration"
-  elseif f =~ '\<lib/tasks\>' || f=~ '\<Rakefile$'
+  elseif f =~ '\<lib/tasks\>' || f=~ '\<Rakefile$' || f =~ '\<config/deploy\.rb$'
     let r = "task"
   elseif f =~ '\<log/.*\.log$'
     let r = "log"
@@ -621,7 +621,7 @@ function! s:BufCommands()
   endif
   let ext = expand("%:e")
   if ext =~ '^\%(rhtml\|'.s:sub(s:view_types,',','\\|').'\)$'
-    command! -buffer -bar -nargs=? -range Rextract :<line1>,<line2>call s:Partial(<bang>0,<f-args>)
+    command! -buffer -bar -nargs=? -range -complete=custom,s:controllerList Rextract :<line1>,<line2>call s:Partial(<bang>0,<f-args>)
     command! -buffer -bar -nargs=? -range Rpartial :call s:warn("Warning: :Rpartial has been deprecated in favor of :Rextract") | <line1>,<line2>Rextract<bang> <args>
   endif
   if RailsFilePath() =~ '\<db/migrate/.*\.rb$'
@@ -1788,7 +1788,7 @@ function! s:controllerEdit(bang,cmd,...)
 endfunction
 
 function! s:helperEdit(bang,cmd,...)
-  return s:EditSimpleRb(a:bang,a:cmd,"helper",a:0? a:1 : s:controller(1),"app/helpers/","_helper")
+  return s:EditSimpleRb(a:bang,a:cmd,"helper",a:0? a:1 : s:controller(1),"app/helpers/\ncomponents/","_helper")
 endfunction
 
 function! s:apiEdit(bang,cmd,...)
@@ -2486,7 +2486,7 @@ function! s:BufSyntax()
         endif
       endif
       if t =~ '^task\>'
-        syn match rubyRailsRakeMethod '^\s*\zs\%(task\|file\|desc\)\>\%(\s*=\)\@!'
+        syn match rubyRailsRakeMethod '^\s*\zs\%(task\|file\|namespace\|desc\)\>\%(\s*=\)\@!'
       endif
       if t =~ '^model-awss\>'
         syn keyword rubyRailsMethod member
@@ -3150,6 +3150,11 @@ function! s:BufDatabase(...)
     silent! let b:dbext_dsnname = s:dbext_dsnname
     silent! let b:dbext_extra   = s:dbext_extra
     silent! let b:dbext_integratedlogin = s:dbext_integratedlogin
+    if b:dbext_type == 'PGSQL'
+      let $PGPASSWORD = b:dbext_passwd
+    else
+      unlet! $PGPASSWORD
+    endif
   endif
   if a:0 >= 3 && a:3 && exists(":Create")
     if exists("b:dbext_dbname") && exists("b:dbext_type") && b:dbext_type !~? 'sqlite'
