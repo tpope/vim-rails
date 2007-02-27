@@ -204,6 +204,8 @@ function! s:controller(...)
     return s:sub(f,'.*\<app/views/\(.\{-\}\)/\k\+\.\k\+$','\1')
   elseif f =~ '\<app/helpers/.*_helper\.rb$'
     return s:sub(f,'.*\<app/helpers/\(.\{-\}\)_helper\.rb$','\1')
+  elseif f =~ '\<app/controllers/application\.rb$'
+    return "application"
   elseif f =~ '\<app/controllers/.*_controller\.rb$'
     return s:sub(f,'.*\<app/controllers/\(.\{-\}\)_controller\.rb$','\1')
   elseif f =~ '\<app/apis/.*_api\.rb$'
@@ -553,12 +555,8 @@ function! s:tabstop()
     return 0
   elseif &filetype !~ '^\%(ruby\|eruby\|html\|css\|yaml\|javascript\)$'
     return 0
-  elseif 1
-    return s:getopt("tabstop","abg")
-  elseif exists("b:rails_tabstop")
-    return b:rails_tabstop
   else
-    return g:rails_tabstop
+    return s:getopt("tabstop","abg")
   endif
 endfunction
 
@@ -1594,7 +1592,8 @@ endfunction
 
 function! s:modelList(A,L,P)
   let models = s:relglob("app/models/","**/*",".rb")."\n"
-  let models = s:gsub(models,'\n.\{-\}_observer\%(\n\@=\|$\)',"")
+  " . matches everything, and no good way to exclude newline.  Lame.
+  let models = s:gsub(models,'[ -~]*_observer\%(\n\@=\|$\)',"")
   return s:sub(s:sub(models,'^\n',''),'\n$','')
 endfunction
 
@@ -2408,6 +2407,10 @@ function! s:BufSyntax()
           \." cumulativeOffset positionedOffset offsetParent within"
           \." withinIncludingScrolloffsets overlap clone page clone"
           \." absolutize relativize"
+    " The above list was pulled from somewhere else, incomplete, and
+    " highlights methods in contexts where they shouldn't be.  Let's do
+    " something more conservative instead.
+    let s:prototype_functions = "$ $$ $A $F $H $R $w"
     if !exists("s:rails_view_helpers")
       if g:rails_expensive
         let s:rails_view_helpers = ""
@@ -2513,6 +2516,7 @@ function! s:BufSyntax()
       syn match rubyRailsError '[^@:]\@<!@\%(params\|request\|response\|session\|headers\|template\|cookies\|flash\)\>' contained containedin=@erubyRailsRegions
       syn match rubyRailsError '\<\%(render_partial\|puts\)\>' contained containedin=@erubyRailsRegions
       syn case match
+      set isk+=$
       exe "syn keyword javascriptRailsClass contained ".s:prototype_classes
       exe "syn keyword javascriptRailsFunction contained ".s:prototype_functions
       syn cluster htmlJavaScript add=javascriptRailsClass,javascriptRailsFunction
@@ -2532,12 +2536,14 @@ function! s:BufSyntax()
       let b:current_syntax = "yaml"
     elseif &syntax == "html"
       syn case match
+      set isk+=$
       exe "syn keyword javascriptRailsClass contained ".s:prototype_classes
       exe "syn keyword javascriptRailsFunction contained ".s:prototype_functions
       syn cluster htmlJavaScript add=javascriptRailsClass,javascriptRailsFunction
     elseif &syntax == "javascript"
       " UGH, the syntax file included with Vim sets syn case ignore. WRONG
       syn case match
+      set isk+=$
       exe "syn keyword javascriptRailsClass ".s:prototype_classes
       exe "syn keyword javascriptRailsFunction ".s:prototype_functions
     endif
@@ -3152,8 +3158,8 @@ function! s:BufDatabase(...)
     silent! let b:dbext_integratedlogin = s:dbext_integratedlogin
     if b:dbext_type == 'PGSQL'
       let $PGPASSWORD = b:dbext_passwd
-    else
-      unlet! $PGPASSWORD
+    elseif exists('$PGPASSWORD')
+      let $PGPASSWORD = ''
     endif
   endif
   if a:0 >= 3 && a:3 && exists(":Create")
