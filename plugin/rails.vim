@@ -260,6 +260,12 @@ function! s:underscore(str)
   return str
 endfunction
 
+function! s:camelize(str)
+  let str = s:gsub(a:str,'/\(.\)','::\u\1')
+  let str = s:gsub(str,'\%([_-]\|\<\)\(.\)','\u\1')
+  return str
+endfunction
+
 function! s:singularize(word)
   " Probably not worth it to be as comprehensive as Rails but we can
   " still hit the common cases.
@@ -521,6 +527,12 @@ function! s:QuickFixCmdPost()
 endfunction
 
 function! s:BufEnter()
+  if exists("b:rails_refresh") && b:rails_refresh
+    unlet! b:rails_root b:rails_use_subversion
+    let b:rails_refresh = 0
+    call s:Detect(expand("%:p"))
+    unlet! b:rails_refresh
+  endif
   if exists("b:rails_root")
     if g:rails_isfname
       let b:rails_restore_isfname=&isfname
@@ -611,6 +623,8 @@ function! s:BufCommands()
   command! -buffer -bar -nargs=* -bang -complete=custom,s:SetComplete     Rset     :call s:Set(<bang>0,<f-args>)
   command! -buffer -bar -nargs=0 Rtags       :call s:Tags(<bang>0)
   command! -buffer -bar -nargs=0 -bang Rdoc  :if <bang>0 | call s:prephelp() | help rails | else | call s:Doc(<bang>0) | endif
+  command! -buffer -bar -nargs=0 -bang Refresh :if <bang>0|unlet! g:loaded_rails|exe "source ".s:escarg(s:file)|endif|call s:Refresh(<bang>0)
+  command! -buffer -bar -nargs=0 -bang Rrefresh :if <bang>0|unlet! g:loaded_rails|exe "source ".s:escarg(s:file)|endif|call s:Refresh(<bang>0)
   if exists(":Project")
     command! -buffer -bar -nargs=? -bang  Rproject :call s:Project(<bang>0,<q-args>)
   endif
@@ -722,6 +736,26 @@ function! s:Tags(bang)
     return s:error("ctags not found")
   endif
   exe "!".cmd." -R ".s:ra()
+endfunction
+
+function! s:Refresh(bang)
+  " What else?
+  if a:bang
+    unlet! s:rails_view_helpers
+  endif
+  call s:BufLeave()
+  let i = 1
+  let max = bufnr('$')
+  while i <= max
+    let rr = getbufvar(i,"rails_root")
+    if rr != ""
+      unlet! s:user_classes_{s:escvar(rr)}
+      unlet! s:dbext_type_{s:escvar(rr)}
+      call setbufvar(i,"rails_refresh",1)
+    endif
+    let i = i + 1
+  endwhile
+  call s:BufEnter()
 endfunction
 
 " }}}1
@@ -1047,6 +1081,7 @@ function! s:Destroy(bang,...)
     let c = c + 1
   endwhile
   call s:rubyexe(s:rquote("script/destroy").str.(s:usesubversion()?' -c':''))
+  unlet! s:user_classes_{s:rv()}
 endfunction
 
 function! s:Generate(bang,...)
@@ -1076,6 +1111,7 @@ function! s:Generate(bang,...)
     let file = ""
   endif
   if !s:rubyexe("script/generate ".target.(s:usesubversion()?' -c':'').str) && file != ""
+    unlet! s:user_classes_{s:rv()}
     exe "edit ".s:ra()."/".file
   endif
 endfunction
@@ -1514,6 +1550,32 @@ function! s:BufFinderCommands()
   call s:addfilecmds("javascript")
 endfunction
 
+function! s:autocamelize(files,test)
+  if a:test =~# '^\u'
+    return s:camelize(a:files)
+  else
+    return a:files
+  endif
+endfunction
+
+function! RailsUserClasses()
+  if !exists("b:rails_root")
+    return ""
+  elseif s:getopt('classes','ab') != ''
+    return s:getopt('classes','ab')
+  endif
+  let var = "user_classes_".s:rv()
+  if !exists("s:".var)
+    let s:{var} = s:sub(s:sub(s:gsub(s:camelize(
+        \ s:relglob("app/models/","**/*",".rb") . "\n" .
+        \ s:sub(s:relglob("app/controllers/","**/*",".rb"),'\<application\>','&_controller') . "\n" .
+        \ s:relglob("app/helpers/","**/*",".rb") . "\n" .
+        \ s:relglob("lib/","**/*",".rb") . "\n" .
+        \ ""),'\n\+',' '),'^\s\+',''),'\s\+$','')
+  endif
+  return s:{var}
+endfunction
+
 function! s:relglob(path,glob,...)
   " How could such a simple operation be so complicated?
   if exists("+shellslash") && ! &shellslash
@@ -1560,9 +1622,9 @@ endfunction
 function! s:controllerList(A,L,P)
   let con = s:relglob("app/controllers/","**/*","_controller.rb")
   if con != ''
-    return "application\n".con
+    return s:autocamelize("application\n".con,a:A)
   else
-    return "application"
+    return s:autocamelize("application",a:A)
   endif
 endfunction
 
@@ -1579,7 +1641,7 @@ function! s:viewList(A,L,P)
 endfunction
 
 function! s:layoutList(A,L,P)
-  return s:relglob("app/views/layouts/",a:A."*")
+  return s:relglob("app/views/layouts/","*")
 endfunction
 
 function! s:stylesheetList(A,L,P)
@@ -1593,36 +1655,37 @@ endfunction
 function! s:modelList(A,L,P)
   let models = s:relglob("app/models/","**/*",".rb")."\n"
   " . matches everything, and no good way to exclude newline.  Lame.
-  let models = s:gsub(models,'[ -~]*_observer\%(\n\@=\|$\)',"")
-  return s:sub(s:sub(models,'^\n',''),'\n$','')
+  let models = s:gsub(models,'[ -~]*_observer\n',"")
+  let models = s:sub(s:sub(models,'^\n',''),'\n$','')
+  return s:autocamelize(models,a:A)
 endfunction
 
 function! s:observerList(A,L,P)
-  return s:relglob("app/models/","**/*","_observer.rb")
+  return s:autocamelize(s:relglob("app/models/","**/*","_observer.rb"),a:A)
 endfunction
 
 function! s:fixturesList(A,L,P)
-  return s:relglob("test/fixtures/",a:A."*[^~]")
+  return s:relglob("test/fixtures/","*")
 endfunction
 
 function! s:migrationList(A,L,P)
-  return s:relglob("db/migrate/???_",a:A."*",".rb")
+  return s:autocamelize(s:relglob("db/migrate/???_",a:A."*",".rb"),a:A)
 endfunction
 
 function! s:apiList(A,L,P)
-  return s:relglob("app/apis/","**/*","_api.rb")
+  return s:autocamelize(s:relglob("app/apis/","**/*","_api.rb"),a:A)
 endfunction
 
 function! s:unittestList(A,L,P)
-  return s:relglob("test/unit/","**/*","_test.rb")
+  return s:autocamelize(s:relglob("test/unit/","**/*","_test.rb"),a:A)
 endfunction
 
 function! s:functionaltestList(A,L,P)
-  return s:relglob("test/functional/","**/*","_test.rb")
+  return s:autocamelize(s:relglob("test/functional/","**/*","_test.rb"),a:A)
 endfunction
 
 function! s:integrationtestList(A,L,P)
-  return s:relglob("test/integration/","**/*","_test.rb")
+  return s:autocamelize(s:relglob("test/integration/","**/*","_test.rb"),a:A)
 endfunction
 
 function! s:EditSimpleRb(bang,cmd,name,target,prefix,suffix)
@@ -2382,10 +2445,10 @@ function! s:BufSyntax()
         if has("ruby")
           " && (has("win32") || has("win32unix"))
           ruby begin; require 'rubygems'; rescue LoadError; end
-          ruby begin; require 'active_support'; require 'action_controller'; require 'action_view'; VIM::command('let s:rails_view_helpers = "%s"' % ActionView::Helpers.constants.grep(/Helper$/).collect {|c|ActionView::Helpers.const_get c}.collect {|c| c.public_instance_methods(false)}.flatten.sort.uniq.reject {|m| m =~ /[=?]$/}.join(" ")); rescue Exception; end
+          ruby begin; require 'active_support'; require 'action_controller'; require 'action_view'; h = ActionView::Helpers.constants.grep(/Helper$/).collect {|c|ActionView::Helpers.const_get c}.collect {|c| c.public_instance_methods(false)}.collect {|es| es.reject {|e| e =~ /_with(out)?_deprecation$/ || es.include?("#{e}_without_deprecation")}}.flatten.sort.uniq.reject {|m| m =~ /[=?]$/}; VIM::command('let s:rails_view_helpers = "%s"' % h.join(" ")); rescue Exception; end
         endif
         if s:rails_view_helpers == ""
-          let s:rails_view_helpers = s:rubyeval('require %{action_controller}; require %{action_view}; puts ActionView::Helpers.constants.grep(/Helper$/).collect {|c|ActionView::Helpers.const_get c}.collect {|c| c.public_instance_methods(false)}.flatten.sort.uniq.reject {|m| m =~ /[=?]$/}.join(%{ })',"link_to")
+          let s:rails_view_helpers = s:rubyeval('require %{action_controller}; require %{action_view}; h = ActionView::Helpers.constants.grep(/Helper$/).collect {|c|ActionView::Helpers.const_get c}.collect {|c| c.public_instance_methods(false)}.collect {|es| es.reject {|e| e =~ /_with(out)?_deprecation$/ || es.include?(%{#{e}_without_deprecation})}}.flatten.sort.uniq.reject {|m| m =~ /[=?]$/}; puts h.join(%{ })',"link_to")
         endif
       else
         let s:rails_view_helpers = "link_to"
@@ -2393,7 +2456,11 @@ function! s:BufSyntax()
     endif
     "let g:rails_view_helpers = s:rails_view_helpers
     let rails_view_helpers = '+\.\@<!\<\('.s:gsub(s:rails_view_helpers,'\s\+','\\|').'\)\>+'
+    let classes = s:gsub(RailsUserClasses(),'::',' ')
     if &syntax == 'ruby'
+      if classes != ''
+        exe "syn keyword rubyRailsUserClass ".classes." containedin=rubyClassDeclaration,rubyModuleDeclaration,rubyClass,rubyModule"
+      endif
       syn keyword rubyRailsMethod breakpoint
       if t != ''
         syn match rubyRailsError ':order_by\>'
@@ -2434,7 +2501,7 @@ function! s:BufSyntax()
         "exe "syn match rubyRailsHelperMethod ".rails_view_helpers
         exe "syn keyword rubyRailsHelperMethod ".s:sub(s:rails_view_helpers,'\<select\s\+','')
         syn match rubyRailsHelperMethod '\<select\>\%(\s*{\|\s*do\>\|\s*(\=\s*&\)\@!'
-        syn keyword rubyRailsDeprecatedMethod start_form_tag end_form_tag link_to_image human_size update_element_function
+        "syn keyword rubyRailsDeprecatedMethod start_form_tag end_form_tag link_to_image human_size update_element_function
       elseif t =~ '^controller\>'
         syn keyword rubyRailsControllerMethod helper helper_attr helper_method filter layout url_for scaffold serialize exempt_from_layout filter_parameter_logging
         syn match rubyRailsDeprecatedMethod '\<render_\%(action\|text\|file\|template\|nothing\|without_layout\)\>'
@@ -2460,19 +2527,23 @@ function! s:BufSyntax()
         syn keyword rubyRailsMethod member
       endif
       if t =~ '^config-routes\>'
-        syn match rubyRailsMethod '\.\zs\%(connect\|resources\|root\|named_route\)\>'
+        syn match rubyRailsMethod '\.\zs\%(connect\|resources\=\|root\|named_route\)\>'
       endif
       syn keyword rubyRailsMethod alias_attribute alias_method_chain attr_accessor_with_default attr_internal attr_internal_accessor attr_internal_reader attr_internal_writer delegate mattr_accessor mattr_reader mattr_writer
       syn keyword rubyRailsMethod cattr_accessor cattr_reader cattr_writer class_inheritable_accessor class_inheritable_array class_inheritable_array_writer class_inheritable_hash class_inheritable_hash_writer class_inheritable_option class_inheritable_reader class_inheritable_writer inheritable_attributes read_inheritable_attribute reset_inheritable_attributes write_inheritable_array write_inheritable_attribute write_inheritable_hash
       syn keyword rubyRailsInclude require_dependency gem
     elseif &syntax == "eruby" " && t =~ '^view\>'
+      syn case match
+      if classes != ''
+        exe "syn keyword erubyRailsUserClass ".classes." contained containedin=@erubyRailsRegions"
+      endif
       syn cluster erubyRailsRegions contains=erubyOneLiner,erubyBlock,erubyExpression
-      syn match rubyRailsError ':order_by\>' containedin=@erubyRailsRegions
-      syn match rubyRailsError '[@:]\@<!@\%(params\|request\|response\|session\|headers\|template\|cookies\|flash\)\>' containedin=@erubyRailsRegions
+      syn match rubyRailsError ':order_by\>' contained containedin=@erubyRailsRegions
+      syn match rubyRailsError '[@:]\@<!@\%(params\|request\|response\|session\|headers\|template\|cookies\|flash\)\>' contained containedin=@erubyRailsRegions
       "syn match rubyRailsError '@content_for_\w*\>'
       "exe "syn match erubyRailsHelperMethod ".rails_view_helpers." contained containedin=@erubyRailsRegions"
       exe "syn keyword erubyRailsHelperMethod ".s:sub(s:rails_view_helpers,'\<select\s\+','')." contained containedin=@erubyRailsRegions"
-      syn keyword rubyRailsDeprecatedMethod start_form_tag end_form_tag link_to_image human_size update_element_function contained containedin=@erubyRailsRegions
+      "syn keyword rubyRailsDeprecatedMethod start_form_tag end_form_tag link_to_image human_size update_element_function contained containedin=@erubyRailsRegions
       syn match erubyRailsHelperMethod '\<select\>\%(\s*{\|\s*do\>\|\s*(\=\s*&\)\@!' contained containedin=@erubyRailsRegions
       syn keyword erubyRailsMethod breakpoint logger containedin=@erubyRailsRegions
       syn keyword erubyRailsMethod params request response session headers template cookies flash contained containedin=@erubyRailsRegions
@@ -2486,6 +2557,7 @@ function! s:BufSyntax()
       exe "syn keyword javascriptRailsFunction contained ".s:prototype_functions
       syn cluster htmlJavaScript add=javascriptRailsClass,javascriptRailsFunction
     elseif &syntax == "yaml"
+      syn case match
       " Modeled after syntax/eruby.vim
       unlet b:current_syntax
       let g:main_syntax = 'eruby'
@@ -2498,6 +2570,9 @@ function! s:BufSyntax()
       syn region  yamlRailsExpression matchgroup=yamlRailsDelimiter start="<%="    end="%>" contains=@rubyTop		containedin=ALLBUT,@yamlRailsRegions
       syn region  yamlRailsComment    matchgroup=yamlRailsDelimiter start="<%#"    end="%>" contains=rubyTodo,@Spell	containedin=ALLBUT,@yamlRailsRegions keepend
       syn match yamlRailsMethod '\.\@<!\<\(h\|html_escape\|u\|url_encode\)\>' containedin=@erubyRailsRegions
+      if classes != ''
+        exe "syn keyword yamlRailsUserClass ".classes." containedin=@yamlRailsRegions"
+      endif
       let b:current_syntax = "yaml"
     elseif &syntax == "html"
       syn case match
@@ -2535,14 +2610,18 @@ function! s:HiDefaults()
   hi def link rubyRailsMethod                 railsMethod
   hi def link rubyRailsError                  rubyError
   hi def link rubyRailsInclude                rubyInclude
+  hi def link rubyRailsUserClass              railsUserClass
   hi def link erubyRailsHelperMethod          erubyRailsMethod
   hi def link erubyRailsRenderMethod          erubyRailsMethod
   hi def link erubyRailsMethod                railsMethod
+  hi def link erubyRailsUserClass             railsUserClass
   hi def link yamlRailsDelimiter              Delimiter
   hi def link yamlRailsMethod                 railsMethod
   hi def link yamlRailsComment                Comment
-  hi def link javascriptRailsClass            railsClass
+  hi def link yamlRailsUserClass              railsUserClass
   hi def link javascriptRailsFunction         railsMethod
+  hi def link javascriptRailsClass            railsClass
+  hi def link railsUserClass                  railsClass
   hi def link railsMethod                     Function
   hi def link railsClass                      Type
 endfunction
@@ -2997,8 +3076,8 @@ function! s:BufDatabase(...)
     return
   endif
   let s:lock_database = 1
-  if (a:0 && a:1 > 1) || !exists("s:dbext_last_root")
-    let s:dbext_last_root = '*'
+  if (a:0 && a:1 > 1)
+    unlet! s:dbext_type_{s:rv()}
   endif
   if (a:0 > 1 && a:2 != '')
     let env = a:2
@@ -3006,8 +3085,8 @@ function! s:BufDatabase(...)
     let env = s:environment()
   endif
   " Crude caching mechanism
-  if s:dbext_last_root != RailsRoot()
-    if exists("g:loaded_dbext") && (g:rails_dbext + (a:0 ? a:1 : 0)) > 0
+  if !exists("s:dbext_type_".s:rv())
+    if exists("g:loaded_dbext") && (g:rails_dbext + (a:0 ? a:1 : 0)) > 0 && filereadable(s:r()."/config/database.yml")
       " Ideally we would filter this through ERB but that could be insecure.
       " It might be possible to make use of taint checking.
       let out = ""
@@ -3020,8 +3099,8 @@ function! s:BufDatabase(...)
         let out = s:rubyeval(cmdb.env.cmde,'')
       endif
       let adapter = s:extractvar(out,'adapter')
-      let s:dbext_bin = ''
-      let s:dbext_integratedlogin = ''
+      let s:dbext_bin_{s:rv()} = ''
+      let s:dbext_integratedlogin_{s:rv()} = ''
       if adapter == 'postgresql'
         let adapter = 'pgsql'
       elseif adapter == 'sqlite3'
@@ -3035,44 +3114,43 @@ function! s:BufDatabase(...)
       elseif adapter == 'oci'
         let adapter = 'ora'
       endif
-      let s:dbext_type = toupper(adapter)
-      let s:dbext_user = s:extractvar(out,'username')
-      let s:dbext_passwd = s:extractvar(out,'password')
-      if s:dbext_passwd == '' && adapter == 'mysql'
+      let s:dbext_type_{s:rv()} = toupper(adapter)
+      let s:dbext_user_{s:rv()} = s:extractvar(out,'username')
+      let s:dbext_passwd_{s:rv()} = s:extractvar(out,'password')
+      if s:dbext_passwd_{s:rv()} == '' && adapter == 'mysql'
         " Hack to override password from .my.cnf
-        let s:dbext_extra = ' --password='
+        let s:dbext_extra_{s:rv()} = ' --password='
       else
-        let s:dbext_extra = ''
+        let s:dbext_extra_{s:rv()} = ''
       endif
-      let s:dbext_dbname = s:extractvar(out,'database')
-      if s:dbext_dbname != '' && s:dbext_dbname !~ '^:' && adapter =~? '^sqlite'
-        let s:dbext_dbname = RailsRoot().'/'.s:dbext_dbname
+      let s:dbext_dbname_{s:rv()} = s:extractvar(out,'database')
+      if s:dbext_dbname_{s:rv()} != '' && s:dbext_dbname_{s:rv()} !~ '^:' && adapter =~? '^sqlite'
+        let s:dbext_dbname_{s:rv()} = RailsRoot().'/'.s:dbext_dbname_{s:rv()}
       endif
-      let s:dbext_profile = ''
-      let s:dbext_host = s:extractvar(out,'host')
-      let s:dbext_port = s:extractvar(out,'port')
-      let s:dbext_dsnname = s:extractvar(out,'dsn')
-      if s:dbext_host =~? '^\cDBI:'
-        if s:dbext_host =~? '\c\<Trusted[_ ]Connection\s*=\s*yes\>'
-          let s:dbext_integratedlogin = 1
+      let s:dbext_profile_{s:rv()} = ''
+      let s:dbext_host_{s:rv()} = s:extractvar(out,'host')
+      let s:dbext_port_{s:rv()} = s:extractvar(out,'port')
+      let s:dbext_dsnname_{s:rv()} = s:extractvar(out,'dsn')
+      if s:dbext_host_{s:rv()} =~? '^\cDBI:'
+        if s:dbext_host_{s:rv()} =~? '\c\<Trusted[_ ]Connection\s*=\s*yes\>'
+          let s:dbext_integratedlogin_{s:rv()} = 1
         endif
-        let s:dbext_host = matchstr(s:dbext_host,'\c\<\%(Server\|Data Source\)\s*=\s*\zs[^;]*')
+        let s:dbext_host_{s:rv()} = matchstr(s:dbext_host_{s:rv()},'\c\<\%(Server\|Data Source\)\s*=\s*\zs[^;]*')
       endif
-      let s:dbext_last_root = RailsRoot()
     endif
   endif
-  if s:dbext_last_root == RailsRoot()
-    silent! let b:dbext_type    = s:dbext_type
-    silent! let b:dbext_profile = s:dbext_profile
-    silent! let b:dbext_bin     = s:dbext_bin
-    silent! let b:dbext_user    = s:dbext_user
-    silent! let b:dbext_passwd  = s:dbext_passwd
-    silent! let b:dbext_dbname  = s:dbext_dbname
-    silent! let b:dbext_host    = s:dbext_host
-    silent! let b:dbext_port    = s:dbext_port
-    silent! let b:dbext_dsnname = s:dbext_dsnname
-    silent! let b:dbext_extra   = s:dbext_extra
-    silent! let b:dbext_integratedlogin = s:dbext_integratedlogin
+  if exists("s:dbext_type_".s:rv())
+    silent! let b:dbext_type    = s:dbext_type_{s:rv()}
+    silent! let b:dbext_profile = s:dbext_profile_{s:rv()}
+    silent! let b:dbext_bin     = s:dbext_bin_{s:rv()}
+    silent! let b:dbext_user    = s:dbext_user_{s:rv()}
+    silent! let b:dbext_passwd  = s:dbext_passwd_{s:rv()}
+    silent! let b:dbext_dbname  = s:dbext_dbname_{s:rv()}
+    silent! let b:dbext_host    = s:dbext_host_{s:rv()}
+    silent! let b:dbext_port    = s:dbext_port_{s:rv()}
+    silent! let b:dbext_dsnname = s:dbext_dsnname_{s:rv()}
+    silent! let b:dbext_extra   = s:dbext_extra_{s:rv()}
+    silent! let b:dbext_integratedlogin = s:dbext_integratedlogin_{s:rv()}
     if b:dbext_type == 'PGSQL'
       let $PGPASSWORD = b:dbext_passwd
     elseif exists('$PGPASSWORD')
@@ -3534,7 +3612,7 @@ function! s:InitPlugin()
       autocmd VimEnter * if expand("<amatch>") == "" && !exists("b:rails_root") | call s:Detect(getcwd()) | call s:BufEnter() | endif
       " g:RAILS_HISTORY hasn't been set when s:InitPlugin() is called.
       autocmd VimEnter * call s:ProjectMenu()
-      autocmd BufWritePost */config/database.yml let s:dbext_last_root = "*" " Force reload
+      autocmd BufWritePost */config/database.yml unlet! s:dbext_type_{s:rv()} " Force reload
       autocmd BufWritePost,BufReadPost * call s:breaktabs()
       autocmd BufWritePre              * call s:fixtabs()
       autocmd FileType railslog call s:RailslogSyntax()
@@ -3665,6 +3743,20 @@ function! s:scrub(collection,item)
   return strpart(col,1)
 endfunction
 
+function! s:callback(file)
+  let var = "callback_".s:rv()."_".s:escvar(a:file)
+  if !exists("s:".var) || exists("b:rails_refresh")
+    let s:{var} = filereadable(s:r()."/".a:file)
+  endif
+  if s:{var}
+    if exists(":sandbox")
+      sandbox exe "source ".s:ra()."/".a:file
+    elseif g:rails_modelines
+      exe "source ".s:ra()."/".a:file
+    endif
+  endif
+endfunction
+
 function! s:BufInit(path)
   let cpo_save = &cpo
   set cpo&vim
@@ -3695,6 +3787,7 @@ function! s:BufInit(path)
     let g:RAILS_HISTORY = s:sub(g:RAILS_HISTORY,'\%(.\{-\}\n\)\{,'.g:rails_history_size.'\}\zs.*','')
   endif
   if g:rails_level > 0
+    call s:callback("config/syntax.vim")
     if &ft == "mason"
       setlocal filetype=eruby
     elseif &ft =~ '^\%(conf\|ruby\)\=$' && expand("%:e") =~ '^\%(rjs\|rxml\|rake\|mab\)$'
@@ -3747,13 +3840,7 @@ function! s:BufInit(path)
   if f != ''
     exe "silent doautocmd User Rails".f
   endif
-  if filereadable(b:rails_root."/config/rails.vim")
-    if exists(":sandbox")
-      sandbox exe "source ".s:ra()."/config/rails.vim"
-    elseif g:rails_modelines
-      exe "source ".s:ra()."/config/rails.vim"
-    endif
-  endif
+  call s:callback("config/rails.vim")
   call s:BufModelines()
   call s:BufMappings()
   "unlet! b:rails_cached_file_type
