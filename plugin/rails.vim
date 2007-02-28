@@ -2373,44 +2373,9 @@ endfunction
 function! s:BufSyntax()
   if (!exists("g:rails_syntax") || g:rails_syntax)
     let t = RailsFileType()
+    let s:prototype_functions = "$ $$ $A $F $H $R $w"
     " From the Prototype bundle for TextMate
     let s:prototype_classes = "Prototype Class Abstract Try PeriodicalExecuter Enumerable Hash ObjectRange Element Ajax Responders Base Request Updater PeriodicalUpdater Toggle Insertion Before Top Bottom After ClassNames Form Serializers TimedObserver Observer EventObserver Event Position Effect Effect2 Transitions ScopedQueue Queues DefaultOptions Parallel Opacity Move MoveBy Scale Highlight ScrollTo Fade Appear Puff BlindUp BlindDown SwitchOff DropOut Shake SlideDown SlideUp Squish Grow Shrink Pulsate Fold"
-    let s:prototype_functions = ""
-          \." Version ScriptFragment emptyFunction K create"
-          \." toColorPart succ times these initialize registerCallback"
-          \." onTimerEvent stripTags stripScripts extractScripts"
-          \." evalScripts escapeHTML unescapeHTML toQueryParams"
-          \." toArray camelize inspect each all any collect detect"
-          \." findAll grep include inject invoke max min partition"
-          \." pluck reject sortBy toArray zip inspect map find select"
-          \." member entries _each _reverse reverse clear first last"
-          \." compact flatten without indexOf reverse shift inspect"
-          \." keys values merge toQueryString inspect include"
-          \." getTransport activeRequestCount responders register"
-          \." unregister dispatch onComplete setOptions"
-          \." responseIsSuccess responseIsFailure request"
-          \." setRequestHeaders onStateChange header evalJSON"
-          \." evalResponse respondToReadyState dispatchException"
-          \." updateContent start stop updateComplete toggle hide show"
-          \." remove update getHeight classNames hasClassName"
-          \." addClassName removeClassName cleanWhitespace empty"
-          \." scrollTo getStyle setStyle getDimensions makePositioned"
-          \." undoPositioned makeClipping undoClipping"
-          \." contentFromAnonymousTable initializeRange insertContent"
-          \." set add toString focus present activate serialize"
-          \." getElements getInputs disable enable findFirstElement"
-          \." focusFirstElement reset getValue input inputSelector"
-          \." textarea selectOne selectMany onElementEvent"
-          \." registerFormCallbacks element isLeftClick pointerX"
-          \." pointerY findElement observers unloadCache observe"
-          \." stopObserving includeScrollOffsets prepare realOffset"
-          \." cumulativeOffset positionedOffset offsetParent within"
-          \." withinIncludingScrolloffsets overlap clone page clone"
-          \." absolutize relativize"
-    " The above list was pulled from somewhere else, incomplete, and
-    " highlights methods in contexts where they shouldn't be.  Let's do
-    " something more conservative instead.
-    let s:prototype_functions = "$ $$ $A $F $H $R $w"
     if !exists("s:rails_view_helpers")
       if g:rails_expensive
         let s:rails_view_helpers = ""
@@ -2843,7 +2808,7 @@ function! s:CreateMenus() abort
 endfunction
 
 function! s:ProjectMenu()
-  if g:rails_history_size > 0
+  if exists("g:rails_did_menus") && g:rails_history_size > 0
     if !exists("g:RAILS_HISTORY")
       let g:RAILS_HISTORY = ""
     endif
@@ -2909,54 +2874,6 @@ function! s:findschema()
     exe "edit ".s:ra()."/db/".s:environment()."_structure.sql"
   else
     return s:error("Schema not found: try :Rake db:schema:dump")
-  endif
-endfunction
-
-" }}}1
-" Balloons {{{1
-
-function! RailsBalloonexpr()
-  if executable('ri')
-    let line = getline(v:beval_lnum)
-    let b = matchstr(strpart(line,0,v:beval_col),'\%(\w\|[:.]\)*$')
-    let a = s:gsub(matchstr(strpart(line,v:beval_col),'^\w*\%([?!]\|\s*=\)\?'),'\s\+','')
-    let str = b.a
-    let before = strpart(line,0,v:beval_col-strlen(b))
-    let after  = strpart(line,v:beval_col+strlen(a))
-    if str =~ '^\.'
-      let str = s:gsub(str,'^\.','#')
-      if before =~ '\]\s*$'
-        let str = 'Array'.str
-      elseif before =~ '}\s*$'
-        let str = 'Hash'.str
-      elseif before =~ "[\"'`]\\s*$" || before =~ '\$\d\+\s*$'
-        let str = 'String'.str
-      elseif before =~ '\$\d\+\.\d\+\s*$'
-        let str = 'Float'.str
-      elseif before =~ '\$\d\+\s*$'
-        let str = 'Integer'.str
-      elseif before =~ '/\s*$'
-        let str = 'Regexp'.str
-      else
-        let str = s:sub(str,'^#','.')
-      endif
-    endif
-    let str = s:sub(str,'.*\.\s*to_f\s*\.\s*','Float#')
-    let str = s:sub(str,'.*\.\s*to_i\%(nt\)\=\s*\.\s*','Integer#')
-    let str = s:sub(str,'.*\.\s*to_s\%(tr\)\=\s*\.\s*','String#')
-    let str = s:sub(str,'.*\.\s*to_sym\s*\.\s*','Symbol#')
-    let str = s:sub(str,'.*\.\s*to_a\%(ry\)\=\s*\.\s*','Array#')
-    let str = s:sub(str,'.*\.\s*to_proc\s*\.\s*','Proc#')
-    if str !~ '^\u'
-      return ""
-    endif
-    silent! let res = s:sub(system("ri -f simple -T ".s:rquote(str)),'\n$','')
-    if res =~ '^Nothing known about'
-      return ''
-    endif
-    return res
-  else
-    return ""
   endif
 endfunction
 
@@ -3615,6 +3532,8 @@ function! s:InitPlugin()
       autocmd BufEnter * call s:BufEnter()
       autocmd BufLeave * call s:BufLeave()
       autocmd VimEnter * if expand("<amatch>") == "" && !exists("b:rails_root") | call s:Detect(getcwd()) | call s:BufEnter() | endif
+      " g:RAILS_HISTORY hasn't been set when s:InitPlugin() is called.
+      autocmd VimEnter * call s:ProjectMenu()
       autocmd BufWritePost */config/database.yml let s:dbext_last_root = "*" " Force reload
       autocmd BufWritePost,BufReadPost * call s:breaktabs()
       autocmd BufWritePre              * call s:fixtabs()
@@ -3877,9 +3796,6 @@ function! s:BufSettings()
   setlocal makeprg=rake
   if stridx(&tags,rp) == -1
     let &l:tags = &tags . "," . rp ."/tags"
-  endif
-  if has("balloon_eval") && exists("+balloonexpr") && executable('ri')
-    "setlocal balloonexpr=RailsBalloonexpr()
   endif
   " There is no rjs/rxml filetype now, but in the future, who knows...
   if &ft =~ '^\%(ruby\|eruby\|rjs\|rxml\|yaml\|javascript\|css\)$'
