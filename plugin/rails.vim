@@ -81,7 +81,7 @@ endfunction
 
 function! s:rquote(str)
   " Imperfect but adequate for Ruby arguments
-  if a:str =~ '^[A-Za-z0-9_/.-]\+$'
+  if a:str =~ '^[A-Za-z0-9_/.:-]\+$'
     return a:str
   elseif &shell =~? 'cmd'
     return '"'.s:gsub(s:gsub(a:str,'\','\\'),'"','\\"').'"'
@@ -965,8 +965,8 @@ function! s:BufScriptWrappers()
   command! -buffer -bar -nargs=*       -complete=custom,s:DestroyComplete  Rdestroy      :call s:Destroy(<bang>0,<f-args>)
   command! -buffer -bar -nargs=*       -complete=custom,s:PluginComplete   Rplugin       :call s:Plugin(<bang>0,<f-args>)
   command! -buffer -bar -nargs=? -bang -complete=custom,s:ServerComplete   Rserver       :call s:Server(<bang>0,<q-args>)
-  command! -buffer      -nargs=1 -bang                                     Rrunner       :call s:Runner(<bang>0,<f-args>)
-  command! -buffer      -nargs=1                                           Rp            :call s:Runner(<bang>0,"p begin ".<f-args>." end")
+  command! -buffer      -nargs=1 -bang -range=0                            Rrunner       :call s:Runner(<bang>0 ? -2 : (<count>==<line2>?<count>:-1),<f-args>)
+  command! -buffer      -nargs=1       -range=0                            Rp            :call s:Runner(<count>==<line2>?<count>:-1,"p begin ".<f-args>." end")
 endfunction
 
 function! s:Script(bang,cmd,...)
@@ -983,13 +983,17 @@ function! s:Script(bang,cmd,...)
   endif
 endfunction
 
-function! s:Runner(bang,args)
-  if a:bang
+function! s:Runner(count,args)
+  if a:count == -2
     call s:Script(a:bang,"runner",a:args)
   else
     let str = s:rubyexestr(s:rquote("script/runner")." ".s:rquote(a:args))
     let res = s:sub(system(str),'\n$','')
-    echo res
+    if a:count < 0
+      echo res
+    else
+      exe a:count.'put =res'
+    endif
   endif
 endfunction
 
@@ -1686,6 +1690,11 @@ endfunction
 
 function! s:integrationtestList(A,L,P)
   return s:autocamelize(s:relglob("test/integration/","**/*","_test.rb"),a:A)
+endfunction
+
+" Task files, not actual rake tasks
+function! s:taskList(A,L,P)
+  return s:relglob("lib/tasks/","**/*",".rake")
 endfunction
 
 function! s:EditSimpleRb(bang,cmd,name,target,prefix,suffix)

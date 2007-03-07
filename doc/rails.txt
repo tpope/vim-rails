@@ -204,9 +204,10 @@ The 'path' has been modified to include all the best places to be.
 						*rails-:Rfind*
 :Rfind [{file}]		Find {file}.  Very similar to :find, but things like
 			BlogController are properly handled, and if
-			genutils.vim is installed, tab complete works.  The
-			default filename is taken from under the cursor in a
-			manner quite similar to gf, described below.
+			genutils.vim is installed (1.x not 2.x), tab complete
+			works.  The default filename is taken from under the
+			cursor in a manner quite similar to gf, described
+			below.
 
 File Under Cursor - gf ~
 						*rails-gf*
@@ -436,11 +437,13 @@ A limited amount of completion with <Tab> is supported.
 			:Rscript runner {code} in that the code is passed as
 			one argument. Also, |system()| is used instead of
 			|:!|.  This is to help eliminate annoying "Press
-			ENTER" prompts.
+			ENTER" prompts.  If a line number is given in the
+			range slot, the output is pasted into the buffer after
+			that line.
 
 						*rails-:Rp*
 :Rp {code}		Like :Rrunner, but call the Ruby p method on the
-			result. Literally "begin p {code} end".
+			result. Literally "p begin {code} end".
 
 						*rails-:Rgenerate*
 :Rgenerate {options}	Calls script/generate {options}, and then edits the
