@@ -2484,7 +2484,6 @@ function! s:BufSyntax()
       if classes != ''
         exe "syn keyword rubyRailsUserClass ".classes." containedin=rubyClassDeclaration,rubyModuleDeclaration,rubyClass,rubyModule"
       endif
-      syn keyword rubyRailsMethod breakpoint
       if t != ''
         syn match rubyRailsError ':order_by\>'
       endif
@@ -2552,9 +2551,35 @@ function! s:BufSyntax()
       if t =~ '^config-routes\>'
         syn match rubyRailsMethod '\.\zs\%(connect\|resources\=\|root\|named_route\)\>'
       endif
+      syn keyword rubyRailsMethod breakpoint
       syn keyword rubyRailsMethod alias_attribute alias_method_chain attr_accessor_with_default attr_internal attr_internal_accessor attr_internal_reader attr_internal_writer delegate mattr_accessor mattr_reader mattr_writer
       syn keyword rubyRailsMethod cattr_accessor cattr_reader cattr_writer class_inheritable_accessor class_inheritable_array class_inheritable_array_writer class_inheritable_hash class_inheritable_hash_writer class_inheritable_option class_inheritable_reader class_inheritable_writer inheritable_attributes read_inheritable_attribute reset_inheritable_attributes write_inheritable_array write_inheritable_attribute write_inheritable_hash
       syn keyword rubyRailsInclude require_dependency gem
+
+      syn region  rubyString   matchgroup=rubyStringDelimiter start=+\%(:order\s*=>\s*\)\@<="+ skip=+\\\\\|\\"+ end=+"+ contains=@rubyStringSpecial,railsOrderSpecial
+      syn region  rubyString   matchgroup=rubyStringDelimiter start=+\%(:order\s*=>\s*\)\@<='+ skip=+\\\\\|\\'+ end=+'+ contains=@rubyStringSpecial,railsOrderSpecial
+      syn match   railsOrderSpecial +\c\<\%(DE\|A\)SC\>+ contained
+      syn region  rubyString   matchgroup=rubyStringDelimiter start=+\%(:conditions\s*=>\s*\[\s*\)\@<="+ skip=+\\\\\|\\"+ end=+"+ contains=@rubyStringSpecial,railsConditionsSpecial
+      syn region  rubyString   matchgroup=rubyStringDelimiter start=+\%(:conditions\s*=>\s*\[\s*\)\@<='+ skip=+\\\\\|\\'+ end=+'+ contains=@rubyStringSpecial,railsConditionsSpecial
+      syn match   railsConditionsSpecial +?\|:\h\w*+ contained
+
+      " HTML highlighting inside %Q<> and %q<>
+      unlet b:current_syntax
+      let removenorend = !exists("g:html_no_rendering")
+      let g:html_no_rendering = 1
+      syn include @htmlTop syntax/html.vim
+      if removenorend
+          unlet! g:html_no_rendering
+      endif
+      syn case match
+      syn region  rubyString   matchgroup=rubyStringDelimiter start=+%Q<+ end=+>+ contains=@htmlTop,@rubyStringSpecial
+      syn region  rubyString   matchgroup=rubyStringDelimiter start=+%q<+ end=+>+ contains=@htmlTop
+      "syn region  rubyString   matchgroup=rubyStringDelimiter start=+%Q{+ end=+}+ contains=@htmlTop,@rubyStringSpecial
+      " These make %Q<> highlight better, but add some false positives inside
+      " %q<>.  Oh well.
+      syn cluster htmlArgCluster add=@rubyStringSpecial
+      syn cluster htmlPreProc    add=@rubyStringSpecial
+
     elseif &syntax == "eruby" " && t =~ '^view\>'
       syn case match
       if classes != ''
@@ -2647,6 +2672,9 @@ function! s:HiDefaults()
   hi def link railsUserClass                  railsClass
   hi def link railsMethod                     Function
   hi def link railsClass                      Type
+  hi def link railsOrderSpecial               railsStringSpecial
+  hi def link railsConditionsSpecial          railsStringSpecial
+  hi def link railsStringSpecial              Identifier
 endfunction
 
 function! s:RailslogSyntax()
