@@ -965,8 +965,8 @@ function! s:BufScriptWrappers()
   command! -buffer -bar -nargs=*       -complete=custom,s:DestroyComplete  Rdestroy      :call s:Destroy(<bang>0,<f-args>)
   command! -buffer -bar -nargs=*       -complete=custom,s:PluginComplete   Rplugin       :call s:Plugin(<bang>0,<f-args>)
   command! -buffer -bar -nargs=? -bang -complete=custom,s:ServerComplete   Rserver       :call s:Server(<bang>0,<q-args>)
-  command! -buffer      -nargs=1 -bang -range=0                            Rrunner       :call s:Runner(<bang>0 ? -2 : (<count>==<line2>?<count>:-1),<f-args>)
-  command! -buffer      -nargs=1       -range=0                            Rp            :call s:Runner(<count>==<line2>?<count>:-1,"p begin ".<f-args>." end")
+  command! -buffer -bang -nargs=1 -range=0 -complete=custom,s:RubyComplete Rrunner       :call s:Runner(<bang>0 ? -2 : (<count>==<line2>?<count>:-1),<f-args>)
+  command! -buffer       -nargs=1 -range=0 -complete=custom,s:RubyComplete Rp            :call s:Runner(<count>==<line2>?<count>:-1,"p begin ".<f-args>." end")
 endfunction
 
 function! s:Script(bang,cmd,...)
@@ -1210,6 +1210,10 @@ endfunction
 
 function! s:PluginComplete(A,L,P)
   return s:CustomComplete(a:A,a:L,a:P,"plugin")
+endfunction
+
+function! s:RubyComplete(A,L,R)
+  return s:gsub(RailsUserClasses(),' ','\n')."\nActiveRecord::Base"
 endfunction
 
 " }}}1
@@ -1489,10 +1493,16 @@ function! s:RailsIncludefind(str,...)
     "let str = s:sub(expand("%:p"),'.*[\/]app[\/]controllers[\/]\(.\{-\}\)_controller.rb','views/\1').'/'.str
     if filereadable(str.".rhtml")
       let str = str . ".rhtml"
-    elseif filereadable(str.".rxml")
-      let str = str . ".rxml"
-    elseif filereadable(str.".rjs")
-      let str = str . ".rjs"
+    else
+      let vt = s:view_types.","
+      while vt != ""
+        let t = match(vt,'[^,]*')
+        let vt = s:sub(vt,'[^,]*,','')
+        if filereadable(str.".".t)
+          let str = str.".".t
+          break
+        endif
+      endwhile
     endif
   elseif str =~ '_\%(path\|url\)$'
     " REST helpers
@@ -1818,15 +1828,19 @@ function! s:findlayout(name)
   let pre = "/app/views/layouts/"
   if c =~ '\.'
     return pre.c
-  elseif filereadable(RailsRoot(). pre.c.".rhtml")
+  elseif filereadable(RailsRoot().pre.c.".rhtml")
     let file = pre.c.".rhtml"
-  elseif filereadable(RailsRoot(). pre.c.".rxml")
+  elseif filereadable(RailsRoot().pre.c.".erb")
+    let file = pre.c.".erb"
+  elseif filereadable(RailsRoot().pre.c.".rxml")
     let file = pre.c.".rxml"
-  elseif filereadable(RailsRoot(). pre.c.".mab")
+  elseif filereadable(RailsRoot().pre.c.".builder")
+    let file = pre.c.".builder"
+  elseif filereadable(RailsRoot().pre.c.".mab")
     let file = pre.c.".mab"
-  elseif filereadable(RailsRoot(). pre.c.".liquid")
+  elseif filereadable(RailsRoot().pre.c.".liquid")
     let file = pre.c.".liquid"
-  elseif filereadable(RailsRoot(). pre.c.".haml")
+  elseif filereadable(RailsRoot().pre.c.".haml")
     let file = pre.c.".haml"
   else
     let file = ""
@@ -3632,7 +3646,7 @@ function! s:InitPlugin()
       silent! autocmd QuickFixCmdPost make* call s:QuickFixCmdPost()
     augroup END
   endif
-  let s:view_types = 'rxml,rjs,mab,liquid,haml'
+  let s:view_types = 'rxml,builder,rjs,mab,liquid,haml'
   " Current directory
   let s:efm='%D(in\ %f),'
   " Failure and Error headers, start a multiline message
@@ -3799,13 +3813,13 @@ function! s:BufInit(path)
     call s:callback("config/syntax.vim")
     if &ft == "mason"
       setlocal filetype=eruby
-    elseif &ft =~ '^\%(conf\|ruby\)\=$' && expand("%:e") =~ '^\%(rjs\|rxml\|rake\|mab\)$'
+    elseif &ft =~ '^\%(conf\|ruby\)\=$' && expand("%:e") =~ '^\%(rjs\|rxml\|builder\|rake\|mab\)$'
       setlocal filetype=ruby
     elseif &ft =~ '^\%(liquid\)\=$' && expand("%:e") == "liquid"
       setlocal filetype=liquid
     elseif &ft =~ '^\%(haml\)\=$' && expand("%:e") == "haml"
       setlocal filetype=haml
-    elseif (&ft == "" || v:version < 700) && expand("%:e") == 'rhtml'
+    elseif (&ft == "" || v:version < 700) && expand("%:e") =~ '^\%(rhtml\|erb\)$'
       setlocal filetype=eruby
     elseif (&ft == "" || v:version < 700) && expand("%:e") == 'yml'
       setlocal filetype=yaml
@@ -3893,8 +3907,7 @@ function! s:BufSettings()
   if stridx(&tags,rp) == -1
     let &l:tags = &tags . "," . rp ."/tags"
   endif
-  " There is no rjs/rxml filetype now, but in the future, who knows...
-  if &ft =~ '^\%(ruby\|eruby\|rjs\|rxml\|yaml\|javascript\|css\)$'
+  if &ft =~ '^\%(ruby\|eruby\||yaml\|javascript\|css\)$'
     setlocal sw=2 sts=2 et
     "set include=\\<\\zsAct\\f*::Base\\ze\\>\\\|^\\s*\\(require\\\|load\\)\\s\\+['\"]\\zs\\f\\+\\ze
     setlocal includeexpr=RailsIncludeexpr()
@@ -3908,7 +3921,7 @@ function! s:BufSettings()
     setlocal includeexpr=RailsIncludeexpr()
     let &l:suffixesadd=".rb,.rhtml,.".s:gsub(s:view_types,',',',.').",.css,.js,.yml,.csv,.rake,.sql,.html"
   endif
-  if &filetype == "ruby" || &ft == "rjs" || &ft == "rxml"
+  if &filetype == "ruby"
     let &l:suffixesadd=".rb,.rhtml,.".s:gsub(s:view_types,',',',.').",.yml,.csv,.rake,s.rb"
     if expand('%:e') == 'rake'
       setlocal define=^\\s*def\\s\\+\\(self\\.\\)\\=\\\|^\\s*\\%(task\\\|file\\)\\s\\+[:'\"]
