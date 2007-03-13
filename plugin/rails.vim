@@ -2488,7 +2488,7 @@ function! s:BufSyntax()
         syn match rubyRailsError ':order_by\>'
       endif
       if t == ''
-        syn keyword rubyRailsMethod params request response session headers template cookies flash
+        syn keyword rubyRailsMethod params request response session headers cookies flash
       endif
       if t =~ '^api\>'
         syn keyword rubyRailsAPIMethod api_method inflect_names
@@ -2513,8 +2513,8 @@ function! s:BufSyntax()
         syn keyword rubyRailsControllerMethod helper helper_attr helper_method
       endif
       if t =~ '^controller\>' || t =~ '^view\>' || t=~ '^helper\>'
-        syn keyword rubyRailsMethod params request response session headers template cookies flash
-        syn match rubyRailsError '[@:]\@<!@\%(params\|request\|response\|session\|headers\|template\|cookies\|flash\)\>'
+        syn keyword rubyRailsMethod params request response session headers cookies flash
+        syn match rubyRailsError '[@:]\@<!@\%(params\|request\|response\|session\|headers\|cookies\|flash\)\>'
         syn match rubyRailsError '\<\%(render_partial\|puts\)\>'
         syn keyword rubyRailsRenderMethod render render_component
         syn keyword rubyRailsMethod logger
@@ -2587,17 +2587,17 @@ function! s:BufSyntax()
       endif
       syn cluster erubyRailsRegions contains=erubyOneLiner,erubyBlock,erubyExpression
       syn match rubyRailsError ':order_by\>' contained containedin=@erubyRailsRegions
-      syn match rubyRailsError '[@:]\@<!@\%(params\|request\|response\|session\|headers\|template\|cookies\|flash\)\>' contained containedin=@erubyRailsRegions
+      syn match rubyRailsError '[@:]\@<!@\%(params\|request\|response\|session\|headers\|cookies\|flash\)\>' contained containedin=@erubyRailsRegions
       "syn match rubyRailsError '@content_for_\w*\>'
       "exe "syn match erubyRailsHelperMethod ".rails_view_helpers." contained containedin=@erubyRailsRegions"
       exe "syn keyword erubyRailsHelperMethod ".s:sub(s:rails_view_helpers,'\<select\s\+','')." contained containedin=@erubyRailsRegions"
       "syn keyword rubyRailsDeprecatedMethod start_form_tag end_form_tag link_to_image human_size update_element_function contained containedin=@erubyRailsRegions
       syn match erubyRailsHelperMethod '\<select\>\%(\s*{\|\s*do\>\|\s*(\=\s*&\)\@!' contained containedin=@erubyRailsRegions
       syn keyword erubyRailsMethod breakpoint logger containedin=@erubyRailsRegions
-      syn keyword erubyRailsMethod params request response session headers template cookies flash contained containedin=@erubyRailsRegions
+      syn keyword erubyRailsMethod params request response session headers cookies flash contained containedin=@erubyRailsRegions
       syn match erubyRailsMethod '\.\@<!\<\(h\|html_escape\|u\|url_encode\)\>' contained containedin=@erubyRailsRegions
         syn keyword erubyRailsRenderMethod render render_component contained containedin=@erubyRailsRegions
-      syn match rubyRailsError '[^@:]\@<!@\%(params\|request\|response\|session\|headers\|template\|cookies\|flash\)\>' contained containedin=@erubyRailsRegions
+      syn match rubyRailsError '[^@:]\@<!@\%(params\|request\|response\|session\|headers\|cookies\|flash\)\>' contained containedin=@erubyRailsRegions
       syn match rubyRailsError '\<\%(render_partial\|puts\)\>' contained containedin=@erubyRailsRegions
       syn case match
       set isk+=$
@@ -3328,7 +3328,6 @@ function! s:BufAbbreviations()
       Rabbrev rs[ response
       Rabbrev se[ session
       Rabbrev hd[ headers
-      Rabbrev te[ template
       Rabbrev co[ cookies
       Rabbrev fl[ flash
       Rabbrev rr( render
