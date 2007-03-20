@@ -741,7 +741,7 @@ endfunction
 function! s:Refresh(bang)
   " What else?
   if a:bang
-    unlet! s:rails_view_helpers
+    unlet! s:rails_helper_methods
   endif
   call s:BufLeave()
   let i = 1
@@ -2462,23 +2462,28 @@ function! s:BufSyntax()
     let s:prototype_functions = "$ $$ $A $F $H $R $w"
     " From the Prototype bundle for TextMate
     let s:prototype_classes = "Prototype Class Abstract Try PeriodicalExecuter Enumerable Hash ObjectRange Element Ajax Responders Base Request Updater PeriodicalUpdater Toggle Insertion Before Top Bottom After ClassNames Form Serializers TimedObserver Observer EventObserver Event Position Effect Effect2 Transitions ScopedQueue Queues DefaultOptions Parallel Opacity Move MoveBy Scale Highlight ScrollTo Fade Appear Puff BlindUp BlindDown SwitchOff DropOut Shake SlideDown SlideUp Squish Grow Shrink Pulsate Fold"
-    if !exists("s:rails_view_helpers")
+    if !exists("s:rails_helper_methods")
       if g:rails_expensive
-        let s:rails_view_helpers = ""
+        let s:rails_helper_methods = ""
         if has("ruby")
           " && (has("win32") || has("win32unix"))
           ruby begin; require 'rubygems'; rescue LoadError; end
-          ruby begin; require 'active_support'; require 'action_controller'; require 'action_view'; h = ActionView::Helpers.constants.grep(/Helper$/).collect {|c|ActionView::Helpers.const_get c}.collect {|c| c.public_instance_methods(false)}.collect {|es| es.reject {|e| e =~ /_with(out)?_deprecation$/ || es.include?("#{e}_without_deprecation")}}.flatten.sort.uniq.reject {|m| m =~ /[=?]$/}; VIM::command('let s:rails_view_helpers = "%s"' % h.join(" ")); rescue Exception; end
+          if exists("g:rubycomplete_rails") && g:rubycomplete_rails
+            ruby begin; require VIM::evaluate('RailsRoot()')+'/config/environment'; rescue LoadError; end
+          else
+            ruby begin; require 'active_support'; require 'action_controller'; require 'action_view'; rescue LoadError; end
+          end
+          ruby begin; h = ActionView::Helpers.constants.grep(/Helper$/).collect {|c|ActionView::Helpers.const_get c}.collect {|c| c.public_instance_methods(false)}.collect {|es| es.reject {|e| e =~ /_with(out)?_deprecation$/ || es.include?("#{e}_without_deprecation")}}.flatten.sort.uniq.reject {|m| m =~ /[=?]$/}; VIM::command('let s:rails_helper_methods = "%s"' % h.join(" ")); rescue Exception; end
         endif
-        if s:rails_view_helpers == ""
-          let s:rails_view_helpers = s:rubyeval('require %{action_controller}; require %{action_view}; h = ActionView::Helpers.constants.grep(/Helper$/).collect {|c|ActionView::Helpers.const_get c}.collect {|c| c.public_instance_methods(false)}.collect {|es| es.reject {|e| e =~ /_with(out)?_deprecation$/ || es.include?(%{#{e}_without_deprecation})}}.flatten.sort.uniq.reject {|m| m =~ /[=?]$/}; puts h.join(%{ })',"link_to")
+        if s:rails_helper_methods == ""
+          let s:rails_helper_methods = s:rubyeval('require %{action_controller}; require %{action_view}; h = ActionView::Helpers.constants.grep(/Helper$/).collect {|c|ActionView::Helpers.const_get c}.collect {|c| c.public_instance_methods(false)}.collect {|es| es.reject {|e| e =~ /_with(out)?_deprecation$/ || es.include?(%{#{e}_without_deprecation})}}.flatten.sort.uniq.reject {|m| m =~ /[=?]$/}; puts h.join(%{ })',"link_to")
         endif
       else
-        let s:rails_view_helpers = "link_to"
+        let s:rails_helper_methods = "link_to"
       endif
     endif
-    "let g:rails_view_helpers = s:rails_view_helpers
-    let rails_view_helpers = '+\.\@<!\<\('.s:gsub(s:rails_view_helpers,'\s\+','\\|').'\)\>+'
+    "let g:rails_helper_methods = s:rails_helper_methods
+    let rails_helper_methods = '+\.\@<!\<\('.s:gsub(s:rails_helper_methods,'\s\+','\\|').'\)\>+'
     let classes = s:gsub(RailsUserClasses(),'::',' ')
     if &syntax == 'ruby'
       if classes != ''
@@ -2520,8 +2525,8 @@ function! s:BufSyntax()
         syn keyword rubyRailsMethod logger
       endif
       if t =~ '^helper\>' || t=~ '^view\>'
-        "exe "syn match rubyRailsHelperMethod ".rails_view_helpers
-        exe "syn keyword rubyRailsHelperMethod ".s:sub(s:rails_view_helpers,'\<select\s\+','')
+        "exe "syn match rubyRailsHelperMethod ".rails_helper_methods
+        exe "syn keyword rubyRailsHelperMethod ".s:sub(s:rails_helper_methods,'\<select\s\+','')
         syn match rubyRailsHelperMethod '\<select\>\%(\s*{\|\s*do\>\|\s*(\=\s*&\)\@!'
         "syn keyword rubyRailsDeprecatedMethod start_form_tag end_form_tag link_to_image human_size update_element_function
       elseif t =~ '^controller\>'
@@ -2589,8 +2594,8 @@ function! s:BufSyntax()
       syn match rubyRailsError ':order_by\>' contained containedin=@erubyRailsRegions
       syn match rubyRailsError '[@:]\@<!@\%(params\|request\|response\|session\|headers\|cookies\|flash\)\>' contained containedin=@erubyRailsRegions
       "syn match rubyRailsError '@content_for_\w*\>'
-      "exe "syn match erubyRailsHelperMethod ".rails_view_helpers." contained containedin=@erubyRailsRegions"
-      exe "syn keyword erubyRailsHelperMethod ".s:sub(s:rails_view_helpers,'\<select\s\+','')." contained containedin=@erubyRailsRegions"
+      "exe "syn match erubyRailsHelperMethod ".rails_helper_methods." contained containedin=@erubyRailsRegions"
+      exe "syn keyword erubyRailsHelperMethod ".s:sub(s:rails_helper_methods,'\<select\s\+','')." contained containedin=@erubyRailsRegions"
       "syn keyword rubyRailsDeprecatedMethod start_form_tag end_form_tag link_to_image human_size update_element_function contained containedin=@erubyRailsRegions
       syn match erubyRailsHelperMethod '\<select\>\%(\s*{\|\s*do\>\|\s*(\=\s*&\)\@!' contained containedin=@erubyRailsRegions
       syn keyword erubyRailsMethod breakpoint logger containedin=@erubyRailsRegions
