@@ -743,6 +743,13 @@ function! s:Refresh(bang)
   if a:bang
     unlet! s:rails_helper_methods
   endif
+  if exists("g:rubycomplete_rails") && g:rubycomplete_rails && has("ruby")
+    silent! ruby ActiveRecord::Base.reset_subclasses if defined?(ActiveRecord)
+    silent! ruby Dependencies.clear if defined?(Dependencies)
+    if a:bang
+      silent! ruby ActiveRecord::Base.clear_reloadable_connections! if defined?(ActiveRecord)
+    endif
+  endif
   call s:BufLeave()
   let i = 1
   let max = bufnr('$')
@@ -2469,7 +2476,7 @@ function! s:BufSyntax()
           " && (has("win32") || has("win32unix"))
           ruby begin; require 'rubygems'; rescue LoadError; end
           if exists("g:rubycomplete_rails") && g:rubycomplete_rails
-            ruby begin; require VIM::evaluate('RailsRoot()')+'/config/environment'; rescue LoadError; end
+            ruby begin; require VIM::evaluate('RailsRoot()')+'/config/environment'; rescue Exception; end
           else
             ruby begin; require 'active_support'; require 'action_controller'; require 'action_view'; rescue LoadError; end
           end
@@ -3147,7 +3154,7 @@ function! s:BufDatabase(...)
       " It might be possible to make use of taint checking.
       let out = ""
       if has("ruby")
-        ruby VIM::command('let out = %s' % File.open(VIM::evaluate("RailsRoot()")+"/config/database.yml") {|f| y = YAML::load(f); e = y[VIM::evaluate("env")]; i=0; e=y[e] while e.respond_to?(:to_str) && (i+=1)<16; e.map {|k,v| "#{k}=#{v}\n" if v}.compact.join }.inspect) rescue nil
+        ruby require 'yaml'; VIM::command('let out = %s' % File.open(VIM::evaluate("RailsRoot()")+"/config/database.yml") {|f| y = YAML::load(f); e = y[VIM::evaluate("env")]; i=0; e=y[e] while e.respond_to?(:to_str) && (i+=1)<16; e.map {|k,v| "#{k}=#{v}\n" if v}.compact.join }.inspect) rescue nil
       endif
       if out == ""
         let cmdb = 'require %{yaml}; File.open(%q{'.RailsRoot().'/config/database.yml}) {|f| y = YAML::load(f); e = y[%{'

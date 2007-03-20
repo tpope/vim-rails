@@ -886,11 +886,9 @@ application is not part of a subversion repository.  Disabled by default.
 						*g:rails_syntax*  >
 	let g:rails_syntax=1
 When enabled, this tweaks the syntax highlighting to be more Rails friendly.
-Enabled by default.
-
-When g:rails_syntax is enabled, you may find your Ruby files to be a bit heavy
-on the cyan (or however your Identifiers are highlighted).  You may want to
-enable g:ruby_no_identifiers, as explained in |ft-ruby-syntax|.
+Enabled by default.  If you dislike the colors, several highlight groups are
+provided for you to tweak in your colorscheme.  Useful groups include
+railsMethod and railsUserClass.
 
 					*rails-tabs* *g:rails_tabstop*  >
 	let g:rails_tabstop=4
