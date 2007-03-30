@@ -360,12 +360,6 @@ function! RailsRoot()
   endif
 endfunction
 
-function! RailsAppPath()
-  " Deprecated
-  call s:warn("RailsAppPath() is deprecated: use RailsRoot() instead.")
-  return RailsRoot()
-endfunction
-
 function! RailsFilePath()
   if !exists("b:rails_root")
     return ""
@@ -633,6 +627,7 @@ function! s:BufCommands()
   endif
   let ext = expand("%:e")
   if ext =~ '^\%(rhtml\|'.s:sub(s:view_types,',','\\|').'\)$'
+    " TODO: complete controller names here
     command! -buffer -bar -nargs=? -range -complete=custom,s:controllerList Rextract :<line1>,<line2>call s:Partial(<bang>0,<f-args>)
     command! -buffer -bar -nargs=? -range Rpartial :call s:warn("Warning: :Rpartial has been deprecated in favor of :Rextract") | <line1>,<line2>Rextract<bang> <args>
   endif
@@ -1569,6 +1564,7 @@ function! s:BufFinderCommands()
   call s:addfilecmds("integrationtest")
   call s:addfilecmds("stylesheet")
   call s:addfilecmds("javascript")
+  call s:addfilecmds("task")
 endfunction
 
 function! s:autocamelize(files,test)
@@ -1637,7 +1633,7 @@ function! s:relglob(path,glob,...)
 endfunction
 
 function! s:helperList(A,L,P)
-  return s:relglob("app/helpers/","**/*","_helper.rb")
+  return s:autocamelize(s:relglob("app/helpers/","**/*","_helper.rb"),a:A)
 endfunction
 
 function! s:controllerList(A,L,P)
@@ -1930,6 +1926,10 @@ function! s:integrationtestEdit(bang,cmd,...)
     let f = s:controller()
   endif
   return s:EditSimpleRb(a:bang,a:cmd,"integrationtest",f,"test/integration/","_test")
+endfunction
+
+function! s:taskEdit(bang,cmd,...)
+  call s:EditSimpleRb(a:bang,a:cmd,"task",a:0? a:1 : s:model(1),"lib/tasks/",".rake")
 endfunction
 
 " }}}1
@@ -2304,14 +2304,19 @@ function! s:Partial(bang,...) range abort
   elseif "@".name != var
     let renderstr = renderstr.", :object => ".var
   endif
-  if expand("%:e") == "rhtml"
+  if expand("%:e") == "rhtml" || expand("%:e") == "erb"
     let renderstr = "<%= ".renderstr." %>"
+  elseif expand("%:e") == "rxml" || expand("%:e") == "builder"
+    let renderstr = "xml << ".s:sub(renderstr,"render ","render(").")"
   endif
   let buf = @@
   silent exe range."yank"
   let partial = @@
   let @@ = buf
+  let ai = &ai
+  let &ai = ""
   silent exe "norm :".first.",".last."change\<CR>".fspaces.renderstr."\<CR>.\<CR>"
+  let &ai = ai
   if renderstr =~ '<%'
     norm ^6w
   else
@@ -2469,6 +2474,31 @@ function! s:BufSyntax()
     let s:prototype_functions = "$ $$ $A $F $H $R $w"
     " From the Prototype bundle for TextMate
     let s:prototype_classes = "Prototype Class Abstract Try PeriodicalExecuter Enumerable Hash ObjectRange Element Ajax Responders Base Request Updater PeriodicalUpdater Toggle Insertion Before Top Bottom After ClassNames Form Serializers TimedObserver Observer EventObserver Event Position Effect Effect2 Transitions ScopedQueue Queues DefaultOptions Parallel Opacity Move MoveBy Scale Highlight ScrollTo Fade Appear Puff BlindUp BlindDown SwitchOff DropOut Shake SlideDown SlideUp Squish Grow Shrink Pulsate Fold"
+
+    let s:rails_helper_methods = ""
+          \."auto_complete_field auto_complete_result auto_discovery_link_tag auto_link "
+          \."benchmark button_to button_to_function "
+          \."cache capture cdata_section check_box check_box_tag collection_select concat content_for content_tag country_options_for_select country_select cycle "
+          \."date_select datetime_select debug define_javascript_functions distance_of_time_in_words distance_of_time_in_words_to_now draggable_element draggable_element_js drop_receiving_element drop_receiving_element_js "
+          \."error_message_on error_messages_for escape_javascript escape_once evaluate_remote_response excerpt "
+          \."fields_for file_field file_field_tag form form_for form_remote_for form_remote_tag form_tag "
+          \."hidden_field hidden_field_tag highlight "
+          \."image_path image_submit_tag image_tag in_place_editor in_place_editor_field input "
+          \."javascript_cdata_section javascript_include_tag javascript_path javascript_tag "
+          \."link_to link_to_function link_to_if link_to_remote link_to_unless link_to_unless_current "
+          \."mail_to markdown "
+          \."number_to_currency number_to_human_size number_to_percentage number_to_phone number_with_delimiter number_with_precision "
+          \."observe_field observe_form option_groups_from_collection_for_select options_for_select options_from_collection_for_select "
+          \."pagination_links pagination_links_each password_field password_field_tag periodically_call_remote pluralize "
+          \."radio_button radio_button_tag remote_form_for remote_function reset_cycle "
+          \."sanitize select select_date select_datetime select_day select_hour select_minute select_month select_second select_tag select_time select_year simple_format sortable_element sortable_element_js strip_links strip_tags stylesheet_link_tag stylesheet_path submit_tag submit_to_remote "
+          \."tag text_area text_area_tag text_field text_field_tag text_field_with_auto_complete textilize textilize_without_paragraph time_ago_in_words time_select time_zone_options_for_select time_zone_select truncate "
+          \."update_page update_page_tag url_for "
+          \."visual_effect "
+          \."word_wrap"
+
+    " The list of helper methods used to be derived automatically.  Let's keep
+    " this code around in case it's needed again.
     if !exists("s:rails_helper_methods")
       if g:rails_expensive
         let s:rails_helper_methods = ""
@@ -3806,15 +3836,17 @@ function! s:scrub(collection,item)
 endfunction
 
 function! s:callback(file)
-  let var = "callback_".s:rv()."_".s:escvar(a:file)
-  if !exists("s:".var) || exists("b:rails_refresh")
-    let s:{var} = filereadable(s:r()."/".a:file)
-  endif
-  if s:{var}
-    if exists(":sandbox")
-      sandbox exe "source ".s:ra()."/".a:file
-    elseif g:rails_modelines
-      exe "source ".s:ra()."/".a:file
+  if RailsRoot() != ""
+    let var = "callback_".s:rv()."_".s:escvar(a:file)
+    if !exists("s:".var) || exists("b:rails_refresh")
+      let s:{var} = filereadable(s:r()."/".a:file)
+    endif
+    if s:{var}
+      if exists(":sandbox")
+        sandbox exe "source ".s:ra()."/".a:file
+      elseif g:rails_modelines
+        exe "source ".s:ra()."/".a:file
+      endif
     endif
   endif
 endfunction
