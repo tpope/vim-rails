@@ -508,14 +508,16 @@ function! s:QuickFixCmdPre()
     if strpart(getcwd(),0,strlen(RailsRoot())) != RailsRoot()
       let s:last_dir = getcwd()
       echo "lchdir ".s:ra()
-      exe "lchdir ".s:ra()
+      "exe "lchdir ".s:ra()
+      lchdir `=RailsRoot()`
     endif
   endif
 endfunction
 
 function! s:QuickFixCmdPost()
   if exists("s:last_dir")
-    exe "lchdir ".s:escarg(s:last_dir)
+    "exe "lchdir ".s:escarg(s:last_dir)
+    lchdir `=s:last_dir`
     unlet s:last_dir
   endif
 endfunction
@@ -608,7 +610,7 @@ endfunction
 " Commands {{{1
 
 function! s:BufCommands()
-  let rp = s:ra()
+  "let rp = s:ra()
   call s:BufScriptWrappers()
   call s:BufNavCommands()
   command! -buffer -bar -nargs=? -bang -complete=custom,s:RakeComplete    Rake     :call s:Rake(<bang>0,<q-args>)
@@ -617,8 +619,8 @@ function! s:BufCommands()
   command! -buffer -bar -nargs=* -bang -complete=custom,s:SetComplete     Rset     :call s:Set(<bang>0,<f-args>)
   command! -buffer -bar -nargs=0 Rtags       :call s:Tags(<bang>0)
   command! -buffer -bar -nargs=0 -bang Rdoc  :if <bang>0 | call s:prephelp() | help rails | else | call s:Doc(<bang>0) | endif
-  command! -buffer -bar -nargs=0 -bang Refresh :if <bang>0|unlet! g:loaded_rails|exe "source ".s:escarg(s:file)|endif|call s:Refresh(<bang>0)
-  command! -buffer -bar -nargs=0 -bang Rrefresh :if <bang>0|unlet! g:loaded_rails|exe "source ".s:escarg(s:file)|endif|call s:Refresh(<bang>0)
+  command! -buffer -bar -nargs=0 -bang Refresh  :Rrefresh<bang>
+  command! -buffer -bar -nargs=0 -bang Rrefresh :if <bang>0|unlet! g:loaded_rails|source `=s:file`|endif|call s:Refresh(<bang>0)
   if exists(":Project")
     command! -buffer -bar -nargs=? -bang  Rproject :call s:Project(<bang>0,<q-args>)
   endif
@@ -667,10 +669,11 @@ function! s:Log(bang,arg)
     clast
   else
     if exists(":Tail")
+      " TODO: check if :Tail works with `=`
       exe "Tail ".s:ra().'/'.lf
     else
-      exe "pedit ".s:ra().'/'.lf
-      "exe "sfind ".lf
+      "exe "pedit ".s:ra().'/'.lf
+      pedit `=RailsRoot().'/'.lf`
     endif
   endif
 endfunction
@@ -698,6 +701,7 @@ function! s:NewApp(bang,...)
     let str = str . " " . s:rquote(expand(a:{c}))
     let c = c + 1
   endwhile
+  let str = s:sub(str,'^ ','')
   let dir = expand(dir)
   if isdirectory(fnamemodify(dir,':h')."/.svn") && g:rails_subversion
     let append = " -c"
@@ -712,7 +716,8 @@ function! s:NewApp(bang,...)
   endif
   exe "!rails".append.str
   if filereadable(dir."/".g:rails_default_file)
-    exe "edit ".s:escarg(dir)."/".g:rails_default_file
+    "exe "edit ".s:escarg(dir)."/".g:rails_default_file
+    edit `=dir.'/'.g:rails_default_file`
   endif
 endfunction
 
@@ -1059,6 +1064,7 @@ function! s:Plugin(bang,...)
       return s:findedit(a:bang?'!':'',"vendor/plugins/".a:1."/init.rb")
     endif
   endif
+  call s:warn("Warning: :Rplugin has been deprecated in favor of :Rscript plugin")
   let str = ""
   let c = 1
   while c <= a:0
@@ -1118,7 +1124,8 @@ function! s:Generate(bang,...)
   endif
   if !s:rubyexe("script/generate ".target.(s:usesubversion()?' -c':'').str) && file != ""
     unlet! s:user_classes_{s:rv()}
-    exe "edit ".s:ra()."/".file
+    "exe "edit ".s:ra()."/".file
+    edit `=RailsRoot().'/'.file`
   endif
 endfunction
 
@@ -1141,7 +1148,7 @@ function! s:ScriptComplete(ArgLead,CmdLine,P)
   elseif cmd =~ '^\%(plugin\)\s\+'.a:ArgLead.'$'
     return "discover\nlist\ninstall\nupdate\nremove\nsource\nunsource\nsources"
   elseif cmd =~ '\%(plugin\)\s\+\%(install\|remove\)\s\+'.a:ArgLead.'$' || cmd =~ '\%(generate\|destroy\)\s\+plugin\s\+'.a:ArgLead.'$'
-      return s:relglob('vendor/plugins/',"*","/init.rb")
+    return s:pluginList(a:ArgLead,a:CmdLine,a:P)
   elseif cmd =~ '^\%(generate\|destroy\)\s\+'.a:ArgLead.'$'
     return s:generators()
   elseif cmd =~ '^\%(generate\|destroy\)\s\+\w\+\s\+'.a:ArgLead.'$'
@@ -1223,8 +1230,10 @@ endfunction
 
 function! s:BufNavCommands()
   " TODO: completion
-  silent exe "command! -bar -buffer -nargs=? Rcd :cd ".s:ra()."/<args>"
-  silent exe "command! -bar -buffer -nargs=? Rlcd :lcd ".s:ra()."/<args>"
+  "silent exe "command! -bar -buffer -nargs=? Rcd :cd ".s:ra()."/<args>"
+  "silent exe "command! -bar -buffer -nargs=? Rlcd :lcd ".s:ra()."/<args>"
+  command!   -buffer -bar -nargs=? Rcd   :cd `=RailsRoot().'/'.<q-args>`
+  command!   -buffer -bar -nargs=? Rlcd :lcd `=RailsRoot().'/'.<q-args>`
   command!   -buffer -bar -nargs=* -count=1 -complete=custom,s:FindList Rfind       :call s:Find(<bang>0,<count>,"" ,<f-args>)
   command!   -buffer -bar -nargs=* -count=1 -complete=custom,s:FindList REfind      :call s:Find(<bang>0,<count>,"E",<f-args>)
   command!   -buffer -bar -nargs=* -count=1 -complete=custom,s:FindList RSfind      :call s:Find(<bang>0,<count>,"S",<f-args>)
@@ -1291,11 +1300,12 @@ endfunction
 
 function! s:Edit(bang,count,arg,...)
   let cmd = a:arg . (a:bang ? '!' : '')
-  let str = ""
   if a:0
+    let str = ""
     let i = 1
     while i < a:0
-      let str = str . s:escarg(a:{i}) . " "
+      "let str = str . s:escarg(a:{i}) . " "
+      let str = str . "`=a:".i."` "
       let i = i + 1
     endwhile
     let file = a:{i}
@@ -1565,6 +1575,7 @@ function! s:BufFinderCommands()
   call s:addfilecmds("stylesheet")
   call s:addfilecmds("javascript")
   call s:addfilecmds("task")
+  call s:addfilecmds("lib")
 endfunction
 
 function! s:autocamelize(files,test)
@@ -1705,9 +1716,29 @@ function! s:integrationtestList(A,L,P)
   return s:autocamelize(s:relglob("test/integration/","**/*","_test.rb"),a:A)
 endfunction
 
+function! s:pluginList(A,L,P)
+  return s:relglob('vendor/plugins/',"*","/init.rb")
+endfunction
+
 " Task files, not actual rake tasks
 function! s:taskList(A,L,P)
-  return s:relglob("lib/tasks/","**/*",".rake")
+  let top = s:relglob("lib/tasks/","**/*",".rake")
+  if RailsFilePath() =~ '\<vendor/plugins/.'
+    let path = s:sub(RailsFilePath(),'\<vendor/plugins/[^/]*/\zs.*','tasks/')
+    return s:relglob(path,"**/*",".rake") . "\n" . top
+  else
+    return top
+  endif
+endfunction
+
+function! s:libList(A,L,P)
+  let top = s:relglob('lib/',"**/*",".rb")
+  if RailsFilePath() =~ '\<vendor/plugins/.'
+    let path = s:sub(RailsFilePath(),'\<vendor/plugins/[^/]*/\zs.*','lib/')
+    return s:relglob(path,"**/*",".rb") . "\n" . top
+  else
+    return top
+  endif
 endfunction
 
 function! s:EditSimpleRb(bang,cmd,name,target,prefix,suffix)
@@ -1929,7 +1960,19 @@ function! s:integrationtestEdit(bang,cmd,...)
 endfunction
 
 function! s:taskEdit(bang,cmd,...)
-  call s:EditSimpleRb(a:bang,a:cmd,"task",a:0? a:1 : s:model(1),"lib/tasks/",".rake")
+  let extra = ""
+  if RailsFilePath() =~ '\<vendor/plugins/.'
+    let extra = s:sub(RailsFilePath(),'\<vendor/plugins/[^/]*/\zs.*','tasks/')."\n"
+  endif
+  call s:EditSimpleRb(a:bang,a:cmd,"task",a:0? a:1 : "",extra."lib/tasks/",".rake")
+endfunction
+
+function! s:libEdit(bang,cmd,...)
+  let extra = ""
+  if RailsFilePath() =~ '\<vendor/plugins/.'
+    let extra = s:sub(RailsFilePath(),'\<vendor/plugins/[^/]*/\zs.*','lib/')."\n"
+  endif
+  call s:EditSimpleRb(a:bang,a:cmd,"task",a:0? a:1 : "",extra."lib/",".rb")
 endfunction
 
 " }}}1
@@ -2029,11 +2072,15 @@ endfunction
 
 function! s:edit(cmd,file,...)
   let cmd = s:editcmdfor(a:cmd)
+  let cmd = cmd.' '.(a:0 ? a:1 . ' ' : '')
   let file = a:file
   if file !~ '^/' && file !~ '^\w:' && file !~ '://'
-    let file = s:ra().'/'.file
+    "let file = s:ra().'/'.file
+    exe cmd."`=RailsRoot().'/'.file`"
+  else
+    exe cmd.file
   endif
-    exe cmd.' '.(a:0 ? a:1 . ' ' : '').file
+  "exe cmd.file
 endfunction
 
 function! s:Alternate(bang,cmd)
@@ -2328,7 +2375,9 @@ function! s:Partial(bang,...) range abort
   else
     new
   endif
-  exe "silent file ".s:escarg(fnamemodify(out,':~:.'))
+  let shortout = fnamemodify(out,':~:.')
+  "exe "silent file ".s:escarg(shortout)
+  silent file `=shortout`
   let &ft = ft
   let @@ = partial
   silent put
@@ -2605,11 +2654,11 @@ function! s:BufSyntax()
       syn region  rubyString   matchgroup=rubyStringDelimiter start=+\%(:conditions\s*=>\s*\[\s*\)\@<='+ skip=+\\\\\|\\'+ end=+'+ contains=@rubyStringSpecial,railsConditionsSpecial
       syn match   railsConditionsSpecial +?\|:\h\w*+ contained
 
-      " HTML highlighting inside %Q<> and %q<>
+      " XHTML highlighting inside %Q<> and %q<>
       unlet b:current_syntax
       let removenorend = !exists("g:html_no_rendering")
       let g:html_no_rendering = 1
-      syn include @htmlTop syntax/html.vim
+      syn include @htmlTop syntax/xhtml.vim
       if removenorend
           unlet! g:html_no_rendering
       endif
@@ -3034,16 +3083,19 @@ function! s:prephelp()
   let fn = fnamemodify(s:file,':h:h').'/doc/'
   if filereadable(fn.'rails.txt')
     if !filereadable(fn.'tags') || getftime(fn.'tags') <= getftime(fn.'rails.txt')
-      silent! exe "helptags ".s:escarg(fn)
+      "silent! exe 'helptags '.s:escarg(fn)
+      silent! helptags `=fn`
     endif
   endif
 endfunction
 
 function! s:findschema()
   if filereadable(RailsRoot()."/db/schema.rb")
-    exe "edit ".s:ra()."/db/schema.rb"
+    "exe "edit ".s:ra()."/db/schema.rb"
+    edit `=RailsRoot().'/db/schema.rb'`
   elseif filereadable(RailsRoot()."/db/".s:environment()."_structure.sql")
-    exe "edit ".s:ra()."/db/".s:environment()."_structure.sql"
+    "exe "edit ".s:ra()."/db/".s:environment()."_structure.sql"
+    edit `=RailsRoot().'/db/'.s:environment().'_structure.sql'`
   else
     return s:error("Schema not found: try :Rake db:schema:dump")
   endif
@@ -3843,9 +3895,9 @@ function! s:callback(file)
     endif
     if s:{var}
       if exists(":sandbox")
-        sandbox exe "source ".s:ra()."/".a:file
+        sandbox source `=RailsRoot().'/'.a:file`
       elseif g:rails_modelines
-        exe "source ".s:ra()."/".a:file
+        source `=RailsRoot().'/'.a:file`
       endif
     endif
   endif

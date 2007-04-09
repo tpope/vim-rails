@@ -455,7 +455,9 @@ A limited amount of completion with <Tab> is supported.
 
 						*rails-:Rplugin*
 :Rplugin {options}	Calls script/plugin {options}.  Respects
-			|g:rails_subversion|.
+			|g:rails_subversion|.  Deprecated: use :Rscript plugin
+			instead (and specify -x yourself if you want a
+			subversion external).
 
 						*rails-:Rserver*
 :Rserver {options}	Launches script/server {options} in the background.
