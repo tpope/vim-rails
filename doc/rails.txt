@@ -10,6 +10,7 @@ Author: Tim Pope <vimNOSPAM@tpope.info>		|rails-plugin-author|
 |rails-alternate-related|	    Alternate and Related Files
 |rails-model-navigation|	    Model Navigation Commands
 |rails-controller-navigation|	    Controller Navigation Commands
+|rails-misc-navigation|		    Miscellaneous Navigation Commands
 |rails-scripts|			Script Wrappers
 |rails-partials|		Partial Extraction
 |rails-integration|		Plugin Integration
@@ -318,7 +319,6 @@ modeline like: >
 :Robserver					|rails-:Robserver|
 :Rfixtures					|rails-:Rfixtures|
 :Runittest					|rails-:Runittest|
-:Rintegrationtest				|rails-:Rintegrationtest|
 
 						*rails-:Rmodel*
 :Rmodel [{name}]	Edit the specified model.
@@ -351,19 +351,13 @@ modeline like: >
 						*rails-:Runittest*
 :Runittest [{name}]	Edit the unit test for the specified model.
 
-						*rails-:Rintegrationtest*
-:Rintegrationtest [{name}]
-			Edit the integration test specified.  The default
-			is based on the current controller or model, with no
-			singularization or pluralization done.
-
 Controller Navigation Commands  ~
 						*rails-controller-navigation*
-The default for model navigation commands is the current controller, if it can
-be determined.  For example, test/functional/blog_test.rb would have a current
-controller of blog.  Otherwise, if a model name can be determined, said model
-name will be pluralized and used.  To override this, use a command or modeline
-like: >
+The default for controller navigation commands is the current controller, if
+it can be determined.  For example, test/functional/blog_test.rb would have a
+current controller of blog.  Otherwise, if a model name can be determined,
+said model name will be pluralized and used.  To override this, use a command
+or modeline like: >
 	Rset controller=blog
 
 :Rcontroller					|rails-:Rcontroller|
@@ -372,8 +366,6 @@ like: >
 :Rlayout					|rails-:Rlayout|
 :Rapi						|rails-:Rapi|
 :Rfunctionaltest				|rails-:Rfunctionaltest|
-:Rstylesheet					|rails-:Rstylesheet|
-:Rjavascript					|rails-:Rjavascript|
 
 						*rails-:Rcontroller*
 :Rcontroller [{name}]	Edit the specified controller.
@@ -402,6 +394,17 @@ like: >
 :Rfunctionaltest [{name}]
 			Edit the functional test for the specified controller.
 
+Miscellaneous Navigation Commands  ~
+						*rails-misc-navigation*
+
+The following commands are not clearly associated with models or controllers.
+
+:Rstylesheet					|rails-:Rstylesheet|
+:Rjavascript					|rails-:Rjavascript|
+:Rlib						|rails-:Rlib|
+:Rtask						|rails-:Rtask|
+:Rintegrationtest				|rails-:Rintegrationtest|
+
 						*rails-:Rstylesheet*
 :Rstylesheet [{name}]	Edit the stylesheet for the specified name, defaulting
 			to the current controller's name.
@@ -409,6 +412,25 @@ like: >
 						*rails-:Rjavascript*
 :Rjavascript [{name}]	Edit the javascript for the specified name, defaulting
 			to the current controller's name.
+
+						*rails-:Rlib*
+:Rlib [{name}]		Edit the library from the lib directory for the
+			specified name.  If the current file is part of a
+			plugin, the libraries from that plugin can be
+			specified as well.
+
+						*rails-:Rtask*
+:Rtask [{name}]		Edit the .rake file from lib/tasks for the specified
+			name.  If the current file is part of a plugin, the
+			tasks for that plugin can be specified as well.  If no
+			argument is given, either the current plugin's
+			Rakefile or the application Rakefile will be edited.
+
+						*rails-:Rintegrationtest*
+:Rintegrationtest [{name}]
+			Edit the integration test specified.  The default
+			is based on the current controller or model, with no
+			singularization or pluralization done.
 
 Finally, one Vim feature that proves helpful in conjunction with all of the
 above is |CTRL-^|.  This keystroke edits the previous file, and is helpful to
@@ -435,7 +457,7 @@ A limited amount of completion with <Tab> is supported.
 						*rails-:Rrunner*
 :Rrunner {code}		Executes {code} with script/runner.  Differs from
 			:Rscript runner {code} in that the code is passed as
-			one argument. Also, |system()| is used instead of
+			one argument.  Also, |system()| is used instead of
 			|:!|.  This is to help eliminate annoying "Press
 			ENTER" prompts.  If a line number is given in the
 			range slot, the output is pasted into the buffer after

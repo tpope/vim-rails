@@ -214,6 +214,10 @@ function! s:controller(...)
     return s:sub(f,'.*\<test/functional/\(.\{-\}\)_controller_test\.rb$','\1')
   elseif f =~ '\<spec/controllers/.*_controller_spec\.rb$'
     return s:sub(f,'.*\<spec/controllers/\(.\{-\}\)_controller_spec\.rb$','\1')
+  elseif f =~ '\<spec/helpers/.*_helper_spec\.rb$'
+    return s:sub(f,'.*\<spec/helpers/\(.\{-\}\)_helper_spec\.rb$','\1')
+  elseif f =~ '\<spec/views/.*/\w\+_view_spec\.rb$'
+    return s:sub(f,'.*\<spec/views/\(.\{-\}\)/\w\+_view_spec\.rb$','\1')
   elseif f =~ '\<components/.*_controller\.rb$'
     return s:sub(f,'.*\<components/\(.\{-\}\)_controller\.rb$','\1')
   elseif f =~ '\<components/.*\.\(rhtml\|'.s:gsub(s:view_types,',','\\|').'\)$'
@@ -611,8 +615,8 @@ endfunction
 
 function! s:BufCommands()
   "let rp = s:ra()
-  call s:BufScriptWrappers()
   call s:BufNavCommands()
+  call s:BufScriptWrappers()
   command! -buffer -bar -nargs=? -bang -complete=custom,s:RakeComplete    Rake     :call s:Rake(<bang>0,<q-args>)
   command! -buffer -bar -nargs=? -bang -complete=custom,s:PreviewComplete Rpreview :call s:Preview(<bang>0,<q-args>)
   command! -buffer -bar -nargs=? -bang -complete=custom,s:environments    Rlog     :call s:Log(<bang>0,<q-args>)
@@ -1060,8 +1064,13 @@ endfunction
 
 function! s:Plugin(bang,...)
   if a:0 == 1 && !(a:1 =~ '^\%(discover\|list\|install\|update\|remove\|source\|unsource\|sources\)$')
+    return s:pluginEdit(a:bang,'',a:1)
     if filereadable(RailsRoot()."/vendor/plugins/".a:1."/init.rb")
       return s:findedit(a:bang?'!':'',"vendor/plugins/".a:1."/init.rb")
+    elseif filereadable(RailsRoot()."/vendor/plugins/".a:1.".rb")
+      return s:findedit(a:bang?'!':'',"vendor/plugins/".a:1.".rb")
+    elseif filereadable(RailsRoot()."/vendor/plugins/".a:1)
+      return s:findedit(a:bang?'!':'',"vendor/plugins/".a:1)
     endif
   endif
   call s:warn("Warning: :Rplugin has been deprecated in favor of :Rscript plugin")
@@ -1218,7 +1227,11 @@ function! s:DestroyComplete(A,L,P)
 endfunction
 
 function! s:PluginComplete(A,L,P)
-  return s:CustomComplete(a:A,a:L,a:P,"plugin")
+  if a:L =~ '^\%[Rplugin]\s*\w\+[_/]'
+    return s:pluginList(a:A,a:L,a:P)
+  else
+    return s:CustomComplete(a:A,a:L,a:P,"plugin")
+  endif
 endfunction
 
 function! s:RubyComplete(A,L,R)
@@ -1576,6 +1589,7 @@ function! s:BufFinderCommands()
   call s:addfilecmds("javascript")
   call s:addfilecmds("task")
   call s:addfilecmds("lib")
+  call s:addfilecmds("plugin")
 endfunction
 
 function! s:autocamelize(files,test)
@@ -1693,7 +1707,7 @@ function! s:observerList(A,L,P)
 endfunction
 
 function! s:fixturesList(A,L,P)
-  return s:relglob("test/fixtures/","*")
+  return s:relglob("test/fixtures/","**/*")
 endfunction
 
 function! s:migrationList(A,L,P)
@@ -1717,7 +1731,11 @@ function! s:integrationtestList(A,L,P)
 endfunction
 
 function! s:pluginList(A,L,P)
-  return s:relglob('vendor/plugins/',"*","/init.rb")
+  if a:A =~ '/'
+    return s:relglob('vendor/plugins/',matchstr(a:A,'.\{-\}/').'**/*')
+  else
+    return s:relglob('vendor/plugins/',"*","/init.rb")
+  endif
 endfunction
 
 " Task files, not actual rake tasks
@@ -1732,13 +1750,12 @@ function! s:taskList(A,L,P)
 endfunction
 
 function! s:libList(A,L,P)
-  let top = s:relglob('lib/',"**/*",".rb")
+  let all = s:relglob('lib/',"**/*",".rb")
   if RailsFilePath() =~ '\<vendor/plugins/.'
     let path = s:sub(RailsFilePath(),'\<vendor/plugins/[^/]*/\zs.*','lib/')
-    return s:relglob(path,"**/*",".rb") . "\n" . top
-  else
-    return top
+    let all = s:relglob(path,"**/*",".rb") . "\n" . all
   endif
+  return s:autocamelize(all,a:A)
 endfunction
 
 function! s:EditSimpleRb(bang,cmd,name,target,prefix,suffix)
@@ -1759,7 +1776,6 @@ function! s:EditSimpleRb(bang,cmd,name,target,prefix,suffix)
     endif
   endif
   let f = s:gsub(a:prefix,'\n',f.'\n').f
-  let g:f = f
   return s:findedit(cmd,f)
 endfunction
 
@@ -1816,7 +1832,7 @@ function! s:fixturesEdit(bang,cmd,...)
   let e = e == '' ? e : '.'.e
   let c = fnamemodify(c,':r')
   let file = 'test/fixtures/'.c.e
-  if file =~ '\.\w\+$'
+  if file =~ '\.\w\+$' && !filereadable(RailsRoot()."/spec/fixtures/".c.e)
     call s:edit(a:cmd.(a:bang?'!':''),file)
   else
     call s:findedit(a:cmd.(a:bang?'!':''),file."\nspec/fixtures/".c.e)
@@ -1959,12 +1975,43 @@ function! s:integrationtestEdit(bang,cmd,...)
   return s:EditSimpleRb(a:bang,a:cmd,"integrationtest",f,"test/integration/","_test")
 endfunction
 
-function! s:taskEdit(bang,cmd,...)
+function! s:pluginEdit(bang,cmd,...)
+  let cmd = s:findcmdfor(a:cmd.(a:bang?'!':''))
+  let plugin = ""
   let extra = ""
   if RailsFilePath() =~ '\<vendor/plugins/.'
-    let extra = s:sub(RailsFilePath(),'\<vendor/plugins/[^/]*/\zs.*','tasks/')."\n"
+    let plugin = matchstr(RailsFilePath(),'\<vendor/plugins/\zs[^/]*\ze')
+    let extra = "vendor/plugins/" . plugin . "/\n"
   endif
-  call s:EditSimpleRb(a:bang,a:cmd,"task",a:0? a:1 : "",extra."lib/tasks/",".rake")
+  if a:0
+    if a:1 =~ '^[^/.]*/\=$' && filereadable(RailsRoot()."/vendor/plugins/".a:1."/init.rb")
+      return s:EditSimpleRb(a:bang,a:cmd,"plugin",s:sub(a:1,'/$',''),"vendor/plugins/","/init.rb")
+    elseif plugin == ""
+      call s:edit(cmd,"vendor/plugins/".s:sub(a:1,'\.$',''))
+    elseif a:1 == "."
+      call s:findedit(cmd,"vendor/plugins/".plugin)
+    elseif isdirectory(RailsRoot()."/vendor/plugins/".matchstr(a:1,'^[^/]*'))
+      call s:edit(cmd,"vendor/plugins/".a:1)
+    else
+      call s:findedit(cmd,"vendor/plugins/".a:1."\nvendor/plugins/".plugin."/".a:1)
+    endif
+  else
+    return s:EditSimpleRb(a:bang,a:cmd,"plugin",plugin,"vendor/plugins/","/init.rb")
+  endif
+endfunction
+
+function! s:taskEdit(bang,cmd,...)
+  let plugin = ""
+  let extra = ""
+  if RailsFilePath() =~ '\<vendor/plugins/.'
+    let plugin = matchstr(RailsFilePath(),'\<vendor/plugins/[^/]*')
+    let extra = plugin."/tasks/\n"
+  endif
+  if a:0
+    call s:EditSimpleRb(a:bang,a:cmd,"task",a:1,extra."lib/tasks/",".rake")
+  else
+    call s:findedit((a:bang ? "!" : ""),(plugin != "" ? plugin."/Rakefile\n" : "")."Rakefile")
+  endif
 endfunction
 
 function! s:libEdit(bang,cmd,...)
@@ -1972,7 +2019,12 @@ function! s:libEdit(bang,cmd,...)
   if RailsFilePath() =~ '\<vendor/plugins/.'
     let extra = s:sub(RailsFilePath(),'\<vendor/plugins/[^/]*/\zs.*','lib/')."\n"
   endif
-  call s:EditSimpleRb(a:bang,a:cmd,"task",a:0? a:1 : "",extra."lib/",".rb")
+  if a:0
+    call s:EditSimpleRb(a:bang,a:cmd,"task",a:0? a:1 : "",extra."lib/",".rb")
+  else
+    " Easter egg
+    call s:EditSimpleRb(a:bang,a:cmd,"task","environment","config/",".rb")
+  endif
 endfunction
 
 " }}}1
@@ -2065,8 +2117,15 @@ function! s:findedit(cmd,file,...) abort
   else
     let testcmd = cmd.' '.(a:0 ? a:1 . ' ' : '').file
   endif
-  if s:try(testcmd) && djump != ''
-    silent! exe 'djump '.djump
+  if s:try(testcmd)
+    " Shorten the file name (I don't fully understand how Vim decides when to
+    " use a relative/absolute path for the file name, so lets blindly force it
+    " to be as short as possible)
+    "silent! file %:~:.
+    "silent! lcd .
+    if djump != ''
+      silent! exe 'djump '.djump
+    endif
   endif
 endfunction
 
@@ -2117,15 +2176,18 @@ function! s:AlternateFile()
     return s:migrationfor("")
   elseif t =~ '^view\>'
     if t =~ '\<layout\>'
-      let dest = fnamemodify(f,':r:s?/layouts\>??').'/layout'
+      let dest = fnamemodify(f,':r:s?/layouts\>??').'/layout.'.fnamemodify(f,':e')
     else
       let dest = f
     endif
-    " Go to the helper, controller, or (mailer) model
-    let helper     = fnamemodify(dest,":h:s?/views/?/helpers/?")."_helper.rb"
-    let controller = fnamemodify(dest,":h:s?/views/?/controllers/?")."_controller.rb"
-    let model      = fnamemodify(dest,":h:s?/views/?/models/?").".rb"
-    if filereadable(RailsRoot()."/".helper)
+    " Go to the (r)spec, helper, controller, or (mailer) model
+    let spec       = fnamemodify(dest,':r:s?\<app/?spec/?')."_view_spec.rb"
+    let helper     = fnamemodify(dest,':h:s?/views/?/helpers/?')."_helper.rb"
+    let controller = fnamemodify(dest,':h:s?/views/?/controllers/?')."_controller.rb"
+    let model      = fnamemodify(dest,':h:s?/views/?/models/?').".rb"
+    if filereadable(RailsRoot()."/".spec)
+      return spec
+    elseif filereadable(RailsRoot()."/".helper)
       return helper
     elseif filereadable(RailsRoot()."/".controller)
       let jumpto = expand("%:t:r")
@@ -2142,7 +2204,12 @@ function! s:AlternateFile()
   elseif t =~ '^helper\>'
     let controller = s:sub(s:sub(f,'/helpers/','/controllers/'),'_helper\.rb$','_controller.rb')
     let controller = s:sub(controller,'application_controller','application')
-    return controller
+    let spec = s:sub(s:sub(f,'\<app/','spec/'),'\.rb$','_spec.rb')
+    if filereadable(RailsRoot()."/".spec)
+      return spec
+    else
+      return controller
+    endif
   elseif t =~ '\<fixtures\>'
     let file = s:singularize(expand("%:t:r")).'_test.rb' " .expand('%:e')
     return file
