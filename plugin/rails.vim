@@ -220,7 +220,7 @@ function! s:controller(...)
     return s:sub(f,'.*\<spec/views/\(.\{-\}\)/\w\+_view_spec\.rb$','\1')
   elseif f =~ '\<components/.*_controller\.rb$'
     return s:sub(f,'.*\<components/\(.\{-\}\)_controller\.rb$','\1')
-  elseif f =~ '\<components/.*\.\(rhtml\|'.s:gsub(s:view_types,',','\\|').'\)$'
+  elseif f =~ '\<components/.*\.\('.s:gsub(s:view_types,',','\\|').'\)$'
     return s:sub(f,'.*\<components/\(.\{-\}\)/\k\+\.\k\+$','\1')
   elseif f =~ '\<app/models/.*\.rb$' && t =~ '^model-mailer\>'
     return s:sub(f,'.*\<app/models/\(.\{-\}\)\.rb$','\1')
@@ -426,7 +426,7 @@ function! RailsFileType()
     let r = "view-layout-" . e
   elseif f =~ '\<\%(app/views\|components\)/.*/_\k\+\.\k\+$'
     let r = "view-partial-" . e
-  elseif f =~ '\<app/views\>.*\.' || f =~ '\<components/.*/.*\.\(rhtml\|'.s:sub(s:view_types,',','\\|').'\)$'
+  elseif f =~ '\<app/views\>.*\.' || f =~ '\<components/.*/.*\.\('.s:sub(s:view_types,',','\\|').'\)$'
     let r = "view-" . e
   elseif f =~ '\<test/unit/.*_test\.rb$' || f =~ '\<spec/models/.*_spec\.rb$'
     let r = "test-unit"
@@ -632,7 +632,7 @@ function! s:BufCommands()
     command! -buffer -bar -nargs=? -bang  Rdbext   :call s:BufDatabase(2,<q-args>,<bang>0)
   endif
   let ext = expand("%:e")
-  if ext =~ '^\%(rhtml\|'.s:sub(s:view_types,',','\\|').'\)$'
+  if ext =~ '^\%('.s:sub(s:view_types,',','\\|').'\)$'
     " TODO: complete controller names here
     command! -buffer -bar -nargs=? -range -complete=custom,s:controllerList Rextract :<line1>,<line2>call s:Partial(<bang>0,<f-args>)
     command! -buffer -bar -nargs=? -range Rpartial :call s:warn("Warning: :Rpartial has been deprecated in favor of :Rextract") | <line1>,<line2>Rextract<bang> <args>
@@ -1521,7 +1521,7 @@ function! s:RailsIncludefind(str,...)
     else
       let vt = s:view_types.","
       while vt != ""
-        let t = match(vt,'[^,]*')
+        let t = matchstr(vt,'[^,]*')
         let vt = s:sub(vt,'[^,]*,','')
         if filereadable(str.".".t)
           let str = str.".".t
@@ -1876,6 +1876,7 @@ endfunction
 function! s:findlayout(name)
   let c = a:name
   let pre = "/app/views/layouts/"
+  let file = ""
   if c =~ '\.'
     return pre.c
   elseif filereadable(RailsRoot().pre.c.".rhtml")
@@ -1886,14 +1887,16 @@ function! s:findlayout(name)
     let file = pre.c.".rxml"
   elseif filereadable(RailsRoot().pre.c.".builder")
     let file = pre.c.".builder"
-  elseif filereadable(RailsRoot().pre.c.".mab")
-    let file = pre.c.".mab"
-  elseif filereadable(RailsRoot().pre.c.".liquid")
-    let file = pre.c.".liquid"
-  elseif filereadable(RailsRoot().pre.c.".haml")
-    let file = pre.c.".haml"
   else
-    let file = ""
+    let vt = s:view_types.","
+    while vt != ""
+      let t = matchstr(vt,'[^,]*')
+      let vt = s:sub(vt,'[^,]*,','')
+      if filereadable(RailsRoot().pre.c.".".t)
+        let file = pre.c.".".t
+        break
+      endif
+    endwhile
   endif
   return file
 endfunction
@@ -3834,7 +3837,7 @@ function! s:InitPlugin()
       silent! autocmd QuickFixCmdPost make* call s:QuickFixCmdPost()
     augroup END
   endif
-  let s:view_types = 'rxml,builder,rjs,mab,liquid,haml'
+  let s:view_types = 'rhtml,erb,rxml,builder,rjs,mab,liquid,haml'
   " Current directory
   let s:efm='%D(in\ %f),'
   " Failure and Error headers, start a multiline message
@@ -4097,6 +4100,19 @@ function! s:BufSettings()
   if stridx(&tags,rp) == -1
     let &l:tags = &tags . "," . rp ."/tags"
   endif
+  if has("gui_win32") || has("gui_running")
+    let code      = '*.rb;*.rake;Rakefile'
+    let templates = '*.'.s:gsub(s:view_types,',',';*.')
+    let fixtures  = '*.yml;*.csv'
+    let statics   = '*.html;*.css;*.js;*.xml;*.xsd;*.sql;.htaccess;README;README_FOR_APP'
+    let b:browsefilter = ""
+          \."All Rails Files\t".code.';'.templates.';'.fixtures.';'.statics."\n"
+          \."Source Code (*.rb, *.rake)\t".code."\n"
+          \."Templates (*.rhtml, *.rxml, *.rjs)\t".templates."\n"
+          \."Fixtures (*.yml, *.csv)\t".fixtures."\n"
+          \."Static Files (*.html, *.css, *.js)\t".statics."\n"
+          \."All Files (*.*)\t*.*\n"
+  endif
   if &ft =~ '^\%(ruby\|eruby\||yaml\|javascript\|css\)$'
     setlocal sw=2 sts=2 et
     "set include=\\<\\zsAct\\f*::Base\\ze\\>\\\|^\\s*\\(require\\\|load\\)\\s\\+['\"]\\zs\\f\\+\\ze
@@ -4109,10 +4125,10 @@ function! s:BufSettings()
   else
     " Does this cause problems in any filetypes?
     setlocal includeexpr=RailsIncludeexpr()
-    let &l:suffixesadd=".rb,.rhtml,.".s:gsub(s:view_types,',',',.').",.css,.js,.yml,.csv,.rake,.sql,.html"
+    let &l:suffixesadd=".rb,.".s:gsub(s:view_types,',',',.').",.css,.js,.yml,.csv,.rake,.sql,.html,.xml"
   endif
   if &filetype == "ruby"
-    let &l:suffixesadd=".rb,.rhtml,.".s:gsub(s:view_types,',',',.').",.yml,.csv,.rake,s.rb"
+    let &l:suffixesadd=".rb,.".s:gsub(s:view_types,',',',.').",.yml,.csv,.rake,s.rb"
     if expand('%:e') == 'rake'
       setlocal define=^\\s*def\\s\\+\\(self\\.\\)\\=\\\|^\\s*\\%(task\\\|file\\)\\s\\+[:'\"]
     else
@@ -4125,7 +4141,7 @@ function! s:BufSettings()
       let b:surround_101 = "\r\nend"
     endif
   elseif &filetype == "eruby"
-    let &l:suffixesadd=".rhtml,.".s:gsub(s:view_types,',',',.').",.rb,.css,.js,.html,.yml,.csv"
+    let &l:suffixesadd=".".s:gsub(s:view_types,',',',.').",.rb,.css,.js,.html,.yml,.csv"
     if exists("g:loaded_allml")
       " allml is currently unreleased as of writing this comment but can be
       " found in my config file CVS repository if you dig around.
@@ -4134,7 +4150,7 @@ function! s:BufSettings()
       let b:allml_doctype_index = 10
     endif
   elseif &filetype == "yaml"
-    let &l:suffixesadd=".yml,.csv,.rb,.rhtml,.".s:gsub(s:view_types,',',',.').",.rake,s.rb"
+    let &l:suffixesadd=".yml,.csv,.rb,.".s:gsub(s:view_types,',',',.').",.rake,s.rb"
   endif
   if &filetype == "eruby" || &filetype == "yaml"
     " surround.vim
