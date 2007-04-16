@@ -1,7 +1,7 @@
 " rails.vim - Detect a rails application
 " Author:       Tim Pope <vimNOSPAM@tpope.info>
 " GetLatestVimScripts: 1567 1 :AutoInstall: rails.vim
-" URL:          http://svn.tpope.net/rails/vim/railsvim
+" URL:          http://rails.vim.tpope.net/
 " $Id$
 
 " See doc/rails.txt for details. Grab it from the URL above if you don't have it
@@ -623,7 +623,7 @@ function! s:BufCommands()
   command! -buffer -bar -nargs=* -bang -complete=custom,s:SetComplete     Rset     :call s:Set(<bang>0,<f-args>)
   command! -buffer -bar -nargs=0 Rtags       :call s:Tags(<bang>0)
   command! -buffer -bar -nargs=0 -bang Rdoc  :if <bang>0 | call s:prephelp() | help rails | else | call s:Doc(<bang>0) | endif
-  command! -buffer -bar -nargs=0 -bang Refresh  :Rrefresh<bang>
+  "command! -buffer -bar -nargs=0 -bang Refresh  :Rrefresh<bang>
   command! -buffer -bar -nargs=0 -bang Rrefresh :if <bang>0|unlet! g:loaded_rails|source `=s:file`|endif|call s:Refresh(<bang>0)
   if exists(":Project")
     command! -buffer -bar -nargs=? -bang  Rproject :call s:Project(<bang>0,<q-args>)
@@ -1573,6 +1573,7 @@ function! s:addfilecmds(type)
 endfunction
 
 function! s:BufFinderCommands()
+  command! -buffer -bar -nargs=+ Rcommand :call s:Command(<bang>0,<f-args>)
   call s:addfilecmds("model")
   call s:addfilecmds("view")
   call s:addfilecmds("controller")
@@ -1758,6 +1759,83 @@ function! s:libList(A,L,P)
   return s:autocamelize(all,a:A)
 endfunction
 
+function! s:Command(bang,name,...)
+  if a:name !~ '^[A-Za-z]\+$'
+    return s:error("E182: Invalid command name")
+  endif
+  let suffix = ".rb"
+  let filter = "**/*"
+  let prefix = ""
+  let default = ""
+  let i = 0
+  while i < a:0
+    let i = i + 1
+    let arg = a:{i}
+    if arg =~# '^-suffix='
+      let suffix = matchstr(arg,'-suffix=\zs.*')
+    elseif arg =~# '^-default='
+      let default = matchstr(arg,'-default=\zs.*')
+    elseif arg =~# '^-\%(glob\|filter)='
+      let filter = matchstr(arg,'-\w*=\zs.*')
+    elseif arg !~# '^-'
+      " A literal '\n'.  For evaluation below
+      let prefix = prefix."\\n".s:sub(arg,'/\=$','/')
+    endif
+  endwhile
+  let prefix = s:sub(prefix,'^\\n','')
+  let name = a:name
+  let cmds = 'ESVT '
+  let cmd = ''
+  while cmds != ''
+    exe 'command! -buffer -bar -bang -nargs=* -complete=custom,s:CommandList R'.cmd.name." :call s:CommandEdit(<bang>0,'".cmd."','".name."',\"".prefix."\",".s:string(suffix).",".s:string(filter).",".s:string(default).",<f-args>)"
+    let cmd = strpart(cmds,0,1)
+    let cmds = strpart(cmds,1)
+  endwhile
+endfunction
+
+function! s:CommandList(A,L,P)
+  let cmd = matchstr(a:L,'\CR[A-Z]\=\w\+')
+  exe cmd." &"
+  let lp = s:last_prefix . "\n"
+  let res = ""
+  while lp != ""
+    let p = matchstr(lp,'.\{-\}\ze\n')
+    let lp = s:sub(lp,'.\{-\}\n','')
+    let res = res . s:relglob(p,s:last_filter,s:last_suffix)."\n"
+  endwhile
+  let res = s:sub(s:sub(res,'^\n',''),'\n$','')
+  let res = s:gsub(res,'\n\n\+','\n')
+  if s:last_camelize
+    return s:autocamelize(res,a:A)
+  else
+    return res
+  endif
+endfunction
+
+function! s:CommandEdit(bang,cmd,name,prefix,suffix,filter,default,...)
+  if a:0 && a:1 == "&"
+    let s:last_prefix = a:prefix
+    let s:last_suffix = a:suffix
+    let s:last_filter = a:filter
+    let s:last_camelize = (a:suffix =~# '\.rb$')
+  else
+    if a:default == "both()"
+      if s:model() != ""
+        let default = s:model()
+      else
+        let default = s:controller()
+      endif
+    elseif a:default == "model()"
+      let default = s:model(1)
+    elseif a:default == "controller()"
+      let default = s:controller(1)
+    else
+      let default = a:default
+    endif
+    call s:EditSimpleRb(a:bang,a:cmd,a:name,a:0 ? a:1 : default,a:prefix,a:suffix)
+  endif
+endfunction
+
 function! s:EditSimpleRb(bang,cmd,name,target,prefix,suffix)
   let cmd = s:findcmdfor(a:cmd.(a:bang?'!':''))
   if a:target == ""
@@ -1772,7 +1850,7 @@ function! s:EditSimpleRb(bang,cmd,name,target,prefix,suffix)
   else
     let f = f.a:suffix
     if a:suffix !~ '\.'
-      let f = f.".rb"
+      "let f = f.".rb"
     endif
   endif
   let f = s:gsub(a:prefix,'\n',f.'\n').f
@@ -1840,11 +1918,11 @@ function! s:fixturesEdit(bang,cmd,...)
 endfunction
 
 function! s:modelEdit(bang,cmd,...)
-  call s:EditSimpleRb(a:bang,a:cmd,"model",a:0? a:1 : s:model(1),"app/models/","")
+  call s:EditSimpleRb(a:bang,a:cmd,"model",a:0? a:1 : s:model(1),"app/models/",".rb")
 endfunction
 
 function! s:observerEdit(bang,cmd,...)
-  call s:EditSimpleRb(a:bang,a:cmd,"observer",a:0? a:1 : s:model(1),"app/models/","_observer")
+  call s:EditSimpleRb(a:bang,a:cmd,"observer",a:0? a:1 : s:model(1),"app/models/","_observer.rb")
 endfunction
 
 function! s:viewEdit(bang,cmd,...)
@@ -1926,11 +2004,11 @@ function! s:controllerEdit(bang,cmd,...)
 endfunction
 
 function! s:helperEdit(bang,cmd,...)
-  return s:EditSimpleRb(a:bang,a:cmd,"helper",a:0? a:1 : s:controller(1),"app/helpers/\ncomponents/","_helper")
+  return s:EditSimpleRb(a:bang,a:cmd,"helper",a:0? a:1 : s:controller(1),"app/helpers/\ncomponents/","_helper.rb")
 endfunction
 
 function! s:apiEdit(bang,cmd,...)
-  return s:EditSimpleRb(a:bang,a:cmd,"api",a:0 ? a:1 : s:controller(1),"app/apis/","_api")
+  return s:EditSimpleRb(a:bang,a:cmd,"api",a:0 ? a:1 : s:controller(1),"app/apis/","_api.rb")
 endfunction
 
 function! s:stylesheetEdit(bang,cmd,...)
@@ -1948,7 +2026,7 @@ function! s:unittestEdit(bang,cmd,...)
       let f = f . "_observer"
     endif
   endif
-  return s:EditSimpleRb(a:bang,a:cmd,"unittest",f,"test/unit/","_test")
+  return s:EditSimpleRb(a:bang,a:cmd,"unittest",f,"test/unit/","_test.rb")
 endfunction
 
 function! s:functionaltestEdit(bang,cmd,...)
@@ -1964,7 +2042,7 @@ function! s:functionaltestEdit(bang,cmd,...)
       let f = f . "_api"
     endif
   endif
-  return s:EditSimpleRb(a:bang,a:cmd,"functionaltest",f,"test/functional/","_test")
+  return s:EditSimpleRb(a:bang,a:cmd,"functionaltest",f,"test/functional/","_test.rb")
 endfunction
 
 function! s:integrationtestEdit(bang,cmd,...)
@@ -1975,7 +2053,7 @@ function! s:integrationtestEdit(bang,cmd,...)
   else
     let f = s:controller()
   endif
-  return s:EditSimpleRb(a:bang,a:cmd,"integrationtest",f,"test/integration/","_test")
+  return s:EditSimpleRb(a:bang,a:cmd,"integrationtest",f,"test/integration/","_test.rb")
 endfunction
 
 function! s:pluginEdit(bang,cmd,...)
@@ -4049,6 +4127,7 @@ function! s:BufInit(path)
   if f =~ '[ !#$%\,]'
     let f = ''
   endif
+  runtime! macros/rails.vim
   silent doautocmd User Rails
   if t != '-'
     exe "silent doautocmd User Rails".s:gsub(t,'-','.')
