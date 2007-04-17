@@ -463,7 +463,7 @@ function! RailsType()
 endfunction
 
 " }}}1
-" Configuration {{{1
+" Configuration {{{
 
 function! s:SetOptDefault(opt,val)
   if !exists("g:".a:opt)
@@ -473,34 +473,29 @@ endfunction
 
 function! s:InitConfig()
   call s:SetOptDefault("rails_level",3)
-  let l = g:rails_level
-  call s:SetOptDefault("rails_statusline",(l>2)+(l>3))
-  call s:SetOptDefault("rails_syntax",l>1)
+  call s:SetOptDefault("rails_statusline",1)
+  call s:SetOptDefault("rails_syntax",1)
   call s:SetOptDefault("rails_isfname",0)
-  call s:SetOptDefault("rails_mappings",l>2)
-  call s:SetOptDefault("rails_abbreviations",l>2)
-  call s:SetOptDefault("rails_expensive",l>2+0*(has("win32")||has("win32unix")))
+  call s:SetOptDefault("rails_mappings",1)
+  call s:SetOptDefault("rails_abbreviations",1)
+  call s:SetOptDefault("rails_expensive",1+0*(has("win32")||has("win32unix")))
   call s:SetOptDefault("rails_dbext",g:rails_expensive)
-  call s:SetOptDefault("rails_subversion",l>3)
+  call s:SetOptDefault("rails_subversion",0)
   call s:SetOptDefault("rails_tabstop",0)
   call s:SetOptDefault("rails_default_file","README")
   call s:SetOptDefault("rails_default_database","")
   call s:SetOptDefault("rails_leader","")
   call s:SetOptDefault("rails_root_url",'http://localhost:3000/')
-  call s:SetOptDefault("rails_modelines",l>2)
-  call s:SetOptDefault("rails_menu",(l>2)+(l>3))
+  call s:SetOptDefault("rails_modelines",1)
+  call s:SetOptDefault("rails_menu",1)
   call s:SetOptDefault("rails_gnu_screen",1)
   call s:SetOptDefault("rails_history_size",5)
   call s:SetOptDefault("rails_debug",0)
-  if l > 2
+  if g:rails_dbext
     if exists("g:loaded_dbext") && executable("sqlite3") && ! executable("sqlite")
       " Since dbext can't find it by itself
       call s:SetOptDefault("dbext_default_SQLITE_bin","sqlite3")
     endif
-  endif
-  if l > 3
-    "call s:SetOptDefault("ruby_no_identifiers",1)
-    call s:SetOptDefault("rubycomplete_rails",1)
   endif
 endfunction
 
@@ -1775,7 +1770,7 @@ function! s:Command(bang,name,...)
       let suffix = matchstr(arg,'-suffix=\zs.*')
     elseif arg =~# '^-default='
       let default = matchstr(arg,'-default=\zs.*')
-    elseif arg =~# '^-\%(glob\|filter)='
+    elseif arg =~# '^-\%(glob\|filter\)='
       let filter = matchstr(arg,'-\w*=\zs.*')
     elseif arg !~# '^-'
       " A literal '\n'.  For evaluation below
