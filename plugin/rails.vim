@@ -612,10 +612,10 @@ function! s:BufCommands()
   "let rp = s:ra()
   call s:BufNavCommands()
   call s:BufScriptWrappers()
-  command! -buffer -bar -nargs=? -bang -complete=custom,s:RakeComplete    Rake     :call s:Rake(<bang>0,<q-args>)
-  command! -buffer -bar -nargs=? -bang -complete=custom,s:PreviewComplete Rpreview :call s:Preview(<bang>0,<q-args>)
-  command! -buffer -bar -nargs=? -bang -complete=custom,s:environments    Rlog     :call s:Log(<bang>0,<q-args>)
-  command! -buffer -bar -nargs=* -bang -complete=custom,s:SetComplete     Rset     :call s:Set(<bang>0,<f-args>)
+  Rcommand! -buffer -bar -nargs=? -bang -complete=custom,s:RakeComplete    Rake     :call s:Rake(<bang>0,<q-args>)
+  Rcommand! -buffer -bar -nargs=? -bang -complete=custom,s:PreviewComplete Rpreview :call s:Preview(<bang>0,<q-args>)
+  Rcommand! -buffer -bar -nargs=? -bang -complete=custom,s:environments    Rlog     :call s:Log(<bang>0,<q-args>)
+  Rcommand! -buffer -bar -nargs=* -bang -complete=custom,s:SetComplete     Rset     :call s:Set(<bang>0,<f-args>)
   command! -buffer -bar -nargs=0 Rtags       :call s:Tags(<bang>0)
   command! -buffer -bar -nargs=0 -bang Rdoc  :if <bang>0 | call s:prephelp() | help rails | else | call s:Doc(<bang>0) | endif
   "command! -buffer -bar -nargs=0 -bang Refresh  :Rrefresh<bang>
@@ -624,12 +624,12 @@ function! s:BufCommands()
     command! -buffer -bar -nargs=? -bang  Rproject :call s:Project(<bang>0,<q-args>)
   endif
   if exists("g:loaded_dbext")
-    command! -buffer -bar -nargs=? -bang  -complete=custom,s:environments   Rdbext   :call s:BufDatabase(2,<q-args>,<bang>0)
+    Rcommand! -buffer -bar -nargs=? -bang  -complete=custom,s:environments   Rdbext   :call s:BufDatabase(2,<q-args>,<bang>0)
   endif
   let ext = expand("%:e")
   if ext =~ '^\%('.s:sub(s:view_types,',','\\|').'\)$'
     " TODO: complete controller names here
-    command! -buffer -bar -nargs=? -range -complete=custom,s:controllerList Rextract :<line1>,<line2>call s:Partial(<bang>0,<f-args>)
+    Rcommand! -buffer -bar -nargs=? -range -complete=custom,s:controllerList Rextract :<line1>,<line2>call s:Partial(<bang>0,<f-args>)
     command! -buffer -bar -nargs=? -range Rpartial :call s:warn("Warning: :Rpartial has been deprecated in favor of :Rextract") | <line1>,<line2>Rextract<bang> <args>
   endif
   if RailsFilePath() =~ '\<db/migrate/.*\.rb$'
@@ -964,15 +964,15 @@ endfunction
 " Script Wrappers {{{1
 
 function! s:BufScriptWrappers()
-  command! -buffer -bar -nargs=+       -complete=custom,s:ScriptComplete   Rscript       :call s:Script(<bang>0,<f-args>)
-  command! -buffer -bar -nargs=*       -complete=custom,s:ConsoleComplete  Rconsole      :call s:Console(<bang>0,"console",<f-args>)
-  command! -buffer -bar -nargs=*                                           Rbreakpointer :call s:Console(<bang>0,"breakpointer",<f-args>)
-  command! -buffer -bar -nargs=*       -complete=custom,s:GenerateComplete Rgenerate     :call s:Generate(<bang>0,<f-args>)
-  command! -buffer -bar -nargs=*       -complete=custom,s:DestroyComplete  Rdestroy      :call s:Destroy(<bang>0,<f-args>)
-  command! -buffer -bar -nargs=*       -complete=custom,s:PluginComplete   Rplugin       :call s:Plugin(<bang>0,<f-args>)
-  command! -buffer -bar -nargs=? -bang -complete=custom,s:ServerComplete   Rserver       :call s:Server(<bang>0,<q-args>)
-  command! -buffer -bang -nargs=1 -range=0 -complete=custom,s:RubyComplete Rrunner       :call s:Runner(<bang>0 ? -2 : (<count>==<line2>?<count>:-1),<f-args>)
-  command! -buffer       -nargs=1 -range=0 -complete=custom,s:RubyComplete Rp            :call s:Runner(<count>==<line2>?<count>:-1,"p begin ".<f-args>." end")
+  Rcommand! -buffer -bar -nargs=+       -complete=custom,s:ScriptComplete   Rscript       :call s:Script(<bang>0,<f-args>)
+  Rcommand! -buffer -bar -nargs=*       -complete=custom,s:ConsoleComplete  Rconsole      :call s:Console(<bang>0,'console',<f-args>)
+  Rcommand! -buffer -bar -nargs=*                                           Rbreakpointer :call s:Console(<bang>0,'breakpointer',<f-args>)
+  Rcommand! -buffer -bar -nargs=*       -complete=custom,s:GenerateComplete Rgenerate     :call s:Generate(<bang>0,<f-args>)
+  Rcommand! -buffer -bar -nargs=*       -complete=custom,s:DestroyComplete  Rdestroy      :call s:Destroy(<bang>0,<f-args>)
+  Rcommand! -buffer -bar -nargs=*       -complete=custom,s:PluginComplete   Rplugin       :call s:Plugin(<bang>0,<f-args>)
+  Rcommand! -buffer -bar -nargs=? -bang -complete=custom,s:ServerComplete   Rserver       :call s:Server(<bang>0,<q-args>)
+  Rcommand! -buffer -bang -nargs=1 -range=0 -complete=custom,s:RubyComplete Rrunner       :call s:Runner(<bang>0 ? -2 : (<count>==<line2>?<count>:-1),<f-args>)
+  Rcommand! -buffer       -nargs=1 -range=0 -complete=custom,s:RubyComplete Rp            :call s:Runner(<count>==<line2>?<count>:-1,'p begin '.<f-args>.' end')
 endfunction
 
 function! s:Script(bang,cmd,...)
@@ -1237,24 +1237,26 @@ endfunction
 " Navigation {{{1
 
 function! s:BufNavCommands()
+  call s:BufFinderCommands()
   " TODO: completion
   "silent exe "command! -bar -buffer -nargs=? Rcd :cd ".s:ra()."/<args>"
   "silent exe "command! -bar -buffer -nargs=? Rlcd :lcd ".s:ra()."/<args>"
   command!   -buffer -bar -nargs=? Rcd   :cd `=RailsRoot().'/'.<q-args>`
   command!   -buffer -bar -nargs=? Rlcd :lcd `=RailsRoot().'/'.<q-args>`
-  command!   -buffer -bar -nargs=* -count=1 -complete=custom,s:FindList Rfind       :call s:Find(<bang>0,<count>,"" ,<f-args>)
-  command!   -buffer -bar -nargs=* -count=1 -complete=custom,s:FindList REfind      :call s:Find(<bang>0,<count>,"E",<f-args>)
-  command!   -buffer -bar -nargs=* -count=1 -complete=custom,s:FindList RSfind      :call s:Find(<bang>0,<count>,"S",<f-args>)
-  command!   -buffer -bar -nargs=* -count=1 -complete=custom,s:FindList RVfind      :call s:Find(<bang>0,<count>,"V",<f-args>)
-  command!   -buffer -bar -nargs=* -count=1 -complete=custom,s:FindList RTfind      :call s:Find(<bang>0,<count>,"T",<f-args>)
-  command!   -buffer -bar -nargs=* -count=1 -complete=custom,s:FindList Rsfind      :<count>RSfind<bang> <args>
-  "command!   -buffer -bar -nargs=* -count=1 -complete=custom,s:FindList Rvsfind     :echoerr "Obsolete: Use :RVfind instead"
-  command!   -buffer -bar -nargs=* -count=1 -complete=custom,s:FindList Rtabfind    :<count>RTfind<bang> <args>
-  command!   -buffer -bar -nargs=* -bang    -complete=custom,s:EditList Redit       :call s:Edit(<bang>0,<count>,"" ,<f-args>)
-  command!   -buffer -bar -nargs=* -bang    -complete=custom,s:EditList REedit      :call s:Edit(<bang>0,<count>,"E",<f-args>)
-  command!   -buffer -bar -nargs=* -bang    -complete=custom,s:EditList RSedit      :call s:Edit(<bang>0,<count>,"S",<f-args>)
-  command!   -buffer -bar -nargs=* -bang    -complete=custom,s:EditList RVedit      :call s:Edit(<bang>0,<count>,"V",<f-args>)
-  command!   -buffer -bar -nargs=* -bang    -complete=custom,s:EditList RTedit      :call s:Edit(<bang>0,<count>,"T",<f-args>)
+  " Vim 6.2 chokes on script local completion functions (e.g., s:FindList).
+  " :Rcommand! is a thin wrapper arround :command! which works around this
+  Rcommand!   -buffer -bar -nargs=* -count=1 -complete=custom,s:FindList Rfind       :call s:Find(<bang>0,<count>,'' ,<f-args>)
+  Rcommand!   -buffer -bar -nargs=* -count=1 -complete=custom,s:FindList REfind      :call s:Find(<bang>0,<count>,'E',<f-args>)
+  Rcommand!   -buffer -bar -nargs=* -count=1 -complete=custom,s:FindList RSfind      :call s:Find(<bang>0,<count>,'S',<f-args>)
+  Rcommand!   -buffer -bar -nargs=* -count=1 -complete=custom,s:FindList RVfind      :call s:Find(<bang>0,<count>,'V',<f-args>)
+  Rcommand!   -buffer -bar -nargs=* -count=1 -complete=custom,s:FindList RTfind      :call s:Find(<bang>0,<count>,'T',<f-args>)
+  Rcommand!   -buffer -bar -nargs=* -count=1 -complete=custom,s:FindList Rsfind      :<count>RSfind<bang> <args>
+  Rcommand!   -buffer -bar -nargs=* -count=1 -complete=custom,s:FindList Rtabfind    :<count>RTfind<bang> <args>
+  Rcommand!   -buffer -bar -nargs=* -bang    -complete=custom,s:EditList Redit       :call s:Edit(<bang>0,<count>,'' ,<f-args>)
+  Rcommand!   -buffer -bar -nargs=* -bang    -complete=custom,s:EditList REedit      :call s:Edit(<bang>0,<count>,'E',<f-args>)
+  Rcommand!   -buffer -bar -nargs=* -bang    -complete=custom,s:EditList RSedit      :call s:Edit(<bang>0,<count>,'S',<f-args>)
+  Rcommand!   -buffer -bar -nargs=* -bang    -complete=custom,s:EditList RVedit      :call s:Edit(<bang>0,<count>,'V',<f-args>)
+  Rcommand!   -buffer -bar -nargs=* -bang    -complete=custom,s:EditList RTedit      :call s:Edit(<bang>0,<count>,'T',<f-args>)
   command! -buffer -bar -nargs=0 A  :call s:Alternate(<bang>0,"")
   command! -buffer -bar -nargs=0 AE :call s:Alternate(<bang>0,"E")
   command! -buffer -bar -nargs=0 AS :call s:Alternate(<bang>0,"S")
@@ -1267,7 +1269,6 @@ function! s:BufNavCommands()
   command! -buffer -bar -nargs=0 RV :call s:Related(<bang>0,"V")
   command! -buffer -bar -nargs=0 RT :call s:Related(<bang>0,"T")
   "command! -buffer -bar -nargs=0 RN :call s:Alternate(<bang>0,"")
-  call s:BufFinderCommands()
 endfunction
 
 function! s:Find(bang,count,arg,...)
@@ -1569,7 +1570,7 @@ function! s:addfilecmds(type)
 endfunction
 
 function! s:BufFinderCommands()
-  command! -buffer -bar -nargs=+ Rcommand :call s:Command(<bang>0,<f-args>)
+  command! -buffer -bar -bang -nargs=+ Rcommand :call s:Command(<bang>0,<f-args>)
   call s:addfilecmds("model")
   call s:addfilecmds("view")
   call s:addfilecmds("controller")
@@ -1766,14 +1767,26 @@ function! s:libList(A,L,P)
   return s:autocamelize(all,a:A)
 endfunction
 
-function! s:Command(bang,name,...)
-  if a:name !~ '^[A-Za-z]\+$'
-    return s:error("E182: Invalid command name")
+function! s:Command(bang,...)
+  if a:bang
+    let str = ""
+    let i = 0
+    while i < a:0
+      let i = i + 1
+      if a:{i} =~# '^-complete=custom,s:' && v:version <= 602
+        let str = str . " " . s:sub(a:{i},',s:',','.s:sid)
+      else
+        let str = str . " " . a:{i}
+      endif
+    endwhile
+    exe "command!".str
+    return
   endif
   let suffix = ".rb"
   let filter = "**/*"
   let prefix = ""
   let default = ""
+  let name = ""
   let i = 0
   while i < a:0
     let i = i + 1
@@ -1786,15 +1799,21 @@ function! s:Command(bang,name,...)
       let filter = matchstr(arg,'-\w*=\zs.*')
     elseif arg !~# '^-'
       " A literal '\n'.  For evaluation below
-      let prefix = prefix."\\n".s:sub(arg,'/\=$','/')
+      if name == ""
+        let name = arg
+      else
+        let prefix = prefix."\\n".s:sub(arg,'/\=$','/')
+      endif
     endif
   endwhile
   let prefix = s:sub(prefix,'^\\n','')
-  let name = a:name
+  if name !~ '^[A-Za-z]\+$'
+    return s:error("E182: Invalid command name")
+  endif
   let cmds = 'ESVT '
   let cmd = ''
   while cmds != ''
-    exe 'command! -buffer -bar -bang -nargs=* -complete=custom,s:CommandList R'.cmd.name." :call s:CommandEdit(<bang>0,'".cmd."','".name."',\"".prefix."\",".s:string(suffix).",".s:string(filter).",".s:string(default).",<f-args>)"
+    exe 'command! -buffer -bar -bang -nargs=* -complete=custom,'.s:sid.'CommandList R'.cmd.name." :call s:CommandEdit(<bang>0,'".cmd."','".name."',\"".prefix."\",".s:string(suffix).",".s:string(filter).",".s:string(default).",<f-args>)"
     let cmd = strpart(cmds,0,1)
     let cmds = strpart(cmds,1)
   endwhile
