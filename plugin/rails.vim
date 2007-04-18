@@ -624,7 +624,7 @@ function! s:BufCommands()
     command! -buffer -bar -nargs=? -bang  Rproject :call s:Project(<bang>0,<q-args>)
   endif
   if exists("g:loaded_dbext")
-    command! -buffer -bar -nargs=? -bang  Rdbext   :call s:BufDatabase(2,<q-args>,<bang>0)
+    command! -buffer -bar -nargs=? -bang  -complete=custom,s:environments   Rdbext   :call s:BufDatabase(2,<q-args>,<bang>0)
   endif
   let ext = expand("%:e")
   if ext =~ '^\%('.s:sub(s:view_types,',','\\|').'\)$'
@@ -1200,7 +1200,7 @@ function! s:ScriptComplete(ArgLead,CmdLine,P)
 endfunction
 
 function! s:CustomComplete(A,L,P,cmd)
-  let L = "Script ".a:cmd." ".s:sub(a:L,'^\h\w*\s\+','')
+  let L = "Rscript ".a:cmd." ".s:sub(a:L,'^\h\w*\s\+','')
   let P = a:P - strlen(a:L) + strlen(L)
   return s:ScriptComplete(a:A,L,P)
 endfunction
@@ -1222,7 +1222,7 @@ function! s:DestroyComplete(A,L,P)
 endfunction
 
 function! s:PluginComplete(A,L,P)
-  if a:L =~ '^\%[Rplugin]\s*\w\+[_/]'
+  if a:L =~ '^R\%[plugin]\s*\w\+[_/]'
     return s:pluginList(a:A,a:L,a:P)
   else
     return s:CustomComplete(a:A,a:L,a:P,"plugin")
@@ -1561,7 +1561,8 @@ function! s:addfilecmds(type)
   let cmds = 'ESVT '
   let cmd = ''
   while cmds != ''
-    exe "command! -buffer -bar -nargs=* -complete=custom,s:".l."List R".cmd.l." :call s:".l.'Edit(<bang>0,"'.cmd.'",<f-args>)'
+    let cplt = " -complete=custom,".s:sid.l."List"
+    exe "command! -buffer -bar -nargs=*".cplt." R".cmd.l." :call s:".l.'Edit(<bang>0,"'.cmd.'",<f-args>)'
     let cmd = strpart(cmds,0,1)
     let cmds = strpart(cmds,1)
   endwhile
@@ -1630,6 +1631,10 @@ function! s:relglob(path,glob,...)
   endif
   let suffix = a:0 ? a:1 : ''
   let badres = glob(path.a:glob.suffix)."\n"
+  if v:version <= 602
+    " Nasty Vim bug in version 6.2
+    let badres = glob(path.a:glob.suffix)."\n"
+  endif
   let goodres = ""
   let striplen = strlen(path)
   let stripend = strlen(suffix)
@@ -1653,12 +1658,19 @@ function! s:relglob(path,glob,...)
   return s:sub(s:sub(goodres,'\n$',''),'^\n','')
 endfunction
 
+if v:version <= 602
+  " Yet another  Vim 6.2 limitation
+  let s:recurse = "*"
+else
+  let s:recurse = "**/*"
+endif
+
 function! s:helperList(A,L,P)
-  return s:autocamelize(s:relglob("app/helpers/","**/*","_helper.rb"),a:A)
+  return s:autocamelize(s:relglob("app/helpers/",s:recurse,"_helper.rb"),a:A)
 endfunction
 
 function! s:controllerList(A,L,P)
-  let con = s:relglob("app/controllers/","**/*","_controller.rb")
+  let con = s:relglob("app/controllers/",s:recurse,"_controller.rb")
   if con != ''
     return s:autocamelize("application\n".con,a:A)
   else
@@ -1683,15 +1695,15 @@ function! s:layoutList(A,L,P)
 endfunction
 
 function! s:stylesheetList(A,L,P)
-  return s:relglob("public/stylesheets/","**/*",".css")
+  return s:relglob("public/stylesheets/",s:recurse,".css")
 endfunction
 
 function! s:javascriptList(A,L,P)
-  return s:relglob("public/javascripts/","**/*",".js")
+  return s:relglob("public/javascripts/",s:recurse,".js")
 endfunction
 
 function! s:modelList(A,L,P)
-  let models = s:relglob("app/models/","**/*",".rb")."\n"
+  let models = s:relglob("app/models/",s:recurse,".rb")."\n"
   " . matches everything, and no good way to exclude newline.  Lame.
   let models = s:gsub(models,'[ -~]*_observer\n',"")
   let models = s:sub(s:sub(models,'^\n',''),'\n$','')
@@ -1699,11 +1711,11 @@ function! s:modelList(A,L,P)
 endfunction
 
 function! s:observerList(A,L,P)
-  return s:autocamelize(s:relglob("app/models/","**/*","_observer.rb"),a:A)
+  return s:autocamelize(s:relglob("app/models/",s:recurse,"_observer.rb"),a:A)
 endfunction
 
 function! s:fixturesList(A,L,P)
-  return s:relglob("test/fixtures/","**/*")
+  return s:relglob("test/fixtures/",s:recurse)
 endfunction
 
 function! s:migrationList(A,L,P)
@@ -1711,19 +1723,19 @@ function! s:migrationList(A,L,P)
 endfunction
 
 function! s:apiList(A,L,P)
-  return s:autocamelize(s:relglob("app/apis/","**/*","_api.rb"),a:A)
+  return s:autocamelize(s:relglob("app/apis/",s:recurse,"_api.rb"),a:A)
 endfunction
 
 function! s:unittestList(A,L,P)
-  return s:autocamelize(s:relglob("test/unit/","**/*","_test.rb"),a:A)
+  return s:autocamelize(s:relglob("test/unit/",s:recurse,"_test.rb"),a:A)
 endfunction
 
 function! s:functionaltestList(A,L,P)
-  return s:autocamelize(s:relglob("test/functional/","**/*","_test.rb"),a:A)
+  return s:autocamelize(s:relglob("test/functional/",s:recurse,"_test.rb"),a:A)
 endfunction
 
 function! s:integrationtestList(A,L,P)
-  return s:autocamelize(s:relglob("test/integration/","**/*","_test.rb"),a:A)
+  return s:autocamelize(s:relglob("test/integration/",s:recurse,"_test.rb"),a:A)
 endfunction
 
 function! s:pluginList(A,L,P)
@@ -1736,20 +1748,20 @@ endfunction
 
 " Task files, not actual rake tasks
 function! s:taskList(A,L,P)
-  let top = s:relglob("lib/tasks/","**/*",".rake")
+  let top = s:relglob("lib/tasks/",s:recurse,".rake")
   if RailsFilePath() =~ '\<vendor/plugins/.'
     let path = s:sub(RailsFilePath(),'\<vendor/plugins/[^/]*/\zs.*','tasks/')
-    return s:relglob(path,"**/*",".rake") . "\n" . top
+    return s:relglob(path,s:recurse,".rake") . "\n" . top
   else
     return top
   endif
 endfunction
 
 function! s:libList(A,L,P)
-  let all = s:relglob('lib/',"**/*",".rb")
+  let all = s:relglob('lib/',s:recurse,".rb")
   if RailsFilePath() =~ '\<vendor/plugins/.'
     let path = s:sub(RailsFilePath(),'\<vendor/plugins/[^/]*/\zs.*','lib/')
-    let all = s:relglob(path,"**/*",".rb") . "\n" . all
+    let all = s:relglob(path,s:recurse,".rb") . "\n" . all
   endif
   return s:autocamelize(all,a:A)
 endfunction
@@ -2798,7 +2810,7 @@ function! s:BufSyntax()
       syn match   railsConditionsSpecial +?\|:\h\w*+ contained
 
       " XHTML highlighting inside %Q<> and %q<>
-      unlet b:current_syntax
+      unlet! b:current_syntax
       let removenorend = !exists("g:html_no_rendering")
       let g:html_no_rendering = 1
       syn include @htmlTop syntax/xhtml.vim
@@ -2841,7 +2853,7 @@ function! s:BufSyntax()
     elseif &syntax == "yaml"
       syn case match
       " Modeled after syntax/eruby.vim
-      unlet b:current_syntax
+      unlet! b:current_syntax
       let g:main_syntax = 'eruby'
       syn include @rubyTop syntax/ruby.vim
       unlet g:main_syntax
@@ -3979,6 +3991,9 @@ function! s:InitPlugin()
         \.'%\\s%#%f:%l:\ %#%m'
   command! -bar -bang -nargs=* -complete=dir Rails :call s:NewApp(<bang>0,<f-args>)
   call s:CreateMenus()
+  map <SID>xx <SID>xx
+  let s:sid = s:sub(maparg("<SID>xx"),'xx$','')
+  unmap <SID>xx
   " Apparently, the nesting level within Vim when the Ruby interface is
   " initialized determines how much stack space Ruby gets.  In previous
   " versions of rails.vim, sporadic stack overflows occured when omnicomplete
