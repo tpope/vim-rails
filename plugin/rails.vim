@@ -43,6 +43,10 @@ function! s:esccmd(p)
   return s:gsub(a:p,'[!%#]','\\&')
 endfunction
 
+function! s:compact(ary)
+  return s:sub(s:sub(s:gsub(a:ary,'\n\n\+','\n'),'\n$',''),'^\n','')
+endfunction
+
 function! s:r()
   return RailsRoot()
 endfunction
@@ -226,11 +230,16 @@ function! s:lastformat()
   return ""
 endfunction
 
-function! s:format()
+function! s:format(...)
   if RailsFileType() =~ '^view\>'
-    return fnamemodify(RailsFilePath(),':r:e')
+    let format = fnamemodify(RailsFilePath(),':r:e')
   else
-    return s:lastformat()
+    let format = s:lastformat()
+  endif
+  if a:0 && format == ''
+    return a:1
+  else
+    return format
   endif
 endfunction
 
@@ -1723,7 +1732,7 @@ function! s:relglob(path,glob,...)
   if exists("old_ss")
     let &shellslash = old_ss
   endif
-  return s:sub(s:sub(goodres,'\n$',''),'^\n','')
+  return s:compact(goodres)
 endfunction
 
 if v:version <= 602
@@ -1774,7 +1783,7 @@ function! s:modelList(A,L,P)
   let models = s:relglob("app/models/",s:recurse,".rb")."\n"
   " . matches everything, and no good way to exclude newline.  Lame.
   let models = s:gsub(models,'[ -~]*_observer\n',"")
-  let models = s:sub(s:sub(models,'^\n',''),'\n$','')
+  let models = s:compact(models)
   return s:autocamelize(models,a:A)
 endfunction
 
@@ -1896,8 +1905,7 @@ function! s:CommandList(A,L,P)
     let lp = s:sub(lp,'.\{-\}\n','')
     let res = res . s:relglob(p,s:last_filter,s:last_suffix)."\n"
   endwhile
-  let res = s:sub(s:sub(res,'^\n',''),'\n$','')
-  let res = s:gsub(res,'\n\n\+','\n')
+  let res = s:compact(res)
   if s:last_camelize
     return s:autocamelize(res,a:A)
   else
@@ -2044,10 +2052,7 @@ function! s:viewEdit(bang,cmd,...)
   elseif file =~ '\.\w\+$'
     call s:findedit(a:cmd.(a:bang?'!':''),file)
   else
-    let format = s:format()
-    if format == ''
-      let format = 'html'
-    endif
+    let format = s:format('html')
     if glob(RailsRoot().'/'.file.'.'.format.'.*[^~]') != ''
       let file = file . '.' . format
     endif
@@ -2446,10 +2451,17 @@ endfunction
 function! s:RelatedFile()
   let f = RailsFilePath()
   let t = RailsFileType()
+  let lastmethod = s:lastmethod()
   if s:getopt("related","l") != ""
     return s:getopt("related","l")
-  elseif t =~ '^\%(controller\|model-mailer\)\>' && s:lastmethod() != ""
-    return s:sub(s:sub(s:sub(f,'/application\.rb$','/shared_controller.rb'),'/\%(controllers\|models\)/','/views/'),'\%(_controller\)\=\.rb$','/'.s:lastmethod())
+  elseif t =~ '^\%(controller\|model-mailer\)\>' && lastmethod != ""
+    let root = s:sub(s:sub(s:sub(f,'/application\.rb$','/shared_controller.rb'),'/\%(controllers\|models\)/','/views/'),'\%(_controller\)\=\.rb$','/'.lastmethod)
+    let format = s:format('html')
+    if glob(RailsRoot().'/'.root.'.'.format.'.*[^~]') != ''
+      return root . '.' . format
+    else
+      return root
+    endif
   elseif s:getopt("related","b") != ""
     return s:getopt("related","b")
   elseif f =~ '\<config/environments/'
@@ -2477,8 +2489,6 @@ function! s:RelatedFile()
     "call s:warn("No related file is defined")
   elseif t =~ '^view\>'
     let controller = s:sub(s:sub(f,'/views/','/controllers/'),'/\(\k\+\%(\.\k\+\)\)\..*$','_controller.rb#\1')
-    echo controller
-    let g:controller = controller
     let model      = s:sub(s:sub(f,'/views/','/models/'),'/\(\k\+\)\..*$','.rb#\1')
     if filereadable(s:sub(controller,'#.\{-\}$',''))
       return controller
@@ -2490,13 +2500,7 @@ function! s:RelatedFile()
   elseif t =~ '^controller-api\>'
     return s:sub(s:sub(f,'/controllers/','/apis/'),'_controller\.rb$','_api.rb')
   elseif t =~ '^controller\>'
-    let lastmethod = s:lastmethod()
-    if lastmethod != ""
-      let root = s:sub(s:sub(s:sub(f,'/application\.rb$','/shared_controller.rb'),'\<app/controllers/','app/views/'),'_controller\.rb$','/'.lastmethod)
-      return root
-    else
-      return s:sub(s:sub(f,'/controllers/','/helpers/'),'\%(_controller\)\=\.rb$','_helper.rb')
-    endif
+    return s:sub(s:sub(f,'/controllers/','/helpers/'),'\%(_controller\)\=\.rb$','_helper.rb')
   elseif t=~ '^helper\>'
       return s:sub(s:sub(f,'/helpers/','/views/layouts/'),'\%(_helper\)\=\.rb$','')
   elseif t =~ '^model-arb\=\>'
@@ -2515,7 +2519,7 @@ function! s:RelatedFile()
 endfunction
 
 " }}}1
-" Partials {{{1
+" Partial Extraction {{{1
 
 function! s:Extract(bang,...) range abort
   if a:0 == 0 || a:0 > 1
@@ -2609,6 +2613,8 @@ function! s:Extract(bang,...) range abort
     let renderstr = "<%= ".renderstr." %>"
   elseif ext == "rxml" || ext == "builder"
     let renderstr = "xml << ".s:sub(renderstr,"render ","render(").")"
+  elseif ext == "haml"
+    let renderstr = "= ".renderstr
   endif
   let buf = @@
   silent exe range."yank"
@@ -2616,7 +2622,7 @@ function! s:Extract(bang,...) range abort
   let @@ = buf
   let ai = &ai
   let &ai = ""
-  silent exe "norm :".first.",".last."change\<CR>".fspaces.renderstr."\<CR>.\<CR>"
+  silent exe "norm! :".first.",".last."change\<CR>".fspaces.renderstr."\<CR>.\<CR>"
   let &ai = ai
   if renderstr =~ '<%'
     norm ^6w
@@ -4289,7 +4295,7 @@ function! s:BufSettings()
   let &errorformat=s:efm
   setlocal makeprg=rake
   if stridx(&tags,rp) == -1
-    let &l:tags = &tags . "," . rp ."/tags"
+    let &l:tags = &tags . "," . rp . "/tags," . rp . "/.tags"
   endif
   if has("gui_win32") || has("gui_running")
     let code      = '*.rb;*.rake;Rakefile'
@@ -4304,7 +4310,7 @@ function! s:BufSettings()
           \."Static Files (*.html, *.css, *.js)\t".statics."\n"
           \."All Files (*.*)\t*.*\n"
   endif
-  if &ft =~ '^\%(ruby\|eruby\||yaml\|javascript\|css\)$'
+  if &ft =~ '^\%(e\=ruby\|[yh]aml\|javascript\|css\)$'
     setlocal sw=2 sts=2 et
     "set include=\\<\\zsAct\\f*::Base\\ze\\>\\\|^\\s*\\(require\\\|load\\)\\s\\+['\"]\\zs\\f\\+\\ze
     setlocal includeexpr=RailsIncludeexpr()
