@@ -176,7 +176,7 @@ function! s:lastmethodline(...)
     let line = line - 1
   endwhile
   let lend = s:endof(line)
-  if lend >= line(".")
+  if lend >= (a:0 ? a:1 : line("."))
     return line
   else
     return 0
@@ -186,10 +186,44 @@ endfunction
 function! s:lastmethod()
   let line = s:lastmethodline()
   if line
-    return matchstr(getline(line),'\%('.&define.'\)\zs\k\%(\k\|[:.]\)*[?!=]\=')
+    return matchstr(getline(line),'\%('.&define.'\)\zs\h\%(\k\|[:.]\)*[?!=]\=')
   else
     return ""
   endif
+endfunction
+
+function! s:lastrespondtoline(...)
+  let mline = s:lastmethodline()
+  if a:0
+    let line = a:1
+  else
+    let line = line(".")
+  endif
+  while line > mline && getline(line) !~ '\C^\s*respond_to\s*\%(\<do\)\s*|\zs\h\k*\ze|'
+    let line = line - 1
+  endwhile
+  let lend = s:endof(line)
+  if lend >= (a:0 ? a:1 : line("."))
+    return line
+  else
+    return 0
+  endif
+endfunction
+
+function! s:lastformat()
+  let rline = s:lastrespondtoline()
+  if rline
+    let variable = matchstr(getline(rline),'\C^\s*respond_to\s*\%(\<do\|{\)\s*|\zs\h\k*\ze|')
+    let line = line('.')
+    while line > rline
+      let match = matchstr(getline(line),'\C^\s*'.variable.'\s*\.\s*\zs\h\k*')
+      if match != ''
+        return match
+      endif
+      let line = line - 1
+    endwhile
+  endif
+  return ""
 endfunction
 
 function! s:controller(...)
@@ -1222,7 +1256,7 @@ function! s:DestroyComplete(A,L,P)
 endfunction
 
 function! s:PluginComplete(A,L,P)
-  if a:L =~ '^R\%[plugin]\s*\w\+[_/]'
+  if a:L =~ '^R\%[plugin]\s*[^ ]*\)$'
     return s:pluginList(a:A,a:L,a:P)
   else
     return s:CustomComplete(a:A,a:L,a:P,"plugin")
@@ -1286,7 +1320,7 @@ function! s:Find(bang,count,arg,...)
       let file = s:sub(file,'[@#].*$','')
     endif
     if file != ""
-      let file = s:RailsIncludefind(file,1)
+      let file = s:RailsIncludefind(file)
     endif
   else
     let file = s:RailsFind()
@@ -1302,7 +1336,7 @@ function! s:Find(bang,count,arg,...)
       exe fcmd.' '.str.s:escarg(file)
     endif
     if tail != ""
-      silent! exe "djump ".matchstr(tail,'[@#]\zs.*$')
+      silent! exe "djump ".matchstr(tail,'[@#]\zs[^.]*')
     endif
   endif
 endfunction
@@ -2231,7 +2265,7 @@ function! s:findedit(cmd,file,...) abort
     "silent! file %:~:.
     "silent! lcd .
     if djump != ''
-      silent! exe 'djump '.djump
+      silent! exe 'djump '.matchstr(djump,'[^.]*')
     endif
   endif
 endfunction
@@ -2298,7 +2332,7 @@ function! s:AlternateFile()
       return helper
     elseif filereadable(RailsRoot()."/".controller)
       let jumpto = expand("%:t:r")
-      return controller.'@'.jumpto
+      return controller.'#'.jumpto
       "exe "silent! djump ".jumpto
     elseif filereadable(RailsRoot()."/".model)
       return model
@@ -2413,8 +2447,10 @@ function! s:RelatedFile()
   elseif t =~ '^controller-api\>'
     return s:sub(s:sub(f,'/controllers/','/apis/'),'_controller\.rb$','_api.rb')
   elseif t =~ '^controller\>'
-    if s:lastmethod() != ""
-      return s:sub(s:sub(s:sub(f,'/application\.rb$','/shared_controller.rb'),'/controllers/','/views/'),'_controller\.rb$','/'.s:lastmethod())
+    let lastmethod = s:lastmethod()
+    if lastmethod != ""
+      let root = s:sub(s:sub(s:sub(f,'/application\.rb$','/shared_controller.rb'),'\<app/controllers/','app/views/'),'_controller\.rb$','/'.lastmethod)
+      return root
     else
       return s:sub(s:sub(f,'/controllers/','/helpers/'),'\%(_controller\)\=\.rb$','_helper.rb')
     endif
