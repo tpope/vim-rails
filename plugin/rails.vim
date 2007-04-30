@@ -1193,12 +1193,8 @@ function! s:generators()
 endfunction
 
 function! s:ScriptComplete(ArgLead,CmdLine,P)
-  "  return s:gsub(glob(RailsRoot()."/script/**"),'\%(.\%(\n\)\@<!\)*[\/]script[\/]','')
   let cmd = s:sub(a:CmdLine,'^\u\w*\s\+','')
   let P = a:P - strlen(a:CmdLine)+strlen(cmd)
-  "let g:A = a:ArgLead
-  "let g:L = cmd
-  "let g:P = P
   if cmd !~ '^[ A-Za-z0-9_=-]*$'
     " You're on your own, bud
     return ""
@@ -1277,7 +1273,7 @@ function! s:DestroyComplete(A,L,P)
 endfunction
 
 function! s:PluginComplete(A,L,P)
-  if a:L =~ '^R\%[plugin]\s*[^ ]*\)$'
+  if a:L =~ '^R\%[plugin]\s*[^ ]*$'
     return s:pluginList(a:A,a:L,a:P)
   else
     return s:CustomComplete(a:A,a:L,a:P,"plugin")
@@ -1464,7 +1460,7 @@ function! s:findasymbol(sym,repl)
 endfunction
 
 function! s:findfromview(func,repl)
-  return s:findit('\s*\%(<%=\=\)\=\s*\<\%('.a:func.'\)\s*(\=\s*[:'."'".'"]\(\f\+\)\>['."'".'"]\=\s*\%(%>\s*\)\=',a:repl)
+  return s:findit('\s*\%(<%\)\==\=\s*\<\%('.a:func.'\)\s*(\=\s*[:'."'".'"]\(\f\+\)\>['."'".'"]\=\s*\%(%>\s*\)\=',a:repl)
 endfunction
 
 function! s:RailsFind()
@@ -2488,7 +2484,7 @@ function! s:RelatedFile()
   "elseif t=~ '^view-partial\>'
     "call s:warn("No related file is defined")
   elseif t =~ '^view\>'
-    let controller = s:sub(s:sub(f,'/views/','/controllers/'),'/\(\k\+\%(\.\k\+\)\)\..*$','_controller.rb#\1')
+    let controller = s:sub(s:sub(f,'/views/','/controllers/'),'/\(\k\+\%(\.\k\+\)\=\)\..*$','_controller.rb#\1')
     let model      = s:sub(s:sub(f,'/views/','/models/'),'/\(\k\+\)\..*$','.rb#\1')
     if filereadable(s:sub(controller,'#.\{-\}$',''))
       return controller
@@ -2503,7 +2499,7 @@ function! s:RelatedFile()
     return s:sub(s:sub(f,'/controllers/','/helpers/'),'\%(_controller\)\=\.rb$','_helper.rb')
   elseif t=~ '^helper\>'
       return s:sub(s:sub(f,'/helpers/','/views/layouts/'),'\%(_helper\)\=\.rb$','')
-  elseif t =~ '^model-arb\=\>'
+  elseif t =~ '^model-arb\>'
     "call s:migrationEdit(0,cmd,'create_'.s:pluralize(expand('%:t:r')))
     return s:migrationfor('create_'.s:pluralize(expand('%:t:r')))
   elseif t =~ '^model-aro\>'
@@ -2844,7 +2840,7 @@ function! s:BufSyntax()
       if t =~ '^api\>'
         syn keyword rubyRailsAPIMethod api_method inflect_names
       endif
-      if t =~ '^model$' || t =~ '^model-arb\=\>'
+      if t =~ '^model$' || t =~ '^model-arb\>'
         syn keyword rubyRailsARMethod acts_as_list acts_as_nested_set acts_as_tree composed_of serialize
         syn keyword rubyRailsARAssociationMethod belongs_to has_one has_many has_and_belongs_to_many
         "syn match rubyRailsARCallbackMethod '\<\(before\|after\)_\(create\|destroy\|save\|update\|validation\|validation_on_create\|validation_on_update\)\>'
@@ -2914,7 +2910,7 @@ function! s:BufSyntax()
       syn region  rubyString   matchgroup=rubyStringDelimiter start=+\%(:conditions\s*=>\s*\[\s*\)\@<='+ skip=+\\\\\|\\'+ end=+'+ contains=@rubyStringSpecial,railsConditionsSpecial
       syn match   railsConditionsSpecial +?\|:\h\w*+ contained
 
-      " XHTML highlighting inside %Q<> and %q<>
+      " XHTML highlighting inside %Q<>
       unlet! b:current_syntax
       let removenorend = !exists("g:html_no_rendering")
       let g:html_no_rendering = 1
@@ -2923,11 +2919,8 @@ function! s:BufSyntax()
           unlet! g:html_no_rendering
       endif
       syn case match
-      syn region  rubyString   matchgroup=rubyStringDelimiter start=+%Q<+ end=+>+ contains=@htmlTop,@rubyStringSpecial
-      syn region  rubyString   matchgroup=rubyStringDelimiter start=+%q<+ end=+>+ contains=@htmlTop
-      "syn region  rubyString   matchgroup=rubyStringDelimiter start=+%Q{+ end=+}+ contains=@htmlTop,@rubyStringSpecial
-      " These make %Q<> highlight better, but add some false positives inside
-      " %q<>.  Oh well.
+      syn region  rubyString   matchgroup=rubyStringDelimiter start=+%Q\=<+ end=+>+ contains=@htmlTop,@rubyStringSpecial
+      "syn region  rubyString   matchgroup=rubyStringDelimiter start=+%q<+ end=+>+ contains=@htmlTop
       syn cluster htmlArgCluster add=@rubyStringSpecial
       syn cluster htmlPreProc    add=@rubyStringSpecial
 
@@ -3712,7 +3705,7 @@ function! s:BufAbbreviations()
       Rabbrev rec( redirect_to :controller\ =>\ 
       Rabbrev rst  respond_to\ 
     endif
-    if t =~ '^model-arb\=\>' || t =~ '^model$'
+    if t =~ '^model-arb\>' || t =~ '^model$'
       Rabbrev bt(    belongs_to
       Rabbrev ho(    has_one
       Rabbrev hm(    has_many
@@ -4310,19 +4303,16 @@ function! s:BufSettings()
           \."Static Files (*.html, *.css, *.js)\t".statics."\n"
           \."All Files (*.*)\t*.*\n"
   endif
+  setlocal includeexpr=RailsIncludeexpr()
+  let &l:suffixesadd=".rb,.".s:gsub(s:view_types,',',',.').",.css,.js,.yml,.csv,.rake,.sql,.html,.xml"
   if &ft =~ '^\%(e\=ruby\|[yh]aml\|javascript\|css\)$'
     setlocal sw=2 sts=2 et
     "set include=\\<\\zsAct\\f*::Base\\ze\\>\\\|^\\s*\\(require\\\|load\\)\\s\\+['\"]\\zs\\f\\+\\ze
-    setlocal includeexpr=RailsIncludeexpr()
     if exists('+completefunc')
       if &completefunc == ''
         set completefunc=syntaxcomplete#Complete
       endif
     endif
-  else
-    " Does this cause problems in any filetypes?
-    setlocal includeexpr=RailsIncludeexpr()
-    let &l:suffixesadd=".rb,.".s:gsub(s:view_types,',',',.').",.css,.js,.yml,.csv,.rake,.sql,.html,.xml"
   endif
   if &filetype == "ruby"
     let &l:suffixesadd=".rb,.".s:gsub(s:view_types,',',',.').",.yml,.csv,.rake,s.rb"
