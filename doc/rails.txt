@@ -75,7 +75,7 @@ Rails application development.
 8. Integration with other plugins.  |:Rproject| creates a new project.vim
    project.  |:Rdbext| loads database settings from database.yml for dbext.vim
    (and this happens by default under most circumstances).  Cream users get
-   some additional mappings, and all GUI users get a menu.
+   some additional mappings, and all GUI users get a menu. |rails-integration|
 
 ==============================================================================
 INSTALLATION AND USAGE				*rails-installation*
@@ -264,14 +264,14 @@ Alternate and Related Files ~
 Two commands, :A and :R, are used quickly jump to an "alternate" and a
 "related" file, defined below.
 
-		*rails-:A* *rails-:AE* *rails-:AS* *rails-:AV* *:rails-:AT*
+		*rails-:A* *rails-:AE* *rails-:AS* *rails-:AV* *rails-:AT*
 :A			These commands were picked to mimic Michael Sharpe's
 :AE			a.vim.  Briefly, they edit the "alternate" file, in
 :AS			either the same window (:A and :AE), a new split
 :AV			window (:AS), a new vertically split window (:AV), or
 :AT			a new tab (:AT).  A mapping for :A is [f .
 
-		*rails-:R* *rails-:RE* *rails-:RS* *rails-:RV* *:rails-:RT*
+		*rails-:R* *rails-:RE* *rails-:RS* *rails-:RV* *rails-:RT*
 :R			These are similar |rails-:A| and friends above, only
 :RE			they jump to the "related" file rather than the
 :RS			"alternate."  A mapping for :R is ]f .
@@ -349,6 +349,7 @@ modeline like: >
 			:Runittest, a file of the form
 			{model}_observer_test.rb will be found.
 
+						*rails-:Rfixtures*
 :Rfixtures [{name}]	Edit the fixtures for the given model.  If an argument
 			is given, it must be pluralized, like the final
 			filename (this may change in the future).  If omitted,
@@ -638,9 +639,9 @@ the following to your vimrc: >
 						*rails-surround*
 The |surround| plugin available from vim.org enables adding and removing
 "surroundings" like parentheses, quotes, and HTML tags.  Even by itself, it is
-quite useful for Rails development, particularly ERuby editing.  When coupled
+quite useful for Rails development, particularly eRuby editing.  When coupled
 with this plugin, a few additional replacement surroundings are available in
-ERuby files.  See the |surround| documentation for details on how to use them.
+eRuby files.  See the |surround| documentation for details on how to use them.
 The table below uses ^ to represent the position of the surrounded text.
 
 Key	Surrounding ~
@@ -829,16 +830,12 @@ Rake is used as the 'makeprg', so |:make| will work as expected.  Also,
 					*rails-'filetype'*	*rails-'ft'*
 The 'filetype' is sometimes adjusted for Rails files.  Most notably, *.rxml
 and *.rjs are treated as Ruby files, and files that have been falsely
-identified as Mason sources are changed back to ERuby files (but only when
+identified as Mason sources are changed back to eRuby files (but only when
 they are part of a Rails application).
 
 					*rails-'completefunc'*	*rails-'cfu'*
 A 'completefunc' is provided (if not already set).  It is very simple, as it
 uses syntax highlighting to make its guess.  See |i_CTRL-X_CTRL-U|.
-
-					*rails-'balloonexpr'*  *rails-'bexpr'*
-If ri is installed, 'balloonexpr' is set up to call it.  In order to use it,
-'ballooneval' must be set.  See |balloon-eval| for details.
 
 ==============================================================================
 GLOBAL SETTINGS					*rails-global-settings*

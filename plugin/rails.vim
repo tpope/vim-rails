@@ -2918,6 +2918,13 @@ function! s:BufSyntax()
       if removenorend
           unlet! g:html_no_rendering
       endif
+      let b:current_syntax = "ruby"
+      " Restore syn sync, as best we can
+      if !exists("g:ruby_minlines")
+        let g:ruby_minlines = 50
+      endif
+      syn sync fromstart
+      exe "syn sync minlines=" . g:ruby_minlines
       syn case match
       syn region  rubyString   matchgroup=rubyStringDelimiter start=+%Q\=<+ end=+>+ contains=@htmlTop,@rubyStringSpecial
       "syn region  rubyString   matchgroup=rubyStringDelimiter start=+%q<+ end=+>+ contains=@htmlTop
@@ -3452,7 +3459,7 @@ function! s:NewProjectTemplate(proj,rr,fancy)
     let str = str . "  migrate=migrate {\n  }\n"
   endif
   let str = str . " }\n"
-  let str = str . " lib=lib {\n  tasks=tasks {\n  }\n }\n"
+  let str = str . " lib=lib filter=\"* */**/*.rb \" {\n  tasks=tasks filter=\"**/*.rake\" {\n  }\n }\n"
   let str = str . " public=public {\n  images=images {\n  }\n  javascripts=javascripts {\n  }\n  stylesheets=stylesheets {\n  }\n }\n"
   let str = str . " test=test {\n  fixtures=fixtures filter=\"**\" {\n  }\n  functional=functional filter=\"**\" {\n  }\n"
   if isdirectory(a:rr.'/test/integration')
