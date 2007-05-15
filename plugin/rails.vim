@@ -473,7 +473,10 @@ function! RailsFileType()
     let r = "helper"
   elseif f =~ '\<app/models\>'
     let class = matchstr(top,'\<Acti\w\w\u\w\+\%(::\h\w*\)\+\>')
-    if class != ''
+    if class == "ActiveResoure::Base"
+      let class = "ares"
+      let r = "model-ares"
+    elseif class != ''
       "let class = s:sub(class,'::Base$','')
       let class = tolower(s:gsub(class,'[^A-Z]',''))
       let r = "model-".s:sub(class,'^amb\>','mailer')
@@ -762,7 +765,7 @@ function! s:NewApp(bang,...)
     let str = str . " " . s:rquote(expand(a:{c}))
     let c = c + 1
   endwhile
-  let str = s:sub(str,'^ ','')
+  "let str = s:sub(str,'^ ','')
   let dir = expand(dir)
   if isdirectory(fnamemodify(dir,':h')."/.svn") && g:rails_subversion
     let append = " -c"
@@ -1490,6 +1493,8 @@ function! s:RailsFind()
   let res = s:singularize(s:findasymbol('through','app/models/\1'))
   if res != ""|return res.".rb"|endif
   let res = s:findamethod('fixtures','fixtures/\1')
+  if res != ""|return res|endif
+  let res = s:findamethod('map\.resources','app/controllers/\1_controller.rb')
   if res != ""|return res|endif
   let res = s:findamethod('layout','app/views/layouts/\1')
   if res != ""|return res|endif
@@ -2966,7 +2971,7 @@ function! s:BufSyntax()
       exe "syn keyword erubyRailsHelperMethod ".s:sub(s:rails_helper_methods,'\<select\s\+','')." contained containedin=@erubyRailsRegions"
       "syn keyword rubyRailsDeprecatedMethod start_form_tag end_form_tag link_to_image human_size update_element_function contained containedin=@erubyRailsRegions
       syn match erubyRailsHelperMethod '\<select\>\%(\s*{\|\s*do\>\|\s*(\=\s*&\)\@!' contained containedin=@erubyRailsRegions
-      syn keyword erubyRailsMethod breakpoint logger containedin=@erubyRailsRegions
+      syn keyword erubyRailsMethod breakpoint debugger logger containedin=@erubyRailsRegions
       syn keyword erubyRailsMethod params request response session headers cookies flash contained containedin=@erubyRailsRegions
       syn match erubyRailsMethod '\.\@<!\<\(h\|html_escape\|u\|url_encode\)\>' contained containedin=@erubyRailsRegions
         syn keyword erubyRailsRenderMethod render render_component contained containedin=@erubyRailsRegions

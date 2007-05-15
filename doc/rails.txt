@@ -502,7 +502,7 @@ A limited amount of completion with <Tab> is supported.
 			change made there.
 
 						*rails-:Rrunner*
-:Rrunner {code}		Executes {code} with script/runner.  Differs from
+:[range]Rrunner {code}	Executes {code} with script/runner.  Differs from
 			:Rscript runner {code} in that the code is passed as
 			one argument.  Also, |system()| is used instead of
 			|:!|.  This is to help eliminate annoying "Press
@@ -511,8 +511,12 @@ A limited amount of completion with <Tab> is supported.
 			that line.
 
 						*rails-:Rp*
-:Rp {code}		Like :Rrunner, but call the Ruby p method on the
+:[range]Rp {code}	Like :Rrunner, but call the Ruby p method on the
 			result. Literally "p begin {code} end".
+
+						*rails-:Rpp* *rails-:Ry*
+:[range]Rpp {code}	Like :Rp, but with pp (pretty print) or y (YAML
+:[range]Ry  {code}	output).
 
 						*rails-:Rgenerate*
 :Rgenerate {options}	Calls script/generate {options}, and then edits the
