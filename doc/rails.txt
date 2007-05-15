@@ -854,22 +854,6 @@ them to 0. >
 Most of these should never need to be used.  The few that might be interesting
 are |g:rails_expensive|, |g:rails_subversion|, and |g:rails_default_database|.
 
-						*g:rails_level*  >
-	let g:rails_level=3
-This is a general control of the level of features loaded.  Behavior can be
-subsequently refined with other settings.  This option is considered obsolete.
-One can instead adjust the desired settings directly.
-
-value	meaning ~
-
--1	Completely disabled.
-0	User level autocommands only.
-1	Minimal features; mainly option management.
-2	Default, minus a few niceties like mappings and the statusline.
-3	Default.  Includes all but a few possibly disruptive features.
-4	Enables all normal features.  Recommended.
-5+	Experimental features.
-
 						*g:loaded_rails*  >
 	let g:loaded_rails=1
 Do not load the plugin.  For emergency use only.

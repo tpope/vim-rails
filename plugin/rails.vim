@@ -190,7 +190,7 @@ endfunction
 function! s:lastmethod()
   let line = s:lastmethodline()
   if line
-    return matchstr(getline(line),'\%('.&define.'\)\zs\h\%(\k\|[:.]\)*[?!=]\=')
+    return s:sub(matchstr(getline(line),'\%('.&define.'\)\zs\h\%(\k\|[:.]\)*[?!=]\='),':$','')
   else
     return ""
   endif
@@ -769,8 +769,8 @@ function! s:NewApp(bang,...)
   let dir = expand(dir)
   if isdirectory(fnamemodify(dir,':h')."/.svn") && g:rails_subversion
     let append = " -c"
-  else
-    let append = " "
+  "else
+    "let append = " "
   endif
   if g:rails_default_database != "" && str !~ '-d \|--database='
     let append = append." -d ".g:rails_default_database
@@ -1223,7 +1223,7 @@ function! s:ScriptComplete(ArgLead,CmdLine,P)
     let pattern = "" " TODO
     if target =~# '^\%(\w*_\)\=controller$'
       return s:sub(s:controllerList(pattern,"",""),'^application\n\=','')
-    elseif target =~# '^\%(\w*_\)\=model$' || target == 'scaffold' || target == 'mailer'
+    elseif target =~# '^\%(\w*_\)\=model$' || target =~# '^scaffold\%(_resource\)\=$' || target == 'mailer'
       return s:modelList(pattern,"","")
     elseif target == 'migration' || target == 'session_migration'
       return s:migrationList(pattern,"","")
@@ -1484,7 +1484,7 @@ function! s:RailsFind()
   if res != ""|return res|endif
   let res = s:findamethod('require','\1')
   if res != ""|return res.(fnamemodify(res,':e') == '' ? '.rb' : '')|endif
-  let res = s:findamethod('belongs_to\|has_one\|composed_of\|validates_associated','app/models/\1.rb')
+  let res = s:findamethod('belongs_to\|has_one\|composed_of\|validates_associated\|scaffold','app/models/\1.rb')
   if res != ""|return res|endif
   let res = s:singularize(s:findamethod('has_many\|has_and_belongs_to_many','app/models/\1'))
   if res != ""|return res.".rb"|endif
@@ -2908,7 +2908,7 @@ function! s:BufSyntax()
         syn keyword rubyRailsMigrationMethod create_table drop_table rename_table add_column rename_column change_column change_column_default remove_column add_index remove_index
       endif
       if t =~ '^test\>'
-        syn keyword rubyRailsTestMethod add_assertion assert assert_block assert_equal assert_in_delta assert_instance_of assert_kind_of assert_match assert_nil assert_no_match assert_not_equal assert_not_nil assert_not_same assert_nothing_raised assert_nothing_thrown assert_operator assert_raise assert_respond_to assert_same assert_send assert_throws assert_recognizes assert_generates assert_routing flunk fixtures fixture_path use_transactional_fixtures use_instantiated_fixtures assert_difference
+        syn keyword rubyRailsTestMethod add_assertion assert assert_block assert_equal assert_in_delta assert_instance_of assert_kind_of assert_match assert_nil assert_no_match assert_not_equal assert_not_nil assert_not_same assert_nothing_raised assert_nothing_thrown assert_operator assert_raise assert_respond_to assert_same assert_send assert_throws assert_recognizes assert_generates assert_routing flunk fixtures fixture_path use_transactional_fixtures use_instantiated_fixtures assert_difference assert_no_difference
         if t !~ '^test-unit\>'
           syn match   rubyRailsTestControllerMethod  '\.\@<!\<\%(get\|post\|put\|delete\|head\|process\)\>'
           syn keyword rubyRailsTestControllerMethod assert_response assert_redirected_to assert_template assert_recognizes assert_generates assert_routing assert_dom_equal assert_dom_not_equal assert_valid assert_select assert_select_rjs assert_select_encoded assert_select_email
@@ -2995,7 +2995,7 @@ function! s:BufSyntax()
       syn region  yamlRailsBlock      matchgroup=yamlRailsDelimiter start="<%%\@!" end="%>" contains=@rubyTop		containedin=ALLBUT,@yamlRailsRegions
       syn region  yamlRailsExpression matchgroup=yamlRailsDelimiter start="<%="    end="%>" contains=@rubyTop		containedin=ALLBUT,@yamlRailsRegions
       syn region  yamlRailsComment    matchgroup=yamlRailsDelimiter start="<%#"    end="%>" contains=rubyTodo,@Spell	containedin=ALLBUT,@yamlRailsRegions keepend
-      syn match yamlRailsMethod '\.\@<!\<\(h\|html_escape\|u\|url_encode\)\>' containedin=@erubyRailsRegions
+      syn match yamlRailsMethod '\.\@<!\<\(h\|html_escape\|u\|url_encode\)\>' contained containedin=@erubyRailsRegions
       if classes != ''
         exe "syn keyword yamlRailsUserClass ".classes." containedin=@yamlRailsRegions"
       endif
@@ -4352,6 +4352,8 @@ function! s:BufSettings()
     let &l:suffixesadd=".rb,.".s:gsub(s:view_types,',',',.').",.yml,.csv,.rake,s.rb"
     if expand('%:e') == 'rake'
       setlocal define=^\\s*def\\s\\+\\(self\\.\\)\\=\\\|^\\s*\\%(task\\\|file\\)\\s\\+[:'\"]
+    elseif &filetype == 'yaml' || expand('%:e') == 'yml'
+      setlocal define=^\\%(\\h\\k*:\\)\\@=
     else
       setlocal define=^\\s*def\\s\\+\\(self\\.\\)\\=
     endif
