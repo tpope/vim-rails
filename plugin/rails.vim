@@ -769,8 +769,8 @@ function! s:NewApp(bang,...)
   let dir = expand(dir)
   if isdirectory(fnamemodify(dir,':h')."/.svn") && g:rails_subversion
     let append = " -c"
-  "else
-    "let append = " "
+  else
+    let append = ""
   endif
   if g:rails_default_database != "" && str !~ '-d \|--database='
     let append = append." -d ".g:rails_default_database
