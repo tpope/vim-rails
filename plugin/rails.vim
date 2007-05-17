@@ -147,6 +147,9 @@ function! s:endof(lnum)
   if a:lnum == 0
     return 0
   endif
+  if &ft == "yaml" || expand("%:e") == "yml"
+    return -1
+  endif
   let cline = getline(a:lnum)
   let spc = matchstr(cline,'^\s*')
   let endpat = '\<end\>'
@@ -180,7 +183,7 @@ function! s:lastmethodline(...)
     let line = line - 1
   endwhile
   let lend = s:endof(line)
-  if lend >= (a:0 ? a:1 : line("."))
+  if lend < 0 || lend >= (a:0 ? a:1 : line("."))
     return line
   else
     return 0
@@ -2481,10 +2484,16 @@ function! s:RelatedFile()
   elseif s:getopt("related","b") != ""
     return s:getopt("related","b")
   elseif f =~ '\<config/environments/'
-    return "config/environment.rb"
+    return "config/database.yml#". expand("%:t:r")
   elseif f == 'README'
     return "config/database.yml"
-  elseif f =~ '\<config/database\.yml$'   | return "config/environment.rb"
+  elseif f =~ '\<config/database\.yml$'
+    let lm = s:lastmethod()
+    if lm != ""
+      return "config/environments/".lm.".rb\nconfig/environment.rb"
+    else
+      return "config/environment.rb"
+    endif
   elseif f =~ '\<config/routes\.rb$'      | return "config/database.yml"
   elseif f =~ '\<config/environment\.rb$' | return "config/routes.rb"
   elseif f =~ '\<db/migrate/\d\d\d_'
@@ -4352,8 +4361,6 @@ function! s:BufSettings()
     let &l:suffixesadd=".rb,.".s:gsub(s:view_types,',',',.').",.yml,.csv,.rake,s.rb"
     if expand('%:e') == 'rake'
       setlocal define=^\\s*def\\s\\+\\(self\\.\\)\\=\\\|^\\s*\\%(task\\\|file\\)\\s\\+[:'\"]
-    elseif &filetype == 'yaml' || expand('%:e') == 'yml'
-      setlocal define=^\\%(\\h\\k*:\\)\\@=
     else
       setlocal define=^\\s*def\\s\\+\\(self\\.\\)\\=
     endif
@@ -4363,6 +4370,9 @@ function! s:BufSettings()
       let b:surround_69  = "\1expr: \1\rend"
       let b:surround_101 = "\r\nend"
     endif
+  elseif &filetype == 'yaml' || expand('%:e') == 'yml'
+    setlocal define=^\\%(\\h\\k*:\\)\\@=
+    let &l:suffixesadd=".yml,.csv,.rb,.".s:gsub(s:view_types,',',',.').",.rake,s.rb"
   elseif &filetype == "eruby"
     let &l:suffixesadd=".".s:gsub(s:view_types,',',',.').",.rb,.css,.js,.html,.yml,.csv"
     if exists("g:loaded_allml")
@@ -4371,8 +4381,6 @@ function! s:BufSettings()
       let b:allml_javascript_include_tag = "<%= javascript_include_tag '\r' %>"
       let b:allml_doctype_index = 10
     endif
-  elseif &filetype == "yaml"
-    let &l:suffixesadd=".yml,.csv,.rb,.".s:gsub(s:view_types,',',',.').",.rake,s.rb"
   endif
   if &filetype == "eruby" || &filetype == "yaml"
     " surround.vim
