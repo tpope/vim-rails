@@ -1379,6 +1379,7 @@ function! s:Find(bang,count,arg,...)
     endif
   else
     let file = s:RailsFind()
+    let g:file = file
     let tail = ""
   endif
   if file =~ '^\%(app\|components\|config\|db\|public\|spec\|test\|vendor\)/.*\.' || !a:0 || 1
@@ -1509,10 +1510,10 @@ function! s:RailsFind()
   if res != ""|return res|endif
   let res = s:findasymbol('action','\1')
   if res != ""|return res|endif
-  let res = s:sub(s:sub(s:sub(s:findasymbol('partial','\1'),'^/',''),'\k\+$','_&'),'.\+','&.'.format.'\n&')
-  if res != ""|return res|endif
-  let res = s:sub(s:sub(s:sub(s:findfromview('render\s*(\=\s*:partial\s\+=>\s*','\1'),'^/',''),'\k\+$','_&'),'.\+','&.'.format.'\n&')
-  if res != ""|return res|endif
+  let res = s:sub(s:sub(s:findasymbol('partial','\1'),'^/',''),'\k\+$','_&')
+  if res != ""|return res."\n".s:findview(res)|endif
+  let res = s:sub(s:sub(s:findfromview('render\s*(\=\s*:partial\s\+=>\s*','\1'),'^/',''),'\k\+$','_&')
+  if res != ""|return res."\n".s:findview(res)|endif
   let res = s:findamethod('render\s*:\%(template\|action\)\s\+=>\s*','\1.'.format.'\n\1')
   if res != ""|return res|endif
   let res = s:findamethod('redirect_to\s*(\=\s*:action\s\+=>\s*','\1')
@@ -2058,7 +2059,10 @@ function! s:viewEdit(bang,cmd,...)
     return s:error("Cannot find view without controller")
   endif
   let file = "app/views/".view
-  if file =~ '\.\w\+\.\w\+$' || file =~ '\.'.s:viewspattern().'$'
+  let found = s:findview(view)
+  if found != ''
+    call s:edit(a:cmd.(a:bang?'!':''),found)
+  elseif file =~ '\.\w\+\.\w\+$' || file =~ '\.'.s:viewspattern().'$'
     call s:edit(a:cmd.(a:bang?'!':''),file)
   elseif file =~ '\.\w\+$'
     call s:findedit(a:cmd.(a:bang?'!':''),file)
@@ -2071,40 +2075,47 @@ function! s:viewEdit(bang,cmd,...)
   endif
 endfunction
 
-function! s:findlayout(name)
+function! s:findview(name)
   " TODO: full support of nested extensions
   let c = a:name
-  let pre = "/app/views/layouts/"
+  let pre = "app/views/"
   let file = ""
-  if c =~ '\.'
+  if c !~ '/'
+    let controller = s:controller(1)
+    if controller != ''
+      let c = controller.'/'.c
+    endif
+  endif
+  if c =~ '\.\w\+\.\w\+$' || c =~ '\.'.s:viewspattern().'$'
     return pre.c
-  elseif filereadable(RailsRoot().pre.c.".rhtml")
+  elseif filereadable(RailsRoot()."/".pre.c.".rhtml")
     let file = pre.c.".rhtml"
-  elseif filereadable(RailsRoot().pre.c.".erb")
-    let file = pre.c.".erb"
-  elseif filereadable(RailsRoot().pre.c.".rxml")
+  elseif filereadable(RailsRoot()."/".pre.c.".rxml")
     let file = pre.c.".rxml"
-  elseif filereadable(RailsRoot().pre.c.".builder")
-    let file = pre.c.".builder"
   else
-    " FIXME: we should iterate over the template types twice, once with and
-    " without the extension, rather than checking inside the loop
-    let format = s:format('html')
+    let format = "." . s:format('html')
     let vt = s:view_types.","
-    while vt != ""
-      let t = matchstr(vt,'[^,]*')
-      let vt = s:sub(vt,'[^,]*,','')
-      if filereadable(RailsRoot().pre.c.".".format.".".t)
-        let file = pre.c.".".format.".".t
+    while 1
+      while vt != ""
+        let t = matchstr(vt,'[^,]*')
+        let vt = s:sub(vt,'[^,]*,','')
+        if filereadable(RailsRoot()."/".pre.c.format.".".t)
+          let file = pre.c.format.".".t
+          break
+        endif
+      endwhile
+      if format == '' || file != ''
         break
-      endif
-      if filereadable(RailsRoot().pre.c.".".t)
-        let file = pre.c.".".t
-        break
+      else
+        let format == ''
       endif
     endwhile
   endif
   return file
+endfunction
+
+function! s:findlayout(name)
+  return s:findview("layouts/".a:name)
 endfunction
 
 function! s:layoutEdit(bang,cmd,...)
@@ -2943,6 +2954,7 @@ function! s:BufSyntax()
       syn region  rubyString   matchgroup=rubyStringDelimiter start=+\%(:conditions\s*=>\s*\[\s*\)\@<="+ skip=+\\\\\|\\"+ end=+"+ contains=@rubyStringSpecial,railsConditionsSpecial
       syn region  rubyString   matchgroup=rubyStringDelimiter start=+\%(:conditions\s*=>\s*\[\s*\)\@<='+ skip=+\\\\\|\\'+ end=+'+ contains=@rubyStringSpecial,railsConditionsSpecial
       syn match   railsConditionsSpecial +?\|:\h\w*+ contained
+      syn cluster rubyNotTop add=railsOrderSpecial,railsConditionsSpecial
 
       " XHTML highlighting inside %Q<>
       unlet! b:current_syntax
