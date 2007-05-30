@@ -817,6 +817,7 @@ function! s:Refresh(bang)
       silent! ruby ActiveRecord::Base.clear_reloadable_connections! if defined?(ActiveRecord)
     endif
   endif
+  call s:cacheclear()
   call s:BufLeave()
   let i = 1
   let max = bufnr('$')
@@ -2820,7 +2821,60 @@ endfunction
 " }}}1
 " Syntax {{{1
 
-"map(filter(readfile(expand("%")),'v:val =~ "^  def assert_"'),'matchstr(v:val,"^  def \\zsassert_\\w\\+")')
+function! s:cacheworks()
+  if v:version < 700
+    return 0
+  endif
+  if !exists("s:cache")
+    let s:cache = {}
+  endif
+  if !has_key(s:cache,RailsRoot())
+    let s:cache[RailsRoot()] = {}
+  endif
+  return 1
+endfunction
+
+function! s:cacheclear(...)
+  if !s:cacheworks() | return "" | endif
+  if a:0 == 1
+    unlet! s:cache[RailsRoot()][a:1]
+  else
+    let s:cache[RailsRoot()] = {}
+  endif
+endfunction
+
+function! s:cache(...)
+  if !s:cacheworks() | return "" | endif
+  if a:0 == 1
+    return s:cache[RailsRoot()][a:1]
+  else
+    return s:cache[RailsRoot()]
+  endif
+endfunction
+
+function! RailsCache(...)
+  if !s:cacheworks() | return "" | endif
+  if a:0 == 1
+    return s:cache(a:1)
+  else
+    return s:cache()
+  endif
+endfunction
+
+function! s:cachehas(key)
+  if !s:cacheworks() | return "" | endif
+  return has_key(s:cache(),a:key)
+endfunction
+
+function! s:cacheneeds(key)
+  if !s:cacheworks() | return "" | endif
+  return !has_key(s:cache(),a:key)
+endfunction
+
+function! s:cacheset(key,value)
+  if !s:cacheworks() | return "" | endif
+  let s:cache[RailsRoot()][a:key] = a:value
+endfunction
 
 function! s:BufSyntax()
   if (!exists("g:rails_syntax") || g:rails_syntax)
@@ -2932,6 +2986,12 @@ function! s:BufSyntax()
         syn keyword rubyRailsMigrationMethod create_table drop_table rename_table add_column rename_column change_column change_column_default remove_column add_index remove_index
       endif
       if t =~ '^test\>'
+        if s:cacheneeds("user_tests") && filereadable(RailsRoot()."/test/test_helper.rb")
+          call s:cacheset("user_tests",map(filter(readfile(RailsRoot()."/test/test_helper.rb"),'v:val =~ "^  def assert_"'),'matchstr(v:val,"^  def \\zsassert_\\w\\+")'))
+        endif
+        if s:cachehas("user_tests") && !empty(s:cache("user_tests"))
+          exe "syn keyword rubyRailsUserMethod ".join(s:cache("user_tests"))
+        endif
         syn keyword rubyRailsTestMethod add_assertion assert assert_block assert_equal assert_in_delta assert_instance_of assert_kind_of assert_match assert_nil assert_no_match assert_not_equal assert_not_nil assert_not_same assert_nothing_raised assert_nothing_thrown assert_operator assert_raise assert_respond_to assert_same assert_send assert_throws assert_recognizes assert_generates assert_routing flunk fixtures fixture_path use_transactional_fixtures use_instantiated_fixtures assert_difference assert_no_difference
         if t !~ '^test-unit\>'
           syn match   rubyRailsTestControllerMethod  '\.\@<!\<\%(get\|post\|put\|delete\|head\|process\)\>'
@@ -3032,7 +3092,7 @@ function! s:BufSyntax()
       exe "syn keyword javascriptRailsFunction contained ".s:prototype_functions
       syn cluster htmlJavaScript add=javascriptRailsClass,javascriptRailsFunction
     elseif &syntax == "javascript"
-      " UGH, the syntax file included with Vim sets syn case ignore. WRONG
+      " The syntax file included with Vim incorrectly sets syn case ignore.
       syn case match
       set isk+=$
       exe "syn keyword javascriptRailsClass ".s:prototype_classes
@@ -3063,14 +3123,18 @@ function! s:HiDefaults()
   hi def link rubyRailsError                  rubyError
   hi def link rubyRailsInclude                rubyInclude
   hi def link rubyRailsUserClass              railsUserClass
+  hi def link rubyRailsUserMethod             railsUserMethod
   hi def link erubyRailsHelperMethod          erubyRailsMethod
   hi def link erubyRailsRenderMethod          erubyRailsMethod
   hi def link erubyRailsMethod                railsMethod
+  hi def link erubyRailsUserMethod            railsUserMethod
+  hi def link railsUserMethod                 railsMethod
   hi def link erubyRailsUserClass             railsUserClass
   hi def link yamlRailsDelimiter              Delimiter
   hi def link yamlRailsMethod                 railsMethod
   hi def link yamlRailsComment                Comment
   hi def link yamlRailsUserClass              railsUserClass
+  hi def link yamlRailsUserMethod             railsUserMethod
   hi def link javascriptRailsFunction         railsMethod
   hi def link javascriptRailsClass            railsClass
   hi def link railsUserClass                  railsClass
