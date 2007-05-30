@@ -94,6 +94,14 @@ function! s:rquote(str)
   endif
 endfunction
 
+function! s:rubyexestrwithfork(cmd)
+  if s:getopt("ruby_fork_port","ab") && executable("ruby_fork_client")
+    return "ruby_fork_client -p ".s:getopt("ruby_fork_port","ab")." ".a:cmd
+  else
+    return rubyexestr(a:cmd)
+  endif
+endfunction
+
 function! s:rubyexestr(cmd)
   if RailsRoot() =~ '://'
     return "ruby ".a:cmd
@@ -152,7 +160,8 @@ function! s:railseval(ruby)
   if !executable("ruby")
     return def
   endif
-  let cmd = s:rubyexestr("-r./config/environment -e ".s:rquote(a:ruby))
+  let args = "-r./config/boot -r ".s:rquote(RailsRoot()."/config/environment")." -e ".s:rquote(a:ruby)
+  let cmd = s:rubyexestrwithfork(args)
   " If the shell is messed up, this command could cause an error message
   silent! let results = system(cmd)
   if v:shell_error != 0 " results =~ '-e:\d' || results =~ 'ruby:.*(fatal)'
@@ -865,13 +874,15 @@ endfunction
 " }}}1
 " Rake {{{1
 
-function! s:makewithruby(arg)
+function! s:makewithruby(arg,...)
   if &efm == s:efm
-    " Straight from complier/ruby.vim
-    setlocal efm=\%+E%f:%l:\ parse\ error,%W%f:%l:\ warning:\ %m,%E%f:%l:in\ %*[^:]:\ %m,%E%f:%l:\ %m,%-C%\tfrom\ %f:%l:in\ %.%#,%-Z%\tfrom\ %f:%l,%-Z%p^,%-G%.%#
+    if a:0 ? a:1 : 1
+      " Straight from complier/ruby.vim
+      setlocal efm=\%+E%f:%l:\ parse\ error,%W%f:%l:\ warning:\ %m,%E%f:%l:in\ %*[^:]:\ %m,%E%f:%l:\ %m,%-C%\tfrom\ %f:%l:in\ %.%#,%-Z%\tfrom\ %f:%l,%-Z%p^,%-G%.%#
+    endif
   endif
   let old_make = &makeprg
-  let &l:makeprg = s:rubyexestr(a:arg)
+  let &l:makeprg = s:rubyexestrwithfork(a:arg)
   make
   let &l:makeprg = old_make
 endfunction
@@ -900,6 +911,7 @@ function! s:Rake(bang,arg)
       let arg = opt
     endif
   endif
+  let withrubyargs = '-r./config/boot -r '.s:rquote(RailsRoot().'/config/environment').' '
   if arg == "stats"
     " So you can see the output even with an inadequate redirect
     call s:QuickFixCmdPre()
@@ -910,15 +922,15 @@ function! s:Rake(bang,arg)
   elseif arg =~ '^runner:'
     " TODO: set a proper 'efm'
     let arg = s:sub(arg,'^runner:','')
-    call s:makewithruby("script/runner ".s:rquote(s:esccmd(arg)))
+    call s:makewithruby(withrubyargs.'-e '.s:rquote(s:esccmd(arg)))
   elseif arg == 'run'
-    call s:makewithruby(expand("%"))
+    call s:makewithruby(withrubyargs.'-e "" -r '.expand("%"),expand("%") !~# '_test\.rb$')
   elseif arg =~ '^run:'
     let arg = s:sub(arg,'^run:','')
     let arg = s:sub(arg,'^%:h',expand('%:h'))
     let arg = s:sub(arg,'^\%(%\|$\|[@#]\@=\)',expand('%'))
-    let arg = s:sub(arg,'[@#]\(\w\+\)$',' -n\1')
-    call s:makewithruby(arg)
+    let arg = s:sub(arg,'[@#]\(\w\+\)$',' -- -n\1')
+    call s:makewithruby(withrubyargs.'-e "" -r '.arg,arg !~# '_test\.rb$')
   elseif arg != ''
     exe 'make '.arg
   elseif t =~ '^task\>'
@@ -942,7 +954,7 @@ function! s:Rake(bang,arg)
     elseif RailsFilePath() =~# '\<test/test_helper\.rb$'
       make test
     else
-      call s:makewithruby("\"%:p\"".call)
+      call s:makewithruby('-e "" -r"%:p" -- '.call,0)
     endif
   elseif t=~ '^\%(db-\)\=migration\>' && RailsFilePath() !~# '\<db/schema\.rb$'
     make db:migrate
@@ -1095,7 +1107,7 @@ function! s:Runner(count,args)
   if a:count == -2
     call s:Script(a:bang,"runner",a:args)
   else
-    let str = s:rubyexestr('-r./config/boot -rcommands/runner -e "" '.s:rquote(a:args))
+    let str = s:rubyexestrwithfork('-r./config/boot -rcommands/runner -e "" '.s:rquote(a:args))
     let res = s:sub(system(str),'\n$','')
     if a:count < 0
       echo res
@@ -1218,7 +1230,7 @@ function! s:Generate(bang,...)
     let c = c + 1
   endwhile
   if str !~ '-p\>'
-    let execstr = s:rubyexestr("script/generate ".target." -p -f".str)
+    let execstr = s:rubyexestr('-e "" -r./config/boot -rcommands/generate -- '.target." -p -f".str)
     let res = system(execstr)
     let file = matchstr(res,'\s\+\%(create\|force\)\s\+\zs\f\+\.rb\ze\n')
     if file == ""
