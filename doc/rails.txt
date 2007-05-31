@@ -283,6 +283,11 @@ Example uses of |gf|, and where they might lead.
 	<%= link_to "New", new_comme*nt_path %>
 <	app/controllers/comments_controller.rb (jumps to def new) ~
 
+In the last example, the controller and action for the named route are
+determined by evaluating routes.rb as Ruby and doing some introspection.  This
+means code from the application is executed.  Keep this in mind when
+navigating unfamiliar applications.
+
 Alternate and Related Files ~
 						*rails-alternate-related*
 Two commands, :A and :R, are used quickly jump to an "alternate" and a

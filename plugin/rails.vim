@@ -861,6 +861,9 @@ function! s:Refresh(bang)
   endif
   call s:cacheclear()
   call s:BufLeave()
+  if a:bang && s:cacheworks()
+    let s:cache = {}
+  endif
   let i = 1
   let max = bufnr('$')
   while i <= max
@@ -1596,14 +1599,18 @@ endfunction
 
 function! s:initnamedroutes()
   if s:cacheneeds("named_routes")
-    let hash = {}
     let exec = "ActionController::Routing::Routes.named_routes.each {|n,r| puts %{#{n} app/controllers/#{r.requirements[:controller]}_controller.rb##{r.requirements[:action]}}}"
     let string = s:railseval(exec)
     let routes = {}
-    let g:routes = string
-    for route in split(string,"\n")
-      let routes[split(route)[0]] = split(route)[1]
-    endfor
+    let list = split(string,"\n")
+    let i = 0
+    " If we use for, Vim 6.2 dumbly treats endfor like endfunction
+    while i < len(list)
+      let route = split(list[i]," ")
+      let name = route[0]
+      let routes[name] = route[1]
+      let i = i + 1
+    endwhile
     call s:cacheset("named_routes",routes)
   endif
 endfunction
@@ -1620,6 +1627,20 @@ function! RailsNamedRoutes()
   call s:initnamedroutes()
   if s:cachehas("named_routes")
     return keys(s:cache("named_routes"))
+  else
+    " Dead code
+    if s:cacheneeds("route_names")
+      let lines = readfile(RailsRoot()."/config/routes.rb")
+      let plurals = map(filter(copy(lines),'v:val =~# "^  map\\.resources\\s\\+:\\w"'),'matchstr(v:val,"^  map\\.resources\\=\\s\\+:\\zs\\w\\+")')
+      let singulars = map(copy(plurals),'s:singularize(v:val)')
+      let extras = map(copy(singulars),'"new_".v:val')+map(copy(singulars),'"edit_".v:val')
+      let all = plurals + singulars + extras
+      let named = map(filter(copy(lines),'v:val =~# "^  map\\.\\%(connect\\>\\|resources\\=\\>\\)\\@!\\w\\+"'),'matchstr(v:val,"^  map\\.\\zs\\w\\+")')
+      call s:cacheset("route_names",named+all+map(copy(all),'"formatted_".v:val'))
+    endif
+    if s:cachehas("route_names")
+      return s:cache("route_names")
+    endif
   endif
 endfunction
 
@@ -2928,7 +2949,9 @@ function! s:cacheclear(...)
   if RailsRoot() == "" | return "" | endif
   if !s:cacheworks() | return "" | endif
   if a:0 == 1
-    unlet! s:cache[RailsRoot()][a:1]
+    if s:cachehas(a:1)
+      unlet! s:cache[RailsRoot()][a:1]
+    endif
   else
     let s:cache[RailsRoot()] = {}
   endif
