@@ -2966,18 +2966,18 @@ function! s:cache(...)
   endif
 endfunction
 
-function! RailsCache(...)
-  if !s:cacheworks() | return "" | endif
-  if a:0 == 1
-    if s:cachehas(a:1)
-      return s:cache(a:1)
-    else
-      return ""
-    endif
-  else
-    return s:cache()
-  endif
-endfunction
+"function! RailsCache(...)
+  "if !s:cacheworks() | return "" | endif
+  "if a:0 == 1
+    "if s:cachehas(a:1)
+      "return s:cache(a:1)
+    "else
+      "return ""
+    "endif
+  "else
+    "return s:cache()
+  "endif
+"endfunction
 
 function! s:cachehas(key)
   if !s:cacheworks() | return "" | endif
@@ -3098,7 +3098,7 @@ function! s:BufSyntax()
         endif
         "syn keyword rubyRailsDeprecatedMethod start_form_tag end_form_tag link_to_image human_size update_element_function
       elseif t =~ '^controller\>'
-        syn keyword rubyRailsControllerMethod helper helper_attr helper_method filter layout url_for scaffold serialize exempt_from_layout filter_parameter_logging
+        syn keyword rubyRailsControllerMethod helper helper_attr helper_method filter layout url_for serialize exempt_from_layout filter_parameter_logging hide_action
         syn match rubyRailsDeprecatedMethod '\<render_\%(action\|text\|file\|template\|nothing\|without_layout\)\>'
         syn keyword rubyRailsRenderMethod render_to_string render_component_as_string redirect_to head
         syn match   rubyRailsRenderMethod '\<respond_to\>?\@!'
