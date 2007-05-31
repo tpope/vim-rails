@@ -4,6 +4,8 @@ Author: Tim Pope <vimNOSPAM@tpope.info>		|rails-plugin-author|
 
 |rails-introduction|		Introduction and Feature Summary
 |rails-installation|		Installation and Usage
+|rails-install-vim|		    Installing and Configuring Vim
+|rails-install-plugin|		    Installing and Using the Plugin
 |rails-commands|		General Commands
 |rails-navigation|		Navigation
 |rails-gf|			    File Under Cursor - gf
@@ -13,9 +15,12 @@ Author: Tim Pope <vimNOSPAM@tpope.info>		|rails-plugin-author|
 |rails-misc-navigation|		    Miscellaneous Navigation Commands
 |rails-custom-navigation|	    Custom Navigation Commands
 |rails-scripts|			Script Wrappers
-|rails-partials|		Partial Extraction
+|rails-refactoring|		Refactoring Helpers
+|rails-partials|		    Partial Extraction
+|rails-migrations|		    Migration Inversion
 |rails-integration|		Plugin Integration
 |rails-abbreviations|		Abbreviations
+|rails-syntax|			Syntax Highlighting
 |rails-options|			Managed Vim Options
 |rails-configuration|		Configuration
 |rails-global-settings| 	Global Settings
@@ -58,7 +63,7 @@ Rails application development.
 5. Enhanced syntax highlighting.  From has_and_belongs_to_many to
    distance_of_time_in_words, it's here.  For Vim 7 users, 'completefunc' is
    set to enable syntax based completion on |i_CTRL-X_CTRL-U|, making it easy
-   to complete such long method names.
+   to complete such long method names. |rails-syntax|
 
 6. Interface to script/*.  Generally, use ":Rscript about" to call
    "script/about".  Most commands have wrappers with additional features:
@@ -69,8 +74,8 @@ Rails application development.
    the desired range (ideally selected in visual line mode) with "render
    :partial => '{file}'", which is automatically created with your content.
    The @{file} instance variable is replaced with the {file} local variable.
-   |rails-partials| |:Rinvert| takes a self.up migration and writes a
-   self.down.
+   |:Rinvert| takes a self.up migration and writes a self.down.
+   |rails-refactoring|
 
 8. Integration with other plugins.  |:Rproject| creates a new project.vim
    project.  |:Rdbext| loads database settings from database.yml for dbext.vim
@@ -80,6 +85,29 @@ Rails application development.
 ==============================================================================
 INSTALLATION AND USAGE				*rails-installation*
 
+If you are familiar Vim and have the latest version installed, you may skip
+directly to |rails-install-plugin| below.
+
+Installing and Configuring Vim ~
+						*rails-install-vim*
+Because it is common for users to utilize an older version of Vim that came
+installed on a system, rails.vim has a design goal of remaining compatible
+with versions of Vim 6.2 and newer.  However, if you have a choice in the
+matter, you are strongly encouraged to install the latest version available.
+Older versions of Vim should work, but increasingly, new plugin features will
+require Vim 7 or newer.  If possible, install a version of Vim with the |Ruby|
+interface compiled in, as a few features will make use of it when available.
+
+If you are new to Vim, you need to create a vimrc.  For Windows, this file
+goes in ~\_vimrc (try :e ~\_vimrc if you don't know where this is).  On other
+platforms, use ~/.vimrc.  A very minimal example file is shown below.
+>
+  set nocompatible
+  syntax on
+  filetype plugin indent on
+>
+Installing and Using the Plugin ~
+						*rails-install-plugin*
 If you have the zip file, extract it to vimfiles (Windows) or ~/.vim
 (everything else).  You should have the following files: >
 	plugin/rails.vim
@@ -148,13 +176,6 @@ actually edit a file from a Rails application.
 			to the end of the file, and q is mapped to close the
 			window.  If the delay in loading is too long, you
 			might like :Rake log:clear.
-
-						*rails-:Rinvert*
-:Rinvert		In a migration, rewrite the self.up method into a
-			self.down method.  If self.up is empty, the process is
-			reversed.  This chokes on more complicated
-			instructions, but works reasonably well for simple
-			calls to create_table, add_column, and the like.
 
 						*rails-:Rpreview*
 :Rpreview [{path}]	Creates a URL from http://localhost:3000/ and the
@@ -255,9 +276,12 @@ Example uses of |gf|, and where they might lead.
 	layout :pri*nt
 <	app/views/layouts/print.rhtml ~
 >
-	(In the Blog controller)
+	# In the Blog controller
 	def li*st
 <	app/views/blog/list.rhtml ~
+>
+	<%= link_to "New", new_comme*nt_path %>
+<	app/controllers/comments_controller.rb (jumps to def new) ~
 
 Alternate and Related Files ~
 						*rails-alternate-related*
@@ -537,7 +561,12 @@ A limited amount of completion with <Tab> is supported.
 			systems, lsof must be installed for this to work.
 
 ==============================================================================
-PARTIAL EXTRACTION				*rails-partials*
+REFACTORING HELPERS				*rails-refactoring*
+
+A few features are dedicated to helping you refactor your code.
+
+Partial Extraction ~
+						*rails-partials*
 
 The :Rextract command can be used to extract a partial to a new file.
 
@@ -588,6 +617,14 @@ Then, a simple >
 	:'<,'>Rextract blog/post
 will suffice. (Note the use of a controller name in this example.)
 
+Migration Inversion ~
+					*rails-migrations* *rails-:Rinvert*
+:Rinvert		In a migration, rewrite the self.up method into a
+			self.down method.  If self.up is empty, the process is
+			reversed.  This chokes on more complicated
+			instructions, but works reasonably well for simple
+			calls to create_table, add_column, and the like.
+
 ==============================================================================
 PLUGIN INTEGRATION				*rails-integration*
 
@@ -628,20 +665,6 @@ PLUGIN INTEGRATION				*rails-integration*
 			attempt a CREATE DATABASE for it.  This is primarily
 			useful for demonstrations.
 
-						*rails-cream*
-This plugin provides a few additional key bindings if it is running under
-Cream, the user friendly editor which uses Vim as a back-end.  Ctrl+Enter
-finds the file under the cursor (as in |rails-gf|), and Alt+[ and Alt+] find
-the alternate (|rails-alternate|) and related (|rails-related|) files.
-
-						*rails-menu*
-If the GUI is running, a menu for several commonly used features is provided.
-Also on this menu is a list of recently accessed projects.  This list of
-projects can persist across restarts if a 'viminfo' flag is set to enable
-retaining certain global variables.  If this interests you, add something like
-the following to your vimrc: >
-	set viminfo^=!
-<
 						*rails-surround*
 The |surround| plugin available from vim.org enables adding and removing
 "surroundings" like parentheses, quotes, and HTML tags.  Even by itself, it is
@@ -666,6 +689,20 @@ most terminals send <M-o> as <Esc>o anyways.
 One can also use the <C-E> surrounding in a plain Ruby file to append a bare
 "end" on the following line.
 
+						*rails-cream*
+This plugin provides a few additional key bindings if it is running under
+Cream, the user friendly editor which uses Vim as a back-end.  Ctrl+Enter
+finds the file under the cursor (as in |rails-gf|), and Alt+[ and Alt+] find
+the alternate (|rails-alternate|) and related (|rails-related|) files.
+
+						*rails-menu*
+If the GUI is running, a menu for several commonly used features is provided.
+Also on this menu is a list of recently accessed projects.  This list of
+projects can persist across restarts if a 'viminfo' flag is set to enable
+retaining certain global variables.  If this interests you, add something like
+the following to your vimrc: >
+	set viminfo^=!
+<
 ==============================================================================
 ABBREVIATIONS				*rails-abbreviations* *rails-snippets*
 
@@ -713,6 +750,107 @@ them.  They vary depending on the type of file (models have different
 abbreviations than controllers).  There is one "smart" abbreviation, :c, which
 expands to ":controller => ", ":collection => ", or ":conditions => "
 depending on context.
+
+==============================================================================
+SYNTAX HIGHLIGHTING				*rails-syntax*
+
+Syntax highlighting is by and large a transparent process.  For the full
+effect, however, you need a colorscheme which accentuates rails.vim
+extensions.  One such colorscheme is vividchalk, available from vim.org.
+
+The following is a summary of the changes made by rails.vim to the standard
+syntax highlighting.
+
+						*rails-syntax-keywords*
+Rails specific keywords are highlighted in a filetype specific manner.  For
+example, in a model, has_many is highlighted, whereas in a controller,
+before_filter is highlighted.  A wide variety of syntax groups are used but
+they all link by default to railsMethod.
+
+If you feel a method has been wrongfully omitted, submit it to the
+|rails-plugin-author|.
+
+					*rails-@params* *rails-syntax-deprecated*
+Certain deprecated syntax (like @params and render_text) is highlighted as an
+error.  If you trigger this highlighting, generally it means you need to
+update your code.
+
+						*rails-syntax-classes*
+Models, helpers, and controllers are given special highlighting.  Depending on
+the version of Vim installed, you may need a rails.vim aware colorscheme in
+order to see this.  Said colorscheme needs to provide highlighting for the
+railsUserClass syntax group.
+
+The class names are determined by camelizing filenames from certain
+directories of your application.  If app/models/line_item.rb exists, the class
+"LineItem" will be highlighted.
+
+The list of classes is refreshed automatically after certain commands like
+|:Rgenerate|.  Use |:Rrefresh| to trigger the process manually.
+
+						*rails-syntax-assertions*
+If you define custom assertions in test_helper.rb, these will be highlighted
+in your tests.  These are found by scanning test_helper.rb for lines of the
+form "  def assert_..." and extracting the method name.  The railsUserMethod
+syntax group is used.  The list of assertions can be refreshed with
+|:Rrefresh|.
+
+						*rails-syntax-strings*
+In the following line of code, the "?" in the conditions clause and the "ASC"
+in the order clause will be highlighted: >
+  Post.find(:all, :conditions => ["body like ?","%e%"] :order => "title ASC")
+<
+A string literal using %Q<> delimiters will have its contents highlighted as
+HTML.  This is sometimes useful when writing helpers. >
+  link = %Q<<a href="http://www.vim.org">Vim</a>>
+<
+						*rails-syntax-yaml*
+YAML syntax highlighting has been extended to highlight eRuby, which can be
+used in most Rails YAML files (including database.yml and fixtures).
+
+==============================================================================
+MANAGED VIM OPTIONS			*rails-options*
+
+The following options are set local to buffers where the plugin is active.
+
+					*rails-'shiftwidth'*	*rails-'sw'*
+					*rails-'softtabstop'*	*rails-'sts'*
+					*rails-'expandtab'*	*rails-'et'*
+A value of 2 is used for 'shiftwidth' (and 'softtabstop'), and 'expandtab' is
+enabled.  This is a strong convention in Rails, so the conventional wisdom
+that this is a user preference has been ignored.
+
+					*rails-'path'*		*rails-'pa'*
+All the relevant directories from your application are added to your 'path'.
+This makes it easy to access a buried file: >
+	:find blog_controller.rb
+<
+					*rails-'suffixesadd'*	*rails-'sua'*
+This is filetype dependent, but typically includes .rb, .rhtml, and several
+others.  This allows shortening the above example: >
+	:find blog_controller
+<
+					*rails-'includeexpr'*	*rails-'inex'*
+The 'includeexpr' option is set to enable the magic described in |rails-gf|.
+
+					*rails-'statusline'*	*rails-'stl'*
+Useful information is added to the 'statusline', when |g:rails_statusline| is
+enabled.
+
+					*rails-'makeprg'*	*rails-'mp'*
+					*rails-'errorformat'*	*rails-'efm'*
+Rake is used as the 'makeprg', so |:make| will work as expected.  Also, 
+'errorformat' is set appropriately to handle your tests.
+
+					*rails-'filetype'*	*rails-'ft'*
+The 'filetype' is sometimes adjusted for Rails files.  Most notably, *.rxml
+and *.rjs are treated as Ruby files, and files that have been falsely
+identified as Mason sources are changed back to eRuby files (but only when
+they are part of a Rails application).
+
+					*rails-'completefunc'*	*rails-'cfu'*
+A 'completefunc' is provided (if not already set).  It is very simple, as it
+uses syntax highlighting to make its guess.  See |i_CTRL-X_CTRL-U|.
 
 ==============================================================================
 CONFIGURATION					*rails-configuration*
@@ -771,14 +909,15 @@ While you may override the scope with a prefix, this is rarely necessary and
 oftentimes useless.  (For example, setting g:task is useless because the
 default rake task will apply before considering this option.)
 
-Option		Meaning ~
-b:alternate	Custom alternate file for :A, relative to the Rails root
-b:controller	Default controller for certain commands (e.g., :Rhelper)
-b:model		Default model for certain commands (e.g., :Rfixtures)
-l:preview	URL stub for :Rpreview (e.g., blog/show/1)
-b:task		Default task used with :Rake
-l:related	Custom related file for :R, relative to the Rails root
-a:root_url	Root URL for commands like :Rpreview
+Option		 Meaning ~
+b:alternate	 Custom alternate file for :A, relative to the Rails root
+b:controller	 Default controller for certain commands (e.g., :Rhelper)
+b:model		 Default model for certain commands (e.g., :Rfixtures)
+l:preview	 URL stub for :Rpreview (e.g., blog/show/1)
+b:task		 Default task used with :Rake
+l:related	 Custom related file for :R, relative to the Rails root
+a:root_url	 Root URL for commands like :Rpreview
+a:ruby_fork_port Experimental: use ruby_fork on given port to speed things up
 
 Examples: >
 	:Rset root_url=http://localhost:12345
@@ -798,50 +937,6 @@ Modelines can also be local to a method.  Example: >
 	def test_comment
 	  # rset alternate=app/models/comment.rb
 These two forms differ only in case.
-
-==============================================================================
-MANAGED VIM OPTIONS			*rails-options*
-
-The following options are set local to buffers where the plugin is active.
-
-					*rails-'shiftwidth'*	*rails-'sw'*
-					*rails-'softtabstop'*	*rails-'sts'*
-					*rails-'expandtab'*	*rails-'et'*
-A value of 2 is used for 'shiftwidth' (and 'softtabstop'), and 'expandtab' is
-enabled.  This is a strong convention in Rails, so the conventional wisdom
-that this is a user preference has been ignored.
-
-					*rails-'path'*		*rails-'pa'*
-All the relevant directories from your application are added to your 'path'.
-This makes it easy to access a buried file: >
-	:find blog_controller.rb
-<
-					*rails-'suffixesadd'*	*rails-'sua'*
-This is filetype dependent, but typically includes .rb, .rhtml, and several
-others.  This allows shortening the above example: >
-	:find blog_controller
-<
-					*rails-'includeexpr'*	*rails-'inex'*
-The 'includeexpr' option is set to enable the magic described in |rails-gf|.
-
-					*rails-'statusline'*	*rails-'stl'*
-Useful information is added to the 'statusline', when |g:rails_statusline| is
-enabled.
-
-					*rails-'makeprg'*	*rails-'mp'*
-					*rails-'errorformat'*	*rails-'efm'*
-Rake is used as the 'makeprg', so |:make| will work as expected.  Also, 
-'errorformat' is set appropriately to handle your tests.
-
-					*rails-'filetype'*	*rails-'ft'*
-The 'filetype' is sometimes adjusted for Rails files.  Most notably, *.rxml
-and *.rjs are treated as Ruby files, and files that have been falsely
-identified as Mason sources are changed back to eRuby files (but only when
-they are part of a Rails application).
-
-					*rails-'completefunc'*	*rails-'cfu'*
-A 'completefunc' is provided (if not already set).  It is very simple, as it
-uses syntax highlighting to make its guess.  See |i_CTRL-X_CTRL-U|.
 
 ==============================================================================
 GLOBAL SETTINGS					*rails-global-settings*
@@ -941,9 +1036,7 @@ application is not part of a subversion repository.  Disabled by default.
 						*g:rails_syntax*  >
 	let g:rails_syntax=1
 When enabled, this tweaks the syntax highlighting to be more Rails friendly.
-Enabled by default.  If you dislike the colors, several highlight groups are
-provided for you to tweak in your colorscheme.  Useful groups include
-railsMethod and railsUserClass.
+Enabled by default.  See |rails-syntax|.
 
 					*rails-tabs* *g:rails_tabstop*  >
 	let g:rails_tabstop=4
@@ -974,13 +1067,13 @@ The official homepage is
     http://rails.vim.tpope.net
 The latest stable version can be found at
     http://www.vim.org/scripts/script.php?script_id=1567
-In Vim 7.0, you can keep up to date with |GetLatestVimScripts|.
+In Vim 7, you can keep up to date with |GetLatestVimScripts|.
 
 Development versions can be found at the following URLs:
     http://tpope.us/rails.vba
     http://tpope.us/rails.zip
     http://svn.tpope.net/rails/vim/railsvim
-The first is a |vimball| for Vim 7.0.  The third is a subversion repository
+The first is a |vimball| for Vim 7.  The third is a subversion repository
 and contains the very latest features and bugs.
 
 Feedback is highly desired on this plugin.  Please send all comments,

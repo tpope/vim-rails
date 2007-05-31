@@ -79,10 +79,6 @@ function! s:rv()
   return s:escvar(RailsRoot())
 endfunction
 
-function! s:sname()
-  return fnamemodify(s:file,':t:r')
-endfunction
-
 function! s:rquote(str)
   " Imperfect but adequate for Ruby arguments
   if a:str =~ '^[A-Za-z0-9_/.:-]\+$'
@@ -94,12 +90,12 @@ function! s:rquote(str)
   endif
 endfunction
 
-function! s:rubyexestrwithfork(cmd)
-  if s:getopt("ruby_fork_port","ab") && executable("ruby_fork_client")
-    return "ruby_fork_client -p ".s:getopt("ruby_fork_port","ab")." ".a:cmd
-  else
-    return rubyexestr(a:cmd)
-  endif
+function! s:sname()
+  return fnamemodify(s:file,':t:r')
+endfunction
+
+function! s:hasfile(file)
+  return filereadable(RailsRoot().'/'.a:file)
 endfunction
 
 function! s:rubyexestr(cmd)
@@ -107,6 +103,14 @@ function! s:rubyexestr(cmd)
     return "ruby ".a:cmd
   else
     return "ruby -C ".s:rquote(RailsRoot())." ".a:cmd
+  endif
+endfunction
+
+function! s:rubyexestrwithfork(cmd)
+  if s:getopt("ruby_fork_port","ab") && executable("ruby_fork_client")
+    return "ruby_fork_client -p ".s:getopt("ruby_fork_port","ab")." ".a:cmd
+  else
+    return s:rubyexestr(a:cmd)
   endif
 endfunction
 
@@ -911,7 +915,7 @@ function! s:Rake(bang,arg)
       let arg = opt
     endif
   endif
-  let withrubyargs = '-r./config/boot -r '.s:rquote(RailsRoot().'/config/environment').' '
+  let withrubyargs = '-r ./config/boot -r '.s:rquote(RailsRoot().'/config/environment').' -e "puts \%((in \#{Dir.getwd}))" '
   if arg == "stats"
     " So you can see the output even with an inadequate redirect
     call s:QuickFixCmdPre()
@@ -920,17 +924,28 @@ function! s:Rake(bang,arg)
   elseif arg =~ '^preview\>'
     exe 'R'.s:gsub(arg,':','/')
   elseif arg =~ '^runner:'
-    " TODO: set a proper 'efm'
     let arg = s:sub(arg,'^runner:','')
-    call s:makewithruby(withrubyargs.'-e '.s:rquote(s:esccmd(arg)))
-  elseif arg == 'run'
-    call s:makewithruby(withrubyargs.'-e "" -r '.expand("%"),expand("%") !~# '_test\.rb$')
+    let root = matchstr(arg,'%\%(:\w\)*')
+    let file = expand(root).matchstr(arg,'%\%(:\w\)*\zs.*')
+    if file =~ '[@#].*$'
+      let extra = " -- -n ".matchstr(file,'[@#]\zs.*')
+      let file = s:sub(file,'[@#].*','')
+    else
+      let extra = ''
+    endif
+    if s:hasfile(file) || s:hasfile(file.'.rb')
+      call s:makewithruby(withrubyargs.'-r"'.file.'"'.extra,file !~# '_test\%(\.rb\)\=$')
+    else
+      call s:makewithruby(withrubyargs.'-e '.s:esccmd(s:rquote(arg)))
+    endif
+  elseif arg == 'run' || arg == 'runner'
+    call s:makewithruby(withrubyargs.'-r"'.RailsFilePath().'"',RailsFilePath() !~# '_test\%(\.rb\)\=$')
   elseif arg =~ '^run:'
     let arg = s:sub(arg,'^run:','')
     let arg = s:sub(arg,'^%:h',expand('%:h'))
     let arg = s:sub(arg,'^\%(%\|$\|[@#]\@=\)',expand('%'))
     let arg = s:sub(arg,'[@#]\(\w\+\)$',' -- -n\1')
-    call s:makewithruby(withrubyargs.'-e "" -r '.arg,arg !~# '_test\.rb$')
+    call s:makewithruby(withrubyargs.'-r'.arg,arg !~# '_test\.rb$')
   elseif arg != ''
     exe 'make '.arg
   elseif t =~ '^task\>'
@@ -954,7 +969,7 @@ function! s:Rake(bang,arg)
     elseif RailsFilePath() =~# '\<test/test_helper\.rb$'
       make test
     else
-      call s:makewithruby('-e "" -r"%:p" -- '.call,0)
+      call s:makewithruby('-e "puts \%((in \#{Dir.getwd}))" -r"%:p" -- '.call,0)
     endif
   elseif t=~ '^\%(db-\)\=migration\>' && RailsFilePath() !~# '\<db/schema\.rb$'
     make db:migrate
@@ -1174,11 +1189,11 @@ endfunction
 function! s:Plugin(bang,...)
   if a:0 == 1 && !(a:1 =~ '^\%(discover\|list\|install\|update\|remove\|source\|unsource\|sources\)$')
     return s:pluginEdit(a:bang,'',a:1)
-    if filereadable(RailsRoot()."/vendor/plugins/".a:1."/init.rb")
+    if s:hasfile("vendor/plugins/".a:1."/init.rb")
       return s:findedit(a:bang?'!':'',"vendor/plugins/".a:1."/init.rb")
-    elseif filereadable(RailsRoot()."/vendor/plugins/".a:1.".rb")
+    elseif s:hasfile("vendor/plugins/".a:1.".rb")
       return s:findedit(a:bang?'!':'',"vendor/plugins/".a:1.".rb")
-    elseif filereadable(RailsRoot()."/vendor/plugins/".a:1)
+    elseif s:hasfile("vendor/plugins/".a:1)
       return s:findedit(a:bang?'!':'',"vendor/plugins/".a:1)
     endif
   endif
@@ -2103,7 +2118,7 @@ function! s:fixturesEdit(bang,cmd,...)
   let e = e == '' ? e : '.'.e
   let c = fnamemodify(c,':r')
   let file = 'test/fixtures/'.c.e
-  if file =~ '\.\w\+$' && !filereadable(RailsRoot()."/spec/fixtures/".c.e)
+  if file =~ '\.\w\+$' && !s:hasfile("spec/fixtures/".c.e)
     call s:edit(a:cmd.(a:bang?'!':''),file)
   else
     call s:findedit(a:cmd.(a:bang?'!':''),file."\nspec/fixtures/".c.e)
@@ -2166,9 +2181,9 @@ function! s:findview(name)
   endif
   if c =~ '\.\w\+\.\w\+$' || c =~ '\.'.s:viewspattern().'$'
     return pre.c
-  elseif filereadable(RailsRoot()."/".pre.c.".rhtml")
+  elseif s:hasfile(pre.c.".rhtml")
     let file = pre.c.".rhtml"
-  elseif filereadable(RailsRoot()."/".pre.c.".rxml")
+  elseif s:hasfile(pre.c.".rxml")
     let file = pre.c.".rxml"
   else
     let format = "." . s:format('html')
@@ -2177,7 +2192,7 @@ function! s:findview(name)
       while vt != ""
         let t = matchstr(vt,'[^,]*')
         let vt = s:sub(vt,'[^,]*,','')
-        if filereadable(RailsRoot()."/".pre.c.format.".".t)
+        if s:hasfile(pre.c.format.".".t)
           let file = pre.c.format.".".t
           break
         endif
@@ -2239,7 +2254,7 @@ endfunction
 function! s:unittestEdit(bang,cmd,...)
   let f = a:0 ? a:1 : s:model(1)
   if !a:0 && RailsFileType() =~ '^model-aro\>' && f != '' && f !~ '_observer$'
-    if filereadable(RailsRoot()."/test/unit/".f."_observer.rb") || !filereadable(RailsRoot()."/test/unit/".f.".rb")
+    if s:hasfile("test/unit/".f."_observer.rb") || !s:hasfile("test/unit/".f.".rb")
       let f = f . "_observer"
     endif
   endif
@@ -2252,10 +2267,10 @@ function! s:functionaltestEdit(bang,cmd,...)
   else
     let f = s:controller()
   endif
-  if f != '' && !filereadable(RailsRoot()."/test/functional/".f."_test.rb")
-    if filereadable(RailsRoot()."/test/functional/".f."_controller_test.rb")
+  if f != '' && !s:hasfile("test/functional/".f."_test.rb")
+    if s:hasfile("test/functional/".f."_controller_test.rb")
       let f = f . "_controller"
-    elseif filereadable(RailsRoot()."/test/functional/".f."_api_test.rb")
+    elseif s:hasfile("test/functional/".f."_api_test.rb")
       let f = f . "_api"
     endif
   endif
@@ -2282,7 +2297,7 @@ function! s:pluginEdit(bang,cmd,...)
     let extra = "vendor/plugins/" . plugin . "/\n"
   endif
   if a:0
-    if a:1 =~ '^[^/.]*/\=$' && filereadable(RailsRoot()."/vendor/plugins/".a:1."/init.rb")
+    if a:1 =~ '^[^/.]*/\=$' && s:hasfile("vendor/plugins/".a:1."/init.rb")
       return s:EditSimpleRb(a:bang,a:cmd,"plugin",s:sub(a:1,'/$',''),"vendor/plugins/","/init.rb")
     elseif plugin == ""
       call s:edit(cmd,"vendor/plugins/".s:sub(a:1,'\.$',''))
@@ -2385,7 +2400,7 @@ function! s:findedit(cmd,file,...) abort
     while file == '' && filelist != ''
       let maybe = matchstr(filelist,'^.\{-\}\ze\n')
       let filelist = s:sub(filelist,'^.\{-\}\n','')
-      if filereadable(RailsRoot().'/'.s:sub(maybe,'[@#].*',''))
+      if s:hasfile(s:sub(maybe,'[@#].*',''))
         let file = maybe
       endif
     endwhile
@@ -2481,14 +2496,14 @@ function! s:AlternateFile()
     let helper     = fnamemodify(dest,':h:s?/views/?/helpers/?')."_helper.rb"
     let controller = fnamemodify(dest,':h:s?/views/?/controllers/?')."_controller.rb"
     let model      = fnamemodify(dest,':h:s?/views/?/models/?').".rb"
-    if filereadable(RailsRoot()."/".spec)
+    if s:hasfile(spec)
       return spec
-    elseif filereadable(RailsRoot()."/".helper)
+    elseif s:hasfile(helper)
       return helper
-    elseif filereadable(RailsRoot()."/".controller)
+    elseif s:hasfile(controller)
       let jumpto = expand("%:t:r")
       return controller.'#'.jumpto
-    elseif filereadable(RailsRoot()."/".model)
+    elseif s:hasfile(model)
       return model
     else
       return helper
@@ -2500,7 +2515,7 @@ function! s:AlternateFile()
     let controller = s:sub(s:sub(f,'/helpers/','/controllers/'),'_helper\.rb$','_controller.rb')
     let controller = s:sub(controller,'application_controller','application')
     let spec = s:sub(s:sub(f,'\<app/','spec/'),'\.rb$','_spec.rb')
-    if filereadable(RailsRoot()."/".spec)
+    if s:hasfile(spec)
       return spec
     else
       return controller
@@ -3071,7 +3086,7 @@ function! s:BufSyntax()
         syn keyword rubyRailsMigrationMethod create_table drop_table rename_table add_column rename_column change_column change_column_default remove_column add_index remove_index
       endif
       if t =~ '^test\>'
-        if s:cacheneeds("user_asserts") && filereadable(RailsRoot()."/test/test_helper.rb")
+        if s:cacheneeds("user_asserts") && s:hasfile("test/test_helper.rb")
           call s:cacheset("user_asserts",map(filter(readfile(RailsRoot()."/test/test_helper.rb"),'v:val =~ "^  def assert_"'),'matchstr(v:val,"^  def \\zsassert_\\w\\+")'))
         endif
         if s:cachehas("user_asserts") && !empty(s:cache("user_asserts"))
@@ -3555,10 +3570,10 @@ function! s:prephelp()
 endfunction
 
 function! s:findschema()
-  if filereadable(RailsRoot()."/db/schema.rb")
+  if s:hasfile("db/schema.rb")
     "exe "edit ".s:ra()."/db/schema.rb"
     edit `=RailsRoot().'/db/schema.rb'`
-  elseif filereadable(RailsRoot()."/db/".s:environment()."_structure.sql")
+  elseif s:hasfile("db/".s:environment()."_structure.sql")
     "exe "edit ".s:ra()."/db/".s:environment()."_structure.sql"
     edit `=RailsRoot().'/db/'.s:environment().'_structure.sql'`
   else
@@ -3696,7 +3711,7 @@ function! s:BufDatabase(...)
   endif
   " Crude caching mechanism
   if !exists("s:dbext_type_".s:rv())
-    if exists("g:loaded_dbext") && (g:rails_dbext + (a:0 ? a:1 : 0)) > 0 && filereadable(s:r()."/config/database.yml")
+    if exists("g:loaded_dbext") && (g:rails_dbext + (a:0 ? a:1 : 0)) > 0 && s:hasfile("config/database.yml")
       " Ideally we would filter this through ERB but that could be insecure.
       " It might be possible to make use of taint checking.
       let out = ""
@@ -4145,7 +4160,7 @@ function! s:setopt(opt,val)
 endfunction
 
 function! s:opts()
-  return "\nb:alternate\nb:controller\na:gnu_screen\nb:model\nl:preview\nb:task\nl:related\na:root_url\n"
+  return "\nb:alternate\nb:controller\na:gnu_screen\nb:model\nl:preview\nb:task\nl:related\na:root_url\na:ruby_fork_port\n"
 endfunction
 
 function! s:SetComplete(A,L,P)
@@ -4367,7 +4382,7 @@ function! s:callback(file)
   if RailsRoot() != ""
     let var = "callback_".s:rv()."_".s:escvar(a:file)
     if !exists("s:".var) || exists("b:rails_refresh")
-      let s:{var} = filereadable(s:r()."/".a:file)
+      let s:{var} = s:hasfile(a:file)
     endif
     if s:{var}
       if exists(":sandbox")
