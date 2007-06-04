@@ -884,8 +884,7 @@ endfunction
 function! s:makewithruby(arg,...)
   if &efm == s:efm
     if a:0 ? a:1 : 1
-      " Straight from complier/ruby.vim
-      setlocal efm=\%+E%f:%l:\ parse\ error,%W%f:%l:\ warning:\ %m,%E%f:%l:in\ %*[^:]:\ %m,%E%f:%l:\ %m,%-C%\tfrom\ %f:%l:in\ %.%#,%-Z%\tfrom\ %f:%l,%-Z%p^,%-G%.%#
+      setlocal efm=\%-E-e:%.%#,\%+E%f:%l:\ parse\ error,%W%f:%l:\ warning:\ %m,%E%f:%l:in\ %*[^:]:\ %m,%E%f:%l:\ %m,%-C%\tfrom\ %f:%l:in\ %.%#,%-Z%\tfrom\ %f:%l,%-Z%p^,%-G%.%#
     endif
   endif
   let old_make = &makeprg
@@ -1441,7 +1440,6 @@ function! s:Find(bang,count,arg,...)
     endif
   else
     let file = s:RailsFind()
-    let g:file = file
     let tail = ""
   endif
   if file =~ '^\%(app\|components\|config\|db\|public\|spec\|test\|vendor\)/.*\.' || !a:0 || 1
@@ -4288,6 +4286,7 @@ function! s:InitPlugin()
   " Exclusions
   let s:efm=s:efm
         \.'%C%.%#(eval)%.%#,'
+        \.'%C-e:%.%#,'
         \.'%C%.%#/lib/gems/%\\d.%\\d/gems/%.%#,'
         \.'%C%.%#/lib/ruby/%\\d.%\\d/%.%#,'
         \.'%C%.%#/vendor/rails/%.%#,'
@@ -4540,7 +4539,6 @@ function! s:BufSettings()
     return ''
   endif
   call s:SetBasePath()
-  "silent compiler rubyunit
   let rp = s:rp()
   let &errorformat=s:efm
   setlocal makeprg=rake
