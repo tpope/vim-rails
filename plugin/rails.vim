@@ -24,11 +24,11 @@ set cpo&vim
 " Utility Functions {{{1
 
 function! s:sub(str,pat,rep)
-  return substitute(a:str,'\C'.a:pat,a:rep,'')
+  return substitute(a:str,'\v\C'.a:pat,a:rep,'')
 endfunction
 
 function! s:gsub(str,pat,rep)
-  return substitute(a:str,'\C'.a:pat,a:rep,'g')
+  return substitute(a:str,'\v\C'.a:pat,a:rep,'g')
 endfunction
 
 function! s:escpath(p)
@@ -44,7 +44,7 @@ function! s:esccmd(p)
 endfunction
 
 function! s:compact(ary)
-  return s:sub(s:sub(s:gsub(a:ary,'\n\n\+','\n'),'\n$',''),'^\n','')
+  return s:sub(s:sub(s:gsub(a:ary,'\n\n+','\n'),'\n$',''),'^\n','')
 endfunction
 
 function! s:r()
@@ -68,7 +68,6 @@ endfunction
 
 function! s:escvar(r)
   let r = fnamemodify(a:r,':~')
-  "let r = s:gsub(r,'^\~','0')
   let r = s:gsub(r,'\W','\="_".char2nr(submatch(0))."_"')
   let r = s:gsub(r,'^\d','_&')
   return r
@@ -118,7 +117,7 @@ function! s:rubyexebg(cmd)
   if has("gui_win32")
     exe "!start ".s:esccmd(s:rubyexestr(a:cmd))
   elseif exists("$STY") && !has("gui_running") && s:getopt("gnu_screen","abg") && executable("screen")
-    silent exe "!screen -ln -fn -t ".s:sub(s:sub(a:cmd,'\s.*',''),'^\%(script\|-rcommand\)/','rails-').' '.s:esccmd(s:rubyexestr(a:cmd))
+    silent exe "!screen -ln -fn -t ".s:sub(s:sub(a:cmd,'\s.*',''),'^%(script|-rcommand)/','rails-').' '.s:esccmd(s:rubyexestr(a:cmd))
   else
     exe "!".s:esccmd(s:rubyexestr(a:cmd))
   endif
@@ -296,33 +295,33 @@ function! s:controller(...)
   if o != ""
     return o
   elseif f =~ '\<app/views/layouts/'
-    return s:sub(f,'.*\<app/views/layouts/\(.\{-\}\)\.\k\+','\1')
+    return s:sub(f,'.*<app/views/layouts/(.{-})\.\k+','\1')
   elseif f =~ '\<app/views/'
-    return s:sub(f,'.*\<app/views/\(.\{-\}\)/\k\+\.\k\+\%(\.\k\+\)\=$','\1')
+    return s:sub(f,'.*<app/views/(.{-})/\k+\.\k+%(\.\k+)=$','\1')
   elseif f =~ '\<app/helpers/.*_helper\.rb$'
-    return s:sub(f,'.*\<app/helpers/\(.\{-\}\)_helper\.rb$','\1')
+    return s:sub(f,'.*<app/helpers/(.{-})_helper\.rb$','\1')
   elseif f =~ '\<app/controllers/application\.rb$'
     return "application"
   elseif f =~ '\<app/controllers/.*_controller\.rb$'
-    return s:sub(f,'.*\<app/controllers/\(.\{-\}\)_controller\.rb$','\1')
+    return s:sub(f,'.*<app/controllers/(.{-})_controller\.rb$','\1')
   elseif f =~ '\<app/apis/.*_api\.rb$'
-    return s:sub(f,'.*\<app/apis/\(.\{-\}\)_api\.rb$','\1')
+    return s:sub(f,'.*<app/apis/(.{-})_api\.rb$','\1')
   elseif f =~ '\<test/functional/.*_controller_test\.rb$'
-    return s:sub(f,'.*\<test/functional/\(.\{-\}\)_controller_test\.rb$','\1')
+    return s:sub(f,'.*<test/functional/(.{-})_controller_test\.rb$','\1')
   elseif f =~ '\<spec/controllers/.*_controller_spec\.rb$'
-    return s:sub(f,'.*\<spec/controllers/\(.\{-\}\)_controller_spec\.rb$','\1')
+    return s:sub(f,'.*<spec/controllers/(.{-})_controller_spec\.rb$','\1')
   elseif f =~ '\<spec/helpers/.*_helper_spec\.rb$'
-    return s:sub(f,'.*\<spec/helpers/\(.\{-\}\)_helper_spec\.rb$','\1')
+    return s:sub(f,'.*<spec/helpers/(.{-})_helper_spec\.rb$','\1')
   elseif f =~ '\<spec/views/.*/\w\+_view_spec\.rb$'
-    return s:sub(f,'.*\<spec/views/\(.\{-\}\)/\w\+_view_spec\.rb$','\1')
+    return s:sub(f,'.*<spec/views/(.{-})/\w+_view_spec\.rb$','\1')
   elseif f =~ '\<components/.*_controller\.rb$'
-    return s:sub(f,'.*\<components/\(.\{-\}\)_controller\.rb$','\1')
+    return s:sub(f,'.*<components/(.{-})_controller\.rb$','\1')
   elseif f =~ '\<components/.*\.'.s:viewspattern().'$'
-    return s:sub(f,'.*\<components/\(.\{-\}\)/\k\+\.\k\+$','\1')
+    return s:sub(f,'.*<components/(.{-})/\k+\.\k+$','\1')
   elseif f =~ '\<app/models/.*\.rb$' && t =~ '^model-mailer\>'
-    return s:sub(f,'.*\<app/models/\(.\{-\}\)\.rb$','\1')
+    return s:sub(f,'.*<app/models/(.{-})\.rb$','\1')
   elseif f =~ '\<public/stylesheets/.*\.css$'
-    return s:sub(f,'.*\<public/stylesheets/\(.\{-\}\)\.css$','\1')
+    return s:sub(f,'.*<public/stylesheets/(.{-})\.css$','\1')
   elseif a:0 && a:1
     return s:pluralize(s:model())
   endif
@@ -335,17 +334,17 @@ function! s:model(...)
   if o != ""
     return o
   elseif f =~ '\<app/models/.*_observer.rb$'
-    return s:sub(f,'.*\<app/models/\(.*\)_observer\.rb$','\1')
+    return s:sub(f,'.*<app/models/(.*)_observer\.rb$','\1')
   elseif f =~ '\<app/models/.*\.rb$'
-    return s:sub(f,'.*\<app/models/\(.*\)\.rb$','\1')
+    return s:sub(f,'.*<app/models/(.*)\.rb$','\1')
   elseif f =~ '\<test/unit/.*_observer_test\.rb$'
-    return s:sub(f,'.*\<test/unit/\(.*\)_observer_test\.rb$','\1')
+    return s:sub(f,'.*<test/unit/(.*)_observer_test\.rb$','\1')
   elseif f =~ '\<test/unit/.*_test\.rb$'
-    return s:sub(f,'.*\<test/unit/\(.*\)_test\.rb$','\1')
+    return s:sub(f,'.*<test/unit/(.*)_test\.rb$','\1')
   elseif f =~ '\<spec/models/.*_spec\.rb$'
-    return s:sub(f,'.*\<spec/models/\(.*\)_spec\.rb$','\1')
-  elseif f =~ '\<\%(test\|spec\)/fixtures/.*\.\w*\~\=$'
-    return s:singularize(s:sub(f,'.*\<\%(test\|spec\)/fixtures/\(.*\)\.\w*\~\=$','\1'))
+    return s:sub(f,'.*<spec/models/(.*)_spec\.rb$','\1')
+  elseif f =~ '\<\%(test\|spec)/fixtures/.*\.\w*\~\=$'
+    return s:singularize(s:sub(f,'.*<%(test|spec)/fixtures/(.*)\.\w*\~=$','\1'))
   elseif a:0 && a:1
     return s:singularize(s:controller())
   endif
@@ -354,16 +353,16 @@ endfunction
 
 function! s:underscore(str)
   let str = s:gsub(a:str,'::','/')
-  let str = s:gsub(str,'\(\u\+\)\(\u\l\)','\1_\2')
-  let str = s:gsub(str,'\(\l\|\d\)\(\u\)','\1_\2')
+  let str = s:gsub(str,'(\u+)(\u\l)','\1_\2')
+  let str = s:gsub(str,'(\l|\d)(\u)','\1_\2')
   let str = s:gsub(str,'-','_')
   let str = tolower(str)
   return str
 endfunction
 
 function! s:camelize(str)
-  let str = s:gsub(a:str,'/\(.\)','::\u\1')
-  let str = s:gsub(str,'\%([_-]\|\<\)\(.\)','\u\1')
+  let str = s:gsub(a:str,'/(.)','::\u\1')
+  let str = s:gsub(str,'%([_-]|<)(.)','\u\1')
   return str
 endfunction
 
@@ -375,10 +374,10 @@ function! s:singularize(word)
     return word
   endif
   let word = s:sub(word,'eople$','ersons')
-  let word = s:sub(word,'[aeio]\@<!ies$','ys')
+  let word = s:sub(word,'[aeio]@<!ies$','ys')
   let word = s:sub(word,'xe[ns]$','xs')
   let word = s:sub(word,'ves$','fs')
-  let word = s:sub(word,'ss\%(es\)\=$','sss')
+  let word = s:sub(word,'ss%(es)=$','sss')
   let word = s:sub(word,'s$','')
   return word
 endfunction
@@ -388,7 +387,7 @@ function! s:pluralize(word)
   if word == ''
     return word
   endif
-  let word = s:sub(word,'[aeio]\@<!y$','ie')
+  let word = s:sub(word,'[aeio]@<!y$','ie')
   let word = s:sub(word,'[sx]$','&e')
   let word = s:sub(word,'f$','ve')
   let word = word."s"
@@ -467,9 +466,9 @@ function! RailsFilePath()
   elseif exists("b:rails_file_path")
     return b:rails_file_path
   endif
-  let f = s:gsub(expand("%:p"),'\\ \@!','/')
+  let f = s:gsub(expand('%:p'),'\\ @!','/')
   let f = s:sub(f,'/$','')
-  if s:gsub(b:rails_root,'\\ \@!','/') == strpart(f,0,strlen(b:rails_root))
+  if s:gsub(b:rails_root,'\\ @!','/') == strpart(f,0,strlen(b:rails_root))
     return strpart(f,strlen(b:rails_root)+1)
   else
     return f
@@ -514,7 +513,7 @@ function! RailsFileType()
     elseif class != ''
       "let class = s:sub(class,'::Base$','')
       let class = tolower(s:gsub(class,'[^A-Z]',''))
-      let r = "model-".s:sub(class,'^amb\>','mailer')
+      let r = "model-".s:sub(class,'^amb>','mailer')
     elseif f =~ '_mailer\.rb$'
       let r = "model-mailer"
     elseif top =~ '\<\%(validates_\w\+_of\|set_\%(table_name\|primary_key\)\|has_one\|has_many\|belongs_to\)\>'
@@ -906,7 +905,7 @@ function! s:Rake(bang,arg)
     let str = getline(lnum)."\n".getline(lnum+1)."\n".getline(lnum+2)."\n"
     let pat = '\s\+\zs.\{-\}\ze\%(\n\|\s\s\|#{\@!\|$\)'
     let mat = matchstr(str,'#\s*rake'.pat)
-    let mat = s:sub(mat,'\s\+$','')
+    let mat = s:sub(mat,'\s+$','')
     if mat != ""
       let arg = mat
     endif
@@ -945,8 +944,8 @@ function! s:Rake(bang,arg)
   elseif arg =~ '^run:'
     let arg = s:sub(arg,'^run:','')
     let arg = s:sub(arg,'^%:h',expand('%:h'))
-    let arg = s:sub(arg,'^\%(%\|$\|[@#]\@=\)',expand('%'))
-    let arg = s:sub(arg,'[@#]\(\w\+\)$',' -- -n\1')
+    let arg = s:sub(arg,'^%(\%|$|[@#]@=)',expand('%'))
+    let arg = s:sub(arg,'[@#](\w+)$',' -- -n\1')
     call s:makewithruby(withrubyargs.'-r'.arg,arg !~# '_test\.rb$')
   elseif arg != ''
     exe 'make '.arg
@@ -1269,7 +1268,7 @@ function! s:generators()
 endfunction
 
 function! s:ScriptComplete(ArgLead,CmdLine,P)
-  let cmd = s:sub(a:CmdLine,'^\u\w*\s\+','')
+  let cmd = s:sub(a:CmdLine,'^\u\w*\s+','')
   let P = a:P - strlen(a:CmdLine)+strlen(cmd)
   if cmd !~ '^[ A-Za-z0-9_=-]*$'
     " You're on your own, bud
@@ -1286,7 +1285,7 @@ function! s:ScriptComplete(ArgLead,CmdLine,P)
     let target = matchstr(cmd,'^\w\+\s\+\zs\w\+\ze\s\+')
     let pattern = "" " TODO
     if target =~# '^\%(\w*_\)\=controller$'
-      return s:sub(s:controllerList(pattern,"",""),'^application\n\=','')
+      return s:sub(s:controllerList(pattern,"",""),'^application\n=','')
     elseif target =~# '^\%(\w*_\)\=model$' || target =~# '^scaffold\%(_resource\)\=$' || target == 'mailer'
       return s:modelList(pattern,"","")
     elseif target == 'migration' || target == 'session_migration'
@@ -1302,7 +1301,7 @@ function! s:ScriptComplete(ArgLead,CmdLine,P)
       endif
       while strlen(models) > 0
         let tmp = matchstr(models."\n",'.\{-\}\ze\n')
-        let models = s:sub(models,'.\{-\}\%(\n\|$\)','')
+        let models = s:sub(models,'.{-}%(\n|$)','')
         if stridx("\n".observers."\n","\n".tmp."\n") == -1 && tmp !~'_observer$'
           let observers = observers."\n".tmp
         endif
@@ -1314,7 +1313,7 @@ function! s:ScriptComplete(ArgLead,CmdLine,P)
       return ""
     endif
   elseif cmd =~ '^\%(generate\|destroy\)\s\+scaffold\s\+\w\+\s\+'.a:ArgLead.'$'
-    return s:sub(s:controllerList("","",""),'^application\n\=','')
+    return s:sub(s:controllerList("","",""),'^application\n=','')
   elseif cmd =~ '^\%(console\)\s\+\(--\=\w\+\s\+\)\='.a:ArgLead."$"
     return s:environments()."\n-s\n--sandbox"
   elseif cmd =~ '^\%(server\)\s\+.*-e\s\+'.a:ArgLead."$"
@@ -1327,7 +1326,7 @@ function! s:ScriptComplete(ArgLead,CmdLine,P)
 endfunction
 
 function! s:CustomComplete(A,L,P,cmd)
-  let L = "Rscript ".a:cmd." ".s:sub(a:L,'^\h\w*\s\+','')
+  let L = "Rscript ".a:cmd." ".s:sub(a:L,'^\h\w*\s+','')
   let P = a:P - strlen(a:L) + strlen(L)
   return s:ScriptComplete(a:A,L,P)
 endfunction
@@ -1447,7 +1446,7 @@ function! s:Find(bang,count,arg,...)
   else
     " Old way
     let fcmd = (a:count==1?'' : a:count).s:findcmdfor(cmd)
-    let fcmd = s:sub(fcmd,'\(\d\+\)vert ','vert \1')
+    let fcmd = s:sub(fcmd,'(\d+)vert ','vert \1')
     if file != ""
       exe fcmd.' '.str.s:escarg(file)
     endif
@@ -1499,8 +1498,8 @@ endfunction
 
 function! s:linepeak()
   let line = getline(line("."))
-  let line = s:sub(line,'^\(.\{'.col(".").'\}\).*','\1')
-  let line = s:sub(line,'\([:"'."'".']\|%[qQ]\=[[({<]\)\=\f*$','')
+  let line = s:sub(line,'^(.{'.col(".").'}).*','\1')
+  let line = s:sub(line,'([:"'."'".']|\%[qQ]=[[({<])=\f*$','')
   return line
 endfunction
 
@@ -1521,7 +1520,7 @@ endfunction
 function! s:findit(pat,repl)
   let res = s:matchcursor(a:pat)
   if res != ""
-    return s:sub(res,a:pat,a:repl)
+    return substitute(res,'\C'.a:pat,a:repl,'')
   else
     return ""
   endif
@@ -1542,9 +1541,9 @@ endfunction
 function! s:RailsFind()
   " UGH
   let format = s:format('html')
-  let res = s:findit('\s*\<require\s*(\=\s*File.dirname(__FILE__)\s*+\s*[:'."'".'"]\(\f\+\)\>.\=',expand('%:h').'/\1')
+  let res = s:findit('\v\s*<require\s*\(=\s*File.dirname\(__FILE__\)\s*\+\s*[:'."'".'"](\f+)>.=',expand('%:h').'/\1')
   if res != ""|return res.(fnamemodify(res,':e') == '' ? '.rb' : '')|endif
-  let res = s:findit('\<File.dirname(__FILE__)\s*+\s*[:'."'".'"]\(\f\+\)\>['."'".'"]\=',expand('%:h').'\1')
+  let res = s:findit('\v<File.dirname\(__FILE__\)\s*\+\s*[:'."'".'"](\f+)>['."'".'"]=',expand('%:h').'\1')
   if res != ""|return res|endif
   let res = s:findamethod('require','\1')
   if res != ""|return res.(fnamemodify(res,':e') == '' ? '.rb' : '')|endif
@@ -1570,9 +1569,9 @@ function! s:RailsFind()
   if res != ""|return res|endif
   let res = s:findasymbol('action','\1')
   if res != ""|return res|endif
-  let res = s:sub(s:sub(s:findasymbol('partial','\1'),'^/',''),'\k\+$','_&')
+  let res = s:sub(s:sub(s:findasymbol('partial','\1'),'^/',''),'\k+$','_&')
   if res != ""|return res."\n".s:findview(res)|endif
-  let res = s:sub(s:sub(s:findfromview('render\s*(\=\s*:partial\s\+=>\s*','\1'),'^/',''),'\k\+$','_&')
+  let res = s:sub(s:sub(s:findfromview('render\s*(\=\s*:partial\s\+=>\s*','\1'),'^/',''),'\k+$','_&')
   if res != ""|return res."\n".s:findview(res)|endif
   let res = s:findamethod('render\s*:\%(template\|action\)\s\+=>\s*','\1.'.format.'\n\1')
   if res != ""|return res|endif
@@ -1580,7 +1579,7 @@ function! s:RailsFind()
   if res != ""|return res|endif
   let res = s:findfromview('stylesheet_link_tag','public/stylesheets/\1.css')
   if res != ""|return res|endif
-  let res = s:sub(s:findfromview('javascript_include_tag','public/javascripts/\1.js'),'/defaults\>','/application')
+  let res = s:sub(s:findfromview('javascript_include_tag','public/javascripts/\1.js'),'/defaults>','/application')
   if res != ""|return res|endif
   if RailsFileType() =~ '^controller\>'
     let res = s:findit('\s*\<def\s\+\(\k\+\)\>(\=',s:sub(s:sub(RailsFilePath(),'/controllers/','/views/'),'_controller\.rb$','').'/\1')
@@ -1656,7 +1655,7 @@ function! s:RailsIncludefind(str,...)
     " Get the text before the filename under the cursor.
     " We'll cheat and peak at this in a bit
     let line = s:linepeak()
-    let line = s:sub(line,'\([:"'."'".']\|%[qQ]\=[[({<]\)\=\f*$','')
+    let line = s:sub(line,'([:"'."'".']|\%[qQ]=[[({<])=\f*$','')
   else
     let line = ""
   endif
@@ -1664,7 +1663,7 @@ function! s:RailsIncludefind(str,...)
   let str = s:sub(str,'\s*$','')
   let str = s:sub(str,'^[:@]','')
   "let str = s:sub(str,"\\([\"']\\)\\(.*\\)\\1",'\2')
-  let str = s:sub(str,':0x\x\+$','') " For #<Object:0x...> style output
+  let str = s:sub(str,':0x\x+$','') " For #<Object:0x...> style output
   let str = s:gsub(str,"[\"']",'')
   if line =~ '\<\(require\|load\)\s*(\s*$'
     return str
@@ -1675,7 +1674,7 @@ function! s:RailsIncludefind(str,...)
     " Classes should always be in .rb files
     let str = str . '.rb'
   elseif line =~ '\(:partial\|"partial"\|'."'partial'".'\)\s*=>\s*'
-    let str = s:sub(str,'\([^/]\+\)$','_\1')
+    let str = s:sub(str,'([^/]+)$','_\1')
     if str =~ '^\./'
     elseif str =~ '/'
       let str = 'app/views/' . s:sub(str,'^/','')
@@ -1683,25 +1682,25 @@ function! s:RailsIncludefind(str,...)
       let str = 'app/views/' . s:controller() . str
     endif
   elseif line =~ '\<layout\s*(\=\s*' || line =~ '\(:layout\|"layout"\|'."'layout'".'\)\s*=>\s*'
-    let str = s:sub(str,'^/\=','views/layouts/')
+    let str = s:sub(str,'^/=','views/layouts/')
   elseif line =~ '\(:controller\|"controller"\|'."'controller'".'\)\s*=>\s*'
     let str = 'app/controllers/'.str.'_controller.rb'
   elseif line =~ '\<helper\s*(\=\s*'
     let str = 'app/helpers/'.str.'_helper.rb'
   elseif line =~ '\<fixtures\s*(\='.fpat
-    if RailsFilePath() =~ '\<spec/'
-      let str = s:sub(str,'^/\@!','spec/fixtures/')
+    if RailsFilePath() =~# '\<spec/'
+      let str = s:sub(str,'^/@!','spec/fixtures/')
     else
-      let str = s:sub(str,'^/\@!','test/fixtures/')
+      let str = s:sub(str,'^/@!','test/fixtures/')
     endif
   elseif line =~ '\<stylesheet_\(link_tag\|path\)\s*(\='.fpat
-    let str = s:sub(str,'^/\@!','/stylesheets/')
+    let str = s:sub(str,'^/@!','/stylesheets/')
     let str = 'public'.s:sub(str,'^[^.]*$','&.css')
   elseif line =~ '\<javascript_\(include_tag\|path\)\s*(\='.fpat
     if str == "defaults"
       let str = "application"
     endif
-    let str = s:sub(str,'^/\@!','/javascripts/')
+    let str = s:sub(str,'^/@!','/javascripts/')
     let str = 'public'.s:sub(str,'^[^.]*$','&.js')
   elseif line =~ '\<\(has_one\|belongs_to\)\s*(\=\s*'
     let str = 'app/models/'.str.'.rb'
@@ -1709,7 +1708,7 @@ function! s:RailsIncludefind(str,...)
     let str = 'app/models/'.s:singularize(str).'.rb'
   elseif line =~ '\<def\s\+' && expand("%:t") =~ '_controller\.rb'
     let str = s:sub(s:sub(RailsFilePath(),'/controllers/','/views/'),'_controller\.rb$','/'.str)
-    "let str = s:sub(expand("%:p"),'.*[\/]app[\/]controllers[\/]\(.\{-\}\)_controller.rb','views/\1').'/'.str
+    "let str = s:sub(expand("%:p"),'.*[\/]app[\/]controllers[\/](.{-})_controller.rb','views/\1').'/'.str
     " FIXME: support nested extensions
     let vt = s:view_types.","
     while vt != ""
@@ -1722,13 +1721,13 @@ function! s:RailsIncludefind(str,...)
     endwhile
   elseif str =~ '_\%(path\|url\)$'
     " REST helpers
-    let str = s:sub(str,'_\%(path\|url\)$','')
+    let str = s:sub(str,'_%(path|url)$','')
     let str = s:sub(str,'^hash_for_','')
     let file = s:namedroutefile(str)
     if file == ""
       let str = s:sub(str,'^formatted_','')
       if str =~ '^\%(new\|edit\)_'
-        let str = 'app/controllers/'.s:sub(s:pluralize(str),'^\(new\|edit\)_\(.*\)','\2_controller.rb#\1')
+        let str = 'app/controllers/'.s:sub(s:pluralize(str),'^(new|edit)_(.*)','\2_controller.rb#\1')
       elseif str == s:singularize(str)
         " If the word can't be singularized, it's probably a link to the show
         " method.  We should verify by checking for an argument, but that's
@@ -1808,10 +1807,10 @@ function! RailsUserClasses()
   if !exists("s:".var)
     let s:{var} = s:sub(s:sub(s:gsub(s:camelize(
         \ s:relglob("app/models/","**/*",".rb") . "\n" .
-        \ s:sub(s:relglob("app/controllers/","**/*",".rb"),'\<application\>','&_controller') . "\n" .
+        \ s:sub(s:relglob("app/controllers/","**/*",".rb"),'<application>','&_controller') . "\n" .
         \ s:relglob("app/helpers/","**/*",".rb") . "\n" .
         \ s:relglob("lib/","**/*",".rb") . "\n" .
-        \ ""),'\n\+',' '),'^\s\+',''),'\s\+$','')
+        \ ""),'\n+',' '),'^\s+',''),'\s+$','')
   endif
   return s:{var}
 endfunction
@@ -1852,7 +1851,7 @@ function! s:relglob(path,glob,...)
     endif
     let goodres = goodres."\n"
   endwhile
-  "let goodres = s:gsub("\n".goodres,'\n.\{-\}\~\n','\n')
+  "let goodres = s:gsub("\n".goodres,'\n.{-}\~\n','\n')
   if exists("old_ss")
     let &shellslash = old_ss
   endif
@@ -2002,7 +2001,7 @@ function! s:Command(bang,...)
       if name == ""
         let name = arg
       else
-        let prefix = prefix."\\n".s:sub(arg,'/\=$','/')
+        let prefix = prefix."\\n".s:sub(arg,'/=$','/')
       endif
     endif
   endwhile
@@ -2026,7 +2025,7 @@ function! s:CommandList(A,L,P)
   let res = ""
   while lp != ""
     let p = matchstr(lp,'.\{-\}\ze\n')
-    let lp = s:sub(lp,'.\{-\}\n','')
+    let lp = s:sub(lp,'.{-}\n','')
     let res = res . s:relglob(p,s:last_filter,s:last_suffix)."\n"
   endwhile
   let res = s:compact(res)
@@ -2349,7 +2348,7 @@ endfunction
 function! s:libEdit(bang,cmd,...)
   let extra = ""
   if RailsFilePath() =~ '\<vendor/plugins/.'
-    let extra = s:sub(RailsFilePath(),'\<vendor/plugins/[^/]*/\zs.*','lib/')."\n"
+    let extra = s:sub(RailsFilePath(),'<vendor/plugins/[^/]*/\zs.*','lib/')."\n"
   endif
   if a:0
     call s:EditSimpleRb(a:bang,a:cmd,"task",a:0? a:1 : "",extra."lib/",".rb")
@@ -2364,15 +2363,15 @@ endfunction
 
 function! s:findcmdfor(cmd)
   let bang = ''
-  if a:cmd =~ '!$'
+  if a:cmd =~ '\!$'
     let bang = '!'
-    let cmd = s:sub(a:cmd,'!$','')
+    let cmd = s:sub(a:cmd,'\!$','')
   else
     let cmd = a:cmd
   endif
   if cmd =~ '^\d'
     let num = matchstr(cmd,'^\d\+')
-    let cmd = s:sub(cmd,'^\d\+','')
+    let cmd = s:sub(cmd,'^\d+','')
   else
     let num = ''
   endif
@@ -2391,8 +2390,8 @@ endfunction
 
 function! s:editcmdfor(cmd)
   let cmd = s:findcmdfor(a:cmd)
-  let cmd = s:sub(cmd,'\<sfind\>','split')
-  let cmd = s:sub(cmd,'find\>','edit')
+  let cmd = s:sub(cmd,'<sfind>','split')
+  let cmd = s:sub(cmd,'find>','edit')
   return cmd
 endfunction
 
@@ -2404,7 +2403,7 @@ function! s:try(cmd) abort
     try
       exe a:cmd
     catch
-      call s:error(s:sub(v:exception,'^.\{-\}:\zeE',''))
+      call s:error(s:sub(v:exception,'^.{-}:\zeE',''))
       return 0
     endtry
   endif
@@ -2418,7 +2417,7 @@ function! s:findedit(cmd,file,...) abort
     let file = ''
     while file == '' && filelist != ''
       let maybe = matchstr(filelist,'^.\{-\}\ze\n')
-      let filelist = s:sub(filelist,'^.\{-\}\n','')
+      let filelist = s:sub(filelist,'^.{-}\n','')
       if s:hasfile(s:sub(maybe,'[@#].*',''))
         let file = maybe
       endif
@@ -2533,7 +2532,7 @@ function! s:AlternateFile()
   elseif t =~ '^helper\>'
     let controller = s:sub(s:sub(f,'/helpers/','/controllers/'),'_helper\.rb$','_controller.rb')
     let controller = s:sub(controller,'application_controller','application')
-    let spec = s:sub(s:sub(f,'\<app/','spec/'),'\.rb$','_spec.rb')
+    let spec = s:sub(s:sub(f,'<app/','spec/'),'\.rb$','_spec.rb')
     if s:hasfile(spec)
       return spec
     else
@@ -2549,7 +2548,7 @@ function! s:AlternateFile()
   elseif fnamemodify(f,":e") == "rb"
     let file = fnamemodify(f,":r")
     if file =~ '_\%(test\|spec\)$'
-      let file = s:sub(file,'_\%(test\|spec\)$','.rb')
+      let file = s:sub(file,'_%(test|spec)$','.rb')
     else
       let file = file.'_test.rb'
     endif
@@ -2557,21 +2556,21 @@ function! s:AlternateFile()
       return s:sub(file,'app/models/','test/unit/')."\n".s:sub(s:sub(file,'_test\.rb$','_spec.rb'),'app/models/','spec/models/')
     elseif t =~ '^controller\>'
       "return s:sub(file,'app/controllers/','test/functional/')
-      return s:sub(file,'app/controllers/','test/functional/')."\n".s:sub(s:sub(file,'_test\.rb$','_spec.rb'),'app/controllers/','spec/controllers/')
+      return s:sub(file,'<app/controllers/','test/functional/')."\n".s:sub(s:sub(file,'_test\.rb$','_spec.rb'),'app/controllers/','spec/controllers/')
     elseif t =~ '^test-unit\>'
-      return s:sub(file,'\%(test/unit/\|spec/models\)','app/models/')
+      return s:sub(file,'%(test/unit/|spec/models)','app/models/')
     elseif t =~ '^test-functional\>'
       if file =~ '_api\.rb'
-        return s:sub(file,'test/functional/\|spec/controllers/','app/apis/')
+        return s:sub(file,'test/functional/|spec/controllers/','app/apis/')
       elseif file =~ '_controller\.rb'
-        return s:sub(file,'test/functional/\|spec/controllers/','app/controllers/')
+        return s:sub(file,'test/functional/|spec/controllers/','app/controllers/')
       else
-        return s:sub(file,'test/functional/\|spec/controllers/','')
+        return s:sub(file,'test/functional/|spec/controllers/','')
       endif
     elseif file =~ '\<vendor/.*/lib/'
-      return s:sub(file,'\<vendor/.\{-\}/\zslib/','test/')
+      return s:sub(file,'<vendor/.{-}/\zslib/','test/')
     elseif file =~ '\<vendor/.*/test/'
-      return s:sub(file,'\<vendor/.\{-\}/\zstest/','lib/')
+      return s:sub(file,'<vendor/.{-}/\zstest/','lib/')
     else
       return fnamemodify(file,":t")
     endif
@@ -2597,7 +2596,7 @@ function! s:RelatedFile()
   if s:getopt("related","l") != ""
     return s:getopt("related","l")
   elseif t =~ '^\%(controller\|model-mailer\)\>' && lastmethod != ""
-    let root = s:sub(s:sub(s:sub(f,'/application\.rb$','/shared_controller.rb'),'/\%(controllers\|models\)/','/views/'),'\%(_controller\)\=\.rb$','/'.lastmethod)
+    let root = s:sub(s:sub(s:sub(f,'/application\.rb$','/shared_controller.rb'),'/%(controllers|models)/','/views/'),'%(_controller)=\.rb$','/'.lastmethod)
     let format = s:format('html')
     if glob(RailsRoot().'/'.root.'.'.format.'.*[^~]') != ''
       return root . '.' . format
@@ -2624,7 +2623,7 @@ function! s:RelatedFile()
     let migr = s:migrationfor(num)
     return migr == '' ? "db/schema.rb" : migr
   elseif t =~ '^test\>' && f =~ '\<test/\w\+/'
-    let target = s:sub(f,'.*\<test/\w\+/','test/mocks/test/')
+    let target = s:sub(f,'.*<test/\w+/','test/mocks/test/')
     let target = s:sub(target,'_test\.rb$','.rb')
     return target
   elseif f =~ '\<application\.js$'
@@ -2632,15 +2631,15 @@ function! s:RelatedFile()
   elseif t =~ '^js\>'
     return "public/javascripts/application.js"
   elseif t =~ '^view-layout\>'
-    return s:sub(s:sub(s:sub(f,'/views/','/controllers/'),'/layouts/\(\k\+\)\..*$','/\1_controller.rb'),'application_controller\.rb$','application.rb')
+    return s:sub(s:sub(s:sub(f,'/views/','/controllers/'),'/layouts/(\k+)\..*$','/\1_controller.rb'),'<application_controller\.rb$','application.rb')
   "elseif t=~ '^view-partial\>'
     "call s:warn("No related file is defined")
   elseif t =~ '^view\>'
-    let controller = s:sub(s:sub(f,'/views/','/controllers/'),'/\(\k\+\%(\.\k\+\)\=\)\..*$','_controller.rb#\1')
-    let model      = s:sub(s:sub(f,'/views/','/models/'),'/\(\k\+\)\..*$','.rb#\1')
-    if filereadable(s:sub(controller,'#.\{-\}$',''))
+    let controller = s:sub(s:sub(f,'/views/','/controllers/'),'/(\k+%(\.\k+)=)\..*$','_controller.rb#\1')
+    let model      = s:sub(s:sub(f,'/views/','/models/'),'/(\k+)\..*$','.rb#\1')
+    if filereadable(s:sub(controller,'#.{-}$',''))
       return controller
-    elseif filereadable(s:sub(model,'#.\{-\}$','')) || model =~ '_mailer\.rb#'
+    elseif filereadable(s:sub(model,'#.{-}$','')) || model =~ '_mailer\.rb#'
       return model
     else
       return controller
@@ -2648,9 +2647,9 @@ function! s:RelatedFile()
   elseif t =~ '^controller-api\>'
     return s:sub(s:sub(f,'/controllers/','/apis/'),'_controller\.rb$','_api.rb')
   elseif t =~ '^controller\>'
-    return s:sub(s:sub(f,'/controllers/','/helpers/'),'\%(_controller\)\=\.rb$','_helper.rb')
+    return s:sub(s:sub(f,'/controllers/','/helpers/'),'%(_controller)=\.rb$','_helper.rb')
   elseif t=~ '^helper\>'
-      return s:sub(s:sub(f,'/helpers/','/views/layouts/'),'\%(_helper\)\=\.rb$','')
+      return s:sub(s:sub(f,'/helpers/','/views/layouts/'),'%(_helper)=\.rb$','')
   elseif t =~ '^model-arb\>'
     "call s:migrationEdit(0,cmd,'create_'.s:pluralize(expand('%:t:r')))
     return s:migrationfor('create_'.s:pluralize(expand('%:t:r')))
@@ -2688,7 +2687,7 @@ function! s:Extract(bang,...) range abort
         let file = "shared/" .file
       endif
     else
-      let curdir = s:sub(RailsFilePath(),'.*\<app/views/layouts/\(.*\)\%(\.\w*\)$','app/views/\1')
+      let curdir = s:sub(RailsFilePath(),'.*<app/views/layouts/(.*)%(\.\w*)$','app/views/\1')
     endif
   else
     let curdir = fnamemodify(RailsFilePath(),':h')
@@ -2740,13 +2739,13 @@ function! s:Extract(bang,...) range abort
   if getline(last+1) =~ '^\s*'.erub1.'end'.erub2.'\s*$'
     let fspaces = matchstr(getline(last+1),"^ *")
     if getline(first-1) =~ '^'.fspaces.erub1.'for\s\+\(\k\+\)\s\+in\s\+\([^ %>]\+\)'.erub2.'\s*$'
-      let collection = s:sub(getline(first-1),'^'.fspaces.erub1.'for\s\+\(\k\+\)\s\+in\s\+\([^ >]\+\)'.erub2.'\s*$','\1>\2')
+      let collection = s:sub(getline(first-1),'^'.fspaces.erub1.'for\s+(\k+)\s+in\s+([^ >]+)'.erub2.'\s*$','\1>\2')
     elseif getline(first-1) =~ '^'.fspaces.erub1.'\([^ %>]\+\)\.each\s\+do\s\+|\s*\(\k\+\)\s*|'.erub2.'\s*$'
-      let collection = s:sub(getline(first-1),'^'.fspaces.erub1.'\([^ %>]\+\)\.each\s\+do\s\+|\s*\(\k\+\)\s*|'.erub2.'\s*$','\2>\1')
+      let collection = s:sub(getline(first-1),'^'.fspaces.erub1.'([^ %>]+)\.each\s+do\s+\|\s*(\k+)\s*\|'.erub2.'\s*$','\2>\1')
     endif
     if collection != ''
       let var = matchstr(collection,'^\k\+')
-      let collection = s:sub(collection,'^\k\+>','')
+      let collection = s:sub(collection,'^\k+\>','')
       let first = first - 1
       let last = last + 1
     endif
@@ -2797,9 +2796,9 @@ function! s:Extract(bang,...) range abort
   0delete
   let @@ = buf
   if spaces != ""
-    silent! exe '%sub/^'.spaces.'//'
+    silent! exe '%substitute/^'.spaces.'//'
   endif
-  silent! exe '%sub?\%(\w\|[@:"'."'".'-]\)\@<!'.var.'\>?'.name.'?g'
+  silent! exe '%substitute?\%(\w\|[@:"'."'".'-]\)\@<!'.var.'\>?'.name.'?g'
   1
   call s:Detect(out)
   if exists("l:partial_warn")
@@ -2819,7 +2818,7 @@ function! s:mextargs(str,num)
   if a:str =~ '^\s*\w\+\s*('
     return s:sub(matchstr(a:str,'^\s*\w\+\s*\zs(\%([^,)]\+[,)]\)\{,'.a:num.'\}'),',$',')')
   else
-    return s:sub(s:sub(matchstr(a:str,'\w\+\>\zs\s*\%([^,){ ]*[, ]*\)\{,'.a:num.'\}'),'[, ]*$',''),'^\s\+',' ')
+    return s:sub(s:sub(matchstr(a:str,'\w\+\>\zs\s*\%([^,){ ]*[, ]*\)\{,'.a:num.'\}'),'[, ]*$',''),'^\s+',' ')
   endif
 endfunction
 
@@ -2838,31 +2837,30 @@ function! s:invertrange(beg,end)
     elseif line =~ '^\s*\(#[^{].*\)\=$'
       let add = line
     elseif line =~ '\<create_table\>'
-      "let add = s:sub(line,'\<create_table\>\s*(\=\s*\([^,){ ]*\).*','drop_table \1').s:mkeep(line)
       let add = s:spc(line)."drop_table".s:mextargs(line,1).s:mkeep(line)
       let lnum = s:endof(lnum)
     elseif line =~ '\<drop_table\>'
-      let add = s:sub(line,'\<drop_table\>\s*(\=\s*\([^,){ ]*\).*','create_table \1 do |t|'."\n".matchstr(line,'^\s*').'end').s:mkeep(line)
+      let add = s:sub(line,'<drop_table>\s*\(=\s*([^,){ ]*).*','create_table \1 do |t|'."\n".matchstr(line,'^\s*').'end').s:mkeep(line)
     elseif line =~ '\<add_column\>'
       let add = s:spc(line).'remove_column'.s:mextargs(line,2).s:mkeep(line)
     elseif line =~ '\<remove_column\>'
-      let add = s:sub(line,'\<remove_column\>','add_column')
+      let add = s:sub(line,'<remove_column>','add_column')
     elseif line =~ '\<add_index\>'
       let add = s:spc(line).'remove_index'.s:mextargs(line,1)
       let mat = matchstr(line,':name\s*=>\s*\zs[^ ,)]*')
       if mat != ''
-        let add = s:sub(add,')\=$',', :name => '.mat.'&')
+        let add = s:sub(add,'\)=$',', :name => '.mat.'&')
       else
         let mat = matchstr(line,'\<add_index\>[^,]*,\s*\zs\%(\[[^]]*\]\|[:"'."'".']\w*["'."'".']\=\)')
         if mat != ''
-          let add = s:sub(add,')\=$',', :column => '.mat.'&')
+          let add = s:sub(add,'\)=$',', :column => '.mat.'&')
         endif
       endif
       let add = add.s:mkeep(line)
     elseif line =~ '\<remove_index\>'
-      let add = s:sub(s:sub(line,'\<remove_index','add_index'),':column\s*=>\s*','')
+      let add = s:sub(s:sub(line,'<remove_index','add_index'),':column\s*=>\s*','')
     elseif line =~ '\<rename_\%(table\|column\)\>'
-      let add = s:sub(line,'\<rename_\%(table\s*(\=\s*\|column\s*(\=\s*[^,]*,\s*\)\zs\([^,]*\)\(,\s*\)\([^,]*\)','\3\2\1')
+      let add = s:sub(line,'<rename_%(table\s*\(=\s*|column\s*\(=\s*[^,]*,\s*)\zs([^,]*)(,\s*)([^,]*)','\3\2\1')
     elseif line =~ '\<change_column\>'
       let add = s:spc(line).'change_column'.s:mextargs(line,2).s:mkeep(line)
     elseif line =~ '\<change_column_default\>'
@@ -2872,7 +2870,7 @@ function! s:invertrange(beg,end)
       let pre = matchstr(line,'^.*\.update_all[( ][}'."'".']')
       let post = matchstr(line,'["'."'".'])\=$')
       let mat = strpart(line,strlen(pre),strlen(line)-strlen(pre)-strlen(post))
-      let mat = s:gsub(','.mat.',',',\s*\([^,=]\{-\}\)\(\s*=\s*\)\([^,=]\{-\}\)\s*,','\3\2\1')
+      let mat = s:gsub(','.mat.',',',\s*([^,=]{-})(\s*=\s*)([^,=]{-})\s*,','\3\2\1')
       let add = pre.s:sub(s:sub(mat,'^,',''),',$','').post
     elseif line =~ '^s\*\%(if\|unless\|while\|until\|for\)\>'
       let lnum = s:endof(lnum)
@@ -2888,7 +2886,7 @@ function! s:invertrange(beg,end)
     let str = add."\n".str
     let lnum = lnum + 1
   endwhile
-  let str = s:gsub(str,'\(\s*raise ActiveRecord::IrreversableMigration\n\)\+','\1')
+  let str = s:gsub(str,'(\s*raise ActiveRecord::IrreversableMigration\n)+','\1')
   return str
 endfunction
 
@@ -3048,7 +3046,7 @@ function! s:BufSyntax()
     " From the Prototype bundle for TextMate
     let s:prototype_classes = "Prototype Class Abstract Try PeriodicalExecuter Enumerable Hash ObjectRange Element Ajax Responders Base Request Updater PeriodicalUpdater Toggle Insertion Before Top Bottom After ClassNames Form Serializers TimedObserver Observer EventObserver Event Position Effect Effect2 Transitions ScopedQueue Queues DefaultOptions Parallel Opacity Move MoveBy Scale Highlight ScrollTo Fade Appear Puff BlindUp BlindDown SwitchOff DropOut Shake SlideDown SlideUp Squish Grow Shrink Pulsate Fold"
 
-    let rails_helper_methods = '+\.\@<!\<\('.s:gsub(s:helpermethods(),'\s\+','\\|').'\)\>+'
+    let rails_helper_methods = '+\.\@<!\<\('.s:gsub(s:helpermethods(),'\s+','\\|').'\)\>+'
     let classes = s:gsub(RailsUserClasses(),'::',' ')
     if &syntax == 'ruby'
       if classes != ''
@@ -3088,7 +3086,7 @@ function! s:BufSyntax()
       endif
       if t =~ '^helper\>' || t=~ '^view\>'
         "exe "syn match rubyRailsHelperMethod ".rails_helper_methods
-        exe "syn keyword rubyRailsHelperMethod ".s:sub(s:helpermethods(),'\<select\s\+','')
+        exe "syn keyword rubyRailsHelperMethod ".s:sub(s:helpermethods(),'<select\s+','')
         syn match rubyRailsHelperMethod '\<select\>\%(\s*{\|\s*do\>\|\s*(\=\s*&\)\@!'
         syn match rubyRailsViewMethod '\.\@<!\<\(h\|html_escape\|u\|url_encode\|controller\)\>'
         if t =~ '\<partial\>'
@@ -3174,7 +3172,7 @@ function! s:BufSyntax()
       endif
       syn match rubyRailsError '[@:]\@<!@\%(params\|request\|response\|session\|headers\|cookies\|flash\)\>' contained containedin=@erubyRailsRegions,@rubyTop
       "exe "syn match erubyRailsHelperMethod ".rails_helper_methods." contained containedin=@erubyRailsRegions"
-      exe "syn keyword erubyRailsHelperMethod ".s:sub(s:helpermethods(),'\<select\s\+','')." contained containedin=@erubyRailsRegions"
+      exe "syn keyword erubyRailsHelperMethod ".s:sub(s:helpermethods(),'<select\s+','')." contained containedin=@erubyRailsRegions"
       syn match erubyRailsHelperMethod '\<select\>\%(\s*{\|\s*do\>\|\s*(\=\s*&\)\@!' contained containedin=@erubyRailsRegions
       syn keyword erubyRailsMethod breakpoint debugger logger contained containedin=@erubyRailsRegions
       syn keyword erubyRailsMethod params request response session headers cookies flash contained containedin=@erubyRailsRegions
@@ -3458,7 +3456,7 @@ endfunction
 
 function! s:CreateMenus() abort
   if exists("g:rails_installed_menu") && g:rails_installed_menu != ""
-    exe "aunmenu ".s:gsub(g:rails_installed_menu,'&','')
+    exe "aunmenu ".s:gsub(g:rails_installed_menu,'\&','')
     unlet g:rails_installed_menu
   endif
   if has("menu") && (exists("g:did_install_default_menus") || exists("$CREAM")) && g:rails_menu
@@ -3497,13 +3495,13 @@ function! s:CreateMenus() abort
     let tasks = s:raketasks()
     while tasks != ''
       let task = matchstr(tasks,'.\{-\}\ze\%(\n\|$\)')
-      let tasks = s:sub(tasks,'.\{-\}\%(\n\|$\)','')
+      let tasks = s:sub(tasks,'.{-}%(\n|$)','')
       exe menucmd.g:rails_installed_menu.'.Rake\ &tasks\	:Rake.'.s:sub(s:sub(task,'^[^:]*$','&:all'),':','.').' :Rake '.task.'<CR>'
     endwhile
     let tasks = s:generators()
     while tasks != ''
       let task = matchstr(tasks,'.\{-\}\ze\%(\n\|$\)')
-      let tasks = s:sub(tasks,'.\{-\}\%(\n\|$\)','')
+      let tasks = s:sub(tasks,'.{-}%(\n|$)','')
       exe menucmd.'<silent> '.g:rails_installed_menu.'.&Generate\	:Rgen.'.s:gsub(task,'_','\\ ').' :call <SID>menuprompt("Rgenerate '.task.'","Arguments for script/generate '.task.': ")<CR>'
       exe menucmd.'<silent> '.g:rails_installed_menu.'.&Destroy\	:Rdestroy.'.s:gsub(task,'_','\\ ').' :call <SID>menuprompt("Rdestroy '.task.'","Arguments for script/destroy '.task.': ")<CR>'
     endwhile
@@ -3535,14 +3533,14 @@ function! s:ProjectMenu()
       let g:RAILS_HISTORY = ""
     endif
     let history = g:RAILS_HISTORY
-    let menu = s:gsub(g:rails_installed_menu,'&','')
+    let menu = s:gsub(g:rails_installed_menu,'\&','')
     silent! exe "aunmenu <script> ".menu.".Projects"
     let dots = s:gsub(menu,'[^.]','')
     exe 'anoremenu <script> <silent> '.(exists("$CREAM") ? '87' : '').dots.'.100 '.menu.'.Pro&jects.&New\.\.\.\	:Rails :call <SID>menuprompt("Rails","New application path and additional arguments: ")<CR>'
     exe 'anoremenu <script> '.menu.'.Pro&jects.-FSep- :'
     while history =~ '\n'
       let proj = matchstr(history,'^.\{-\}\ze\n')
-      let history = s:sub(history,'^.\{-\}\n','')
+      let history = s:sub(history,'^.{-}\n','')
       exe 'anoremenu <script> '.menu.'.Pro&jects.'.s:gsub(proj,'[\\ ]','\\&').' :e '.s:escarg(proj."/".g:rails_default_file)."<CR>"
     endwhile
   endif
@@ -3550,7 +3548,7 @@ endfunction
 
 function! s:menuBufEnter()
   if exists("g:rails_installed_menu") && g:rails_installed_menu != ""
-    let menu = s:gsub(g:rails_installed_menu,'&','')
+    let menu = s:gsub(g:rails_installed_menu,'\&','')
     exe 'amenu enable '.menu.'.*'
     if RailsFileType() !~ '^view\>'
       exe 'vmenu disable '.menu.'.Extract\ as\ partial'
@@ -3564,7 +3562,7 @@ endfunction
 
 function! s:menuBufLeave()
   if exists("g:rails_installed_menu") && g:rails_installed_menu != ""
-    let menu = s:gsub(g:rails_installed_menu,'&','')
+    let menu = s:gsub(g:rails_installed_menu,'\&','')
     exe 'amenu disable '.menu.'.*'
     exe 'amenu enable  '.menu.'.Help\	'
     exe 'amenu enable  '.menu.'.About\	'
@@ -3609,7 +3607,7 @@ function! s:Project(bang,arg)
   let rr = RailsRoot()
   exe "Project ".a:arg
   let line = search('^[^ =]*="'.s:gsub(rr,'[\/]','[\\/]').'"')
-  let projname = s:gsub(fnamemodify(rr,':t'),'=','-') " .'_on_rails'
+  let projname = s:gsub(fnamemodify(rr,':t'),'\=','-') " .'_on_rails'
   if line && a:bang
     let projname = matchstr(getline('.'),'^[^=]*')
     " Most of this would be unnecessary if the project.vim author had just put
@@ -3682,7 +3680,7 @@ function! s:NewProjectTemplate(proj,rr,fancy)
     let views = s:relglob(a:rr.'/app/views/','*')."\n"
     while views != ''
       let dir = matchstr(views,'^.\{-\}\ze\n')
-      let views = s:sub(views,'^.\{-\}\n','')
+      let views = s:sub(views,'^.{-}\n','')
       let str = str."   ".dir."=".dir.' filter="**" {'."\n   }\n"
     endwhile
     let str = str."  }\n"
@@ -3836,10 +3834,9 @@ function! s:RailsSelectiveExpand(pat,good,default,...)
     let nd = ""
   endif
   let c = nr2char(getchar(0))
-  "let good = s:gsub(a:good,'\\<Esc>',"\<Esc>")
   let good = a:good
   if c == "" " ^]
-    return s:sub(good.(a:0 ? " ".a:1 : ''),'\s\+$','')
+    return s:sub(good.(a:0 ? " ".a:1 : ''),'\s+$','')
   elseif c == "\t"
     return good.(a:0 ? " ".a:1 : '')
   elseif c =~ a:pat
@@ -3880,8 +3877,8 @@ function! s:string(str)
 endfunction
 
 function! s:AddSelectiveExpand(abbr,pat,expn,...)
-  let expn  = s:gsub(s:gsub(a:expn        ,'[\"|]','\\&'),'<','\\<Lt>')
-  let expn2 = s:gsub(s:gsub(a:0 ? a:1 : '','[\"|]','\\&'),'<','\\<Lt>')
+  let expn  = s:gsub(s:gsub(a:expn        ,'[\"|]','\\&'),'\<','\\<Lt>')
+  let expn2 = s:gsub(s:gsub(a:0 ? a:1 : '','[\"|]','\\&'),'\<','\\<Lt>')
   if a:0
     exe "inoreabbrev <buffer> <silent> ".a:abbr." <C-R>=<SID>RailsSelectiveExpand(".s:string(a:pat).",\"".expn."\",".s:string(a:abbr).",\"".expn2."\")<CR>"
   else
@@ -4046,7 +4043,7 @@ function! s:Abbrev(bang,...) abort
   silent! call s:unabbrev(lhs)
   if lhs =~ '($'
     let b:rails_abbreviations = b:rails_abbreviations . lhs . "\t" . rhs . "" . (a:0 > 2 ? "\t".a:3 : ""). "\n"
-    let llhs = s:sub(lhs,'($','')
+    let llhs = s:sub(lhs,'\($','')
     if a:0 > 2
       call s:AddParenExpand(llhs,rhs,a:3)
     else
@@ -4058,7 +4055,7 @@ function! s:Abbrev(bang,...) abort
     return s:error("Rabbrev: invalid arguments")
   endif
   if lhs =~ ':$'
-    let llhs = s:sub(lhs,':\=:$','')
+    let llhs = s:sub(lhs,':=:$','')
     call s:AddColonExpand(llhs,rhs)
   elseif lhs =~ '\[$'
     let llhs = s:sub(lhs,'\[$','')
@@ -4072,8 +4069,8 @@ function! s:Abbrev(bang,...) abort
 endfunction
 
 function! s:unabbrev(abbr)
-  let abbr = s:sub(a:abbr,'\%(::\|(\|\[\)$','')
-  let pat  = s:sub(abbr,'\','\\')
+  let abbr = s:sub(a:abbr,'%(::|\(|\[)$','')
+  let pat  = s:sub(abbr,'\\','\\\\')
   if !exists("b:rails_abbreviations")
     let b:rails_abbreviations = "\n"
   endif
@@ -4104,7 +4101,7 @@ function! s:Set(bang,...)
       endif
     else
       let opt = matchstr(arg,'[^=]*')
-      let val = s:sub(arg,'^[^=]*=','')
+      let val = s:sub(arg,'^[^=]*\=','')
       if defscope != '' && opt !~ '^\w:'
         let opt = defscope.':'.opt
       endif
@@ -4129,7 +4126,7 @@ function! s:getopt(opt,...)
   if scope =~ 'l'
     call s:LocalModelines()
   endif
-  let opt = s:sub(opt,'\<\%(rake\|rake_task\|rake_target\)$','task')
+  let opt = s:sub(opt,'<%(rake|rake_task|rake_target)$','task')
   " Get buffer option
   if scope =~ 'l' && exists("b:_".s:sname()."_".s:escvar(s:lastmethod())."_".opt)
     return b:_{s:sname()}_{s:escvar(s:lastmethod())}_{opt}
@@ -4152,7 +4149,7 @@ function! s:setopt(opt,val)
     let scope = ''
     let opt = a:opt
   endif
-  let opt = s:sub(opt,'\<\%(rake\|rake_task\|rake_target\)$','task')
+  let opt = s:sub(opt,'<%(rake|rake_task|rake_target)$','task')
   let defscope = matchstr(s:opts(),'\n\zs\w\ze:'.opt,'\n')
   if defscope == ''
     let defscope = 'a'
@@ -4206,8 +4203,8 @@ function! s:BufModelines()
   let mat    = matchstr(lines,'\C\<Rset'.pat)
   let matend = matchend(lines,'\C\<Rset'.pat)
   while mat != "" && cnt < 10
-    let mat = s:sub(mat,'\s\+$','')
-    let mat = s:gsub(mat,'|','\\|')
+    let mat = s:sub(mat,'\s+$','')
+    let mat = s:gsub(mat,'\|','\\|')
     if mat != ''
       silent! exe "Rset <B> ".mat
     endif
@@ -4237,8 +4234,8 @@ function! s:LocalModelines()
   let mat    = matchstr(lines,'\C\<rset'.pat)
   let matend = matchend(lines,'\C\<rset'.pat)
   while mat != "" && cnt < 10
-    let mat = s:sub(mat,'\s\+$','')
-    let mat = s:gsub(mat,'|','\\|')
+    let mat = s:sub(mat,'\s+$','')
+    let mat = s:gsub(mat,'\|','\\|')
     if mat != ''
       silent! exe "Rset <l> ".mat
     endif
@@ -4443,7 +4440,7 @@ function! s:BufInit(path)
       let g:RAILS_HISTORY = s:scrub(g:RAILS_HISTORY,s:gsub(path,'\\','/'))
     endif
     let g:RAILS_HISTORY = path."\n".g:RAILS_HISTORY
-    let g:RAILS_HISTORY = s:sub(g:RAILS_HISTORY,'\%(.\{-\}\n\)\{,'.g:rails_history_size.'\}\zs.*','')
+    let g:RAILS_HISTORY = s:sub(g:RAILS_HISTORY,'%(.{-}\n){,'.g:rails_history_size.'}\zs.*','')
   endif
   if g:rails_level > 0
     call s:callback("config/syntax.vim")
@@ -4625,7 +4622,7 @@ endfunction
 
 let s:file = expand('<sfile>:p')
 let s:revision = ' $LastChangedRevision$ '
-let s:revision = s:sub(s:sub(s:revision,'^ [$]LastChangedRevision:\=\s*',''),'\s*\$ $','')
+let s:revision = s:sub(s:sub(s:revision,'^ [$]LastChangedRevision:=\s*',''),'\s*\$ $','')
 call s:InitPlugin()
 
 let &cpo = s:cpo_save
