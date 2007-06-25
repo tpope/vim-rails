@@ -3718,7 +3718,7 @@ function! s:NewProjectTemplate(proj,rr,fancy)
   if isdirectory(a:rr.'/test/unit')
     let str = str . "  unit=unit filter=\"**\" {\n  }\n"
   endif
-  let str = " }\n}\n"
+  let str = str . " }\n}\n"
   "if exists("*RailsProcessProject")
     "let str = call RailsProcessProject(a:rr,str)
   "endif
