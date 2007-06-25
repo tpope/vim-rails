@@ -3688,7 +3688,6 @@ function! s:NewProjectTemplate(proj,rr,fancy)
     let str = str."  views=views filter=\"**\" {\n  }\n"
   endif
   let str = str . " }\n"
-  "let str = str . " components=components filter=\"**\" {\n }\n"
   let str = str . " config=config {\n  environments=environments {\n  }\n }\n"
   let str = str . " db=db {\n"
   if isdirectory(a:rr.'/db/migrate')
@@ -3698,13 +3697,28 @@ function! s:NewProjectTemplate(proj,rr,fancy)
   let str = str . " lib=lib filter=\"* */**/*.rb \" {\n  tasks=tasks filter=\"**/*.rake\" {\n  }\n }\n"
   let str = str . " public=public {\n  images=images {\n  }\n  javascripts=javascripts {\n  }\n  stylesheets=stylesheets {\n  }\n }\n"
   if isdirectory(a:rr.'/spec')
-    let str = str . " spec=spec {\n  controllers=controllers filter=\"**\" {\n  }\n  fixtures=fixtures filter=\"**\" {\n  }\n  helpers=helpers filter=\"**\" {\n  }\n  models=models filter=\"**\" {\n  }\n  views=views filter=\"**\" {\n  }\n }\n"
+    let str = str . " spec=spec {\n"
+    let str = str . "  controllers=controllers filter=\"**\" {\n  }\n"
+    let str = str . "  fixtures=fixtures filter=\"**\" {\n  }\n"
+    let str = str . "  helpers=helpers filter=\"**\" {\n  }\n"
+    let str = str . "  models=models filter=\"**\" {\n  }\n"
+    let str = str . "  views=views filter=\"**\" {\n  }\n }\n"
   endif
-  let str = str . " test=test {\n  fixtures=fixtures filter=\"**\" {\n  }\n  functional=functional filter=\"**\" {\n  }\n"
+  let str = str . " test=test {\n"
+  if isdirectory(a:rr.'/test/fixtures')
+    let str = str . "  fixtures=fixtures filter=\"**\" {\n  }\n"
+  endif
+  if isdirectory(a:rr.'/test/functional')
+    let str = str . "  functional=functional filter=\"**\" {\n  }\n"
+  endif
   if isdirectory(a:rr.'/test/integration')
     let str = str . "  integration=integration filter=\"**\" {\n  }\n"
   endif
-  let str = str . "  mocks=mocks filter=\"**\" {\n  }\n  unit=unit filter=\"**\" {\n  }\n }\n}\n"
+  let str = str . "  mocks=mocks filter=\"**\" {\n  }\n"
+  if isdirectory(a:rr.'/test/unit')
+    let str = str . "  unit=unit filter=\"**\" {\n  }\n"
+  endif
+  let str = " }\n}\n"
   "if exists("*RailsProcessProject")
     "let str = call RailsProcessProject(a:rr,str)
   "endif
