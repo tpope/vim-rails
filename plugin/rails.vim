@@ -4372,7 +4372,7 @@ function! s:InitPlugin()
 endfunction
 
 function! s:Detect(filename)
-  let fn = fnamemodify(a:filename,":p")
+  let fn = s:sub(fnamemodify(a:filename,":p"),'^file://','')
   if fn =~ '[\/]config[\/]environment\.rb$'
     return s:BufInit(strpart(fn,0,strlen(fn)-22))
   endif
