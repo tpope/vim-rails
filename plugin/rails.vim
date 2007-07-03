@@ -630,6 +630,7 @@ function! s:BufEnter()
     call s:Detect(expand("%:p"))
     unlet! b:rails_refresh
   elseif !exists("b:rails_root") && isdirectory(expand('%;p'))
+    " FIXME: This doesn't catch all directories
     call s:Detect(expand('%:p'))
   endif
   if exists("b:rails_root")
@@ -647,67 +648,6 @@ endfunction
 
 function! s:BufLeave()
   call s:menuBufLeave()
-endfunction
-
-" }}}1
-" Tab Hacks {{{1
-
-" Depends: nothing!
-
-augroup railsPluginTabstop
-  autocmd!
-  autocmd BufWritePost,BufReadPost * call s:breaktabs()
-  autocmd BufWritePre              * call s:fixtabs()
-augroup END
-
-function! s:tabstop()
-  if !exists("b:rails_root")
-    return 0
-  elseif &filetype !~ '^\%(ruby\|eruby\|html\|css\|yaml\|javascript\)$'
-    return 0
-  elseif exists("b:rails_tabstop")
-    return b:rails_tabstop
-  elseif exists("g:rails_tabstop")
-    return g:rails_tabstop
-  endif
-endfunction
-
-function! s:breaktabs()
-  let ts = s:tabstop()
-  if ts
-    if exists("s:retab_in_process")
-      unlet s:retab_in_process
-      let line = line('.')
-      lockmarks silent! undo
-      lockmarks exe line
-    else
-      let &l:tabstop = 2
-      setlocal noexpandtab
-      let mod = &l:modifiable
-      setlocal modifiable
-      let line = line('.')
-      " FIXME: when I say g/^\s/, only apply to those lines
-      lockmarks g/^\s/retab!
-      lockmarks exe line
-      let &l:modifiable = mod
-    endif
-    let &l:tabstop = ts
-    let &l:softtabstop = ts
-    let &l:shiftwidth = ts
-  endif
-endfunction
-
-function! s:fixtabs()
-  let ts = s:tabstop()
-  if ts && ! &l:expandtab && !exists("s:retab_in_process")
-    let s:retab_in_process = 1
-    let &l:tabstop = 2
-    setlocal expandtab
-    let line = line('.')
-    lockmarks retab
-    lockmarks exe line
-    let &l:tabstop = ts
-  endif
 endfunction
 
 " }}}1
@@ -4069,6 +4009,61 @@ function! s:unabbrev(abbr)
 endfunction
 
 " }}}1
+" Tab Hacks {{{1
+
+" Depends: nothing!
+
+function! s:tabstop()
+  if !exists("b:rails_root")
+    return 0
+  elseif &filetype !~ '^\%(ruby\|eruby\|html\|css\|yaml\|javascript\)$'
+    return 0
+  elseif exists("b:rails_tabstop")
+    return b:rails_tabstop
+  elseif exists("g:rails_tabstop")
+    return g:rails_tabstop
+  endif
+endfunction
+
+function! s:breaktabs()
+  let ts = s:tabstop()
+  if ts
+    if exists("s:retab_in_process")
+      unlet s:retab_in_process
+      let line = line('.')
+      lockmarks silent! undo
+      lockmarks exe line
+    else
+      let &l:tabstop = 2
+      setlocal noexpandtab
+      let mod = &l:modifiable
+      setlocal modifiable
+      let line = line('.')
+      " FIXME: when I say g/^\s/, only apply to those lines
+      lockmarks g/^\s/retab!
+      lockmarks exe line
+      let &l:modifiable = mod
+    endif
+    let &l:tabstop = ts
+    let &l:softtabstop = ts
+    let &l:shiftwidth = ts
+  endif
+endfunction
+
+function! s:fixtabs()
+  let ts = s:tabstop()
+  if ts && ! &l:expandtab && !exists("s:retab_in_process")
+    let s:retab_in_process = 1
+    let &l:tabstop = 2
+    setlocal expandtab
+    let line = line('.')
+    lockmarks retab
+    lockmarks exe line
+    let &l:tabstop = ts
+  endif
+endfunction
+
+" }}}1
 " Settings {{{1
 
 " Depends: s:error, s:sub, s:sname, s:escvar, s:lastmethod, s:environment, s:gsub, s:lastmethodlib, s:gsub
@@ -4524,11 +4519,17 @@ function! s:InitPlugin()
       autocmd BufWritePost */config/routes.rb call s:cacheclear("named_routes")
       autocmd FileType railslog call s:RailslogSyntax()
       autocmd FileType * if exists("b:rails_root") | call s:BufSettings() | endif
-      autocmd FileType netrw call s:Detect(expand("<afile>:p"))
+      autocmd FileType netrw call s:Detect(expand("<afile>:p")) | call s:BufEnter()
       autocmd Syntax ruby,eruby,yaml,haml,javascript,railslog if exists("b:rails_root") | call s:BufSyntax() | endif
       silent! autocmd QuickFixCmdPre  make* call s:QuickFixCmdPre()
       silent! autocmd QuickFixCmdPost make* call s:QuickFixCmdPost()
     augroup END
+    augroup railsPluginTabstop
+      autocmd!
+      autocmd BufWritePost,BufReadPost * call s:breaktabs()
+      autocmd BufWritePre              * call s:fixtabs()
+    augroup END
+
   endif
   let s:view_types = 'rhtml,erb,rxml,builder,rjs,mab,liquid,haml,dryml'
   " Current directory
