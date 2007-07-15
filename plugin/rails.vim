@@ -861,10 +861,10 @@ function! s:Rake(bang,arg)
     endif
   endif
   let withrubyargs = '-r ./config/boot -r '.s:rquote(RailsRoot().'/config/environment').' -e "puts \%((in \#{Dir.getwd}))" '
-  if arg == "stats"
+  if arg =~# '^\%(stats\|routes\|notes\|db:version\)\%(:\|$\)'
     " So you can see the output even with an inadequate redirect
     call s:QuickFixCmdPre()
-    exe "!".&makeprg." stats"
+    exe "!".&makeprg." ".arg
     call s:QuickFixCmdPost()
   elseif arg =~ '^preview\>'
     exe 'R'.s:gsub(arg,':','/')
@@ -917,7 +917,12 @@ function! s:Rake(bang,arg)
       call s:makewithruby('-e "puts \%((in \#{Dir.getwd}))" -r"%:p" -- '.call,0)
     endif
   elseif t=~ '^\%(db-\)\=migration\>' && RailsFilePath() !~# '\<db/schema\.rb$'
-    make db:migrate
+    let ver = matchstr(RailsFilePath(),'\<db/migrate/0*\zs\d*\ze_')
+    if ver != ""
+      exe "make db:migrate VERSION=".ver
+    else
+      make db:migrate
+    endif
   elseif t=~ '^model\>'
     make test:units TEST="%:p:r:s?[\/]app[\/]models[\/]?/test/unit/?_test.rb"
   elseif t=~ '^api\>'
@@ -1072,7 +1077,7 @@ function! s:Runner(count,args)
   if a:count == -2
     call s:Script(a:bang,"runner",a:args)
   else
-    let str = s:rubyexestrwithfork('-r./config/boot -rcommands/runner -e "" '.s:rquote(a:args))
+    let str = s:rubyexestrwithfork('-r./config/boot -e "require '."'commands/runner'".'" '.s:rquote(a:args))
     let res = s:sub(system(str),'\n$','')
     if a:count < 0
       echo res
@@ -1169,8 +1174,8 @@ function! s:Generate(bang,...)
     let str = str . " " . s:rquote(a:{c})
     let c = c + 1
   endwhile
-  if str !~ '-p\>'
-    let execstr = s:rubyexestr('-e "" -r./config/boot -rcommands/generate -- '.target." -p -f".str)
+  if str !~ '-p\>' && str !~ '--pretend\>'
+    let execstr = s:rubyexestr('-r./config/boot -e "require '."'commands/generate'".'" -- '.target." -p -f".str)
     let res = system(execstr)
     let file = matchstr(res,'\s\+\%(create\|force\)\s\+\zs\f\+\.rb\ze\n')
     if file == ""
@@ -2034,7 +2039,7 @@ endfunction
 function! s:migrationEdit(bang,cmd,...)
   let cmd = s:findcmdfor(a:cmd.(a:bang?'!':''))
   let arg = a:0 ? a:1 : ''
-  let migr = s:migrationfor(arg)
+  let migr = arg == "." ? "db/migrate" : s:migrationfor(arg)
   if migr != ''
     call s:findedit(cmd,migr)
   else
@@ -2790,10 +2795,10 @@ function! s:invertrange(beg,end)
       let add = s:migspc(line).'change_column_default'.s:mextargs(line,2).s:mkeep(line)
     elseif line =~ '\.update_all(\(["'."'".']\).*\1)$' || line =~ '\.update_all \(["'."'".']\).*\1$'
       " .update_all('a = b') => .update_all('b = a')
-      let pre = matchstr(line,'^.*\.update_all[( ][}'."'".']')
+      let pre = matchstr(line,'^.*\.update_all[( ][}'."'".'"]')
       let post = matchstr(line,'["'."'".'])\=$')
       let mat = strpart(line,strlen(pre),strlen(line)-strlen(pre)-strlen(post))
-      let mat = s:gsub(','.mat.',',',\s*([^,=]{-})(\s*=\s*)([^,=]{-})\s*,','\3\2\1')
+      let mat = s:gsub(','.mat.',','%(,\s*)@<=([^ ,=]{-})(\s*\=\s*)([^,=]{-})%(\s*,)@=','\3\2\1')
       let add = pre.s:sub(s:sub(mat,'^,',''),',$','').post
     elseif line =~ '^s\*\%(if\|unless\|while\|until\|for\)\>'
       let lnum = s:endof(lnum)
@@ -3022,7 +3027,7 @@ function! s:BufSyntax()
         endif
         "syn keyword rubyRailsDeprecatedMethod start_form_tag end_form_tag link_to_image human_size update_element_function
       elseif t =~ '^controller\>'
-        syn keyword rubyRailsControllerMethod helper helper_attr helper_method filter layout url_for serialize exempt_from_layout filter_parameter_logging hide_action
+        syn keyword rubyRailsControllerMethod helper helper_attr helper_method filter layout url_for serialize exempt_from_layout filter_parameter_logging hide_action cache_sweeper
         syn match rubyRailsDeprecatedMethod '\<render_\%(action\|text\|file\|template\|nothing\|without_layout\)\>'
         syn keyword rubyRailsRenderMethod render_to_string render_component_as_string redirect_to head
         syn match   rubyRailsRenderMethod '\<respond_to\>?\@!'
