@@ -967,6 +967,60 @@ function! s:initOpenURL()
   endif
 endfunction
 
+" This returns the URI with a trailing newline if it is found
+function! s:scanlineforuri(lnum)
+  let line = getline(a:lnum)
+  let url = matchstr(line,"\\v\\C%(%(GET|PUT|POST|DELETE)\\s+|\w+:/)/[^ \n\r\t<>\"]*[^] .,;\n\r\t<>\":]")
+  if url =~ '\C^\u\+\s\+'
+    let method = matchstr(url,'^\u\+')
+    let url = matchstr(url,'\s\+\zs.*')
+    if method !=? "GET"
+      if url =~ '?'
+        let url = url.'&'
+      else
+        let url = url.'?'
+      endif
+      let url = url.'_method='.tolower(method)
+    endif
+  endif
+  if url != ""
+    return s:sub(url,'^/','') . "\n"
+  else
+    return ""
+  endif
+endfunction
+
+function! s:defaultpreview()
+  let ret = ''
+  if s:getopt('preview','l') != ''
+    let uri = s:getopt('preview','l')
+  elseif s:controller() != '' && s:controller() != 'application' && RailsFilePath() !~ '^public/'
+    if RailsFileType() =~ '^controller\>'
+      let start = s:lastmethodline() - 1
+      if start + 1
+        while getline(start) =~ '^\s*\%(#.*\)\=$'
+          let ret = s:scanlineforuri(start).ret
+          let start = start - 1
+        endwhile
+        let ret = ret.s:controller().'/'.s:lastmethod().'/'
+      else
+        let ret = ret.s:controller().'/'
+      endif
+    elseif s:getopt('preview','b') != ''
+      let ret = s:getopt('preview','b')
+    elseif RailsFileType() =~ '^view\%(-partial\|-layout\)\@!'
+      let ret = ret.expand('%:t:r').'/'
+    endif
+  elseif s:getopt('preview','b') != ''
+    let uri = s:getopt('preview','b')
+  elseif RailsFilePath() =~ '^public/'
+    let ret = s:sub(RailsFilePath(),'^public/','')
+  elseif s:getopt('preview','ag') != ''
+    let ret = s:getopt('preview','ag')
+  endif
+  return ret
+endfunction
+
 function! s:Preview(bang,arg)
   let root = s:getopt("root_url")
   if root == ''
@@ -978,28 +1032,8 @@ function! s:Preview(bang,arg)
   elseif a:arg != ''
     let uri = root.'/'.s:sub(a:arg,'^/','')
   else
-    let uri = ''
-    if s:getopt('preview','l') != ''
-      let uri = s:getopt('preview','l')
-    elseif s:controller() != '' && s:controller() != 'application'
-      let uri = uri.s:controller().'/'
-      if RailsFileType() =~ '^controller\>' && s:lastmethod() != ''
-        let uri = uri.s:lastmethod().'/'
-      elseif s:getopt('preview','b') != ''
-        let uri = s:getopt('preview','b')
-      elseif RailsFileType() =~ '^view\%(-partial\|-layout\)\@!'
-        let uri = uri.expand('%:t:r').'/'
-      endif
-    elseif s:getopt('preview','b') != ''
-      let uri = s:getopt('preview','b')
-    elseif RailsFilePath() =~ '^public/'
-      let uri = s:sub(RailsFilePath(),'^public/','')
-    elseif s:getopt('preview','ag') != ''
-      let uri = s:getopt('preview','ag')
-    endif
-    if uri !~ '://'
-      let uri = root.'/'.s:sub(s:sub(uri,'^/',''),'/$','')
-    endif
+    let uri = matchstr(s:defaultpreview(),'.\{-\}\%(\n\@=\|$\)')
+    let uri = root.'/'.s:sub(s:sub(uri,'^/',''),'/$','')
   endif
   call s:initOpenURL()
   if exists(':OpenURL') && !a:bang
@@ -1028,16 +1062,7 @@ function! s:Preview(bang,arg)
 endfunction
 
 function! s:PreviewComplete(A,L,P)
-  let ret = ''
-  if s:controller() != '' && s:controller() != 'application'
-    let ret = s:controller().'/'
-    if RailsFileType() =~ '^view\%(-partial\|-layout\)\@!'
-      let ret = ret.expand('%:t:r').'/'
-    elseif RailsFileType() =~ '^controller\>' && s:lastmethod() != ''
-      let ret = ret.s:lastmethod().'/'
-    endif
-  endif
-  return ret
+  return s:defaultpreview()
 endfunction
 
 " }}}1
@@ -2699,7 +2724,7 @@ function! s:Extract(bang,...) range abort
   let partial = @@
   let @@ = buf
   let ai = &ai
-  let &ai = ""
+  let &ai = 0
   silent exe "norm! :".first.",".last."change\<CR>".fspaces.renderstr."\<CR>.\<CR>"
   let &ai = ai
   if renderstr =~ '<%'
@@ -3099,9 +3124,9 @@ function! s:BufSyntax()
         exe "syn keyword erubyRailsUserClass ".classes." contained containedin=@erubyRailsRegions"
       endif
       if &syntax == "haml"
-        syn cluster erubyRailsRegions contains=hamlRubyCode,hamlRubyHash
+        syn cluster erubyRailsRegions contains=hamlRubyCode,hamlRubyHash,rubyInterpolation
       else
-        syn cluster erubyRailsRegions contains=erubyOneLiner,erubyBlock,erubyExpression
+        syn cluster erubyRailsRegions contains=erubyOneLiner,erubyBlock,erubyExpression,rubyInterpolation
       endif
       syn match rubyRailsError '[@:]\@<!@\%(params\|request\|response\|session\|headers\|cookies\|flash\)\>' contained containedin=@erubyRailsRegions,@rubyTop
       "exe "syn match erubyRailsHelperMethod ".rails_helper_methods." contained containedin=@erubyRailsRegions"
@@ -3128,15 +3153,14 @@ function! s:BufSyntax()
       let g:main_syntax = 'eruby'
       syn include @rubyTop syntax/ruby.vim
       unlet g:main_syntax
-      syn cluster erubyRegions contains=yamlRailsOneLiner,yamlRailsBlock,yamlRailsExpression,yamlRailsComment
-      syn cluster erubyRailsRegions contains=yamlRailsOneLiner,yamlRailsBlock,yamlRailsExpression
-      syn region  yamlRailsOneLiner   matchgroup=yamlRailsDelimiter start="^%%\@!" end="$"  contains=@rubyRailsTop	containedin=ALLBUT,@yamlRailsRegions keepend oneline
-      syn region  yamlRailsBlock      matchgroup=yamlRailsDelimiter start="<%%\@!" end="%>" contains=@rubyTop		containedin=ALLBUT,@yamlRailsRegions
-      syn region  yamlRailsExpression matchgroup=yamlRailsDelimiter start="<%="    end="%>" contains=@rubyTop		containedin=ALLBUT,@yamlRailsRegions
-      syn region  yamlRailsComment    matchgroup=yamlRailsDelimiter start="<%#"    end="%>" contains=rubyTodo,@Spell	containedin=ALLBUT,@yamlRailsRegions keepend
-      syn match yamlRailsMethod '\.\@<!\<\(h\|html_escape\|u\|url_encode\)\>' contained containedin=@erubyRailsRegions
+      syn cluster yamlRailsRegions contains=yamlRailsOneLiner,yamlRailsBlock,yamlRailsExpression
+      syn region  yamlRailsOneLiner   matchgroup=yamlRailsDelimiter start="^%%\@!" end="$"  contains=@rubyRailsTop	containedin=ALLBUT,@yamlRailsRegions,yamlRailsComment keepend oneline
+      syn region  yamlRailsBlock      matchgroup=yamlRailsDelimiter start="<%%\@!" end="%>" contains=@rubyTop		containedin=ALLBUT,@yamlRailsRegions,yamlRailsComment
+      syn region  yamlRailsExpression matchgroup=yamlRailsDelimiter start="<%="    end="%>" contains=@rubyTop		containedin=ALLBUT,@yamlRailsRegions,yamlRailsComment
+      syn region  yamlRailsComment    matchgroup=yamlRailsDelimiter start="<%#"    end="%>" contains=rubyTodo,@Spell	containedin=ALLBUT,@yamlRailsRegions,yamlRailsComment keepend
+      syn match yamlRailsMethod '\.\@<!\<\(h\|html_escape\|u\|url_encode\)\>' contained containedin=@yamlRailsRegions
       if classes != ''
-        exe "syn keyword yamlRailsUserClass ".classes." containedin=@yamlRailsRegions"
+        exe "syn keyword yamlRailsUserClass ".classes." contained containedin=@yamlRailsRegions"
       endif
       let b:current_syntax = "yaml"
     elseif &syntax == "html"
