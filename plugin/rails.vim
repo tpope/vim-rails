@@ -662,8 +662,15 @@ function! s:BufCommands()
   Rcommand! -buffer -bar -nargs=? -bang -complete=custom,s:environments    Rlog     :call s:Log(<bang>0,<q-args>)
   Rcommand! -buffer -bar -nargs=* -bang -complete=custom,s:SetComplete     Rset     :call s:Set(<bang>0,<f-args>)
   command! -buffer -bar -nargs=0 Rtags       :call s:Tags(<bang>0)
-  command! -buffer -bar -nargs=0 -bang Rdoc  :if <bang>0 | call s:prephelp() | help rails | else | call s:Doc(<bang>0) | endif
-  "command! -buffer -bar -nargs=0 -bang Refresh  :Rrefresh<bang>
+  " Embedding all this logic directly into the command makes the error
+  " messages more concise.
+  command! -buffer -bar -nargs=? -bang Rdoc  :
+        \ if <bang>0 || <q-args> =~ "^\\([:'-]\\|g:\\)" | call s:prephelp() |
+        \   if   <q-args> =~ '^-\=$' | help rails |
+        \   elseif <q-args> =~ '^g:' | help <args> |
+        \   elseif <q-args> =~ '^-'  | help rails<args> |
+        \   else | help rails-<args> | endif |
+        \ else | call s:Doc(<bang>0,<q-args>) | endif
   command! -buffer -bar -nargs=0 -bang Rrefresh :if <bang>0|unlet! g:loaded_rails|source `=s:file`|endif|call s:Refresh(<bang>0)
   if exists(":Project")
     command! -buffer -bar -nargs=? -bang  Rproject :call s:Project(<bang>0,<q-args>)
@@ -682,8 +689,15 @@ function! s:BufCommands()
   endif
 endfunction
 
-function! s:Doc(bang)
-  if isdirectory(RailsRoot()."/doc/api/classes")
+function! s:Doc(bang, string)
+  if a:string != ""
+    if exists("g:rails_search_url")
+      let query = substitute(a:string,'[^A-Za-z0-9_.~-]','\="%".printf("%02X",char2nr(submatch(0)))','g')
+      let url = printf(g:rails_search_url, query)
+    else
+      return s:error("specify a g:rails_search_url with %s for a query placeholder")
+    endif
+  elseif isdirectory(RailsRoot()."/doc/api/classes")
     let url = RailsRoot()."/doc/api/index.html"
   elseif s:getpidfor("0.0.0.0","8808") > 0
     let url = "http://localhost:8808"
