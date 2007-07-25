@@ -2888,6 +2888,7 @@ function! s:Invert(bang)
     let reg_keep = @"
     let @" = str
     exe beg."put"
+    exe 1+beg
     let @" = reg_keep
   endif
 endfunction
@@ -3923,7 +3924,7 @@ function! s:BufAbbreviations()
       Rabbrev re(  redirect_to
       Rabbrev rea( redirect_to :action\ =>\ 
       Rabbrev rec( redirect_to :controller\ =>\ 
-      Rabbrev rst  respond_to
+      Rabbrev rst( respond_to
     endif
     if t =~ '^model-arb\>' || t =~ '^model$'
       Rabbrev bt(    belongs_to
