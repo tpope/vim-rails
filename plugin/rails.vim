@@ -3828,15 +3828,6 @@ function! s:selectiveexpand(pat,good,default,...)
   endif
 endfunction
 
-function! s:DiscretionaryComma()
-  let c = nr2char(getchar(0))
-  if c =~ '[\r,;]'
-    return c
-  else
-    return ",".c
-  endif
-endfunction
-
 function! s:TheMagicC()
   let l = s:linepeak()
   if l =~ '\<find\s*\((\|:first,\|:all,\)' || l =~ '\<paginate\>'
@@ -3887,13 +3878,6 @@ function! s:BufAbbreviations()
     let t = RailsFileType()
     " Limit to the right filetypes.  But error on the liberal side
     if t =~ '^\(controller\|view\|helper\|test-functional\|test-integration\)\>'
-      iabbr <buffer> render_partial render :partial =>
-      iabbr <buffer> render_action render :action =>
-      iabbr <buffer> render_text render :text =>
-      iabbr <buffer> render_file render :file =>
-      iabbr <buffer> render_template render :template =>
-      iabbr <buffer> <silent> render_nothing render :nothing => true<C-R>=<SID>DiscretionaryComma()<CR>
-      iabbr <buffer> <silent> render_without_layout render :layout => false<C-R>=<SID>DiscretionaryComma()<CR>
       Rabbrev pa[ params
       Rabbrev rq[ request
       Rabbrev rs[ response
@@ -3913,8 +3897,6 @@ function! s:BufAbbreviations()
       Rabbrev rx( render :xml\ =>\ 
     endif
     if t =~ '^\%(view\|helper\)\>'
-      iabbr <buffer> human_size number_to_human_size
-      iabbr <buffer> start_form_tag form_tag
       Rabbrev dotiw distance_of_time_in_words
       Rabbrev taiw  time_ago_in_words
     endif
