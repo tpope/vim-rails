@@ -18,7 +18,9 @@ Author: Tim Pope <vimNOSPAM@tpope.info>		|rails-plugin-author|
 |rails-refactoring|		Refactoring Helpers
 |rails-partials|		    Partial Extraction
 |rails-migrations|		    Migration Inversion
-|rails-integration|		Plugin Integration
+|rails-integration|		Integration
+|rails-vim-integration|		    Integration with the Vim Universe
+|rails-rails-integration|	    Integration with the Rails Universe
 |rails-abbreviations|		Abbreviations
 |rails-syntax|			Syntax Highlighting
 |rails-options|			Managed Vim Options
@@ -631,7 +633,17 @@ Migration Inversion ~
 			calls to create_table, add_column, and the like.
 
 ==============================================================================
-PLUGIN INTEGRATION				*rails-integration*
+INTEGRATION					*rails-integration*
+
+Having one foot in Rails and one in Vim, rails.vim has two worlds with which
+to interact.
+
+Integration with the Vim Universe ~
+						*rails-vim-integration*
+
+A handful of Vim plugins are enhanced by rails.vim.  All plugins mentioned can
+be found at http://www.vim.org/.  Cream and GUI menus (for lack of a better
+place) are also covered in this section.
 
 					*rails-:Rproject* *rails-project*
 :Rproject [{file}]	This command is only provided when the |project|
@@ -708,6 +720,28 @@ retaining certain global variables.  If this interests you, add something like
 the following to your vimrc: >
 	set viminfo^=!
 <
+Integration with the Rails Universe ~
+						*rails-rails-integration*
+The general policy of rails.vim is to focus exclusively on the Ruby on Rails
+core.  Supporting plugins and other add-ons to Rails has the potential to
+rapidly get out of hand.  However, a few pragmatic exceptions have been made.
+
+						*rails-template-types*
+Commands like :Rview use a hardwired list of extensions (rhtml, rjs, etc.)
+when searching for files.  In order to facilitate working with non-standard
+template types, several popular extensions are featured in this list,
+including haml, liquid, and mab (markaby).  These extensions will disappear
+once a related configuration option is added to rails.vim.
+
+						*rails-rspec*
+Support for RSpec is currently experimental and incomplete, with only a
+handful of features being implemented.  :A knows about specs and will jump to
+them, but only if no test file is found.  The associated controller or model
+of a spec is detected, so all navigation commands should work as expected
+inside a spec file.  :Rfixtures will find spec fixtures, but the extension is
+mandatory and tab completion will not work.  Notably absent is :Rake support.
+(Is there a way to invoke rake such that it only runs a given spec?)
+
 ==============================================================================
 ABBREVIATIONS				*rails-abbreviations* *rails-snippets*
 

@@ -571,7 +571,7 @@ endfunction
 
 function! s:SetOptDefault(opt,val)
   if !exists("g:".a:opt)
-    exe "let g:".a:opt." = '".a:val."'"
+    let g:{a:opt} = a:val
   endif
 endfunction
 
@@ -4349,38 +4349,36 @@ function! s:BufInit(path)
     let g:RAILS_HISTORY = path."\n".g:RAILS_HISTORY
     let g:RAILS_HISTORY = s:sub(g:RAILS_HISTORY,'%(.{-}\n){,'.g:rails_history_size.'}\zs.*','')
   endif
-  if g:rails_level > 0
-    call s:callback("config/syntax.vim")
-    if &ft == "mason"
-      setlocal filetype=eruby
-    elseif &ft =~ '^\%(conf\|ruby\)\=$' && expand("%:e") =~ '^\%(rjs\|rxml\|builder\|rake\|mab\)$'
-      setlocal filetype=ruby
-    elseif &ft =~ '^\%(liquid\)\=$' && expand("%:e") == "liquid"
-      setlocal filetype=liquid
-    elseif &ft =~ '^\%(haml\)\=$' && expand("%:e") == "haml"
-      setlocal filetype=haml
-    elseif &ft =~ '^\%(dryml\)\=$' && expand("%:e") == "dryml"
-      setlocal filetype=dryml
-    elseif (&ft == "" || v:version < 700) && expand("%:e") =~ '^\%(rhtml\|erb\)$'
-      setlocal filetype=eruby
-    elseif (&ft == "" || v:version < 700) && expand("%:e") == 'yml'
-      setlocal filetype=yaml
-    elseif firsttime
-      " Activate custom syntax
-      let &syntax = &syntax
-    endif
-    if firsttime
-      call s:BufInitStatusline()
-    endif
-    if expand("%:e") == "log"
-      setlocal modifiable filetype=railslog
-      silent! %s/\%(\e\[[0-9;]*m\|\r$\)//g
-      setlocal readonly nomodifiable noswapfile autoread foldmethod=syntax
-      nnoremap <buffer> <silent> R :checktime<CR>
-      nnoremap <buffer> <silent> G :checktime<Bar>$<CR>
-      nnoremap <buffer> <silent> q :bwipe<CR>
-      $
-    endif
+  call s:callback("config/syntax.vim")
+  if &ft == "mason"
+    setlocal filetype=eruby
+  elseif &ft =~ '^\%(conf\|ruby\)\=$' && expand("%:e") =~ '^\%(rjs\|rxml\|builder\|rake\|mab\)$'
+    setlocal filetype=ruby
+  elseif &ft =~ '^\%(liquid\)\=$' && expand("%:e") == "liquid"
+    setlocal filetype=liquid
+  elseif &ft =~ '^\%(haml\)\=$' && expand("%:e") == "haml"
+    setlocal filetype=haml
+  elseif &ft =~ '^\%(dryml\)\=$' && expand("%:e") == "dryml"
+    setlocal filetype=dryml
+  elseif (&ft == "" || v:version < 700) && expand("%:e") =~ '^\%(rhtml\|erb\)$'
+    setlocal filetype=eruby
+  elseif (&ft == "" || v:version < 700) && expand("%:e") == 'yml'
+    setlocal filetype=yaml
+  elseif firsttime
+    " Activate custom syntax
+    let &syntax = &syntax
+  endif
+  if firsttime
+    call s:BufInitStatusline()
+  endif
+  if expand("%:e") == "log"
+    setlocal modifiable filetype=railslog
+    silent! %s/\%(\e\[[0-9;]*m\|\r$\)//g
+    setlocal readonly nomodifiable noswapfile autoread foldmethod=syntax
+    nnoremap <buffer> <silent> R :checktime<CR>
+    nnoremap <buffer> <silent> G :checktime<Bar>$<CR>
+    nnoremap <buffer> <silent> q :bwipe<CR>
+    $
   endif
   call s:BufSettings()
   call s:BufCommands()
@@ -4531,7 +4529,8 @@ endfunction
 function! s:InitPlugin()
   call s:InitConfig()
   "call s:InitStatusline()
-  if has("autocmd") && g:rails_level >= 0
+  if has("autocmd")
+
     augroup railsPluginDetect
       autocmd!
       autocmd BufNewFile,BufRead * call s:Detect(expand("<afile>:p"))
