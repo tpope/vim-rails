@@ -739,9 +739,20 @@ handful of features being implemented.  :A knows about specs and will jump to
 them, but only if no test file is found.  The associated controller or model
 of a spec is detected, so all navigation commands should work as expected
 inside a spec file.  :Rfixtures will find spec fixtures, but the extension is
-mandatory and tab completion will not work.  Notably absent is :Rake support.
-(Is there a way to invoke rake such that it only runs a given spec?)
+mandatory and tab completion will not work.  :Rake will run the currently
+edited spec.
 
+While there are currently no built-in dedicated RSpec navigation commands, you
+can approximate your own with |:Rcommand|.
+>
+	Rcommand specmodel      spec/models      -glob=**/*
+		\ -suffix=_spec.rb               -default=model()
+	Rcommand spechelper     spec/helpers     -glob=**/* 
+		\ -suffix=_helper_spec.rb        -default=controller()
+	Rcommand speccontroller spec/controllers -glob=**/* 
+		\ -suffix=_controller_spec.rb    -default=controller()
+	Rcommand specview spec/views -glob=**/* -suffix=_view_spec.rb
+<
 ==============================================================================
 ABBREVIATIONS				*rails-abbreviations* *rails-snippets*
 

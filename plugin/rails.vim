@@ -496,8 +496,10 @@ function! RailsFileType()
     endif
   elseif f =~ '_api\.rb'
     let r = "api"
-  elseif f =~ '\<test/test_helper\.rb$' || f =~ '\<spec/spec_helper\.rb$'
+  elseif f =~ '\<test/test_helper\.rb$'
     let r = "test"
+  elseif f =~ '\<spec/spec_helper\.rb$'
+    let r = "spec"
   elseif f =~ '_helper\.rb$'
     let r = "helper"
   elseif f =~ '\<app/models\>'
@@ -522,12 +524,14 @@ function! RailsFileType()
     let r = "view-partial-" . e
   elseif f =~ '\<app/views\>.*\.' || f =~ '\<components/.*/.*\.'.s:viewspattern().'$'
     let r = "view-" . e
-  elseif f =~ '\<test/unit/.*_test\.rb$' || f =~ '\<spec/models/.*_spec\.rb$'
+  elseif f =~ '\<test/unit/.*_test\.rb$'
     let r = "test-unit"
-  elseif f =~ '\<test/functional/.*_test\.rb$' || f =~ '\<spec/controllers/.*_spec\.rb$'
+  elseif f =~ '\<test/functional/.*_test\.rb$'
     let r = "test-functional"
   elseif f =~ '\<test/integration/.*_test\.rb$'
     let r = "test-integration"
+  elseif f =~ '\<spec/\w*s/.*_spec\.rb$'
+    let r = s:sub(f,'.*<spec/(\w*)s/.*','spec-\1')
   elseif f =~ '\<\%(test\|spec\)/fixtures\>'
     if e == "yml"
       let r = "fixtures-yaml"
@@ -536,6 +540,8 @@ function! RailsFileType()
     endif
   elseif f =~ '\<test/.*_test\.rb'
     let r = "test"
+  elseif f =~ '\<spec/.*_spec\.rb'
+    let r = "spec"
   elseif f =~ '\<db/migrate\>' || f=~ '\<db/schema\.rb$'
     let r = "migration"
   elseif f =~ '\<lib/tasks\>' || f =~ '\.rake$' || f=~ '\<Rakefile$' || f =~ '\<config/deploy\.rb$'
@@ -893,18 +899,18 @@ function! s:Rake(bang,arg)
       let extra = ''
     endif
     if s:hasfile(file) || s:hasfile(file.'.rb')
-      call s:makewithruby(withrubyargs.'-r"'.file.'"'.extra,file !~# '_test\%(\.rb\)\=$')
+      call s:makewithruby(withrubyargs.'-r"'.file.'"'.extra,file !~# '_\%(spec\|test\)\%(\.rb\)\=$')
     else
       call s:makewithruby(withrubyargs.'-e '.s:esccmd(s:rquote(arg)))
     endif
   elseif arg == 'run' || arg == 'runner'
-    call s:makewithruby(withrubyargs.'-r"'.RailsFilePath().'"',RailsFilePath() !~# '_test\%(\.rb\)\=$')
+    call s:makewithruby(withrubyargs.'-r"'.RailsFilePath().'"',RailsFilePath() !~# '_\%(spec\|test\)\%(\.rb\)\=$')
   elseif arg =~ '^run:'
     let arg = s:sub(arg,'^run:','')
     let arg = s:sub(arg,'^%:h',expand('%:h'))
     let arg = s:sub(arg,'^%(\%|$|[@#]@=)',expand('%'))
     let arg = s:sub(arg,'[@#](\w+)$',' -- -n\1')
-    call s:makewithruby(withrubyargs.'-r'.arg,arg !~# '_test\.rb$')
+    call s:makewithruby(withrubyargs.'-r'.arg,arg !~# '_\%(spec\|test\)\.rb$')
   elseif arg != ''
     exe 'make '.arg
   elseif t =~ '^task\>'
@@ -915,6 +921,12 @@ function! s:Rake(bang,arg)
       exe 'make '.s:lastmethod()
     else
       make
+    endif
+  elseif t =~ '^spec\>'
+    if RailsFilePath() =~# '\<test/test_helper\.rb$'
+      make spec SPEC_OPTS=
+    else
+      make spec SPEC="%:p" SPEC_OPTS=
     endif
   elseif t =~ '^test\>'
     let meth = s:lastmethod()
@@ -1519,7 +1531,9 @@ function! s:RailsFind()
   let res = s:singularize(s:findasymbol('through','app/models/\1'))
   if res != ""|return res.".rb"|endif
   let res = s:findamethod('fixtures','fixtures/\1')
-  if res != ""|return res|endif
+  if res != ""
+    return RailsFilePath() =~ '\<spec/' ? 'spec/'.res : res
+  endif
   let res = s:findamethod('map\.resources','app/controllers/\1_controller.rb')
   if res != ""|return res|endif
   let res = s:findamethod('layout','app/views/layouts/\1')
@@ -1878,7 +1892,7 @@ function! s:observerList(A,L,P)
 endfunction
 
 function! s:fixturesList(A,L,P)
-  return s:relglob("test/fixtures/",s:recurse)
+  return s:compact(s:relglob("test/fixtures/",s:recurse)."\n".s:relglob("spec/fixtures/",s:recurse))
 endfunction
 
 function! s:migrationList(A,L,P)
@@ -1913,7 +1927,7 @@ endfunction
 function! s:taskList(A,L,P)
   let top = s:relglob("lib/tasks/",s:recurse,".rake")
   if RailsFilePath() =~ '\<vendor/plugins/.'
-    let path = s:sub(RailsFilePath(),'\<vendor/plugins/[^/]*/\zs.*','tasks/')
+    let path = s:sub(RailsFilePath(),'<vendor/plugins/[^/]*/\zs.*','tasks/')
     return s:relglob(path,s:recurse,".rake") . "\n" . top
   else
     return top
@@ -1923,7 +1937,7 @@ endfunction
 function! s:libList(A,L,P)
   let all = s:relglob('lib/',s:recurse,".rb")
   if RailsFilePath() =~ '\<vendor/plugins/.'
-    let path = s:sub(RailsFilePath(),'\<vendor/plugins/[^/]*/\zs.*','lib/')
+    let path = s:sub(RailsFilePath(),'<vendor/plugins/[^/]*/\zs.*','lib/')
     let all = s:relglob(path,s:recurse,".rb") . "\n" . all
   endif
   return s:autocamelize(all,a:A)
@@ -2501,6 +2515,9 @@ function! s:AlternateFile()
     else
       return controller
     endif
+  elseif t =~ '\<fixtures\>' && f =~ '\<spec/'
+    let file = s:singularize(expand("%:t:r")).'_spec.rb'
+    return file
   elseif t =~ '\<fixtures\>'
     let file = s:singularize(expand("%:t:r")).'_test.rb' " .expand('%:e')
     return file
@@ -2508,6 +2525,8 @@ function! s:AlternateFile()
     call s:warn("No filename present")
   elseif f =~ '\<test/unit/routing_test\.rb$'
     return 'config/routes.rb'
+  elseif t=~ '^spec-view\>'
+    return s:sub(s:sub(f,'<spec/','app/'),'_view_spec\.rb$','')
   elseif fnamemodify(f,":e") == "rb"
     let file = fnamemodify(f,":r")
     if file =~ '_\%(test\|spec\)$'
@@ -2521,15 +2540,17 @@ function! s:AlternateFile()
       "return s:sub(file,'app/controllers/','test/functional/')
       return s:sub(file,'<app/controllers/','test/functional/')."\n".s:sub(s:sub(file,'_test\.rb$','_spec.rb'),'app/controllers/','spec/controllers/')
     elseif t =~ '^test-unit\>'
-      return s:sub(file,'%(test/unit/|spec/models)','app/models/')
+      return s:sub(file,'test/unit/','app/models/')
     elseif t =~ '^test-functional\>'
       if file =~ '_api\.rb'
-        return s:sub(file,'test/functional/|spec/controllers/','app/apis/')
+        return s:sub(file,'test/functional/','app/apis/')
       elseif file =~ '_controller\.rb'
-        return s:sub(file,'test/functional/|spec/controllers/','app/controllers/')
+        return s:sub(file,'test/functional/','app/controllers/')
       else
-        return s:sub(file,'test/functional/|spec/controllers/','')
+        return s:sub(file,'test/functional/','')
       endif
+    elseif t =~ '^spec\>'
+      return s:sub(file,'<spec/','app/')
     elseif file =~ '\<vendor/.*/lib/'
       return s:sub(file,'<vendor/.{-}/\zslib/','test/')
     elseif file =~ '\<vendor/.*/test/'
@@ -3086,8 +3107,15 @@ function! s:BufSyntax()
         endif
         syn keyword rubyRailsTestMethod add_assertion assert assert_block assert_equal assert_in_delta assert_instance_of assert_kind_of assert_match assert_nil assert_no_match assert_not_equal assert_not_nil assert_not_same assert_nothing_raised assert_nothing_thrown assert_operator assert_raise assert_respond_to assert_same assert_send assert_throws assert_recognizes assert_generates assert_routing flunk fixtures fixture_path use_transactional_fixtures use_instantiated_fixtures assert_difference assert_no_difference
         if t !~ '^test-unit\>'
-          syn match   rubyRailsTestControllerMethod  '\.\@<!\<\%(get\|post\|put\|delete\|head\|process\)\>'
+          syn match   rubyRailsTestControllerMethod  '\.\@<!\<\%(get\|post\|put\|delete\|head\|process\|assigns\)\>'
           syn keyword rubyRailsTestControllerMethod assert_response assert_redirected_to assert_template assert_recognizes assert_generates assert_routing assert_dom_equal assert_dom_not_equal assert_valid assert_select assert_select_rjs assert_select_encoded assert_select_email
+        endif
+      elseif t=~ '^spec\>'
+        syn keyword rubyRailsTestMethod describe context it specify it_should_behave_like before after fixtures controller_name helper_name
+        syn keyword rubyRailsTestMethod violated pending
+        if t !~ '^spec-model\>'
+          syn match   rubyRailsTestControllerMethod  '\.\@<!\<\%(get\|post\|put\|delete\|head\|process\|assigns\)\>'
+          syn keyword rubyRailsMethod params request response session flash
         endif
       endif
       if t =~ '^task\>'
@@ -4563,6 +4591,7 @@ function! s:InitPlugin()
   let s:efm=s:efm
         \.'%A\ %\\+%\\d%\\+)\ Failure:,'
         \.'%A\ %\\+%\\d%\\+)\ Error:,'
+        \.'%+A'."'".'%.%#'."'".'\ FAILED,'
   " Exclusions
   let s:efm=s:efm
         \.'%C%.%#(eval)%.%#,'
@@ -4585,11 +4614,12 @@ function! s:InitPlugin()
   " Catch all
   let s:efm=s:efm
         \.'%Z%f:%l:\ %#%m,'
+        \.'%Z%f:%l:,'
         \.'%C%m,'
   " Syntax errors in the test itself
   let s:efm=s:efm
-        \.'%.%#/rake_test_loader.rb:%\\d%\\+:in\ `load'."'".':\ %f:%l:\ syntax\ error\\\, %m,'
-        \.'%.%#/rake_test_loader.rb:%\\d%\\+:in\ `load'."'".':\ %f:%l:\ %m,'
+        \.'%.%#.rb:%\\d%\\+:in\ `load'."'".':\ %f:%l:\ syntax\ error\\\, %m,'
+        \.'%.%#.rb:%\\d%\\+:in\ `load'."'".':\ %f:%l:\ %m,'
   " And required files
   let s:efm=s:efm
         \.'%.%#:in\ `require'."'".':in\ `require'."'".':\ %f:%l:\ syntax\ error\\\, %m,'
@@ -4602,6 +4632,7 @@ function! s:InitPlugin()
         \.'%-G%.%#%\\d%\\d:%\\d%\\d:%\\d%\\d%.%#,'
   " Final catch all for one line errors
   let s:efm=s:efm
+        \.'%-G%\\s%#from\ %.%#,'
         \.'%f:%l:\ %#%m,'
   " Drop everything else
   let s:efm=s:efm
