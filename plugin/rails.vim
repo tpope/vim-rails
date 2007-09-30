@@ -3526,7 +3526,7 @@ function! s:ProjectMenu()
     while history =~ '\n'
       let proj = matchstr(history,'^.\{-\}\ze\n')
       let history = s:sub(history,'^.{-}\n','')
-      exe 'anoremenu <script> '.menu.'.Pro&jects.'.s:gsub(proj,'[\\ ]','\\&').' :e '.s:gsub(proj."/".g:rails_default_file,'[ !%#]','\\&')."<CR>"
+      exe 'anoremenu <script> '.menu.'.Pro&jects.'.s:gsub(proj,'[.\\ ]','\\&').' :e '.s:gsub(proj."/".g:rails_default_file,'[ !%#]','\\&')."<CR>"
     endwhile
   endif
 endfunction

@@ -278,10 +278,6 @@ Example uses of |gf|, and where they might lead.
 	layout :pri*nt
 <	app/views/layouts/print.rhtml ~
 >
-	# In the Blog controller
-	def li*st
-<	app/views/blog/list.rhtml ~
->
 	<%= link_to "New", new_comme*nt_path %>
 <	app/controllers/comments_controller.rb (jumps to def new) ~
 
