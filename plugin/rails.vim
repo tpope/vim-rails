@@ -383,8 +383,8 @@ function! s:pluralize(word)
     return word
   endif
   let word = s:sub(word,'[aeio]@<!y$','ie')
-  let word = s:sub(word,'[sx]$','&e')
-  let word = s:sub(word,'f$','ve')
+  let word = s:sub(word,'\%([osxz]\|[cs]h\)$','&e')
+  let word = s:sub(word,'f\@<!f$','ve')
   let word = word."s"
   let word = s:sub(word,'ersons$','eople')
   return word
