@@ -544,7 +544,7 @@ function! RailsFileType()
     let r = "spec"
   elseif f =~ '\<db/migrate\>' || f=~ '\<db/schema\.rb$'
     let r = "migration"
-  elseif f =~ '\<lib/tasks\>' || f =~ '\.rake$' || f=~ '\<Rakefile$' || f =~ '\<config/deploy\.rb$'
+  elseif f =~ '\<vendor/plugins/.*/recipes/.*\.rb$' || f =~ '\.rake$' || f =~ '\<\%(Rake\|Cap\)file$' || f =~ '\<config/deploy\.rb$'
     let r = "task"
   elseif f =~ '\<log/.*\.log$'
     let r = "log"
@@ -3119,7 +3119,7 @@ function! s:BufSyntax()
         endif
       endif
       if t =~ '^task\>'
-        syn match rubyRailsRakeMethod '^\s*\zs\%(task\|file\|namespace\|desc\)\>\%(\s*=\)\@!'
+        syn match rubyRailsRakeMethod '^\s*\zs\%(task\|file\|namespace\|desc\|before\|after\|on\)\>\%(\s*=\)\@!'
       endif
       if t =~ '^model-awss\>'
         syn keyword rubyRailsMethod member
@@ -4381,6 +4381,8 @@ function! s:BufInit(path)
   if &ft == "mason"
     setlocal filetype=eruby
   elseif &ft =~ '^\%(conf\|ruby\)\=$' && expand("%:e") =~ '^\%(rjs\|rxml\|builder\|rake\|mab\)$'
+    setlocal filetype=ruby
+  elseif &ft =~ '^\%(conf\|ruby\)\=$' && expand("%:t") =~ '^\%(Rake\|Cap\)file$'
     setlocal filetype=ruby
   elseif &ft =~ '^\%(liquid\)\=$' && expand("%:e") == "liquid"
     setlocal filetype=liquid
