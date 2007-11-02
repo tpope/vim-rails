@@ -519,14 +519,11 @@ A limited amount of completion with <Tab> is supported.
 :Rscript {script} {options}
 			Call ruby script/{script} {options}.
 
-				*rails-:Rbreakpointer* *rails-:Rconsole*
-:Rbreakpointer {options}
-:Rconsole {options}	Start the appropriate script.  On Windows these are
-			launched in the background with |!start|.  In the
-			terminal version GNU Screen is used if it is running
-			and |g:rails_gnu_screen| is set.  :Rbreakpointer will
-			be removed once Rails 2.0 is released, paralleling the
-			change made there.
+						*rails-:Rconsole*
+:Rconsole {options}	Start script/console.  On Windows it will be launched
+			in the background with |!start|.  In the terminal
+			version GNU Screen is used if it is running and
+			|g:rails_gnu_screen| is set.
 
 						*rails-:Rrunner*
 :[range]Rrunner {code}	Executes {code} with script/runner.  Differs from
