@@ -383,8 +383,8 @@ function! s:pluralize(word)
     return word
   endif
   let word = s:sub(word,'[aeio]@<!y$','ie')
-  let word = s:sub(word,'\%([osxz]\|[cs]h\)$','&e')
-  let word = s:sub(word,'f\@<!f$','ve')
+  let word = s:sub(word,'%([osxz]|[cs]h)$','&e')
+  let word = s:sub(word,'f@<!f$','ve')
   let word = word."s"
   let word = s:sub(word,'ersons$','eople')
   return word
@@ -881,7 +881,7 @@ function! s:Rake(bang,arg)
     endif
   endif
   let withrubyargs = '-r ./config/boot -r '.s:rquote(RailsRoot().'/config/environment').' -e "puts \%((in \#{Dir.getwd}))" '
-  if arg =~# '^\%(stats\|routes\|notes\|db:version\)\%(:\|$\)'
+  if arg =~# '^\%(stats\|routes\|notes\|db:\%(charset\|collation\|version\)\)\%(:\|$\)'
     " So you can see the output even with an inadequate redirect
     call s:QuickFixCmdPre()
     exe "!".&makeprg." ".arg
@@ -968,7 +968,7 @@ function! s:Rake(bang,arg)
 endfunction
 
 function! s:raketasks()
-  return "db:fixtures:load\ndb:migrate\ndb:schema:dump\ndb:schema:load\ndb:sessions:clear\ndb:sessions:create\ndb:structure:dump\ndb:test:clone\ndb:test:clone_structure\ndb:test:prepare\ndb:test:purge\ndoc:app\ndoc:clobber_app\ndoc:clobber_plugins\ndoc:clobber_rails\ndoc:plugins\ndoc:rails\ndoc:reapp\ndoc:rerails\nlog:clear\nrails:freeze:edge\nrails:freeze:gems\nrails:unfreeze\nrails:update\nrails:update:configs\nrails:update:javascripts\nrails:update:scripts\nstats\ntest\ntest:functionals\ntest:integration\ntest:plugins\ntest:recent\ntest:uncommitted\ntest:units\ntmp:cache:clear\ntmp:clear\ntmp:create\ntmp:pids:clear\ntmp:sessions:clear\ntmp:sockets:clear"
+  return "db:charset\ndb:collation\ndb:create\ndb:create:all\ndb:drop\ndb:drop:all\ndb:fixtures:load\ndb:migrate\ndb:reset\ndb:rollback\ndb:schema:dump\ndb:schema:load\ndb:sessions:clear\ndb:sessions:create\ndb:structure:dump\ndb:test:clone\ndb:test:clone_structure\ndb:test:prepare\ndb:test:purge\ndb:version\ndoc:app\ndoc:clobber_app\ndoc:clobber_plugins\ndoc:clobber_rails\ndoc:plugins\ndoc:rails\ndoc:reapp\ndoc:rerails\nlog:clear\nnotes\nnotes:fixme\nnotes:optimize\nnotes:todo\nrails:freeze:edge\nrails:freeze:gems\nrails:unfreeze\nrails:update\nrails:update:configs\nrails:update:javascripts\nrails:update:scripts\nroutes\nstats\ntest\ntest:functionals\ntest:integration\ntest:plugins\ntest:recent\ntest:uncommitted\ntest:units\ntmp:cache:clear\ntmp:clear\ntmp:create\ntmp:pids:clear\ntmp:sessions:clear\ntmp:sockets:clear"
 endfunction
 
 function! s:RakeComplete(A,L,P)
@@ -1099,10 +1099,9 @@ endfunction
 function! s:BufScriptWrappers()
   Rcommand! -buffer -bar -nargs=+       -complete=custom,s:ScriptComplete   Rscript       :call s:Script(<bang>0,<f-args>)
   Rcommand! -buffer -bar -nargs=*       -complete=custom,s:ConsoleComplete  Rconsole      :call s:Console(<bang>0,'console',<f-args>)
-  Rcommand! -buffer -bar -nargs=*                                           Rbreakpointer :call s:Console(<bang>0,'breakpointer',<f-args>)
+  "Rcommand! -buffer -bar -nargs=*                                           Rbreakpointer :call s:Console(<bang>0,'breakpointer',<f-args>)
   Rcommand! -buffer -bar -nargs=*       -complete=custom,s:GenerateComplete Rgenerate     :call s:Generate(<bang>0,<f-args>)
   Rcommand! -buffer -bar -nargs=*       -complete=custom,s:DestroyComplete  Rdestroy      :call s:Destroy(<bang>0,<f-args>)
-  "Rcommand! -buffer -bar -nargs=*       -complete=custom,s:PluginComplete   Rplugin       :call s:Plugin(<bang>0,<f-args>)
   Rcommand! -buffer -bar -nargs=? -bang -complete=custom,s:ServerComplete   Rserver       :call s:Server(<bang>0,<q-args>)
   Rcommand! -buffer -bang -nargs=1 -range=0 -complete=custom,s:RubyComplete Rrunner       :call s:Runner(<bang>0 ? -2 : (<count>==<line2>?<count>:-1),<f-args>)
   Rcommand! -buffer       -nargs=1 -range=0 -complete=custom,s:RubyComplete Rp            :call s:Runner(<count>==<line2>?<count>:-1,'p begin '.<f-args>.' end')
@@ -1244,7 +1243,7 @@ function! s:Generate(bang,...)
 endfunction
 
 function! s:generators()
-  return "controller\nintegration_test\nmailer\nmigration\nmodel\nobserver\nplugin\nresource\nscaffold\nscaffold_resource\nsession_migration\nweb_service"
+  return "controller\nintegration_test\nmailer\nmigration\nmodel\nobserver\nplugin\nresource\nscaffold\nsession_migration"
 endfunction
 
 function! s:ScriptComplete(ArgLead,CmdLine,P)
@@ -1254,7 +1253,7 @@ function! s:ScriptComplete(ArgLead,CmdLine,P)
     " You're on your own, bud
     return ""
   elseif cmd =~ '^\w*$'
-    return "about\nbreakpointer\nconsole\ndestroy\ngenerate\nperformance/benchmarker\nperformance/profiler\nplugin\nproccess/reaper\nprocess/spawner\nrunner\nserver"
+    return "about\nconsole\ndestroy\ngenerate\nperformance/benchmarker\nperformance/profiler\nplugin\nproccess/reaper\nprocess/spawner\nrunner\nserver"
   elseif cmd =~ '^\%(plugin\)\s\+'.a:ArgLead.'$'
     return "discover\nlist\ninstall\nupdate\nremove\nsource\nunsource\nsources"
   elseif cmd =~ '\%(plugin\)\s\+\%(install\|remove\)\s\+'.a:ArgLead.'$' || cmd =~ '\%(generate\|destroy\)\s\+plugin\s\+'.a:ArgLead.'$'
@@ -1325,14 +1324,6 @@ endfunction
 
 function! s:DestroyComplete(A,L,P)
   return s:CustomComplete(a:A,a:L,a:P,"destroy")
-endfunction
-
-function! s:PluginComplete(A,L,P)
-  if a:L =~ '^R\%[plugin]\s*[^ ]*$'
-    return s:pluginList(a:A,a:L,a:P)
-  else
-    return s:CustomComplete(a:A,a:L,a:P,"plugin")
-  endif
 endfunction
 
 function! s:RubyComplete(A,L,R)
@@ -1420,7 +1411,7 @@ function! s:Find(bang,count,arg,...)
     let file = s:RailsFind()
     let tail = ""
   endif
-  if file =~ '^\%(app\|components\|config\|db\|public\|spec\|test\|vendor\)/.*\.' || !a:0 || 1
+  if file =~ '^\%(app\|config\|db\|public\|spec\|test\|vendor\)/.*\.' || !a:0 || 1
     call s:findedit((a:count==1?'' : a:count).cmd,file.tail,str)
   else
     " Old way
@@ -2227,11 +2218,11 @@ endfunction
 
 function! s:controllerEdit(bang,cmd,...)
   let controller = a:0 ? a:1 : s:controller(1)
-  return s:EditSimpleRb(a:bang,a:cmd,"controller",controller,"app/controllers/\ncomponents/",controller == "application" ? "" : "_controller")
+  return s:EditSimpleRb(a:bang,a:cmd,"controller",controller,"app/controllers/",controller == "application" ? "" : "_controller")
 endfunction
 
 function! s:helperEdit(bang,cmd,...)
-  return s:EditSimpleRb(a:bang,a:cmd,"helper",a:0? a:1 : s:controller(1),"app/helpers/\ncomponents/","_helper.rb")
+  return s:EditSimpleRb(a:bang,a:cmd,"helper",a:0? a:1 : s:controller(1),"app/helpers/","_helper.rb")
 endfunction
 
 function! s:apiEdit(bang,cmd,...)
@@ -3090,7 +3081,7 @@ function! s:BufSyntax()
       elseif t =~ '^controller\>'
         syn keyword rubyRailsControllerMethod helper helper_attr helper_method filter layout url_for serialize exempt_from_layout filter_parameter_logging hide_action cache_sweeper
         syn match rubyRailsDeprecatedMethod '\<render_\%(action\|text\|file\|template\|nothing\|without_layout\)\>'
-        syn keyword rubyRailsRenderMethod render_to_string render_component_as_string redirect_to head
+        syn keyword rubyRailsRenderMethod render_to_string redirect_to head
         syn match   rubyRailsRenderMethod '\<respond_to\>?\@!'
         syn keyword rubyRailsFilterMethod before_filter append_before_filter prepend_before_filter after_filter append_after_filter prepend_after_filter around_filter append_around_filter prepend_around_filter skip_before_filter skip_after_filter
         syn keyword rubyRailsFilterMethod verify
@@ -3127,7 +3118,7 @@ function! s:BufSyntax()
       if t =~ '^config-routes\>'
         syn match rubyRailsMethod '\.\zs\%(connect\|resources\=\|root\|named_route\)\>'
       endif
-      syn keyword rubyRailsMethod breakpoint debugger
+      syn keyword rubyRailsMethod debugger
       syn keyword rubyRailsMethod alias_attribute alias_method_chain attr_accessor_with_default attr_internal attr_internal_accessor attr_internal_reader attr_internal_writer delegate mattr_accessor mattr_reader mattr_writer
       syn keyword rubyRailsMethod cattr_accessor cattr_reader cattr_writer class_inheritable_accessor class_inheritable_array class_inheritable_array_writer class_inheritable_hash class_inheritable_hash_writer class_inheritable_option class_inheritable_reader class_inheritable_writer inheritable_attributes read_inheritable_attribute reset_inheritable_attributes write_inheritable_array write_inheritable_attribute write_inheritable_hash
       syn keyword rubyRailsInclude require_dependency gem
@@ -3175,7 +3166,7 @@ function! s:BufSyntax()
       "exe "syn match erubyRailsHelperMethod ".rails_helper_methods." contained containedin=@erubyRailsRegions"
       exe "syn keyword erubyRailsHelperMethod ".s:sub(s:helpermethods(),'<select\s+','')." contained containedin=@erubyRailsRegions"
       syn match erubyRailsHelperMethod '\<select\>\%(\s*{\|\s*do\>\|\s*(\=\s*&\)\@!' contained containedin=@erubyRailsRegions
-      syn keyword erubyRailsMethod breakpoint debugger logger contained containedin=@erubyRailsRegions
+      syn keyword erubyRailsMethod debugger logger contained containedin=@erubyRailsRegions
       syn keyword erubyRailsMethod params request response session headers cookies flash contained containedin=@erubyRailsRegions
       syn match erubyRailsViewMethod '\.\@<!\<\(h\|html_escape\|u\|url_encode\|controller\)\>' contained containedin=@erubyRailsRegions
       if t =~ '\<partial\>'
@@ -3495,7 +3486,6 @@ function! s:CreateMenus() abort
     exe menucmd.g:rails_installed_menu.'.&Server\	:Rserver.&Kill\	:Rserver!\ - :Rserver! -<CR>'
     exe menucmd.'<silent> '.g:rails_installed_menu.'.&Evaluate\ Ruby\.\.\.\	:Rp :call <SID>menuprompt("Rp","Code to execute and output: ")<CR>'
     exe menucmd.g:rails_installed_menu.'.&Console\	:Rconsole :Rconsole<CR>'
-    "exe menucmd.g:rails_installed_menu.'.&Breakpointer\	:Rbreak :Rbreakpointer<CR>'
     exe menucmd.g:rails_installed_menu.'.&Preview\	:Rpreview :Rpreview<CR>'
     exe menucmd.g:rails_installed_menu.'.&Log\ file\	:Rlog :Rlog<CR>'
     exe s:sub(menucmd,'anoremenu','vnoremenu').' <silent> '.g:rails_installed_menu.'.E&xtract\ as\ partial\	:Rextract :call <SID>menuprompt("'."'".'<,'."'".'>Rextract","Partial name (e.g., template or /controller/template): ")<CR>'
@@ -4314,7 +4304,7 @@ function! s:Detect(filename)
       return s:BufInit(fn)
     endif
     let ofn = fn
-    let fn = fnamemodify(ofn,':s?\(.*\)[\/]\(app\|components\|config\|db\|doc\|lib\|log\|public\|script\|spec\|test\|tmp\|vendor\)\($\|[\/].*$\)?\1?')
+    let fn = fnamemodify(ofn,':s?\(.*\)[\/]\(app\|config\|db\|doc\|lib\|log\|public\|script\|spec\|test\|tmp\|vendor\)\($\|[\/].*$\)?\1?')
   endwhile
   return 0
 endfunction
@@ -4449,13 +4439,9 @@ function! s:SetBasePath()
   if stridx(oldpath,rp) == 2
     let oldpath = ''
   endif
-  let &l:path = '.,'.rp.",".rp."/app/controllers,".rp."/app,".rp."/app/models,".rp."/app/helpers,".rp."/components,".rp."/config,".rp."/lib,".rp."/vendor,".rp."/vendor/plugins/*/lib,".rp."/test/unit,".rp."/test/functional,".rp."/test/integration,".rp."/app/apis,".rp."/app/services,".rp."/test,"."/vendor/plugins/*/test,".rp."/vendor/rails/*/lib,".rp."/vendor/rails/*/test,".rp."/spec,".rp."/spec/*,"
+  let &l:path = '.,'.rp.",".rp."/app/controllers,".rp."/app,".rp."/app/models,".rp."/app/helpers,".rp."/config,".rp."/lib,".rp."/vendor,".rp."/vendor/plugins/*/lib,".rp."/test/unit,".rp."/test/functional,".rp."/test/integration,".rp."/app/apis,".rp."/app/services,".rp."/test,"."/vendor/plugins/*/test,".rp."/vendor/rails/*/lib,".rp."/vendor/rails/*/test,".rp."/spec,".rp."/spec/*,"
   if s:controller() != ''
-    if RailsFilePath() =~ '\<components/'
-      let &l:path = &l:path . rp . '/components/' . s:controller() . ','
-    else
-      let &l:path = &l:path . rp . '/app/views/' . s:controller() . ',' . rp . '/app/views,' . rp . '/public,'
-    endif
+    let &l:path = &l:path . rp . '/app/views/' . s:controller() . ',' . rp . '/app/views,' . rp . '/public,'
   endif
   if t =~ '^log\>'
     let &l:path = &l:path . rp . '/app/views,'
