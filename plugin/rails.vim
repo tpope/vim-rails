@@ -1493,15 +1493,15 @@ function! s:findit(pat,repl)
 endfunction
 
 function! s:findamethod(func,repl)
-  return s:findit('\s*\<\%('.a:func.'\)\s*(\=\s*[:'."'".'"]\(\f\+\)\>.\=',a:repl)
+  return s:findit('\s*\<\%('.a:func.'\)\s*(\=\s*[@:'."'".'"]\(\f\+\)\>.\=',a:repl)
 endfunction
 
 function! s:findasymbol(sym,repl)
-  return s:findit('\s*:\%('.a:sym.'\)\s*=>\s*(\=\s*[:'."'".'"]\(\f\+\)\>.\=',a:repl)
+  return s:findit('\s*:\%('.a:sym.'\)\s*=>\s*(\=\s*[@:'."'".'"]\(\f\+\)\>.\=',a:repl)
 endfunction
 
 function! s:findfromview(func,repl)
-  return s:findit('\s*\%(<%\)\==\=\s*\<\%('.a:func.'\)\s*(\=\s*[:'."'".'"]\(\f\+\)\>['."'".'"]\=\s*\%(%>\s*\)\=',a:repl)
+  return s:findit('\s*\%(<%\)\==\=\s*\<\%('.a:func.'\)\s*(\=\s*[@:'."'".'"]\(\f\+\)\>['."'".'"]\=\s*\%(%>\s*\)\=',a:repl)
 endfunction
 
 function! s:RailsFind()
@@ -1641,17 +1641,12 @@ function! s:RailsIncludefind(str,...)
   if a:str =~ '\u'
     " Classes should always be in .rb files
     let str = str . '.rb'
-  elseif line =~ '\(:partial\|"partial"\|'."'partial'".'\)\s*=>\s*'
+  elseif line =~ ':partial\s*=>\s*'
     let str = s:sub(str,'([^/]+)$','_\1')
-    if str =~ '^\./'
-    elseif str =~ '/'
-      let str = 'app/views/' . s:sub(str,'^/','')
-    else
-      let str = 'app/views/' . s:controller() . str
-    endif
-  elseif line =~ '\<layout\s*(\=\s*' || line =~ '\(:layout\|"layout"\|'."'layout'".'\)\s*=>\s*'
-    let str = s:sub(str,'^/=','views/layouts/')
-  elseif line =~ '\(:controller\|"controller"\|'."'controller'".'\)\s*=>\s*'
+    let str = s:findview(str)
+  elseif line =~ '\<layout\s*(\=\s*' || line =~ ':layout\s*=>\s*'
+    let str = s:findview(s:sub(str,'^/=','layouts/'))
+  elseif line =~ ':controller\s*=>\s*'
     let str = 'app/controllers/'.str.'_controller.rb'
   elseif line =~ '\<helper\s*(\=\s*'
     let str = 'app/helpers/'.str.'_helper.rb'
@@ -4654,8 +4649,8 @@ endfunction
 " }}}1
 
 let s:file = expand('<sfile>:p')
-let s:revision = ' $LastChangedRevision$ '
-let s:revision = s:sub(s:sub(s:revision,'^ [$]LastChangedRevision:=\s*',''),'\s*\$ $','')
+let s:revision = ' $Id$ '
+let s:revision = s:sub(s:revision,'^ [$]Id:.{-}(<[0-9a-f]+>).*[$] $','\1')
 call s:InitPlugin()
 
 let &cpo = s:cpo_save
