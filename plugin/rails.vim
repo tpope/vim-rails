@@ -3153,7 +3153,7 @@ function! s:BufSyntax()
         exe "syn keyword erubyRailsUserClass ".classes." contained containedin=@erubyRailsRegions"
       endif
       if &syntax == "haml"
-        syn cluster erubyRailsRegions contains=hamlRubyCode,hamlRubyHash,rubyInterpolation
+        syn cluster erubyRailsRegions contains=hamlRubyCodeIncluded,hamlRubyCode,hamlRubyHash,rubyInterpolation
       else
         syn cluster erubyRailsRegions contains=erubyOneLiner,erubyBlock,erubyExpression,rubyInterpolation
       endif
@@ -4055,7 +4055,7 @@ endfunction
 function! s:tabstop()
   if !exists("b:rails_root")
     return 0
-  elseif &filetype !~ '^\%(ruby\|eruby\|html\|css\|yaml\|javascript\)$'
+  elseif &filetype !~ '^\%(ruby\|'.s:gsub(s:view_types,',','\\|').'\|html\|css\|sass\|yaml\|javascript\)$'
     return 0
   elseif exists("b:rails_tabstop")
     return b:rails_tabstop
@@ -4371,8 +4371,10 @@ function! s:BufInit(path)
     setlocal filetype=ruby
   elseif &ft =~ '^\%(liquid\)\=$' && expand("%:e") == "liquid"
     setlocal filetype=liquid
-  elseif &ft =~ '^\%(haml\)\=$' && expand("%:e") == "haml"
+  elseif &ft =~ '^\%(haml\|x\=html\)\=$' && expand("%:e") == "haml"
     setlocal filetype=haml
+  elseif &ft =~ '^\%(sass\|conf\)\=$' && expand("%:e") == "sass"
+    setlocal filetype=sass
   elseif &ft =~ '^\%(dryml\)\=$' && expand("%:e") == "dryml"
     setlocal filetype=dryml
   elseif (&ft == "" || v:version < 700) && expand("%:e") =~ '^\%(rhtml\|erb\)$'
@@ -4473,7 +4475,7 @@ function! s:BufSettings()
   endif
   setlocal includeexpr=RailsIncludeexpr()
   let &l:suffixesadd=".rb,.".s:gsub(s:view_types,',',',.').",.css,.js,.yml,.csv,.rake,.sql,.html,.xml"
-  if &ft =~ '^\%(e\=ruby\|[yh]aml\|javascript\|css\)$'
+  if &ft =~ '^\%(e\=ruby\|[yh]aml\|javascript\|css\|sass\)$'
     setlocal sw=2 sts=2 et
     "set include=\\<\\zsAct\\f*::Base\\ze\\>\\\|^\\s*\\(require\\\|load\\)\\s\\+['\"]\\zs\\f\\+\\ze
     if exists('+completefunc')
