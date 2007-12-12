@@ -520,7 +520,7 @@ function! RailsFileType()
     endif
   elseif f =~ '\<app/views/layouts\>.*\.'
     let r = "view-layout-" . e
-  elseif f =~ '\<\%(app/views\|components\)/.*/_\k\+\.\k\+$'
+  elseif f =~ '\<\%(app/views\|components\)/.*/_\k\+\.\k\+\%(\.\k\+\)\=$'
     let r = "view-partial-" . e
   elseif f =~ '\<app/views\>.*\.' || f =~ '\<components/.*/.*\.'.s:viewspattern().'$'
     let r = "view-" . e
@@ -2972,23 +2972,23 @@ endfunction
 
 function! s:helpermethods()
   let s:rails_helper_methods = ""
-        \."auto_complete_field auto_complete_result auto_discovery_link_tag auto_link "
+        \."atom_feed auto_discovery_link_tag auto_link "
         \."benchmark button_to button_to_function "
-        \."cache capture cdata_section check_box check_box_tag collection_select concat content_for content_tag country_options_for_select country_select cycle "
-        \."date_select datetime_select debug define_javascript_functions distance_of_time_in_words distance_of_time_in_words_to_now draggable_element draggable_element_js drop_receiving_element drop_receiving_element_js "
+        \."cache capture cdata_section check_box check_box_tag collection_select concat content_for content_tag content_tag_for country_options_for_select country_select cycle "
+        \."date_select datetime_select debug define_javascript_functions distance_of_time_in_words distance_of_time_in_words_to_now div_for dom_class dom_id draggable_element draggable_element_js drop_receiving_element drop_receiving_element_js "
         \."error_message_on error_messages_for escape_javascript escape_once evaluate_remote_response excerpt "
-        \."fields_for file_field file_field_tag form form_for form_remote_for form_remote_tag form_tag "
+        \."field_set_tag fields_for file_field file_field_tag form form_for form_remote_for form_remote_tag form_tag "
         \."hidden_field hidden_field_tag highlight "
-        \."image_path image_submit_tag image_tag in_place_editor in_place_editor_field input "
+        \."image_path image_submit_tag image_tag input "
         \."javascript_cdata_section javascript_include_tag javascript_path javascript_tag "
-        \."link_to link_to_function link_to_if link_to_remote link_to_unless link_to_unless_current "
+        \."label link_to link_to_function link_to_if link_to_remote link_to_unless link_to_unless_current "
         \."mail_to markdown "
         \."number_to_currency number_to_human_size number_to_percentage number_to_phone number_with_delimiter number_with_precision "
         \."observe_field observe_form option_groups_from_collection_for_select options_for_select options_from_collection_for_select "
-        \."pagination_links pagination_links_each password_field password_field_tag periodically_call_remote pluralize "
+        \."partial_path password_field password_field_tag path_to_image path_to_javascript path_to_stylesheet periodically_call_remote pluralize "
         \."radio_button radio_button_tag remote_form_for remote_function reset_cycle "
-        \."sanitize select select_date select_datetime select_day select_hour select_minute select_month select_second select_tag select_time select_year simple_format sortable_element sortable_element_js strip_links strip_tags stylesheet_link_tag stylesheet_path submit_tag submit_to_remote "
-        \."tag text_area text_area_tag text_field text_field_tag text_field_with_auto_complete textilize textilize_without_paragraph time_ago_in_words time_select time_zone_options_for_select time_zone_select truncate "
+        \."sanitize sanitize_css select select_date select_datetime select_day select_hour select_minute select_month select_second select_tag select_time select_year simple_format sortable_element sortable_element_js strip_links strip_tags stylesheet_link_tag stylesheet_path submit_tag submit_to_remote "
+        \."tag text_area text_area_tag text_field text_field_tag textilize textilize_without_paragraph time_ago_in_words time_select time_zone_options_for_select time_zone_select truncate "
         \."update_page update_page_tag url_for "
         \."visual_effect "
         \."word_wrap"
@@ -3006,10 +3006,10 @@ function! s:helpermethods()
         else
           ruby begin; require 'active_support'; require 'action_controller'; require 'action_view'; rescue LoadError; end
         end
-        ruby begin; h = ActionView::Helpers.constants.grep(/Helper$/).collect {|c|ActionView::Helpers.const_get c}.collect {|c| c.public_instance_methods(false)}.collect {|es| es.reject {|e| e =~ /_with(out)?_deprecation$/ || es.include?("#{e}_without_deprecation")}}.flatten.sort.uniq.reject {|m| m =~ /[=?]$/}; VIM::command('let s:rails_helper_methods = "%s"' % h.join(" ")); rescue Exception; end
+        ruby begin; h = ActionView::Helpers.constants.grep(/Helper$/).collect {|c|ActionView::Helpers.const_get c}.collect {|c| c.public_instance_methods(false)}.collect {|es| es.reject {|e| e =~ /_with(out)?_deprecation$/ || es.include?("#{e}_without_deprecation")}}.flatten.sort.uniq.reject {|m| m =~ /[=?!]$/}; VIM::command('let s:rails_helper_methods = "%s"' % h.join(" ")); rescue Exception; end
       endif
       if s:rails_helper_methods == ""
-        let s:rails_helper_methods = s:rubyeval('require %{action_controller}; require %{action_view}; h = ActionView::Helpers.constants.grep(/Helper$/).collect {|c|ActionView::Helpers.const_get c}.collect {|c| c.public_instance_methods(false)}.collect {|es| es.reject {|e| e =~ /_with(out)?_deprecation$/ || es.include?(%{#{e}_without_deprecation})}}.flatten.sort.uniq.reject {|m| m =~ /[=?]$/}; puts h.join(%{ })',"link_to")
+        let s:rails_helper_methods = s:rubyeval('require %{action_controller}; require %{action_view}; h = ActionView::Helpers.constants.grep(/Helper$/).collect {|c|ActionView::Helpers.const_get c}.collect {|c| c.public_instance_methods(false)}.collect {|es| es.reject {|e| e =~ /_with(out)?_deprecation$/ || es.include?(%{#{e}_without_deprecation})}}.flatten.sort.uniq.reject {|m| m =~ /[=?!]$/}; puts h.join(%{ })',"link_to")
       endif
     else
       let s:rails_helper_methods = "link_to"
