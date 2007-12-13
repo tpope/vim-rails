@@ -968,7 +968,7 @@ function! s:Rake(bang,arg)
 endfunction
 
 function! s:raketasks()
-  return "db:charset\ndb:collation\ndb:create\ndb:create:all\ndb:drop\ndb:drop:all\ndb:fixtures:load\ndb:migrate\ndb:reset\ndb:rollback\ndb:schema:dump\ndb:schema:load\ndb:sessions:clear\ndb:sessions:create\ndb:structure:dump\ndb:test:clone\ndb:test:clone_structure\ndb:test:prepare\ndb:test:purge\ndb:version\ndoc:app\ndoc:clobber_app\ndoc:clobber_plugins\ndoc:clobber_rails\ndoc:plugins\ndoc:rails\ndoc:reapp\ndoc:rerails\nlog:clear\nnotes\nnotes:fixme\nnotes:optimize\nnotes:todo\nrails:freeze:edge\nrails:freeze:gems\nrails:unfreeze\nrails:update\nrails:update:configs\nrails:update:javascripts\nrails:update:scripts\nroutes\nstats\ntest\ntest:functionals\ntest:integration\ntest:plugins\ntest:recent\ntest:uncommitted\ntest:units\ntmp:cache:clear\ntmp:clear\ntmp:create\ntmp:pids:clear\ntmp:sessions:clear\ntmp:sockets:clear"
+  return "db:charset\ndb:collation\ndb:create\ndb:create:all\ndb:drop\ndb:drop:all\ndb:fixtures:identify\ndb:fixtures:load\ndb:migrate\ndb:reset\ndb:rollback\ndb:schema:dump\ndb:schema:load\ndb:sessions:clear\ndb:sessions:create\ndb:structure:dump\ndb:test:clone\ndb:test:clone_structure\ndb:test:prepare\ndb:test:purge\ndb:version\ndoc:app\ndoc:clobber_app\ndoc:clobber_plugins\ndoc:clobber_rails\ndoc:plugins\ndoc:rails\ndoc:reapp\ndoc:rerails\nlog:clear\nnotes\nnotes:fixme\nnotes:optimize\nnotes:todo\nrails:freeze:edge\nrails:freeze:gems\nrails:unfreeze\nrails:update\nrails:update:configs\nrails:update:javascripts\nrails:update:scripts\nroutes\nstats\ntest\ntest:functionals\ntest:integration\ntest:plugins\ntest:recent\ntest:uncommitted\ntest:units\ntmp:cache:clear\ntmp:clear\ntmp:create\ntmp:pids:clear\ntmp:sessions:clear\ntmp:sockets:clear"
 endfunction
 
 function! s:RakeComplete(A,L,P)
@@ -3111,7 +3111,7 @@ function! s:BufSyntax()
         syn keyword rubyRailsMethod member
       endif
       if t =~ '^config-routes\>'
-        syn match rubyRailsMethod '\.\zs\%(connect\|resources\=\|root\|named_route\)\>'
+        syn match rubyRailsMethod '\.\zs\%(connect\|resources\=\|root\|named_route\|namespace\)\>'
       endif
       syn keyword rubyRailsMethod debugger
       syn keyword rubyRailsMethod alias_attribute alias_method_chain attr_accessor_with_default attr_internal attr_internal_accessor attr_internal_reader attr_internal_writer delegate mattr_accessor mattr_reader mattr_writer
