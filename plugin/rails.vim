@@ -4286,7 +4286,7 @@ function! s:Detect(filename)
   endif
   let ofn = ""
   let nfn = fn
-  while nfn != ofn
+  while nfn != ofn && nfn != ""
     if exists("s:_".s:escvar(nfn))
       return s:BufInit(nfn)
     endif
