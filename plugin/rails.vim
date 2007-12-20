@@ -290,7 +290,7 @@ function! s:controller(...)
   if o != ""
     return o
   elseif f =~ '\<app/views/layouts/'
-    return s:sub(f,'.*<app/views/layouts/(.{-})\.\k+','\1')
+    return s:sub(f,'.*<app/views/layouts/(.{-})\..*','\1')
   elseif f =~ '\<app/views/'
     return s:sub(f,'.*<app/views/(.{-})/\k+\.\k+%(\.\k+)=$','\1')
   elseif f =~ '\<app/helpers/.*_helper\.rb$'
