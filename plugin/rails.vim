@@ -1035,7 +1035,7 @@ function! s:defaultpreview()
     elseif s:getopt('preview','b') != ''
       let ret = s:getopt('preview','b')
     elseif RailsFileType() =~ '^view\%(-partial\|-layout\)\@!'
-      let ret = ret.expand('%:t:r').'/'
+      let ret = ret.s:controller().'/'.expand('%:t:r:r').'/'
     endif
   elseif s:getopt('preview','b') != ''
     let uri = s:getopt('preview','b')
