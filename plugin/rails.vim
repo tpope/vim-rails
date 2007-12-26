@@ -4377,7 +4377,7 @@ function! s:BufInit(path)
     setlocal filetype=sass
   elseif &ft =~ '^\%(dryml\)\=$' && expand("%:e") == "dryml"
     setlocal filetype=dryml
-  elseif (&ft == "" || v:version < 700) && expand("%:e") =~ '^\%(rhtml\|erb\)$'
+  elseif (&ft == "" || v:version < 701) && expand("%:e") =~ '^\%(rhtml\|erb\)$'
     setlocal filetype=eruby
   elseif (&ft == "" || v:version < 700) && expand("%:e") == 'yml'
     setlocal filetype=yaml
