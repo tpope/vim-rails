@@ -109,12 +109,17 @@ function! s:rubyexestrwithfork(cmd)
 endfunction
 
 function! s:rubyexebg(cmd)
+  let cmd = s:esccmd(s:rubyexestr(a:cmd))
   if has("gui_win32")
-    exe "!start ".s:esccmd(s:rubyexestr(a:cmd))
+    if &shellcmdflag == "-c" && ($PATH . &shell) =~? 'cygwin'
+      exe "!cygstart ".cmd
+    else
+      exe "!start ".cmd
+    endif
   elseif exists("$STY") && !has("gui_running") && s:getopt("gnu_screen","abg") && executable("screen")
-    silent exe "!screen -ln -fn -t ".s:sub(s:sub(a:cmd,'\s.*',''),'^%(script|-rcommand)/','rails-').' '.s:esccmd(s:rubyexestr(a:cmd))
+    silent exe "!screen -ln -fn -t ".s:sub(s:sub(a:cmd,'\s.*',''),'^%(script|-rcommand)/','rails-').' '.cmd
   else
-    exe "!".s:esccmd(s:rubyexestr(a:cmd))
+    exe "!".cmd
   endif
   return v:shell_error
 endfunction
