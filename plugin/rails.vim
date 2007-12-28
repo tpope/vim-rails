@@ -1833,12 +1833,8 @@ function! s:helperList(A,L,P)
 endfunction
 
 function! s:controllerList(A,L,P)
-  let con = s:relglob("app/controllers/",s:recurse,"_controller.rb")
-  if con != ''
-    return s:autocamelize("application\n".con,a:A)
-  else
-    return s:autocamelize("application",a:A)
-  endif
+  let con = s:gsub(s:relglob("app/controllers/",s:recurse,".rb"),'_controller>','')
+  return s:autocamelize(con,a:A)
 endfunction
 
 function! s:viewList(A,L,P)
@@ -2212,8 +2208,17 @@ function! s:layoutEdit(bang,cmd,...)
 endfunction
 
 function! s:controllerEdit(bang,cmd,...)
-  let controller = a:0 ? a:1 : s:controller(1)
-  return s:EditSimpleRb(a:bang,a:cmd,"controller",controller,"app/controllers/",controller == "application" ? "" : "_controller")
+  let suffix = '.rb'
+  if a:0 == 0 && RailsFileType() =~ '^view\%(-layout\|-partial\)\@!'
+    let controller = s:controller(1)
+    let suffix = suffix.'#'.expand('%:t:r')
+  else
+    let controller = a:1
+  endif
+  if s:hasfile("app/controllers/".controller."_controller.rb") || !s:hasfile("app/controllers/".controller.".rb")
+    let suffix = "_controller".suffix
+  endif
+  return s:EditSimpleRb(a:bang,a:cmd,"controller",controller,"app/controllers/",suffix)
 endfunction
 
 function! s:helperEdit(bang,cmd,...)
