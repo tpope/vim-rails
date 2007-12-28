@@ -112,7 +112,7 @@ function! s:rubyexebg(cmd)
   let cmd = s:esccmd(s:rubyexestr(a:cmd))
   if has("gui_win32")
     if &shellcmdflag == "-c" && ($PATH . &shell) =~? 'cygwin'
-      exe "!cygstart ".cmd
+      silent exe "!cygstart -d ".s:rquote(RailsRoot())." ruby ".a:cmd
     else
       exe "!start ".cmd
     endif
