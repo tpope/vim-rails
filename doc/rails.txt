@@ -400,7 +400,6 @@ or modeline like: >
 :Rhelper					|rails-:Rhelper|
 :Rview						|rails-:Rview|
 :Rlayout					|rails-:Rlayout|
-:Rapi						|rails-:Rapi|
 :Rfunctionaltest				|rails-:Rfunctionaltest|
 
 						*rails-:Rcontroller*
@@ -424,7 +423,9 @@ or modeline like: >
 			an extension is given.
 
 						*rails-:Rapi*
-:Rapi [{name}]		Edit the API for the specified controller.
+:Rapi [{name}]		Edit the API for the specified controller.  This
+			command is deprecated; add it yourself with
+			|:Rcommand| if you still desire it.
 
 						*rails-:Rfunctionaltest*
 :Rfunctionaltest [{name}]
