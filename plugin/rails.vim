@@ -18,8 +18,6 @@ if &cp || (exists("g:loaded_rails") && g:loaded_rails) && !(exists("g:rails_debu
 endif
 let g:loaded_rails = 1
 
-runtime! autoload/rails.vim
-
 " Utility Functions {{{1
 
 function! s:error(str)
@@ -27,6 +25,23 @@ function! s:error(str)
   echomsg a:str
   echohl None
   let v:errmsg = a:str
+endfunction
+
+function! s:autoload(...)
+  if !exists("g:autoloaded_rails")
+    runtime! autoload/rails.vim
+  endif
+  if exists("g:autoloaded_rails")
+    if a:0
+      exe a:1
+    endif
+    return 1
+  endif
+  if !exists("g:rails_no_autoload_warning")
+    let g:rails_no_autoload_warning = 1
+    call s:error("Disabling rails.vim: autoload/rails.vim is missing")
+  endif
+  return ""
 endfunction
 
 " }}}1
@@ -62,6 +77,68 @@ if g:rails_dbext
     call s:SetOptDefault("dbext_default_SQLITE_bin","sqlite3")
   endif
 endif
+
+" }}}1
+" Detection {{{1
+
+function! s:escvar(r)
+  let r = fnamemodify(a:r,':~')
+  let r = substitute(r,'\W','\="_".char2nr(submatch(0))."_"','g')
+  let r = substitute(r,'^\d','_&','')
+  return r
+endfunction
+
+function! s:Detect(filename)
+  let fn = substitute(fnamemodify(a:filename,":p"),'\c^file://','','')
+  if fn =~ '[\/]config[\/]environment\.rb$'
+    return s:BufInit(strpart(fn,0,strlen(fn)-22))
+  endif
+  if isdirectory(fn)
+    let fn = fnamemodify(fn,":s?[\/]$??")
+  else
+    let fn = fnamemodify(fn,':s?\(.*\)[\/][^\/]*$?\1?')
+  endif
+  let ofn = ""
+  let nfn = fn
+  while nfn != ofn && nfn != ""
+    if exists("s:_".s:escvar(nfn))
+      return s:BufInit(nfn)
+    endif
+    let ofn = nfn
+    let nfn = fnamemodify(nfn,':h')
+  endwhile
+  let ofn = ""
+  while fn != ofn
+    if filereadable(fn . "/config/environment.rb")
+      return s:BufInit(fn)
+    endif
+    let ofn = fn
+    let fn = fnamemodify(ofn,':s?\(.*\)[\/]\(app\|config\|db\|doc\|lib\|log\|public\|script\|spec\|test\|tmp\|vendor\)\($\|[\/].*$\)?\1?')
+  endwhile
+  return 0
+endfunction
+
+function! s:BufInit(path)
+  let s:_{s:escvar(a:path)} = 1
+  if s:autoload()
+    return RailsBufInit(a:path)
+  endif
+endfunction
+
+" }}}1
+" Initialization {{{1
+
+augroup railsPluginDetect
+  autocmd!
+  autocmd BufNewFile,BufRead * call s:Detect(expand("<afile>:p"))
+  autocmd VimEnter * if expand("<amatch>") == "" && !exists("b:rails_root") | call s:Detect(getcwd()) | endif | if exists("b:rails_root") | silent doau User BufEnterRails | endif
+  autocmd FileType netrw if !exists("b:rails_root") | call s:Detect(expand("<afile>:p")) | endif | if exists("b:rails_root") | silent doau User BufEnterRails | endif
+  autocmd BufEnter * if exists("b:rails_root")|silent doau User BufEnterRails|endif
+  autocmd BufLeave * if exists("b:rails_root")|silent doau User BufLeaveRails|endif
+  autocmd FileType railslog if s:autoload()|call RailslogSyntax()|endif
+augroup END
+
+command! -bar -bang -nargs=* -complete=dir Rails :if s:autoload()|call RailsNewApp(<bang>0,<f-args>)|endif
 
 " }}}1
 " Menus {{{1

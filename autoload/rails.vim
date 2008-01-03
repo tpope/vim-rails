@@ -4123,36 +4123,6 @@ endfunction
 " }}}1
 " Detection {{{1
 
-function! s:Detect(filename)
-  let fn = substitute(fnamemodify(a:filename,":p"),'\c^file://','','')
-  if fn =~ '[\/]config[\/]environment\.rb$'
-    return s:BufInit(strpart(fn,0,strlen(fn)-22))
-  endif
-  if isdirectory(fn)
-    let fn = fnamemodify(fn,":s?[\/]$??")
-  else
-    let fn = fnamemodify(fn,':s?\(.*\)[\/][^\/]*$?\1?')
-  endif
-  let ofn = ""
-  let nfn = fn
-  while nfn != ofn && nfn != ""
-    if exists("s:_".s:escvar(nfn))
-      return s:BufInit(nfn)
-    endif
-    let ofn = nfn
-    let nfn = fnamemodify(nfn,':h')
-  endwhile
-  let ofn = ""
-  while fn != ofn
-    if filereadable(fn . "/config/environment.rb")
-      return s:BufInit(fn)
-    endif
-    let ofn = fn
-    let fn = fnamemodify(ofn,':s?\(.*\)[\/]\(app\|config\|db\|doc\|lib\|log\|public\|script\|spec\|test\|tmp\|vendor\)\($\|[\/].*$\)?\1?')
-  endwhile
-  return 0
-endfunction
-
 function! s:callback(file)
   if RailsRoot() != ""
     let var = "callback_".s:rv()."_".s:escvar(a:file)
@@ -4167,11 +4137,6 @@ function! s:callback(file)
       endif
     endif
   endif
-endfunction
-
-function! s:BufInit(path)
-  let s:_{s:escvar(a:path)} = 1
-  return RailsBufInit(a:path)
 endfunction
 
 function! RailsBufInit(path)
@@ -4381,13 +4346,6 @@ endfunction
 
 augroup railsPluginAuto
   autocmd!
-  autocmd BufNewFile,BufRead * call s:Detect(expand("<afile>:p"))
-  autocmd VimEnter * if expand("<amatch>") == "" && !exists("b:rails_root") | call s:Detect(getcwd()) | endif | if exists("b:rails_root") | silent doau User BufEnterRails | endif
-  autocmd FileType netrw if !exists("b:rails_root") | call s:Detect(expand("<afile>:p")) | endif | if exists("b:rails_root") | silent doau User BufEnterRails | endif
-  autocmd BufEnter * if exists("b:rails_root")|silent doau User BufEnterRails|endif
-  autocmd BufLeave * if exists("b:rails_root")|silent doau User BufLeaveRails|endif
-  autocmd FileType railslog call RailslogSyntax()
-
   autocmd User BufEnterRails call s:RefreshBuffer()
   autocmd User BufEnterRails call s:resetomnicomplete()
   autocmd User BufEnterRails call s:BufDatabase(-1)
@@ -4409,8 +4367,6 @@ unmap <SID>xx
 let s:file = expand('<sfile>:p')
 let s:revision = ' $Id$ '
 let s:revision = s:sub(s:revision,'^ [$]Id:.{-}(<[0-9a-f]+>).*[$] $','\1')
-
-command! -bar -bang -nargs=* -complete=dir Rails :call RailsNewApp(<bang>0,<f-args>)
 
 " }}}1
 
