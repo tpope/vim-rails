@@ -19,6 +19,13 @@ let g:autoloaded_rails = 1
 let s:cpo_save = &cpo
 set cpo&vim
 
+" Apparently, the nesting level within Vim when the Ruby interface is
+" initialized determines how much stack space Ruby gets.  In previous
+" versions of rails.vim, sporadic stack overflows occured when omnicomplete
+" was used.  This was apparently due to rails.vim having first initialized
+" ruby deep in a nested function call.
+silent! ruby nil
+
 " Utility Functions {{{1
 
 function! s:sub(str,pat,rep)
@@ -39,6 +46,19 @@ endfunction
 
 function! s:compact(ary)
   return s:sub(s:sub(s:gsub(a:ary,'\n\n+','\n'),'\n$',''),'^\n','')
+endfunction
+
+function! s:scrub(collection,item)
+  " Removes item from a newline separated collection
+  let col = "\n" . a:collection
+  let idx = stridx(col,"\n".a:item."\n")
+  let cnt = 0
+  while idx != -1 && cnt < 100
+    let col = strpart(col,0,idx).strpart(col,idx+strlen(a:item)+1)
+    let idx = stridx(col,"\n".a:item."\n")
+    let cnt = cnt + 1
+  endwhile
+  return strpart(col,1)
 endfunction
 
 function! s:escarg(p)
@@ -281,6 +301,8 @@ function! s:format(...)
   endif
   return format
 endfunction
+
+let s:view_types = 'rhtml,erb,rxml,builder,rjs,mab,liquid,haml,dryml'
 
 function! s:viewspattern()
   return '\%('.s:gsub(s:view_types,',','\\|').'\)'
@@ -661,6 +683,15 @@ endfunction
 " }}}1
 " Commands {{{1
 
+function! s:prephelp()
+  let fn = fnamemodify(s:file,':h:h').'/doc/'
+  if filereadable(fn.'rails.txt')
+    if !filereadable(fn.'tags') || getftime(fn.'tags') <= getftime(fn.'rails.txt')
+      silent! helptags `=fn`
+    endif
+  endif
+endfunction
+
 function! s:BufCommands()
   call s:BufFinderCommands() " Provides Rcommand!
   call s:BufNavCommands()
@@ -838,7 +869,60 @@ endfunction
 " }}}1
 " Rake {{{1
 
-" Depends: s:efm, s:rubyexestrwithfork, s:sub, s:lastmethodline, s:getopt, s;rquote, s:QuickFixCmdPre, ...
+" Depends: s:rubyexestrwithfork, s:sub, s:lastmethodline, s:getopt, s;rquote, s:QuickFixCmdPre, ...
+
+" Current directory
+let s:efm='%D(in\ %f),'
+" Failure and Error headers, start a multiline message
+let s:efm=s:efm
+      \.'%A\ %\\+%\\d%\\+)\ Failure:,'
+      \.'%A\ %\\+%\\d%\\+)\ Error:,'
+      \.'%+A'."'".'%.%#'."'".'\ FAILED,'
+" Exclusions
+let s:efm=s:efm
+      \.'%C%.%#(eval)%.%#,'
+      \.'%C-e:%.%#,'
+      \.'%C%.%#/lib/gems/%\\d.%\\d/gems/%.%#,'
+      \.'%C%.%#/lib/ruby/%\\d.%\\d/%.%#,'
+      \.'%C%.%#/vendor/rails/%.%#,'
+" Specific to template errors
+let s:efm=s:efm
+      \.'%C\ %\\+On\ line\ #%l\ of\ %f,'
+      \.'%CActionView::TemplateError:\ compile\ error,'
+" stack backtrace is in brackets. if multiple lines, it starts on a new line.
+let s:efm=s:efm
+      \.'%Ctest_%.%#(%.%#):%#,'
+      \.'%C%.%#\ [%f:%l]:,'
+      \.'%C\ \ \ \ [%f:%l:%.%#,'
+      \.'%C\ \ \ \ %f:%l:%.%#,'
+      \.'%C\ \ \ \ \ %f:%l:%.%#]:,'
+      \.'%C\ \ \ \ \ %f:%l:%.%#,'
+" Catch all
+let s:efm=s:efm
+      \.'%Z%f:%l:\ %#%m,'
+      \.'%Z%f:%l:,'
+      \.'%C%m,'
+" Syntax errors in the test itself
+let s:efm=s:efm
+      \.'%.%#.rb:%\\d%\\+:in\ `load'."'".':\ %f:%l:\ syntax\ error\\\, %m,'
+      \.'%.%#.rb:%\\d%\\+:in\ `load'."'".':\ %f:%l:\ %m,'
+" And required files
+let s:efm=s:efm
+      \.'%.%#:in\ `require'."'".':in\ `require'."'".':\ %f:%l:\ syntax\ error\\\, %m,'
+      \.'%.%#:in\ `require'."'".':in\ `require'."'".':\ %f:%l:\ %m,'
+" Exclusions
+let s:efm=s:efm
+      \.'%-G%.%#/lib/gems/%\\d.%\\d/gems/%.%#,'
+      \.'%-G%.%#/lib/ruby/%\\d.%\\d/%.%#,'
+      \.'%-G%.%#/vendor/rails/%.%#,'
+      \.'%-G%.%#%\\d%\\d:%\\d%\\d:%\\d%\\d%.%#,'
+" Final catch all for one line errors
+let s:efm=s:efm
+      \.'%-G%\\s%#from\ %.%#,'
+      \.'%f:%l:\ %#%m,'
+" Drop everything else
+let s:efm=s:efm
+      \.'%-G%.%#'
 
 let s:efm_backtrace='%D(in\ %f),'
       \.'%\\s%#from\ %f:%l:%m,'
@@ -3426,8 +3510,7 @@ endfunction
 " }}}1
 " Menus {{{1
 
-" Depends: s:gsub, s:sub, s:error
-" Provides: s:prephelp
+" Depends: s:gsub, s:sub, s:error, s:prephelp
 
 function! s:CreateMenus() abort
   if exists("g:rails_installed_menu") && g:rails_installed_menu != ""
@@ -3550,16 +3633,6 @@ function! s:menuprompt(vimcmd,prompt)
     return ""
   endif
   exe a:vimcmd." ".res
-endfunction
-
-function! s:prephelp()
-  let fn = fnamemodify(s:file,':h:h').'/doc/'
-  if filereadable(fn.'rails.txt')
-    if !filereadable(fn.'tags') || getftime(fn.'tags') <= getftime(fn.'rails.txt')
-      "silent! exe 'helptags '.s:escarg(fn)
-      silent! helptags `=fn`
-    endif
-  endif
 endfunction
 
 function! s:findschema()
@@ -4253,19 +4326,6 @@ function! s:Detect(filename)
   return 0
 endfunction
 
-function! s:scrub(collection,item)
-  " Removes item from a newline separated collection
-  let col = "\n" . a:collection
-  let idx = stridx(col,"\n".a:item."\n")
-  let cnt = 0
-  while idx != -1 && cnt < 100
-    let col = strpart(col,0,idx).strpart(col,idx+strlen(a:item)+1)
-    let idx = stridx(col,"\n".a:item."\n")
-    let cnt = cnt + 1
-  endwhile
-  return strpart(col,1)
-endfunction
-
 function! s:callback(file)
   if RailsRoot() != ""
     let var = "callback_".s:rv()."_".s:escvar(a:file)
@@ -4490,7 +4550,6 @@ endfunction
 
 function! s:InitPlugin()
   call s:InitConfig()
-  "call s:InitStatusline()
   if has("autocmd")
 
     augroup railsPluginDetect
@@ -4513,87 +4572,15 @@ function! s:InitPlugin()
     augroup END
 
   endif
-  let s:view_types = 'rhtml,erb,rxml,builder,rjs,mab,liquid,haml,dryml'
-  " Current directory
-  let s:efm='%D(in\ %f),'
-  " Failure and Error headers, start a multiline message
-  let s:efm=s:efm
-        \.'%A\ %\\+%\\d%\\+)\ Failure:,'
-        \.'%A\ %\\+%\\d%\\+)\ Error:,'
-        \.'%+A'."'".'%.%#'."'".'\ FAILED,'
-  " Exclusions
-  let s:efm=s:efm
-        \.'%C%.%#(eval)%.%#,'
-        \.'%C-e:%.%#,'
-        \.'%C%.%#/lib/gems/%\\d.%\\d/gems/%.%#,'
-        \.'%C%.%#/lib/ruby/%\\d.%\\d/%.%#,'
-        \.'%C%.%#/vendor/rails/%.%#,'
-  " Specific to template errors
-  let s:efm=s:efm
-        \.'%C\ %\\+On\ line\ #%l\ of\ %f,'
-        \.'%CActionView::TemplateError:\ compile\ error,'
-  " stack backtrace is in brackets. if multiple lines, it starts on a new line.
-  let s:efm=s:efm
-        \.'%Ctest_%.%#(%.%#):%#,'
-        \.'%C%.%#\ [%f:%l]:,'
-        \.'%C\ \ \ \ [%f:%l:%.%#,'
-        \.'%C\ \ \ \ %f:%l:%.%#,'
-        \.'%C\ \ \ \ \ %f:%l:%.%#]:,'
-        \.'%C\ \ \ \ \ %f:%l:%.%#,'
-  " Catch all
-  let s:efm=s:efm
-        \.'%Z%f:%l:\ %#%m,'
-        \.'%Z%f:%l:,'
-        \.'%C%m,'
-  " Syntax errors in the test itself
-  let s:efm=s:efm
-        \.'%.%#.rb:%\\d%\\+:in\ `load'."'".':\ %f:%l:\ syntax\ error\\\, %m,'
-        \.'%.%#.rb:%\\d%\\+:in\ `load'."'".':\ %f:%l:\ %m,'
-  " And required files
-  let s:efm=s:efm
-        \.'%.%#:in\ `require'."'".':in\ `require'."'".':\ %f:%l:\ syntax\ error\\\, %m,'
-        \.'%.%#:in\ `require'."'".':in\ `require'."'".':\ %f:%l:\ %m,'
-  " Exclusions
-  let s:efm=s:efm
-        \.'%-G%.%#/lib/gems/%\\d.%\\d/gems/%.%#,'
-        \.'%-G%.%#/lib/ruby/%\\d.%\\d/%.%#,'
-        \.'%-G%.%#/vendor/rails/%.%#,'
-        \.'%-G%.%#%\\d%\\d:%\\d%\\d:%\\d%\\d%.%#,'
-  " Final catch all for one line errors
-  let s:efm=s:efm
-        \.'%-G%\\s%#from\ %.%#,'
-        \.'%f:%l:\ %#%m,'
-  " Drop everything else
-  let s:efm=s:efm
-        \.'%-G%.%#'
-  " OLD
-  let s:efm_old=''
-        \.'%Z%f:%l:\ syntax\ error\\,\ %m,'
-        \.'%Z\ %#,'
-        \.'%Z%p^,'
-        \.'%CActionView::TemplateError:\ %f:%l:in\ `%.%#'."'".':\ %m,'
-        \.'%CActionView::TemplateError:\ You\ have\ a\ %m!,'
-        \.'%CNoMethodError:\ You\ have\ a\ %m!,'
-        \.'%CActionView::TemplateError:\ %m,'
-        \.'%CThe\ error\ occured\ while\ %m,'
-        \.'ActionView::TemplateError\ (%m)\ on\ line\ #%l\ of\ %f:,'
-        \.'%AActionView::TemplateError\ (compile\ error,'
-  "        from 
   command! -bar -bang -nargs=* -complete=dir Rails :call s:NewApp(<bang>0,<f-args>)
   call s:CreateMenus()
-  map <SID>xx <SID>xx
-  let s:sid = s:sub(maparg("<SID>xx"),'xx$','')
-  unmap <SID>xx
-  " Apparently, the nesting level within Vim when the Ruby interface is
-  " initialized determines how much stack space Ruby gets.  In previous
-  " versions of rails.vim, sporadic stack overflows occured when omnicomplete
-  " was used.  This was apparently due to rails.vim having first initialized
-  " ruby deep in a nested function call.
-  silent! ruby nil
 endfunction
 
 " }}}1
 
+map <SID>xx <SID>xx
+let s:sid = s:sub(maparg("<SID>xx"),'xx$','')
+unmap <SID>xx
 let s:file = expand('<sfile>:p')
 let s:revision = ' $Id$ '
 let s:revision = s:sub(s:revision,'^ [$]Id:.{-}(<[0-9a-f]+>).*[$] $','\1')
