@@ -604,6 +604,8 @@ function! s:InitConfig()
   call s:SetOptDefault("rails_gnu_screen",1)
   call s:SetOptDefault("rails_history_size",5)
   call s:SetOptDefault("rails_debug",0)
+  call s:SetOptDefault("rails_generators","controller\nintegration_test\nmailer\nmigration\nmodel\nobserver\nplugin\nresource\nscaffold\nsession_migration")
+  call s:SetOptDefault("rails_rake_tasks","db:charset\ndb:collation\ndb:create\ndb:create:all\ndb:drop\ndb:drop:all\ndb:fixtures:identify\ndb:fixtures:load\ndb:migrate\ndb:reset\ndb:rollback\ndb:schema:dump\ndb:schema:load\ndb:sessions:clear\ndb:sessions:create\ndb:structure:dump\ndb:test:clone\ndb:test:clone_structure\ndb:test:prepare\ndb:test:purge\ndb:version\ndoc:app\ndoc:clobber_app\ndoc:clobber_plugins\ndoc:clobber_rails\ndoc:plugins\ndoc:rails\ndoc:reapp\ndoc:rerails\nlog:clear\nnotes\nnotes:fixme\nnotes:optimize\nnotes:todo\nrails:freeze:edge\nrails:freeze:gems\nrails:unfreeze\nrails:update\nrails:update:configs\nrails:update:javascripts\nrails:update:scripts\nroutes\nstats\ntest\ntest:functionals\ntest:integration\ntest:plugins\ntest:recent\ntest:uncommitted\ntest:units\ntmp:cache:clear\ntmp:clear\ntmp:create\ntmp:pids:clear\ntmp:sessions:clear\ntmp:sockets:clear")
   if g:rails_dbext
     if exists("g:loaded_dbext") && executable("sqlite3") && ! executable("sqlite")
       " Since dbext can't find it by itself
@@ -972,12 +974,8 @@ function! s:Rake(bang,arg)
   endif
 endfunction
 
-function! s:raketasks()
-  return "db:charset\ndb:collation\ndb:create\ndb:create:all\ndb:drop\ndb:drop:all\ndb:fixtures:identify\ndb:fixtures:load\ndb:migrate\ndb:reset\ndb:rollback\ndb:schema:dump\ndb:schema:load\ndb:sessions:clear\ndb:sessions:create\ndb:structure:dump\ndb:test:clone\ndb:test:clone_structure\ndb:test:prepare\ndb:test:purge\ndb:version\ndoc:app\ndoc:clobber_app\ndoc:clobber_plugins\ndoc:clobber_rails\ndoc:plugins\ndoc:rails\ndoc:reapp\ndoc:rerails\nlog:clear\nnotes\nnotes:fixme\nnotes:optimize\nnotes:todo\nrails:freeze:edge\nrails:freeze:gems\nrails:unfreeze\nrails:update\nrails:update:configs\nrails:update:javascripts\nrails:update:scripts\nroutes\nstats\ntest\ntest:functionals\ntest:integration\ntest:plugins\ntest:recent\ntest:uncommitted\ntest:units\ntmp:cache:clear\ntmp:clear\ntmp:create\ntmp:pids:clear\ntmp:sessions:clear\ntmp:sockets:clear"
-endfunction
-
 function! s:RakeComplete(A,L,P)
-  return s:raketasks()
+  return g:rails_rake_tasks
 endfunction
 
 " }}}1
@@ -1247,10 +1245,6 @@ function! s:Generate(bang,...)
   endif
 endfunction
 
-function! s:generators()
-  return "controller\nintegration_test\nmailer\nmigration\nmodel\nobserver\nplugin\nresource\nscaffold\nsession_migration"
-endfunction
-
 function! s:ScriptComplete(ArgLead,CmdLine,P)
   let cmd = s:sub(a:CmdLine,'^\u\w*\s+','')
   let P = a:P - strlen(a:CmdLine)+strlen(cmd)
@@ -1264,7 +1258,7 @@ function! s:ScriptComplete(ArgLead,CmdLine,P)
   elseif cmd =~ '\%(plugin\)\s\+\%(install\|remove\)\s\+'.a:ArgLead.'$' || cmd =~ '\%(generate\|destroy\)\s\+plugin\s\+'.a:ArgLead.'$'
     return s:pluginList(a:ArgLead,a:CmdLine,a:P)
   elseif cmd =~ '^\%(generate\|destroy\)\s\+'.a:ArgLead.'$'
-    return s:generators()
+    return g:rails_generators
   elseif cmd =~ '^\%(generate\|destroy\)\s\+\w\+\s\+'.a:ArgLead.'$'
     let target = matchstr(cmd,'^\w\+\s\+\zs\w\+\ze\s\+')
     let pattern = "" " TODO
@@ -3432,7 +3426,7 @@ endfunction
 " }}}1
 " Menus {{{1
 
-" Depends: s:gsub, s:sub, s:raketasks, s:generators, s:error
+" Depends: s:gsub, s:sub, s:error
 " Provides: s:prephelp
 
 function! s:CreateMenus() abort
@@ -3473,13 +3467,13 @@ function! s:CreateMenus() abort
     exe menucmd.g:rails_installed_menu.'.&Other\ files.&Test\ Helper :find test/test_helper.rb<CR>'
     exe menucmd.g:rails_installed_menu.'.-FSep- :'
     exe menucmd.g:rails_installed_menu.'.Ra&ke\	:Rake :Rake<CR>'
-    let tasks = s:raketasks()
+    let tasks = g:rails_rake_tasks
     while tasks != ''
       let task = matchstr(tasks,'.\{-\}\ze\%(\n\|$\)')
       let tasks = s:sub(tasks,'.{-}%(\n|$)','')
       exe menucmd.g:rails_installed_menu.'.Rake\ &tasks\	:Rake.'.s:sub(s:sub(task,'^[^:]*$','&:all'),':','.').' :Rake '.task.'<CR>'
     endwhile
-    let tasks = s:generators()
+    let tasks = g:rails_generators
     while tasks != ''
       let task = matchstr(tasks,'.\{-\}\ze\%(\n\|$\)')
       let tasks = s:sub(tasks,'.{-}%(\n|$)','')
