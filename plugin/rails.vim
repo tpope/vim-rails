@@ -10,6 +10,14 @@
 
 " ============================================================================
 
+" Exit quickly when:
+" - this plugin was already loaded (or disabled)
+" - when 'compatible' is set
+if &cp || (exists("g:loaded_rails") && g:loaded_rails) && !(exists("g:rails_debug") && g:rails_debug)
+  finish
+endif
+let g:loaded_rails = 1
+
 runtime! autoload/rails.vim
 
 " vim:set sw=2 sts=2:

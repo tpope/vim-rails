@@ -11,10 +11,10 @@
 " Exit quickly when:
 " - this plugin was already loaded (or disabled)
 " - when 'compatible' is set
-if &cp || (exists("g:loaded_rails") && g:loaded_rails) && !(exists("g:rails_debug") && g:rails_debug)
+if &cp || (exists("g:autoloaded_rails") && g:autoloaded_rails) && !(exists("g:rails_debug") && g:rails_debug)
   finish
 endif
-let g:loaded_rails = 1
+let g:autoloaded_rails = 1
 
 let s:cpo_save = &cpo
 set cpo&vim
@@ -680,7 +680,7 @@ function! s:BufCommands()
         \   elseif <q-args> =~ '^-'  | help rails<args> |
         \   else | help rails-<args> | endif |
         \ else | call s:Doc(<bang>0,<q-args>) | endif
-  command! -buffer -bar -nargs=0 -bang Rrefresh :if <bang>0|unlet! g:loaded_rails|source `=s:file`|endif|call s:Refresh(<bang>0)
+  command! -buffer -bar -nargs=0 -bang Rrefresh :if <bang>0|unlet! g:autoloaded_rails|source `=s:file`|endif|call s:Refresh(<bang>0)
   if exists(":Project")
     command! -buffer -bar -nargs=? -bang  Rproject :call s:Project(<bang>0,<q-args>)
   endif
