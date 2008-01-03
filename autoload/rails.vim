@@ -2986,7 +2986,7 @@ endfunction
 " Cache {{{1
 
 function! s:cacheworks()
-  if v:version < 700
+  if v:version < 700 || RailsRoot() == ""
     return 0
   endif
   if !exists("s:cache")
