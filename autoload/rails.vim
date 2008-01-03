@@ -653,33 +653,6 @@ function! s:QuickFixCmdPost()
   endif
 endfunction
 
-function! s:BufEnter()
-  if exists("b:rails_refresh") && b:rails_refresh
-    unlet! b:rails_root b:rails_use_subversion
-    let b:rails_refresh = 0
-    call s:Detect(expand("%:p"))
-    unlet! b:rails_refresh
-  elseif !exists("b:rails_root") && isdirectory(expand('%;p'))
-    " FIXME: This doesn't catch all directories
-    call s:Detect(expand('%:p'))
-  endif
-  if exists("b:rails_root")
-    if exists("+completefunc") && &completefunc == 'syntaxcomplete#Complete'
-      if exists("g:loaded_syntax_completion")
-        " Ugly but necessary, until we have our own completion
-        unlet g:loaded_syntax_completion
-        silent! delfunction syntaxcomplete#Complete
-      endif
-    endif
-    call s:BufDatabase(-1)
-    call s:menuBufEnter()
-  endif
-endfunction
-
-function! s:BufLeave()
-  call s:menuBufLeave()
-endfunction
-
 " }}}1
 " Commands {{{1
 
@@ -848,7 +821,7 @@ function! s:Refresh(bang)
     endif
   endif
   call s:cacheclear()
-  call s:BufLeave()
+  silent doautocmd User BufLeaveRails
   if a:bang && s:cacheworks()
     let s:cache = {}
   endif
@@ -863,7 +836,17 @@ function! s:Refresh(bang)
     endif
     let i = i + 1
   endwhile
-  call s:BufEnter()
+  silent doautocmd User BufEnterRails
+endfunction
+
+function! s:RefreshBuffer()
+  if exists("b:rails_refresh") && b:rails_refresh
+    let oldroot = b:rails_root
+    unlet! b:rails_root b:rails_use_subversion
+    let b:rails_refresh = 0
+    call s:BufInit(oldroot)
+    unlet! b:rails_refresh
+  endif
 endfunction
 
 " }}}1
@@ -3058,6 +3041,16 @@ endfunction
 
 " Depends: s:rubyeval, s:gsub, cache functions
 
+function! s:resetomnicomplete()
+  if exists("+completefunc") && &completefunc == 'syntaxcomplete#Complete'
+    if exists("g:loaded_syntax_completion")
+      " Ugly but necessary, until we have our own completion
+      unlet g:loaded_syntax_completion
+      silent! delfunction syntaxcomplete#Complete
+    endif
+  endif
+endfunction
+
 function! s:helpermethods()
   let s:rails_helper_methods = ""
         \."atom_feed auto_discovery_link_tag auto_link "
@@ -4555,20 +4548,29 @@ function! s:InitPlugin()
     augroup railsPluginDetect
       autocmd!
       autocmd BufNewFile,BufRead * call s:Detect(expand("<afile>:p"))
-      autocmd VimEnter * if expand("<amatch>") == "" && !exists("b:rails_root") | call s:Detect(getcwd()) | call s:BufEnter() | endif
-      autocmd BufEnter * call s:BufEnter()
-      autocmd BufLeave * call s:BufLeave()
-      " g:RAILS_HISTORY hasn't been set when s:InitPlugin() is called.
-      autocmd VimEnter * call s:ProjectMenu()
+      autocmd VimEnter * if expand("<amatch>") == "" && !exists("b:rails_root") | call s:Detect(getcwd()) | endif | if exists("b:rails_root") | silent doau User BufEnterRails | endif
+      autocmd FileType netrw if !exists("b:rails_root") | call s:Detect(expand("<afile>:p")) | endif | if exists("b:rails_root") | silent doau User BufEnterRails | endif
+      autocmd BufEnter * if exists("b:rails_root")|silent doau User BufEnterRails|endif
+      autocmd BufLeave * if exists("b:rails_root")|silent doau User BufLeaveRails|endif
+      autocmd FileType railslog call s:RailslogSyntax()
+
+      autocmd User BufEnterRails call s:RefreshBuffer()
+      autocmd User BufEnterRails call s:resetomnicomplete()
+      autocmd User BufEnterRails call s:BufDatabase(-1)
       autocmd BufWritePost */config/database.yml unlet! s:dbext_type_{s:rv()} " Force reload
       autocmd BufWritePost */test/test_helper.rb call s:cacheclear("user_asserts")
-      autocmd BufWritePost */config/routes.rb call s:cacheclear("named_routes")
-      autocmd FileType railslog call s:RailslogSyntax()
+      autocmd BufWritePost */config/routes.rb    call s:cacheclear("named_routes")
       autocmd FileType * if exists("b:rails_root") | call s:BufSettings() | endif
-      autocmd FileType netrw call s:Detect(expand("<afile>:p")) | call s:BufEnter()
       autocmd Syntax ruby,eruby,yaml,haml,javascript,railslog if exists("b:rails_root") | call s:BufSyntax() | endif
       silent! autocmd QuickFixCmdPre  make* call s:QuickFixCmdPre()
       silent! autocmd QuickFixCmdPost make* call s:QuickFixCmdPost()
+    augroup END
+    augroup railsPluginMenu
+      autocmd!
+      autocmd User BufEnterRails call s:menuBufEnter()
+      autocmd User BufLeaveRails call s:menuBufLeave()
+      " g:RAILS_HISTORY hasn't been set when s:InitPlugin() is called.
+      autocmd VimEnter *         call s:ProjectMenu()
     augroup END
 
   endif
