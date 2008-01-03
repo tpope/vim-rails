@@ -596,42 +596,6 @@ function! RailsEval(ruby,...)
 endfunction
 
 " }}}1
-" Configuration {{{
-
-function! s:SetOptDefault(opt,val)
-  if !exists("g:".a:opt)
-    let g:{a:opt} = a:val
-  endif
-endfunction
-
-function! s:InitConfig()
-  call s:SetOptDefault("rails_level",3)
-  call s:SetOptDefault("rails_statusline",1)
-  call s:SetOptDefault("rails_syntax",1)
-  call s:SetOptDefault("rails_mappings",1)
-  call s:SetOptDefault("rails_abbreviations",1)
-  call s:SetOptDefault("rails_expensive",1+0*(has("win32")||has("win32unix")))
-  call s:SetOptDefault("rails_dbext",g:rails_expensive)
-  call s:SetOptDefault("rails_subversion",0)
-  call s:SetOptDefault("rails_default_file","README")
-  call s:SetOptDefault("rails_default_database","")
-  call s:SetOptDefault("rails_root_url",'http://localhost:3000/')
-  call s:SetOptDefault("rails_modelines",1)
-  call s:SetOptDefault("rails_menu",1)
-  call s:SetOptDefault("rails_gnu_screen",1)
-  call s:SetOptDefault("rails_history_size",5)
-  call s:SetOptDefault("rails_debug",0)
-  call s:SetOptDefault("rails_generators","controller\nintegration_test\nmailer\nmigration\nmodel\nobserver\nplugin\nresource\nscaffold\nsession_migration")
-  call s:SetOptDefault("rails_rake_tasks","db:charset\ndb:collation\ndb:create\ndb:create:all\ndb:drop\ndb:drop:all\ndb:fixtures:identify\ndb:fixtures:load\ndb:migrate\ndb:reset\ndb:rollback\ndb:schema:dump\ndb:schema:load\ndb:sessions:clear\ndb:sessions:create\ndb:structure:dump\ndb:test:clone\ndb:test:clone_structure\ndb:test:prepare\ndb:test:purge\ndb:version\ndoc:app\ndoc:clobber_app\ndoc:clobber_plugins\ndoc:clobber_rails\ndoc:plugins\ndoc:rails\ndoc:reapp\ndoc:rerails\nlog:clear\nnotes\nnotes:fixme\nnotes:optimize\nnotes:todo\nrails:freeze:edge\nrails:freeze:gems\nrails:unfreeze\nrails:update\nrails:update:configs\nrails:update:javascripts\nrails:update:scripts\nroutes\nstats\ntest\ntest:functionals\ntest:integration\ntest:plugins\ntest:recent\ntest:uncommitted\ntest:units\ntmp:cache:clear\ntmp:clear\ntmp:create\ntmp:pids:clear\ntmp:sessions:clear\ntmp:sockets:clear")
-  if g:rails_dbext
-    if exists("g:loaded_dbext") && executable("sqlite3") && ! executable("sqlite")
-      " Since dbext can't find it by itself
-      call s:SetOptDefault("dbext_default_SQLITE_bin","sqlite3")
-    endif
-  endif
-endfunction
-
-" }}}1
 " Autocommand Functions {{{1
 
 function! s:QuickFixCmdPre()
@@ -759,7 +723,7 @@ function! s:Log(bang,arg)
   endif
 endfunction
 
-function! s:NewApp(bang,...)
+function! RailsNewApp(bang,...)
   if a:0 == 0
     if a:bang
       echo "rails.vim revision ".s:revision
@@ -3346,7 +3310,7 @@ function! s:HiDefaults()
   hi def link railsStringSpecial              Identifier
 endfunction
 
-function! s:RailslogSyntax()
+function! RailslogSyntax()
   syn match   railslogRender      '^\s*\<\%(Processing\|Rendering\|Rendered\|Redirected\|Completed\)\>'
   syn match   railslogComment     '^\s*# .*'
   syn match   railslogModel       '^\s*\u\%(\w\|:\)* \%(Load\%( Including Associations\| IDs For Limited Eager Loading\)\=\|Columns\|Count\|Update\|Destroy\|Delete all\)\>' skipwhite nextgroup=railslogModelNum
@@ -4422,7 +4386,7 @@ augroup railsPluginAuto
   autocmd FileType netrw if !exists("b:rails_root") | call s:Detect(expand("<afile>:p")) | endif | if exists("b:rails_root") | silent doau User BufEnterRails | endif
   autocmd BufEnter * if exists("b:rails_root")|silent doau User BufEnterRails|endif
   autocmd BufLeave * if exists("b:rails_root")|silent doau User BufLeaveRails|endif
-  autocmd FileType railslog call s:RailslogSyntax()
+  autocmd FileType railslog call RailslogSyntax()
 
   autocmd User BufEnterRails call s:RefreshBuffer()
   autocmd User BufEnterRails call s:resetomnicomplete()
@@ -4446,8 +4410,7 @@ let s:file = expand('<sfile>:p')
 let s:revision = ' $Id$ '
 let s:revision = s:sub(s:revision,'^ [$]Id:.{-}(<[0-9a-f]+>).*[$] $','\1')
 
-command! -bar -bang -nargs=* -complete=dir Rails :call s:NewApp(<bang>0,<f-args>)
-call s:InitConfig()
+command! -bar -bang -nargs=* -complete=dir Rails :call RailsNewApp(<bang>0,<f-args>)
 
 " }}}1
 
