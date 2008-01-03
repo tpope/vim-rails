@@ -300,16 +300,14 @@ function! s:controller(...)
     return s:sub(f,'.*<app/views/(.{-})/\k+\.\k+%(\.\k+)=$','\1')
   elseif f =~ '\<app/helpers/.*_helper\.rb$'
     return s:sub(f,'.*<app/helpers/(.{-})_helper\.rb$','\1')
-  elseif f =~ '\<app/controllers/application\.rb$'
-    return "application"
-  elseif f =~ '\<app/controllers/.*_controller\.rb$'
-    return s:sub(f,'.*<app/controllers/(.{-})_controller\.rb$','\1')
+  elseif f =~ '\<app/controllers/.*\.rb$'
+    return s:sub(f,'.*<app/controllers/(.{-})%(_controller)=\.rb$','\1')
   elseif f =~ '\<app/apis/.*_api\.rb$'
     return s:sub(f,'.*<app/apis/(.{-})_api\.rb$','\1')
-  elseif f =~ '\<test/functional/.*_controller_test\.rb$'
-    return s:sub(f,'.*<test/functional/(.{-})_controller_test\.rb$','\1')
-  elseif f =~ '\<spec/controllers/.*_controller_spec\.rb$'
-    return s:sub(f,'.*<spec/controllers/(.{-})_controller_spec\.rb$','\1')
+  elseif f =~ '\<test/functional/.*_test\.rb$'
+    return s:sub(f,'.*<test/functional/(.{-})%(_controller)=_test\.rb$','\1')
+  elseif f =~ '\<spec/controllers/.*_spec\.rb$'
+    return s:sub(f,'.*<spec/controllers/(.{-})%(_controller)=_spec\.rb$','\1')
   elseif f =~ '\<spec/helpers/.*_helper_spec\.rb$'
     return s:sub(f,'.*<spec/helpers/(.{-})_helper_spec\.rb$','\1')
   elseif f =~ '\<spec/views/.*/\w\+_view_spec\.rb$'
@@ -493,7 +491,7 @@ function! RailsFileType()
   let top = getline(1)." ".getline(2)." ".getline(3)." ".getline(4)." ".getline(5).getline(6)." ".getline(7)." ".getline(8)." ".getline(9)." ".getline(10)
   if f == ""
     let r = f
-  elseif f =~ '_controller\.rb$' || f =~ '\<app/controllers/application\.rb$'
+  elseif f =~ '_controller\.rb$' || f =~ '\<app/controllers/.*\.rb$'
     if top =~ '\<wsdl_service_name\>'
       let r = "controller-api"
     else
@@ -2611,10 +2609,13 @@ function! s:RelatedFile()
   "elseif t=~ '^view-partial\>'
     "call s:warn("No related file is defined")
   elseif t =~ '^view\>'
-    let controller = s:sub(s:sub(f,'/views/','/controllers/'),'/(\k+%(\.\k+)=)\..*$','_controller.rb#\1')
-    let model      = s:sub(s:sub(f,'/views/','/models/'),'/(\k+)\..*$','.rb#\1')
+    let controller  = s:sub(s:sub(f,'/views/','/controllers/'),'/(\k+%(\.\k+)=)\..*$','_controller.rb#\1')
+    let controller2 = s:sub(s:sub(f,'/views/','/controllers/'),'/(\k+%(\.\k+)=)\..*$','.rb#\1')
+    let model       = s:sub(s:sub(f,'/views/','/models/'),'/(\k+)\..*$','.rb#\1')
     if filereadable(s:sub(controller,'#.{-}$',''))
       return controller
+    elseif filereadable(s:sub(controller2,'#.{-}$',''))
+      return controller2
     elseif filereadable(s:sub(model,'#.{-}$','')) || model =~ '_mailer\.rb#'
       return model
     else
