@@ -1,12 +1,10 @@
-" rails.vim - Detect a rails application
+" autoload/rails.vim
 " Author:       Tim Pope <vimNOSPAM@tpope.info>
-" GetLatestVimScripts: 1567 1 :AutoInstall: rails.vim
-" URL:          http://rails.vim.tpope.net/
 " $Id$
 
-" See doc/rails.txt for details. Grab it from the URL above if you don't have it
-" To access it from Vim, see :help add-local-help (hint: :helptags ~/.vim/doc)
-" Afterwards, you should be able to do :help rails
+" Install this file as autoload/rails.vim.  This file is sourced manually by
+" plugin/rails.vim.  It is in autoload directory to allow for future usage of
+" Vim 7's autoload feature.
 
 " ============================================================================
 

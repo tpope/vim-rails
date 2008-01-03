@@ -112,6 +112,7 @@ Installing and Using the Plugin ~
 						*rails-install-plugin*
 If you have the zip file, extract it to vimfiles (Windows) or ~/.vim
 (everything else).  You should have the following files: >
+	autoload/rails.vim
 	plugin/rails.vim
 	doc/rails.txt
 See |add-local-help| for instructions on enabling the documentation.  In a
