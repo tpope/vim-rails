@@ -4413,38 +4413,31 @@ function! s:BufSettings()
 endfunction
 
 " }}}1
-" Initialization {{{1
+" Autocommands {{{1
 
-function! s:InitPlugin()
-  call s:InitConfig()
-  if has("autocmd")
+augroup railsPluginAuto
+  autocmd!
+  autocmd BufNewFile,BufRead * call s:Detect(expand("<afile>:p"))
+  autocmd VimEnter * if expand("<amatch>") == "" && !exists("b:rails_root") | call s:Detect(getcwd()) | endif | if exists("b:rails_root") | silent doau User BufEnterRails | endif
+  autocmd FileType netrw if !exists("b:rails_root") | call s:Detect(expand("<afile>:p")) | endif | if exists("b:rails_root") | silent doau User BufEnterRails | endif
+  autocmd BufEnter * if exists("b:rails_root")|silent doau User BufEnterRails|endif
+  autocmd BufLeave * if exists("b:rails_root")|silent doau User BufLeaveRails|endif
+  autocmd FileType railslog call s:RailslogSyntax()
 
-    augroup railsPluginDetect
-      autocmd!
-      autocmd BufNewFile,BufRead * call s:Detect(expand("<afile>:p"))
-      autocmd VimEnter * if expand("<amatch>") == "" && !exists("b:rails_root") | call s:Detect(getcwd()) | endif | if exists("b:rails_root") | silent doau User BufEnterRails | endif
-      autocmd FileType netrw if !exists("b:rails_root") | call s:Detect(expand("<afile>:p")) | endif | if exists("b:rails_root") | silent doau User BufEnterRails | endif
-      autocmd BufEnter * if exists("b:rails_root")|silent doau User BufEnterRails|endif
-      autocmd BufLeave * if exists("b:rails_root")|silent doau User BufLeaveRails|endif
-      autocmd FileType railslog call s:RailslogSyntax()
-
-      autocmd User BufEnterRails call s:RefreshBuffer()
-      autocmd User BufEnterRails call s:resetomnicomplete()
-      autocmd User BufEnterRails call s:BufDatabase(-1)
-      autocmd BufWritePost */config/database.yml unlet! s:dbext_type_{s:rv()} " Force reload
-      autocmd BufWritePost */test/test_helper.rb call s:cacheclear("user_asserts")
-      autocmd BufWritePost */config/routes.rb    call s:cacheclear("named_routes")
-      autocmd FileType * if exists("b:rails_root") | call s:BufSettings() | endif
-      autocmd Syntax ruby,eruby,yaml,haml,javascript,railslog if exists("b:rails_root") | call s:BufSyntax() | endif
-      silent! autocmd QuickFixCmdPre  make* call s:QuickFixCmdPre()
-      silent! autocmd QuickFixCmdPost make* call s:QuickFixCmdPost()
-    augroup END
-
-  endif
-  command! -bar -bang -nargs=* -complete=dir Rails :call s:NewApp(<bang>0,<f-args>)
-endfunction
+  autocmd User BufEnterRails call s:RefreshBuffer()
+  autocmd User BufEnterRails call s:resetomnicomplete()
+  autocmd User BufEnterRails call s:BufDatabase(-1)
+  autocmd BufWritePost */config/database.yml unlet! s:dbext_type_{s:rv()} " Force reload
+  autocmd BufWritePost */test/test_helper.rb call s:cacheclear("user_asserts")
+  autocmd BufWritePost */config/routes.rb    call s:cacheclear("named_routes")
+  autocmd FileType * if exists("b:rails_root") | call s:BufSettings() | endif
+  autocmd Syntax ruby,eruby,yaml,haml,javascript,railslog if exists("b:rails_root") | call s:BufSyntax() | endif
+  silent! autocmd QuickFixCmdPre  make* call s:QuickFixCmdPre()
+  silent! autocmd QuickFixCmdPost make* call s:QuickFixCmdPost()
+augroup END
 
 " }}}1
+" Initialization {{{1
 
 map <SID>xx <SID>xx
 let s:sid = s:sub(maparg("<SID>xx"),'xx$','')
@@ -4452,7 +4445,11 @@ unmap <SID>xx
 let s:file = expand('<sfile>:p')
 let s:revision = ' $Id$ '
 let s:revision = s:sub(s:revision,'^ [$]Id:.{-}(<[0-9a-f]+>).*[$] $','\1')
-call s:InitPlugin()
+
+command! -bar -bang -nargs=* -complete=dir Rails :call s:NewApp(<bang>0,<f-args>)
+call s:InitConfig()
+
+" }}}1
 
 let &cpo = s:cpo_save
 
