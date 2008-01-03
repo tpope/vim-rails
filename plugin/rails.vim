@@ -2208,9 +2208,11 @@ endfunction
 
 function! s:controllerEdit(bang,cmd,...)
   let suffix = '.rb'
-  if a:0 == 0 && RailsFileType() =~ '^view\%(-layout\|-partial\)\@!'
+  if a:0 == 0
     let controller = s:controller(1)
-    let suffix = suffix.'#'.expand('%:t:r')
+    if RailsFileType() =~ '^view\%(-layout\|-partial\)\@!'
+      let suffix = suffix.'#'.expand('%:t:r')
+    endif
   else
     let controller = a:1
   endif
