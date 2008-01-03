@@ -844,7 +844,7 @@ function! s:RefreshBuffer()
     let oldroot = b:rails_root
     unlet! b:rails_root b:rails_use_subversion
     let b:rails_refresh = 0
-    call s:BufInit(oldroot)
+    call RailsBufInit(oldroot)
     unlet! b:rails_refresh
   endif
 endfunction
@@ -1043,7 +1043,7 @@ endfunction
 " }}}1
 " Preview {{{1
 
-" Depends: s:getopt, s:sub, s:controller, s:lastmethod, s:Detect
+" Depends: s:getopt, s:sub, s:controller, s:lastmethod
 " Provides: s:initOpenURL
 
 function! s:initOpenURL()
@@ -1143,7 +1143,7 @@ function! s:Preview(bang,arg)
         setlocal filetype=xhtml
       endif
     endif
-    call s:Detect(RailsRoot())
+    call RailsBufInit(RailsRoot())
     map <buffer> <silent> q :bwipe<CR>
     wincmd p
     if !a:bang
@@ -2709,7 +2709,7 @@ endfunction
 " }}}1
 " Partial Extraction {{{1
 
-" Depends: s:error, s:sub, s:viewspattern, s:Detect, s:warn
+" Depends: s:error, s:sub, s:viewspattern, s:warn
 
 function! s:Extract(bang,...) range abort
   if a:0 == 0 || a:0 > 1
@@ -2843,7 +2843,7 @@ function! s:Extract(bang,...) range abort
   endif
   silent! exe '%substitute?\%(\w\|[@:"'."'".'-]\)\@<!'.var.'\>?'.name.'?g'
   1
-  call s:Detect(out)
+  call RailsBufInit(RailsRoot())
   if exists("l:partial_warn")
     call s:warn("Warning: partial exists!")
   endif
@@ -4336,11 +4336,15 @@ function! s:callback(file)
 endfunction
 
 function! s:BufInit(path)
+  let s:_{s:escvar(a:path)} = 1
+  return RailsBufInit(a:path)
+endfunction
+
+function! RailsBufInit(path)
   let cpo_save = &cpo
   set cpo&vim
   let firsttime = !(exists("b:rails_root") && b:rails_root == a:path)
   let b:rails_root = a:path
-  let s:_{s:rv()} = 1
   " Apparently RailsFileType() can be slow if the underlying file system is
   " slow (even though it doesn't really do anything IO related).  This caching
   " is a temporary hack; if it doesn't cause problems it should probably be
