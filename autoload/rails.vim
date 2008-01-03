@@ -591,7 +591,6 @@ function! s:InitConfig()
   call s:SetOptDefault("rails_expensive",1+0*(has("win32")||has("win32unix")))
   call s:SetOptDefault("rails_dbext",g:rails_expensive)
   call s:SetOptDefault("rails_subversion",0)
-  call s:SetOptDefault("rails_tabstop",0)
   call s:SetOptDefault("rails_default_file","README")
   call s:SetOptDefault("rails_default_database","")
   call s:SetOptDefault("rails_root_url",'http://localhost:3000/')
@@ -4053,61 +4052,6 @@ function! s:unabbrev(abbr)
 endfunction
 
 " }}}1
-" Tab Hacks {{{1
-
-" Depends: nothing!
-
-function! s:tabstop()
-  if !exists("b:rails_root")
-    return 0
-  elseif &filetype !~ '^\%(ruby\|'.s:gsub(s:view_types,',','\\|').'\|html\|css\|sass\|yaml\|javascript\)$'
-    return 0
-  elseif exists("b:rails_tabstop")
-    return b:rails_tabstop
-  elseif exists("g:rails_tabstop")
-    return g:rails_tabstop
-  endif
-endfunction
-
-function! s:breaktabs()
-  let ts = s:tabstop()
-  if ts
-    if exists("s:retab_in_process")
-      unlet s:retab_in_process
-      let line = line('.')
-      lockmarks silent! undo
-      lockmarks exe line
-    else
-      let &l:tabstop = 2
-      setlocal noexpandtab
-      let mod = &l:modifiable
-      setlocal modifiable
-      let line = line('.')
-      " FIXME: when I say g/^\s/, only apply to those lines
-      lockmarks g/^\s/retab!
-      lockmarks exe line
-      let &l:modifiable = mod
-    endif
-    let &l:tabstop = ts
-    let &l:softtabstop = ts
-    let &l:shiftwidth = ts
-  endif
-endfunction
-
-function! s:fixtabs()
-  let ts = s:tabstop()
-  if ts && ! &l:expandtab && !exists("s:retab_in_process")
-    let s:retab_in_process = 1
-    let &l:tabstop = 2
-    setlocal expandtab
-    let line = line('.')
-    lockmarks retab
-    lockmarks exe line
-    let &l:tabstop = ts
-  endif
-endfunction
-
-" }}}1
 " Settings {{{1
 
 " Depends: s:error, s:sub, s:sname, s:escvar, s:lastmethod, s:environment, s:gsub, s:lastmethodlib, s:gsub
@@ -4566,11 +4510,6 @@ function! s:InitPlugin()
       autocmd Syntax ruby,eruby,yaml,haml,javascript,railslog if exists("b:rails_root") | call s:BufSyntax() | endif
       silent! autocmd QuickFixCmdPre  make* call s:QuickFixCmdPre()
       silent! autocmd QuickFixCmdPost make* call s:QuickFixCmdPost()
-    augroup END
-    augroup railsPluginTabstop
-      autocmd!
-      autocmd BufWritePost,BufReadPost * call s:breaktabs()
-      autocmd BufWritePre              * call s:fixtabs()
     augroup END
 
   endif

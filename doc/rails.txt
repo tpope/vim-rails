@@ -1093,7 +1093,10 @@ write.  Thus, one can use a custom indent when editing files, yet conform to
 Rails conventions when saving them.  There is also a local buffer version
 of this option, to allow for things like: >
 	autocmd User Rails if &ft == 'ruby' | let b:rails_tabstop = 4 | endif
-This option defaults to 0, which is the recommended value.
+This option defaults to being unset entirely, which blocks the relevant code
+from even loading.  Setting it to zero will allow the code to load without
+actually enabling it (such that it might be enabled later), while setting it
+to a non-zero value enables the behavior.
 
 If instead of all this magic, you would prefer to just override this plugin's
 settings and use your own custom 'shiftwidth', adjust things manually in an
