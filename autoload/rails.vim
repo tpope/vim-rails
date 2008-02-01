@@ -2693,6 +2693,7 @@ function! s:Extract(bang,...) range abort
   if a:1 =~ '[^a-z0-9_/.]'
     return s:error("Invalid partial name")
   endif
+  let rails_root = RailsRoot()
   let ext = expand("%:e")
   let file = a:1
   let first = a:firstline
@@ -2710,7 +2711,7 @@ function! s:Extract(bang,...) range abort
   else
     let curdir = fnamemodify(RailsFilePath(),':h')
   endif
-  let curdir = RailsRoot()."/".curdir
+  let curdir = rails_root."/".curdir
   let dir = fnamemodify(file,":h")
   let fname = fnamemodify(file,":t")
   if fnamemodify(fname,":e") == ""
@@ -2725,13 +2726,13 @@ function! s:Extract(bang,...) range abort
   let var = "@".name
   let collection = ""
   if dir =~ '^/'
-    let out = (RailsRoot()).dir."/_".fname
+    let out = (rails_root).dir."/_".fname
   elseif dir == ""
     let out = (curdir)."/_".fname
   elseif isdirectory(curdir."/".dir)
     let out = (curdir)."/".dir."/_".fname
   else
-    let out = (RailsRoot())."/app/views/".dir."/_".fname
+    let out = (rails_root)."/app/views/".dir."/_".fname
   endif
   if filereadable(out)
     let partial_warn = 1
@@ -2818,7 +2819,7 @@ function! s:Extract(bang,...) range abort
   endif
   silent! exe '%substitute?\%(\w\|[@:"'."'".'-]\)\@<!'.var.'\>?'.name.'?g'
   1
-  call RailsBufInit(RailsRoot())
+  call RailsBufInit(rails_root)
   if exists("l:partial_warn")
     call s:warn("Warning: partial exists!")
   endif
