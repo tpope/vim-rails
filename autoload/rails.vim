@@ -1023,7 +1023,7 @@ endfunction
 
 function! s:initOpenURL()
   if !exists(":OpenURL")
-    if has("gui_mac")
+    if has("gui_mac") || has("gui_macvim") || exists("$SECURITYSESSIONID")
       command -bar -nargs=1 OpenURL :!open <args>
     elseif has("gui_win32")
       command -bar -nargs=1 OpenURL :!start cmd /cstart /b <args>

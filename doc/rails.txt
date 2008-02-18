@@ -218,7 +218,7 @@ actually edit a file from a Rails application.
 <			On Debian compatible distributions, the following is
 			the preferred method: >
 		:command -bar -nargs=1 OpenURL :!sensible-browser <args>
-<			If has("mac_gui"), has("win32_gui"), or
+<			If exists("$SECURITYSESSIONID"), has("gui_win32"), or
 			executable("sensible-browser") is true, the
 			corresponding command above will be automatically
 			defined.  Otherwise, you must provide your own (which

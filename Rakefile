@@ -3,7 +3,7 @@
 require 'rake'
 require 'rake/contrib/sshpublisher'
 
-files = ['plugin/rails.vim', 'doc/rails.txt']
+files = ['autoload/rails.vim', 'plugin/rails.vim', 'doc/rails.txt']
 
 desc "Make zip file"
 file 'rails.zip' => files do |t|
