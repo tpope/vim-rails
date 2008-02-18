@@ -1541,6 +1541,9 @@ function! s:findfromview(func,repl)
 endfunction
 
 function! s:RailsFind()
+  if filereadable(expand("<cfile>"))
+    return expand("<cfile>")
+  endif
   " UGH
   let format = s:format('html')
   let res = s:findit('\v\s*<require\s*\(=\s*File.dirname\(__FILE__\)\s*\+\s*[:'."'".'"](\f+)>.=',expand('%:h').'/\1')
