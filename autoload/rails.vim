@@ -1,6 +1,5 @@
 " autoload/rails.vim
 " Author:       Tim Pope <vimNOSPAM@tpope.info>
-" $Id$
 
 " Install this file as autoload/rails.vim.  This file is sourced manually by
 " plugin/rails.vim.  It is in autoload directory to allow for future usage of
@@ -11,10 +10,10 @@
 " Exit quickly when:
 " - this plugin was already loaded (or disabled)
 " - when 'compatible' is set
-if &cp || (exists("g:autoloaded_rails") && g:autoloaded_rails) && !(exists("g:rails_debug") && g:rails_debug)
+if &cp || exists("g:autoloaded_rails")
   finish
 endif
-let g:autoloaded_rails = 1
+let g:autoloaded_rails = '1.257'
 
 let s:cpo_save = &cpo
 set cpo&vim
@@ -464,10 +463,10 @@ endfunction
 " }}}1
 " "Public" Interface {{{1
 
-" RailsRevision() and RailsRoot() the only official public functions
+" RailsRoot() is the only official public function
 
 function! RailsRevision()
-  return s:revision
+  return 1000*matchstr(g:autoloaded_rails,'^\d\+')+matchstr(g:autoloaded_rails,'[1-9]\d*$')
 endfunction
 
 function! RailsRoot()
@@ -726,7 +725,7 @@ endfunction
 function! RailsNewApp(bang,...)
   if a:0 == 0
     if a:bang
-      echo "rails.vim revision ".s:revision
+      echo "rails.vim version ".g:autoloaded_rails
     else
       !rails
     endif
@@ -4369,8 +4368,6 @@ map <SID>xx <SID>xx
 let s:sid = s:sub(maparg("<SID>xx"),'xx$','')
 unmap <SID>xx
 let s:file = expand('<sfile>:p')
-let s:revision = ' $Id$ '
-let s:revision = s:sub(s:revision,'^ [$]Id:.{-}(<[0-9a-f]+>).*[$] $','\1')
 
 " }}}1
 
