@@ -902,8 +902,7 @@ endfunction
 function! s:Rake(bang,arg)
   let oldefm = &efm
   if a:bang
-    let &efm = s:efm_backtrace
-    "errorformat=%*[^"]"%f"%*\D%l: %m,"%f"%*\D%l: %m,%-G%f:%l: (Each undeclared identifier is reported only once,%-G%f:%l: for each function it appears in.),%f:%l:%c:%m,%f(%l):%m,%f:%l:%m,"%f"\, line %l%*\D%c%*[^ ] %m,%D%*\a[%*\d]: Entering directory `%f',%X%*\a[%*\d]: Leaving directory `%f',%D%*\a: Entering directory `%
+    let &l:errorformat = s:efm_backtrace
   endif
   let t = RailsFileType()
   let arg = a:arg
@@ -1006,7 +1005,7 @@ function! s:Rake(bang,arg)
     make
   endif
   if oldefm != ''
-    let &efm = oldefm
+    let &l:errorformat = oldefm
   endif
 endfunction
 
@@ -4263,7 +4262,7 @@ function! s:BufSettings()
   endif
   call s:SetBasePath()
   let rp = s:gsub(RailsRoot(),'[ ,]','\\&')
-  let &errorformat=s:efm
+  let &l:errorformat = s:efm
   setlocal makeprg=rake
   if stridx(&tags,rp) == -1
     let &l:tags = &tags . "," . rp . "/tags," . rp . "/.tags"
