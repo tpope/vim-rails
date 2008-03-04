@@ -1117,12 +1117,9 @@ The latest stable version can be found at
     http://www.vim.org/scripts/script.php?script_id=1567
 In Vim 7, you can keep up to date with |GetLatestVimScripts|.
 
-Development versions can be found at the following URLs:
-    http://tpope.us/rails.vba
-    http://tpope.us/rails.zip
-    http://svn.tpope.net/rails/vim/railsvim
-The first is a |vimball| for Vim 7.  The third is a subversion repository
-and contains the very latest features and bugs.
+The very latest development versions can be retrieved from Git:
+    http://git.tpope.net/?p=vim-rails.git
+    git clone git://git.tpope.net/git/vim-rails.git
 
 Feedback is highly desired on this plugin.  Please send all comments,
 complaints, and compliments to the author.  No bug is too small to report.
