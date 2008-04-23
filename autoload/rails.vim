@@ -3205,18 +3205,17 @@ function! s:BufSyntax()
       syn cluster htmlArgCluster add=@rubyStringSpecial
       syn cluster htmlPreProc    add=@rubyStringSpecial
 
-    elseif &syntax == "eruby" || &syntax == "haml" " && t =~ '^view\>'
+    elseif &syntax == "eruby" || &syntax == "haml"
       syn case match
       if classes != ''
         exe "syn keyword erubyRailsUserClass ".classes." contained containedin=@erubyRailsRegions"
       endif
       if &syntax == "haml"
-        syn cluster erubyRailsRegions contains=hamlRubyCodeIncluded,hamlRubyCode,hamlRubyHash,rubyInterpolation
+        syn cluster erubyRailsRegions contains=hamlRubyCodeIncluded,hamlRubyCode,hamlRubyHash,@hamlEmbeddedRuby,rubyInterpolation
       else
         syn cluster erubyRailsRegions contains=erubyOneLiner,erubyBlock,erubyExpression,rubyInterpolation
       endif
-      syn match rubyRailsError '[@:]\@<!@\%(params\|request\|response\|session\|headers\|cookies\|flash\)\>' contained containedin=@erubyRailsRegions,@rubyTop
-      "exe "syn match erubyRailsHelperMethod ".rails_helper_methods." contained containedin=@erubyRailsRegions"
+      syn match rubyRailsError '[@:]\@<!@\%(params\|request\|response\|session\|headers\|cookies\|flash\)\>' contained containedin=@erubyRailsRegions
       exe "syn keyword erubyRailsHelperMethod ".s:sub(s:helpermethods(),'<select\s+','')." contained containedin=@erubyRailsRegions"
       syn match erubyRailsHelperMethod '\<select\>\%(\s*{\|\s*do\>\|\s*(\=\s*&\)\@!' contained containedin=@erubyRailsRegions
       syn keyword erubyRailsMethod debugger logger contained containedin=@erubyRailsRegions
