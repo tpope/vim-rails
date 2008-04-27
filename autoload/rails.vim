@@ -1915,7 +1915,15 @@ function! s:fixturesList(A,L,P)
 endfunction
 
 function! s:migrationList(A,L,P)
-  return s:autocamelize(s:relglob("db/migrate/???_",a:A."*",".rb"),a:A)
+  if a:A =~ '^\d'
+    let migrations = s:relglob("db/migrate/",a:A."[0-9_]*",".rb")
+    let migrations = s:gsub(migrations,'_.{-}($|\n)','\1')
+    return migrations
+  else
+    let migrations = s:relglob("db/migrate/","[0-9]*[0-9]_".a:A."*",".rb")
+    let migrations = s:gsub(migrations,'(^|\n)\d+_','\1')
+    return s:autocamelize(migrations,a:A)
+  endif
 endfunction
 
 function! s:apiList(A,L,P)
