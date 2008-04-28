@@ -3600,14 +3600,13 @@ function! s:NewProjectTemplate(proj,rr,fancy)
   if isdirectory(a:rr.'/test/integration')
     let str = str . "  integration=integration filter=\"**\" {\n  }\n"
   endif
-  let str = str . "  mocks=mocks filter=\"**\" {\n  }\n"
+  if isdirectory(a:rr.'/test/mocks')
+    let str = str . "  mocks=mocks filter=\"**\" {\n  }\n"
+  endif
   if isdirectory(a:rr.'/test/unit')
     let str = str . "  unit=unit filter=\"**\" {\n  }\n"
   endif
   let str = str . " }\n}\n"
-  "if exists("*RailsProcessProject")
-    "let str = call RailsProcessProject(a:rr,str)
-  "endif
   return str
 endfunction
 
