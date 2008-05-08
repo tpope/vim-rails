@@ -3644,7 +3644,7 @@ function! s:BufDatabase(...)
       endif
       if out == ""
         let cmdb = 'require %{yaml}; File.open(%q{'.RailsRoot().'/config/database.yml}) {|f| y = YAML::load(f); e = y[%{'
-        let cmde = '}]; i=0; e=y[e] while e.respond_to?(:to_str) && (i+=1)<16; e.each{|k,v|puts k+%{=}+v if v}}'
+        let cmde = '}]; i=0; e=y[e] while e.respond_to?(:to_str) && (i+=1)<16; e.each{|k,v|puts k.to_s+%{=}+v.to_s}}'
         if a:0 ? a:1 : g:rails_expensive
           let out = s:rubyeval(cmdb.env.cmde,'')
         else
