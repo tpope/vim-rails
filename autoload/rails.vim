@@ -23,7 +23,9 @@ set cpo&vim
 " versions of rails.vim, sporadic stack overflows occured when omnicomplete
 " was used.  This was apparently due to rails.vim having first initialized
 " ruby deep in a nested function call.
-silent! ruby nil
+if has("ruby")
+  silent! ruby nil
+endif
 
 " Utility Functions {{{1
 
@@ -3921,7 +3923,7 @@ function! s:Abbrev(bang,...) abort
     return s:error("Rabbrev: invalid arguments")
   endif
   let rhs = a:2
-  silent! call s:unabbrev(lhs)
+  call s:unabbrev(lhs,1)
   if lhs =~ '($'
     let b:rails_abbreviations = b:rails_abbreviations . lhs . "\t" . rhs . "" . (a:0 > 2 ? "\t".a:3 : ""). "\n"
     let llhs = s:sub(lhs,'\($','')
@@ -3949,14 +3951,16 @@ function! s:Abbrev(bang,...) abort
   let b:rails_abbreviations = b:rails_abbreviations . lhs . "\t" . rhs . "\n"
 endfunction
 
-function! s:unabbrev(abbr)
+function! s:unabbrev(abbr,...)
   let abbr = s:sub(a:abbr,'%(::|\(|\[)$','')
   let pat  = s:sub(abbr,'\\','\\\\')
   if !exists("b:rails_abbreviations")
     let b:rails_abbreviations = "\n"
   endif
   let b:rails_abbreviations = substitute(b:rails_abbreviations,'\V\C\n'.pat.'\(\t\|::\t\|(\t\|[\t\)\.\{-\}\n','\n','')
-  exe "iunabbrev <buffer> ".abbr
+  if a:0 == 0 || a:1 == 0
+    exe "iunabbrev <buffer> ".abbr
+  endif
 endfunction
 
 " }}}1
