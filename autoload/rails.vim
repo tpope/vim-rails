@@ -303,7 +303,7 @@ function! s:format(...)
   return format
 endfunction
 
-let s:view_types = 'rhtml,erb,rxml,builder,rjs,mab,liquid,haml,dryml'
+let s:view_types = 'rhtml,erb,rxml,builder,rjs,mab,liquid,haml,dryml,mn'
 
 function! s:viewspattern()
   return '\%('.s:gsub(s:view_types,',','\\|').'\)'
@@ -2797,6 +2797,8 @@ function! s:Extract(bang,...) range abort
     let renderstr = "page << ".s:sub(renderstr,"render ","render(").")"
   elseif ext == "haml"
     let renderstr = "= ".renderstr
+  elseif ext == "mn"
+    let renderstr = "_".renderstr
   endif
   let buf = @@
   silent exe range."yank"
