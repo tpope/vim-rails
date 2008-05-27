@@ -1085,22 +1085,11 @@ Enabled by default.  See |rails-syntax|.
 
 					*rails-tabs* *g:rails_tabstop*  >
 	let g:rails_tabstop=4
-This option is for people who dislike the default 'shiftwidth' of 2.  When
-non-zero, all files will have a |:retab|! done with 'tabstop' set to 2 on
-load, to convert the initial indent from spaces to tabs.  Then, 'tabstop' and
-'shiftwidth' will be set to the option's value.  The process is reversed on
-write.  Thus, one can use a custom indent when editing files, yet conform to
-Rails conventions when saving them.  There is also a local buffer version
-of this option, to allow for things like: >
-	autocmd User Rails if &ft == 'ruby' | let b:rails_tabstop = 4 | endif
-This option defaults to being unset entirely, which blocks the relevant code
-from even loading.  Setting it to zero will allow the code to load without
-actually enabling it (such that it might be enabled later), while setting it
-to a non-zero value enables the behavior.
+This option now requires the plugin railstab.vim from vim.org:
+	http://www.vim.org/scripts/script.php?script_id=2253
 
-If instead of all this magic, you would prefer to just override this plugin's
-settings and use your own custom 'shiftwidth', adjust things manually in an
-autocommand: >
+If your goal is simply just override this plugin's settings and use your own
+custom 'shiftwidth', adjust things manually in an autocommand: >
 	autocmd User Rails set sw=4 sts=4 noet
 This is highly discouraged: don't fight Rails.
 
