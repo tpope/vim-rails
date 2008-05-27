@@ -13,7 +13,7 @@
 if &cp || exists("g:autoloaded_rails")
   finish
 endif
-let g:autoloaded_rails = '1.257'
+let g:autoloaded_rails = '2.0'
 
 let s:cpo_save = &cpo
 set cpo&vim
