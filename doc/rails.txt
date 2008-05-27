@@ -1076,7 +1076,8 @@ default.
 	let g:rails_subversion=1
 Automatically add/remove files to the subversion repository for commands like
 |:Rgenerate| and |:Rdestroy| (but not |:Rscript|).  Ignored when the
-application is not part of a subversion repository.  Disabled by default.
+application is not part of a subversion repository.  Deprecated and disabled
+by default.
 
 						*g:rails_syntax*  >
 	let g:rails_syntax=1
