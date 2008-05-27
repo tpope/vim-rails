@@ -3051,7 +3051,7 @@ function! s:helpermethods()
         \."hidden_field hidden_field_tag highlight "
         \."image_path image_submit_tag image_tag input "
         \."javascript_cdata_section javascript_include_tag javascript_path javascript_tag "
-        \."label link_to link_to_function link_to_if link_to_remote link_to_unless link_to_unless_current "
+        \."label label_tag link_to link_to_function link_to_if link_to_remote link_to_unless link_to_unless_current "
         \."mail_to markdown "
         \."number_to_currency number_to_human_size number_to_percentage number_to_phone number_with_delimiter number_with_precision "
         \."observe_field observe_form option_groups_from_collection_for_select options_for_select options_from_collection_for_select "
