@@ -173,7 +173,7 @@ function! s:rubyeval(ruby,...)
   endif
 endfunction
 
-function! s:railseval(ruby)
+function! s:railseval(ruby,...)
   if a:0 > 0
     let def = a:1
   else
