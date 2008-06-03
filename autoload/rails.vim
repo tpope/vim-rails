@@ -1547,7 +1547,7 @@ function! s:RailsFind()
   if res != ""|return res|endif
   let res = s:singularize(s:findamethod('has_many\|has_and_belongs_to_many','app/models/\1'))
   if res != ""|return res.".rb"|endif
-  let res = s:singularize(s:findamethod('create_table\|drop_table\|add_column\|rename_column\|remove_column\|add_index','app/models/\1'))
+  let res = s:singularize(s:findamethod('create_table\|change_table\|drop_table\|add_column\|rename_column\|remove_column\|add_index','app/models/\1'))
   if res != ""|return res.".rb"|endif
   let res = s:singularize(s:findasymbol('through','app/models/\1'))
   if res != ""|return res.".rb"|endif
@@ -3143,7 +3143,7 @@ function! s:BufSyntax()
         syn keyword rubyRailsFilterMethod verify
       endif
       if t =~ '^\%(db-\)\=\%(migration\|schema\)\>'
-        syn keyword rubyRailsMigrationMethod create_table drop_table rename_table add_column rename_column change_column change_column_default remove_column add_index remove_index
+        syn keyword rubyRailsMigrationMethod create_table change_table drop_table rename_table add_column rename_column change_column change_column_default remove_column add_index remove_index
       endif
       if t =~ '^test\>'
         if s:cacheneeds("user_asserts") && filereadable(RailsRoot()."/test/test_helper.rb")
@@ -3849,8 +3849,8 @@ function! s:BufAbbreviations()
       Rabbrev mac(  add_column
       Rabbrev mrnc( rename_column
       Rabbrev mrc(  remove_column
-      Rabbrev mct( create_table
-      "Rabbrev mct   create_table\ :\ do\ <Bar>t<Bar><CR>end<Esc>k$6hi
+      Rabbrev mct(  create_table
+      Rabbrev mcht( change_table
       Rabbrev mrnt( rename_table
       Rabbrev mdt(  drop_table
       Rabbrev mcc(  t.column
