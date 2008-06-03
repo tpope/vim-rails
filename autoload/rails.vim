@@ -1580,7 +1580,9 @@ function! s:RailsFind()
   let res = s:sub(s:findfromview('javascript_include_tag','public/javascripts/\1.js'),'/defaults>','/application')
   if res != ""|return res|endif
   if RailsFileType() =~ '^controller\>'
-    let res = s:findit('\s*\<def\s\+\(\k\+\)\>(\=',s:sub(s:sub(RailsFilePath(),'/controllers/','/views/'),'_controller\.rb$','').'/\1')
+    let contr = s:controller()
+    let view = s:findit('\s*\<def\s\+\(\k\+\)\>(\=','/\1')
+    let res = s:findview(contr.'/'.view)
     if res != ""|return res|endif
   endif
   let isf_keep = &isfname
