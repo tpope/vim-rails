@@ -37,7 +37,7 @@ function! s:error(str)
 endfunction
 
 function! s:autoload(...)
-  if !exists("g:autoloaded_rails")
+  if !exists("g:autoloaded_rails") && v:version >= 700
     runtime! autoload/rails.vim
   endif
   if exists("g:autoloaded_rails")
@@ -48,7 +48,11 @@ function! s:autoload(...)
   endif
   if !exists("g:rails_no_autoload_warning")
     let g:rails_no_autoload_warning = 1
-    call s:error("Disabling rails.vim: autoload/rails.vim is missing")
+    if v:version >= 700
+      call s:error("Disabling rails.vim: autoload/rails.vim is missing")
+    else
+      call s:error("Disabling rails.vim: Vim version 7 or higher required")
+    endif
   endif
   return ""
 endfunction
