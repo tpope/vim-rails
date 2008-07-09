@@ -3815,8 +3815,6 @@ function! s:BufAbbreviations()
       Rabbrev taiw  time_ago_in_words
     endif
     if t =~ '^controller\>'
-      "call s:AddSelectiveExpand('rn','[,\r]','render :nothing => true')
-      "let b:rails_abbreviations = b:rails_abbreviations . "rn\trender :nothing => true\n"
       Rabbrev re(  redirect_to
       Rabbrev rea( redirect_to :action\ =>\ 
       Rabbrev rec( redirect_to :controller\ =>\ 
@@ -3850,28 +3848,17 @@ function! s:BufAbbreviations()
       Rabbrev mcc(  t.column
     endif
     if t =~ '^test\>'
-      "Rabbrev ae(   assert_equal
       Rabbrev ase(  assert_equal
-      "Rabbrev ako(  assert_kind_of
       Rabbrev asko( assert_kind_of
-      "Rabbrev ann(  assert_not_nil
       Rabbrev asnn( assert_not_nil
-      "Rabbrev ar(   assert_raise
       Rabbrev asr(  assert_raise
-      "Rabbrev are(  assert_response
       Rabbrev asre( assert_response
       Rabbrev art(  assert_redirected_to
     endif
     Rabbrev :a    :action\ =>\ 
+    " hax
+    Rabbrev :c    :co________\ =>\ 
     inoreabbrev <buffer> <silent> :c <C-R>=<SID>TheMagicC()<CR>
-    " Lie a little
-    if t =~ '^view\>'
-      let b:rails_abbreviations = b:rails_abbreviations . ":c\t:collection => \n"
-    elseif s:controller() != ''
-      let b:rails_abbreviations = b:rails_abbreviations . ":c\t:controller => \n"
-    else
-      let b:rails_abbreviations = b:rails_abbreviations . ":c\t:conditions => \n"
-    endif
     Rabbrev :i    :id\ =>\ 
     Rabbrev :o    :object\ =>\ 
     Rabbrev :p    :partial\ =>\ 
@@ -3893,31 +3880,39 @@ endfunction
 
 function! s:Abbrev(bang,...) abort
   if !exists("b:rails_abbreviations")
-    let b:rails_abbreviations = "\n"
+    let b:rails_abbreviations = {}
   endif
   if a:0 > 3 || (a:bang && (a:0 != 1))
     return s:error("Rabbrev: invalid arguments")
   endif
-  if a:bang
-    return s:unabbrev(a:1)
-  endif
   if a:0 == 0
-    echo s:sub(b:rails_abbreviations,'^\n','')
+    for key in sort(keys(b:rails_abbreviations))
+      echo key . join(b:rails_abbreviations[key],"\t")
+    endfor
     return
   endif
   let lhs = a:1
+  let root = s:sub(lhs,'%(::|\(|\[)$','')
+  if a:bang
+    if has_key(b:rails_abbreviations,root)
+      call remove(b:rails_abbreviations,root)
+    endif
+    exe "iunabbrev <buffer> ".root
+    return
+  endif
   if a:0 > 3 || a:0 < 2
     return s:error("Rabbrev: invalid arguments")
   endif
   let rhs = a:2
-  call s:unabbrev(lhs,1)
+  if has_key(b:rails_abbreviations,root)
+    call remove(b:rails_abbreviations,root)
+  endif
   if lhs =~ '($'
-    let b:rails_abbreviations = b:rails_abbreviations . lhs . "\t" . rhs . "" . (a:0 > 2 ? "\t".a:3 : ""). "\n"
-    let llhs = s:sub(lhs,'\($','')
+    let b:rails_abbreviations[root] = ["(", rhs . (a:0 > 2 ? "\t".a:3 : "")]
     if a:0 > 2
-      call s:AddParenExpand(llhs,rhs,a:3)
+      call s:AddParenExpand(root,rhs,a:3)
     else
-      call s:AddParenExpand(llhs,rhs)
+      call s:AddParenExpand(root,rhs)
     endif
     return
   endif
@@ -3925,29 +3920,15 @@ function! s:Abbrev(bang,...) abort
     return s:error("Rabbrev: invalid arguments")
   endif
   if lhs =~ ':$'
-    let llhs = s:sub(lhs,':=:$','')
-    call s:AddColonExpand(llhs,rhs)
+    call s:AddColonExpand(root,rhs)
   elseif lhs =~ '\[$'
-    let llhs = s:sub(lhs,'\[$','')
-    call s:AddBracketExpand(llhs,rhs)
+    call s:AddBracketExpand(root,rhs)
   elseif lhs =~ '\w$'
     call s:AddTabExpand(lhs,rhs)
   else
     return s:error("Rabbrev: unimplemented")
   endif
-  let b:rails_abbreviations = b:rails_abbreviations . lhs . "\t" . rhs . "\n"
-endfunction
-
-function! s:unabbrev(abbr,...)
-  let abbr = s:sub(a:abbr,'%(::|\(|\[)$','')
-  let pat  = s:sub(abbr,'\\','\\\\')
-  if !exists("b:rails_abbreviations")
-    let b:rails_abbreviations = "\n"
-  endif
-  let b:rails_abbreviations = substitute(b:rails_abbreviations,'\V\C\n'.pat.'\(\t\|::\t\|(\t\|[\t\)\.\{-\}\n','\n','')
-  if a:0 == 0 || a:1 == 0
-    exe "iunabbrev <buffer> ".abbr
-  endif
+  let b:rails_abbreviations[root] = [matchstr(lhs,'\W*$'),rhs]
 endfunction
 
 " }}}1
