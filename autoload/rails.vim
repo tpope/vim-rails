@@ -1591,7 +1591,7 @@ endfunction
 function! s:initnamedroutes()
   if s:cacheneeds("named_routes")
     let exec = "ActionController::Routing::Routes.named_routes.each {|n,r| puts %{#{n} app/controllers/#{r.requirements[:controller]}_controller.rb##{r.requirements[:action]}}}"
-    let string = s:railseval(exec)
+    let string = RailsEval(exec)
     let routes = {}
     let list = split(string,"\n")
     let i = 0
