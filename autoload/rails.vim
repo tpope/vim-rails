@@ -139,12 +139,8 @@ function! s:rubyexebg(cmd)
   return v:shell_error
 endfunction
 
-function! s:rubyexe(cmd,...)
-  if a:0
-    call s:rubyexebg(a:cmd)
-  else
-    exe "!".s:esccmd(s:rubyexestr(a:cmd))
-  endif
+function! s:rubyexe(cmd)
+  exe "!".s:esccmd(s:rubyexestr(a:cmd))
   return v:shell_error
 endfunction
 
