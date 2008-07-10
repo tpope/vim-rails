@@ -783,10 +783,14 @@ function! s:Refresh(bang)
       silent! ruby ActiveRecord::Base.clear_reloadable_connections! if defined?(ActiveRecord)
     endif
   endif
-  call s:cacheclear()
+  call rails#app().cache.clear()
   silent doautocmd User BufLeaveRails
-  if a:bang && s:cacheworks()
-    let s:cache = {}
+  if a:bang
+    for key in keys(s:apps)
+      if type(s:apps[key]) == type({})
+        call s:apps[key].cache.clear()
+      endif
+    endfor
   endif
   let i = 1
   let max = bufnr('$')
@@ -1592,51 +1596,34 @@ function! s:RailsFind()
   return res
 endfunction
 
-function! s:initnamedroutes()
-  if s:cacheneeds("named_routes")
-    let exec = "ActionController::Routing::Routes.named_routes.each {|n,r| puts %{#{n} app/controllers/#{r.requirements[:controller]}_controller.rb##{r.requirements[:action]}}}"
-    let string = RailsEval(exec)
-    let routes = {}
-    let list = split(string,"\n")
-    let i = 0
-    " If we use for, Vim 6.2 dumbly treats endfor like endfunction
-    while i < len(list)
-      let route = split(list[i]," ")
-      let name = route[0]
-      let routes[name] = route[1]
-      let i = i + 1
-    endwhile
-    call s:cacheset("named_routes",routes)
-  endif
-endfunction
-
-function! s:namedroutefile(route)
-  call s:initnamedroutes()
-  if s:cachehas("named_routes") && has_key(s:cache("named_routes"),a:route)
-    return s:cache("named_routes")[a:route]
+function! s:app_named_route_file(route) dict
+  call self.route_names()
+  if self.cache.has("named_routes") && has_key(self.cache.get("named_routes"),a:route)
+    return self.cache.get("named_routes")[a:route]
   endif
   return ""
 endfunction
 
-function! RailsNamedRoutes()
-  call s:initnamedroutes()
-  if s:cachehas("named_routes")
-    return keys(s:cache("named_routes"))
-  else
-    " Dead code
-    if s:cacheneeds("route_names")
-      let lines = readfile(RailsRoot()."/config/routes.rb")
-      let plurals = map(filter(copy(lines),'v:val =~# "^  map\\.resources\\s\\+:\\w"'),'matchstr(v:val,"^  map\\.resources\\=\\s\\+:\\zs\\w\\+")')
-      let singulars = map(copy(plurals),'s:singularize(v:val)')
-      let extras = map(copy(singulars),'"new_".v:val')+map(copy(singulars),'"edit_".v:val')
-      let all = plurals + singulars + extras
-      let named = map(filter(copy(lines),'v:val =~# "^  map\\.\\%(connect\\>\\|resources\\=\\>\\)\\@!\\w\\+"'),'matchstr(v:val,"^  map\\.\\zs\\w\\+")')
-      call s:cacheset("route_names",named+all+map(copy(all),'"formatted_".v:val'))
-    endif
-    if s:cachehas("route_names")
-      return s:cache("route_names")
-    endif
+function! s:app_route_names() dict
+  if self.cache.needs("named_routes")
+    let exec = "ActionController::Routing::Routes.named_routes.each {|n,r| puts %{#{n} app/controllers/#{r.requirements[:controller]}_controller.rb##{r.requirements[:action]}}}"
+    let string = self.eval(exec)
+    let routes = {}
+    for line in split(string,"\n")
+      let route = split(line," ")
+      let name = route[0]
+      let routes[name] = route[1]
+    endfor
+    call self.cache.set("named_routes",routes)
   endif
+
+  return keys(self.cache.get("named_routes"))
+endfunction
+
+call s:add_methods('app', ['route_names','named_route_file'])
+
+function! RailsNamedRoutes()
+  return rails#app().route_names()
 endfunction
 
 function! s:RailsIncludefind(str,...)
@@ -1716,7 +1703,7 @@ function! s:RailsIncludefind(str,...)
     " REST helpers
     let str = s:sub(str,'_%(path|url)$','')
     let str = s:sub(str,'^hash_for_','')
-    let file = s:namedroutefile(str)
+    let file = rails#app().named_route_file(str)
     if file == ""
       let str = s:sub(str,'^formatted_','')
       if str =~ '^\%(new\|edit\)_'
@@ -2954,67 +2941,45 @@ endfunction
 " }}}1
 " Cache {{{1
 
-function! s:cacheworks()
-  if v:version < 700 || RailsRoot() == ""
-    return 0
+let s:cache_prototype = {'dict': {}}
+
+function! s:cache_clear(...) dict
+  if a:0 == 0
+    let self.dict = {}
+  elseif has_key(self.dict,a:1)
+    unlet! self.dict[a:1]
   endif
-  if !exists("s:cache")
-    let s:cache = {}
-  endif
-  if !has_key(s:cache,RailsRoot())
-    let s:cache[RailsRoot()] = {}
-  endif
-  return 1
 endfunction
 
-function! s:cacheclear(...)
-  if RailsRoot() == "" | return "" | endif
-  if !s:cacheworks() | return "" | endif
+function! rails#cache_clear(...)
+  if b:rails_root != ''
+    return call(rails#app().cache.clear,a:000,rails#app())
+  endif
+endfunction
+
+function! s:cache_get(...) dict
   if a:0 == 1
-    if s:cachehas(a:1)
-      unlet! s:cache[RailsRoot()][a:1]
-    endif
+    return self.dict[a:1]
   else
-    let s:cache[RailsRoot()] = {}
+    return self.dict
   endif
 endfunction
 
-function! s:cache(...)
-  if !s:cacheworks() | return "" | endif
-  if a:0 == 1
-    return s:cache[RailsRoot()][a:1]
-  else
-    return s:cache[RailsRoot()]
-  endif
+function! s:cache_has(key) dict
+  return has_key(self.dict,a:key)
 endfunction
 
-"function! RailsCache(...)
-  "if !s:cacheworks() | return "" | endif
-  "if a:0 == 1
-    "if s:cachehas(a:1)
-      "return s:cache(a:1)
-    "else
-      "return ""
-    "endif
-  "else
-    "return s:cache()
-  "endif
-"endfunction
-
-function! s:cachehas(key)
-  if !s:cacheworks() | return "" | endif
-  return has_key(s:cache(),a:key)
+function! s:cache_needs(key) dict
+  return !has_key(self.dict,a:key)
 endfunction
 
-function! s:cacheneeds(key)
-  if !s:cacheworks() | return "" | endif
-  return !has_key(s:cache(),a:key)
+function! s:cache_set(key,value) dict
+  let self.dict[a:key] = a:value
 endfunction
 
-function! s:cacheset(key,value)
-  if !s:cacheworks() | return "" | endif
-  let s:cache[RailsRoot()][a:key] = a:value
-endfunction
+call s:add_methods('cache', ['clear','needs','has','get','set'])
+
+let s:app_prototype.cache = s:cache_prototype
 
 " }}}1
 " Syntax {{{1
@@ -3080,6 +3045,20 @@ function! s:helpermethods()
   return s:rails_helper_methods
 endfunction
 
+function! s:app_user_assertions() dict
+  if self.cache.needs("user_assertions")
+    if filereadable(self._root."/test/test_helper.rb")
+      let assertions = map(filter(readfile(self._root."/test/test_helper.rb"),'v:val =~ "^  def assert_"'),'matchstr(v:val,"^  def \\zsassert_\\w\\+")')
+    else
+      let assertions = []
+    endif
+    call self.cache.set("user_assertions",assertions)
+  endif
+  return self.cache.get('user_assertions')
+endfunction
+
+call s:add_methods('app', ['user_assertions'])
+
 function! s:BufSyntax()
   if (!exists("g:rails_syntax") || g:rails_syntax)
     let t = RailsFileType()
@@ -3144,11 +3123,8 @@ function! s:BufSyntax()
         syn keyword rubyRailsMigrationMethod create_table change_table drop_table rename_table add_column rename_column change_column change_column_default remove_column add_index remove_index
       endif
       if t =~ '^test\>'
-        if s:cacheneeds("user_asserts") && filereadable(RailsRoot()."/test/test_helper.rb")
-          call s:cacheset("user_asserts",map(filter(readfile(RailsRoot()."/test/test_helper.rb"),'v:val =~ "^  def assert_"'),'matchstr(v:val,"^  def \\zsassert_\\w\\+")'))
-        endif
-        if s:cachehas("user_asserts") && !empty(s:cache("user_asserts"))
-          exe "syn keyword rubyRailsUserMethod ".join(s:cache("user_asserts"))
+        if !empty(rails#app().user_assertions())
+          exe "syn keyword rubyRailsUserMethod ".join(rails#app().user_assertions())
         endif
         syn keyword rubyRailsTestMethod add_assertion assert assert_block assert_equal assert_in_delta assert_instance_of assert_kind_of assert_match assert_nil assert_no_match assert_not_equal assert_not_nil assert_not_same assert_nothing_raised assert_nothing_thrown assert_operator assert_raise assert_respond_to assert_same assert_send assert_throws assert_recognizes assert_generates assert_routing flunk fixtures fixture_path use_transactional_fixtures use_instantiated_fixtures assert_difference assert_no_difference assert_valid
         if t !~ '^test-unit\>'
@@ -4338,8 +4314,8 @@ augroup railsPluginAuto
   autocmd User BufEnterRails call s:resetomnicomplete()
   autocmd User BufEnterRails call s:BufDatabase(-1)
   autocmd BufWritePost */config/database.yml unlet! s:dbext_type_{s:rv()} " Force reload
-  autocmd BufWritePost */test/test_helper.rb call s:cacheclear("user_asserts")
-  autocmd BufWritePost */config/routes.rb    call s:cacheclear("named_routes")
+  autocmd BufWritePost */test/test_helper.rb call rails#cache_clear("user_assertions")
+  autocmd BufWritePost */config/routes.rb    call rails#cache_clear("named_routes")
   autocmd FileType * if exists("b:rails_root") | call s:BufSettings() | endif
   autocmd Syntax ruby,eruby,yaml,haml,javascript,railslog if exists("b:rails_root") | call s:BufSyntax() | endif
   silent! autocmd QuickFixCmdPre  make* call s:QuickFixCmdPre()
