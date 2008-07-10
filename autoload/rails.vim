@@ -115,76 +115,6 @@ function! s:hasfile(file)
   return filereadable(RailsRoot().'/'.a:file)
 endfunction
 
-function! s:rubyexestr(cmd)
-  if RailsRoot() =~ '://'
-    return "ruby ".a:cmd
-  else
-    return "ruby -C ".s:rquote(RailsRoot())." ".a:cmd
-  endif
-endfunction
-
-function! s:rubyexebg(cmd)
-  let cmd = s:esccmd(s:rubyexestr(a:cmd))
-  if has("gui_win32")
-    if &shellcmdflag == "-c" && ($PATH . &shell) =~? 'cygwin'
-      silent exe "!cygstart -d ".s:rquote(RailsRoot())." ruby ".a:cmd
-    else
-      exe "!start ".cmd
-    endif
-  elseif exists("$STY") && !has("gui_running") && s:getopt("gnu_screen","abg") && executable("screen")
-    silent exe "!screen -ln -fn -t ".s:sub(s:sub(a:cmd,'\s.*',''),'^%(script|-rcommand)/','rails-').' '.cmd
-  else
-    exe "!".cmd
-  endif
-  return v:shell_error
-endfunction
-
-function! s:rubyexe(cmd)
-  exe "!".s:esccmd(s:rubyexestr(a:cmd))
-  return v:shell_error
-endfunction
-
-function! s:rubyeval(ruby,...)
-  if a:0 > 0
-    let def = a:1
-  else
-    let def = ""
-  endif
-  if !executable("ruby")
-    return def
-  endif
-  let cmd = s:rubyexestr('-e '.s:rquote('begin; require %{rubygems}; rescue LoadError; end; begin; require %{active_support}; rescue LoadError; end; '.a:ruby))
-  "let g:rails_last_ruby_command = cmd
-  " If the shell is messed up, this command could cause an error message
-  silent! let results = system(cmd)
-  "let g:rails_last_ruby_result = results
-  if v:shell_error != 0 " results =~ '-e:\d' || results =~ 'ruby:.*(fatal)'
-    return def
-  else
-    return results
-  endif
-endfunction
-
-function! s:railseval(ruby,...)
-  if a:0 > 0
-    let def = a:1
-  else
-    let def = ""
-  endif
-  if !executable("ruby")
-    return def
-  endif
-  let args = "-r./config/boot -r ".s:rquote(RailsRoot()."/config/environment")." -e ".s:rquote(a:ruby)
-  let cmd = s:rubyexestr(args)
-  " If the shell is messed up, this command could cause an error message
-  silent! let results = system(cmd)
-  if v:shell_error != 0 " results =~ '-e:\d' || results =~ 'ruby:.*(fatal)'
-    return def
-  else
-    return results
-  endif
-endfunction
-
 function! s:endof(lnum)
   if a:lnum == 0
     return 0
@@ -585,13 +515,71 @@ function! RailsType()
   return RailsFileType()
 endfunction
 
-function! RailsEval(ruby,...)
+" }}}1
+" Ruby Execution {{{1
+
+function! s:app_ruby_shell_command(cmd) dict abort
+  if self._root =~ '://'
+    return "ruby ".a:cmd
+  else
+    return "ruby -C ".s:rquote(self._root)." ".a:cmd
+  endif
+endfunction
+
+function! s:app_background_ruby_command(cmd) dict abort
+  let cmd = s:esccmd(rails#app().ruby_shell_command(a:cmd))
+  if has("gui_win32")
+    if &shellcmdflag == "-c" && ($PATH . &shell) =~? 'cygwin'
+      silent exe "!cygstart -d ".s:rquote(RailsRoot())." ruby ".a:cmd
+    else
+      exe "!start ".cmd
+    endif
+  elseif exists("$STY") && !has("gui_running") && s:getopt("gnu_screen","abg") && executable("screen")
+    silent exe "!screen -ln -fn -t ".s:sub(s:sub(a:cmd,'\s.*',''),'^%(script|-rcommand)/','rails-').' '.cmd
+  else
+    exe "!".cmd
+  endif
+  return v:shell_error
+endfunction
+
+function! s:app_execute_ruby_command(cmd) dict abort
+  exe "!".s:esccmd(self.ruby_shell_command(a:cmd))
+  return v:shell_error
+endfunction
+
+function! s:app_lightweight_ruby_eval(ruby,...) dict abort
+  let def = a:0 ? a:1 : ""
+  if !executable("ruby")
+    return def
+  endif
+  let args = '-e '.s:rquote('begin; require %{rubygems}; rescue LoadError; end; begin; require %{active_support}; rescue LoadError; end; '.a:ruby)
+  let cmd = self.ruby_shell_command(args)
+  " If the shell is messed up, this command could cause an error message
+  silent! let results = system(cmd)
+  return v:shell_error == 0 ? results : def
+endfunction
+
+function! s:app_eval(ruby,...) dict abort
+  let def = a:0 ? a:1 : ""
+  if !executable("ruby")
+    return def
+  endif
+  let args = "-r./config/boot -r ".s:rquote(self._root."/config/environment")." -e ".s:rquote(a:ruby)
+  let cmd = self.ruby_shell_command(args)
+  " If the shell is messed up, this command could cause an error message
+  silent! let results = system(cmd)
+  return v:shell_error == 0 ? results : def
+endfunction
+
+call s:add_methods('app', ['ruby_shell_command','execute_ruby_command','background_ruby_command','lightweight_ruby_eval','eval'])
+
+function! RailsEval(ruby,...) abort
   if !exists("b:rails_root")
     return a:0 ? a:1 : ""
   elseif a:0
-    return s:railseval(a:ruby,a:1)
+    return rails#app().eval(a:ruby,a:1)
   else
-    return s:railseval(a:ruby)
+    return rails#app().eval(a:ruby)
   endif
 endfunction
 
@@ -827,7 +815,7 @@ endfunction
 " }}}1
 " Rake {{{1
 
-" Depends: s:rubyexestr, s:sub, s:lastmethodline, s:getopt, s;rquote, s:QuickFixCmdPre, ...
+" Depends: s:sub, s:lastmethodline, s:getopt, s;rquote, s:QuickFixCmdPre, ...
 
 " Current directory
 let s:efm='%D(in\ %f),'
@@ -895,7 +883,7 @@ function! s:makewithruby(arg,...)
     endif
   endif
   let old_make = &makeprg
-  let &l:makeprg = s:rubyexestr(a:arg)
+  let &l:makeprg = rails#app().ruby_shell_command(a:arg)
   make
   let &l:makeprg = old_make
 endfunction
@@ -1133,7 +1121,7 @@ endfunction
 " }}}1
 " Script Wrappers {{{1
 
-" Depends: s:rquote, s:rubyexebg, s:rubyexe, s:rubyexestr, s:sub, s:getopt, s:usesubversion, s:user_classes_..., ..., s:pluginList, ...
+" Depends: s:rquote, s:sub, s:getopt, s:usesubversion, s:user_classes_..., ..., s:pluginList, ...
 
 function! s:BufScriptWrappers()
   Rcommand! -buffer -bar -nargs=+       -complete=custom,s:ScriptComplete   Rscript       :call s:Script(<bang>0,<f-args>)
@@ -1156,9 +1144,9 @@ function! s:Script(bang,cmd,...)
     let c = c + 1
   endwhile
   if a:bang
-    call s:rubyexebg(s:rquote("script/".a:cmd).str)
+    call rails#app().background_ruby_command(s:rquote("script/".a:cmd).str)
   else
-    call s:rubyexe(s:rquote("script/".a:cmd).str)
+    call rails#app().execute_ruby_command((s:rquote("script/".a:cmd).str)
   endif
 endfunction
 
@@ -1166,7 +1154,7 @@ function! s:Runner(count,args)
   if a:count == -2
     call s:Script(a:bang,"runner",a:args)
   else
-    let str = s:rubyexestr('-r./config/boot -e "require '."'commands/runner'".'" '.s:rquote(a:args))
+    let str = rails#app().ruby_shell_command('-r./config/boot -e "require '."'commands/runner'".'" '.s:rquote(a:args))
     let res = s:sub(system(str),'\n$','')
     if a:count < 0
       echo res
@@ -1183,7 +1171,7 @@ function! s:Console(bang,cmd,...)
     let str = str . " " . s:rquote(a:{c})
     let c = c + 1
   endwhile
-  call s:rubyexebg(s:rquote("script/".a:cmd).str)
+  call rails#app().background_ruby_command(s:rquote("script/".a:cmd).str)
 endfunction
 
 function! s:getpidfor(bind,port)
@@ -1222,20 +1210,20 @@ function! s:Server(bang,arg)
     endif
   endif
   if has("win32") || has("win64") || (exists("$STY") && !has("gui_running") && s:getopt("gnu_screen","abg") && executable("screen"))
-    call s:rubyexebg(s:rquote("script/server")." ".a:arg)
+    call rails#app().background_ruby_command(s:rquote("script/server")." ".a:arg)
   else
     "--daemon would be more descriptive but lighttpd does not support it
-    call s:rubyexe(s:rquote("script/server")." ".a:arg." -d")
+    call rails#app().execute_ruby_command(s:rquote("script/server")." ".a:arg." -d")
   endif
   call s:setopt('a:root_url','http://'.(bind=='0.0.0.0'?'localhost': bind).':'.port.'/')
 endfunction
 
 function! s:Destroy(bang,...)
   if a:0 == 0
-    call s:rubyexe("script/destroy")
+    call rails#app().execute_ruby_command("script/destroy")
     return
   elseif a:0 == 1
-    call s:rubyexe("script/destroy ".s:rquote(a:1))
+    call rails#app().execute_ruby_command("script/destroy ".s:rquote(a:1))
     return
   endif
   let str = ""
@@ -1244,16 +1232,16 @@ function! s:Destroy(bang,...)
     let str = str . " " . s:rquote(a:{c})
     let c = c + 1
   endwhile
-  call s:rubyexe(s:rquote("script/destroy").str.(s:usesubversion()?' -c':''))
+  call rails#app().execute_ruby_command(s:rquote("script/destroy").str.(s:usesubversion()?' -c':''))
   unlet! s:user_classes_{s:rv()}
 endfunction
 
 function! s:Generate(bang,...)
   if a:0 == 0
-    call s:rubyexe("script/generate")
+    call rails#app().execute_ruby_command("script/generate")
     return
   elseif a:0 == 1
-    call s:rubyexe("script/generate ".s:rquote(a:1))
+    call rails#app().execute_ruby_command("script/generate ".s:rquote(a:1))
     return
   endif
   let target = s:rquote(a:1)
@@ -1264,7 +1252,7 @@ function! s:Generate(bang,...)
     let c = c + 1
   endwhile
   if str !~ '-p\>' && str !~ '--pretend\>'
-    let execstr = s:rubyexestr('-r./config/boot -e "require '."'commands/generate'".'" -- '.target." -p -f".str)
+    let execstr = rails#app().ruby_shell_command('-r./config/boot -e "require '."'commands/generate'".'" -- '.target." -p -f".str)
     let res = system(execstr)
     let file = matchstr(res,'\s\+\%(create\|force\)\s\+\zs\f\+\.rb\ze\n')
     if file == ""
@@ -1274,7 +1262,7 @@ function! s:Generate(bang,...)
   else
     let file = ""
   endif
-  if !s:rubyexe("script/generate ".target.(s:usesubversion()?' -c':'').str) && file != ""
+  if !rails#app().execute_ruby_command("script/generate ".target.(s:usesubversion()?' -c':'').str) && file != ""
     unlet! s:user_classes_{s:rv()}
     "exe "edit ".s:ra()."/".file
     edit `=RailsRoot().'/'.file`
@@ -3031,7 +3019,7 @@ endfunction
 " }}}1
 " Syntax {{{1
 
-" Depends: s:rubyeval, s:gsub, cache functions
+" Depends: s:gsub, cache functions
 
 function! s:resetomnicomplete()
   if exists("+completefunc") && &completefunc == 'syntaxcomplete#Complete'
@@ -3082,7 +3070,7 @@ function! s:helpermethods()
         ruby begin; h = ActionView::Helpers.constants.grep(/Helper$/).collect {|c|ActionView::Helpers.const_get c}.collect {|c| c.public_instance_methods(false)}.collect {|es| es.reject {|e| e =~ /_with(out)?_deprecation$/ || es.include?("#{e}_without_deprecation")}}.flatten.sort.uniq.reject {|m| m =~ /[=?!]$/}; VIM::command('let s:rails_helper_methods = "%s"' % h.join(" ")); rescue Exception; end
       endif
       if s:rails_helper_methods == ""
-        let s:rails_helper_methods = s:rubyeval('require %{action_controller}; require %{action_view}; h = ActionView::Helpers.constants.grep(/Helper$/).collect {|c|ActionView::Helpers.const_get c}.collect {|c| c.public_instance_methods(false)}.collect {|es| es.reject {|e| e =~ /_with(out)?_deprecation$/ || es.include?(%{#{e}_without_deprecation})}}.flatten.sort.uniq.reject {|m| m =~ /[=?!]$/}; puts h.join(%{ })',"link_to")
+        let s:rails_helper_methods = rails#app().lightweight_ruby_eval('require %{action_controller}; require %{action_view}; h = ActionView::Helpers.constants.grep(/Helper$/).collect {|c|ActionView::Helpers.const_get c}.collect {|c| c.public_instance_methods(false)}.collect {|es| es.reject {|e| e =~ /_with(out)?_deprecation$/ || es.include?(%{#{e}_without_deprecation})}}.flatten.sort.uniq.reject {|m| m =~ /[=?!]$/}; puts h.join(%{ })',"link_to")
       endif
     else
       let s:rails_helper_methods = "link_to"
@@ -3618,7 +3606,7 @@ endfunction
 " }}}1
 " Database {{{1
 
-" Depends: s:environment, s:rubyeval, s:rv, reloadability
+" Depends: s:environment, s:rv, reloadability
 
 function! s:extractdbvar(str,arg)
   return matchstr("\n".a:str."\n",'\n'.a:arg.'=\zs.\{-\}\ze\n')
@@ -3651,7 +3639,7 @@ function! s:BufDatabase(...)
         let cmdb = 'require %{yaml}; File.open(%q{'.RailsRoot().'/config/database.yml}) {|f| y = YAML::load(f); e = y[%{'
         let cmde = '}]; i=0; e=y[e] while e.respond_to?(:to_str) && (i+=1)<16; e.each{|k,v|puts k.to_s+%{=}+v.to_s}}'
         if a:0 ? a:1 : g:rails_expensive
-          let out = s:rubyeval(cmdb.env.cmde,'')
+          let out = rails#app().lightweight_ruby_eval(cmdb.env.cmde)
         else
           unlet! s:lock_database
           return
