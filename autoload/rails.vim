@@ -18,7 +18,20 @@ let g:autoloaded_rails = '2.0'
 let s:cpo_save = &cpo
 set cpo&vim
 
+" }}}1
 " Utility Functions {{{1
+
+let s:app_prototype = {}
+
+function! s:add_methods(namespace, method_names)
+  for name in a:method_names
+    let s:{a:namespace}_prototype[name] = s:function('s:'.a:namespace.'_'.name)
+  endfor
+endfunction
+
+function! s:function(name)
+    return function(substitute(a:name,'^s:',matchstr(expand('<sfile>'), '<SNR>\d\+_'),''))
+endfunction
 
 function! s:sub(str,pat,rep)
   return substitute(a:str,'\v\C'.a:pat,a:rep,'')
@@ -449,6 +462,13 @@ endfunction
 " "Public" Interface {{{1
 
 " RailsRoot() is the only official public function
+
+function! rails#app(...)
+  let root = a:0 ? a:1 : RailsRoot()
+  " TODO: populate dynamically
+  " TODO: normalize path
+  return get(s:apps,root,0)
+endfunction
 
 function! RailsRevision()
   return 1000*matchstr(g:autoloaded_rails,'^\d\+')+matchstr(g:autoloaded_rails,'[1-9]\d*$')
@@ -4124,6 +4144,10 @@ function! RailsBufInit(path)
   set cpo&vim
   let firsttime = !(exists("b:rails_root") && b:rails_root == a:path)
   let b:rails_root = a:path
+  if !has_key(s:apps,a:path)
+    let s:apps[a:path] = deepcopy(s:app_prototype)
+    let s:apps[a:path]._root = a:path
+  endif
   " Apparently RailsFileType() can be slow if the underlying file system is
   " slow (even though it doesn't really do anything IO related).  This caching
   " is a temporary hack; if it doesn't cause problems it should probably be
@@ -4345,6 +4369,10 @@ map <SID>xx <SID>xx
 let s:sid = s:sub(maparg("<SID>xx"),'xx$','')
 unmap <SID>xx
 let s:file = expand('<sfile>:p')
+
+if !exists('s:apps')
+  let s:apps = {}
+endif
 
 " }}}1
 
