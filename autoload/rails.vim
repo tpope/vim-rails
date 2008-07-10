@@ -110,14 +110,6 @@ function! s:rubyexestr(cmd)
   endif
 endfunction
 
-function! s:rubyexestrwithfork(cmd)
-  if s:getopt("ruby_fork_port","ab") && executable("ruby_fork_client")
-    return "ruby_fork_client -p ".s:getopt("ruby_fork_port","ab")." ".a:cmd
-  else
-    return s:rubyexestr(a:cmd)
-  endif
-endfunction
-
 function! s:rubyexebg(cmd)
   let cmd = s:esccmd(s:rubyexestr(a:cmd))
   if has("gui_win32")
@@ -174,7 +166,7 @@ function! s:railseval(ruby,...)
     return def
   endif
   let args = "-r./config/boot -r ".s:rquote(RailsRoot()."/config/environment")." -e ".s:rquote(a:ruby)
-  let cmd = s:rubyexestrwithfork(args)
+  let cmd = s:rubyexestr(args)
   " If the shell is messed up, this command could cause an error message
   silent! let results = system(cmd)
   if v:shell_error != 0 " results =~ '-e:\d' || results =~ 'ruby:.*(fatal)'
@@ -819,7 +811,7 @@ endfunction
 " }}}1
 " Rake {{{1
 
-" Depends: s:rubyexestrwithfork, s:sub, s:lastmethodline, s:getopt, s;rquote, s:QuickFixCmdPre, ...
+" Depends: s:rubyexestr, s:sub, s:lastmethodline, s:getopt, s;rquote, s:QuickFixCmdPre, ...
 
 " Current directory
 let s:efm='%D(in\ %f),'
@@ -887,7 +879,7 @@ function! s:makewithruby(arg,...)
     endif
   endif
   let old_make = &makeprg
-  let &l:makeprg = s:rubyexestrwithfork(a:arg)
+  let &l:makeprg = s:rubyexestr(a:arg)
   make
   let &l:makeprg = old_make
 endfunction
@@ -1125,7 +1117,7 @@ endfunction
 " }}}1
 " Script Wrappers {{{1
 
-" Depends: s:rquote, s:rubyexebg, s:rubyexe, s:rubyexestrwithfork, s:sub, s:getopt, s:usesubversion, s:user_classes_..., ..., s:pluginList, ...
+" Depends: s:rquote, s:rubyexebg, s:rubyexe, s:rubyexestr, s:sub, s:getopt, s:usesubversion, s:user_classes_..., ..., s:pluginList, ...
 
 function! s:BufScriptWrappers()
   Rcommand! -buffer -bar -nargs=+       -complete=custom,s:ScriptComplete   Rscript       :call s:Script(<bang>0,<f-args>)
@@ -1158,7 +1150,7 @@ function! s:Runner(count,args)
   if a:count == -2
     call s:Script(a:bang,"runner",a:args)
   else
-    let str = s:rubyexestrwithfork('-r./config/boot -e "require '."'commands/runner'".'" '.s:rquote(a:args))
+    let str = s:rubyexestr('-r./config/boot -e "require '."'commands/runner'".'" '.s:rquote(a:args))
     let res = s:sub(system(str),'\n$','')
     if a:count < 0
       echo res
@@ -4058,7 +4050,7 @@ function! s:setopt(opt,val)
 endfunction
 
 function! s:opts()
-  return "\nb:alternate\nb:controller\na:gnu_screen\nb:model\nl:preview\nb:task\nl:related\na:root_url\na:ruby_fork_port\n"
+  return "\nb:alternate\nb:controller\na:gnu_screen\nb:model\nl:preview\nb:task\nl:related\na:root_url\n"
 endfunction
 
 function! s:SetComplete(A,L,P)
