@@ -511,7 +511,7 @@ function! RailsFileType()
     let r = "helper"
   elseif f =~ '\<app/models\>'
     let class = matchstr(top,'\<Acti\w\w\u\w\+\%(::\h\w*\)\+\>')
-    if class == "ActiveResoure::Base"
+    if class == "ActiveResource::Base"
       let class = "ares"
       let r = "model-ares"
     elseif class != ''
