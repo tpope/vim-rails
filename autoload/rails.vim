@@ -1213,11 +1213,12 @@ function! s:Server(bang,arg)
       return
     endif
   endif
+  let app = rails#app()
   if has("win32") || has("win64") || (exists("$STY") && !has("gui_running") && s:getopt("gnu_screen","abg") && executable("screen"))
-    call rails#app().background_ruby_command(s:rquote("script/server")." ".a:arg)
+    call app.background_ruby_command(s:rquote("script/server")." ".a:arg)
   else
     "--daemon would be more descriptive but lighttpd does not support it
-    call rails#app().execute_ruby_command(s:rquote("script/server")." ".a:arg." -d")
+    call app.execute_ruby_command(s:rquote("script/server")." ".a:arg." -d")
   endif
   call s:setopt('a:root_url','http://'.(bind=='0.0.0.0'?'localhost': bind).':'.port.'/')
 endfunction
@@ -2946,7 +2947,7 @@ let s:cache_prototype = {'dict': {}}
 function! s:cache_clear(...) dict
   if a:0 == 0
     let self.dict = {}
-  elseif has_key(self.dict,a:1)
+  elseif has_key(self,'dict') && has_key(self.dict,a:1)
     unlet! self.dict[a:1]
   endif
 endfunction
