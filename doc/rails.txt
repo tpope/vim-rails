@@ -309,8 +309,8 @@ Two commands, :A and :R, are used quickly jump to an "alternate" and a
 					*rails-alternate* *rails-related*
 The alternate file is most frequently the test file, though there are
 exceptions.  The related file varies, and is sometimes dependent on current
-current location in the file.  For example, when editing a controller, the
-related file is template for the method currently being edited.
+location in the file.  For example, when editing a controller, the related
+file is template for the method currently being edited.
 
 The easiest way to learn these commands is to experiment.  A few examples of
 alternate and related files follow:
