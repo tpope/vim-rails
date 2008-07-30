@@ -635,10 +635,10 @@ function! s:BufCommands()
   call s:BufFinderCommands() " Provides Rcommand!
   call s:BufNavCommands()
   call s:BufScriptWrappers()
-  Rcommand! -buffer -bar -nargs=? -bang -complete=custom,s:RakeComplete    Rake     :call s:Rake(<bang>0,<q-args>)
-  Rcommand! -buffer -bar -nargs=? -bang -complete=custom,s:PreviewComplete Rpreview :call s:Preview(<bang>0,<q-args>)
-  Rcommand! -buffer -bar -nargs=? -bang -complete=custom,s:environments    Rlog     :call s:Log(<bang>0,<q-args>)
-  Rcommand! -buffer -bar -nargs=* -bang -complete=custom,s:SetComplete     Rset     :call s:Set(<bang>0,<f-args>)
+  Rcommand! -buffer -bar -nargs=? -bang -complete=customlist,s:RakeComplete Rake     :call s:Rake(<bang>0,<q-args>)
+  Rcommand! -buffer -bar -nargs=? -bang -complete=custom,s:PreviewComplete  Rpreview :call s:Preview(<bang>0,<q-args>)
+  Rcommand! -buffer -bar -nargs=? -bang -complete=custom,s:environments     Rlog     :call s:Log(<bang>0,<q-args>)
+  Rcommand! -buffer -bar -nargs=* -bang -complete=custom,s:SetComplete      Rset     :call s:Set(<bang>0,<f-args>)
   command! -buffer -bar -nargs=0 Rtags       :call s:Tags(<bang>0)
   " Embedding all this logic directly into the command makes the error
   " messages more concise.
@@ -818,6 +818,19 @@ endfunction
 
 " }}}1
 " Rake {{{1
+
+function! s:app_rake_tasks() dict
+  if self.cache.needs('rake_tasks')
+    let rakefile = s:rquote(self._root."/Rakefile")
+    let lines = split(system("rake -T -f ".rakefile),"\n")
+    call map(lines,'matchstr(v:val,"^rake\\s\\+\\zs\\S*")')
+    call filter(lines,'v:val != ""')
+    call self.cache.set('rake_tasks',lines)
+  endif
+  return self.cache.get('rake_tasks')
+endfunction
+
+call s:add_methods('app', ['rake_tasks'])
 
 " Depends: s:sub, s:lastmethodline, s:getopt, s;rquote, s:QuickFixCmdPre, ...
 
@@ -1003,7 +1016,7 @@ function! s:Rake(bang,arg)
 endfunction
 
 function! s:RakeComplete(A,L,P)
-  return g:rails_rake_tasks
+  return rails#app().rake_tasks()
 endfunction
 
 " }}}1
@@ -4317,6 +4330,7 @@ augroup railsPluginAuto
   autocmd BufWritePost */config/database.yml unlet! s:dbext_type_{s:rv()} " Force reload
   autocmd BufWritePost */test/test_helper.rb call rails#cache_clear("user_assertions")
   autocmd BufWritePost */config/routes.rb    call rails#cache_clear("named_routes")
+  autocmd BufWritePost */tasks/**.rake       call rails#cache_clear("rake_tasks")
   autocmd FileType * if exists("b:rails_root") | call s:BufSettings() | endif
   autocmd Syntax ruby,eruby,yaml,haml,javascript,railslog if exists("b:rails_root") | call s:BufSyntax() | endif
   silent! autocmd QuickFixCmdPre  make* call s:QuickFixCmdPre()
