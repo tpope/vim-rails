@@ -2514,7 +2514,7 @@ function! s:AlternateFile()
       let dest = f
     endif
     " Go to the (r)spec, helper, controller, or (mailer) model
-    let spec       = fnamemodify(dest,':r:s?\<app/?spec/?')."_view_spec.rb"
+    let spec       = fnamemodify(dest,':r:s?\<app/?spec/?')."_spec.rb"
     let helper     = fnamemodify(dest,':h:s?/views/?/helpers/?')."_helper.rb"
     let controller = fnamemodify(dest,':h:s?/views/?/controllers/?')."_controller.rb"
     let model      = fnamemodify(dest,':h:s?/views/?/models/?').".rb"
@@ -2553,7 +2553,7 @@ function! s:AlternateFile()
   elseif f =~ '\<test/unit/routing_test\.rb$'
     return 'config/routes.rb'
   elseif t=~ '^spec-view\>'
-    return s:sub(s:sub(f,'<spec/','app/'),'_view_spec\.rb$','')
+    return s:sub(s:sub(f,'<spec/','app/'),'_spec\.rb$','')
   elseif fnamemodify(f,":e") == "rb"
     let file = fnamemodify(f,":r")
     if file =~ '_\%(test\|spec\)$'
