@@ -1555,6 +1555,8 @@ function! s:RailsFind()
   if res != ""|return res.(fnamemodify(res,':e') == '' ? '.rb' : '')|endif
   let res = s:findit('\v<File.dirname\(__FILE__\)\s*\+\s*[:'."'".'"](\f+)>['."'".'"]=',expand('%:h').'\1')
   if res != ""|return res|endif
+  let res = s:underscore(s:findit('\v\s*<%(include|extend)\(=\s*<(\f+)>','\1'))
+  if res != ""|return res.".rb"|endif
   let res = s:findamethod('require','\1')
   if res != ""|return res.(fnamemodify(res,':e') == '' ? '.rb' : '')|endif
   let res = s:findamethod('belongs_to\|has_one\|composed_of\|validates_associated\|scaffold','app/models/\1.rb')
