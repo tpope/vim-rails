@@ -1353,13 +1353,10 @@ endfunction
 " Navigation {{{1
 
 function! s:BufNavCommands()
-  " TODO: completion
-  "silent exe "command! -bar -buffer -nargs=? Rcd :cd ".s:ra()."/<args>"
-  "silent exe "command! -bar -buffer -nargs=? Rlcd :lcd ".s:ra()."/<args>"
-  command!   -buffer -bar -nargs=? Rcd   :cd `=RailsRoot().'/'.<q-args>`
-  command!   -buffer -bar -nargs=? Rlcd :lcd `=RailsRoot().'/'.<q-args>`
   " Vim 6.2 chokes on script local completion functions (e.g., s:FindList).
   " :Rcommand! is a thin wrapper arround :command! which works around this
+  Rcommand!   -buffer -bar -nargs=? -complete=custom,s:DirList Rcd   :cd `=RailsRoot().'/'.<q-args>`
+  Rcommand!   -buffer -bar -nargs=? -complete=custom,s:DirList Rlcd :lcd `=RailsRoot().'/'.<q-args>`
   Rcommand!   -buffer -bar -nargs=* -count=1 -complete=custom,s:FindList Rfind       :call s:Find(<bang>0,<count>,'' ,<f-args>)
   Rcommand!   -buffer -bar -nargs=* -count=1 -complete=custom,s:FindList REfind      :call s:Find(<bang>0,<count>,'E',<f-args>)
   Rcommand!   -buffer -bar -nargs=* -count=1 -complete=custom,s:FindList RSfind      :call s:Find(<bang>0,<count>,'S',<f-args>)
@@ -1470,6 +1467,12 @@ endfunction
 
 function! s:EditList(ArgLead, CmdLine, CursorPos)
   return s:relglob("",a:ArgLead."*[^~]")
+endfunction
+
+function! s:DirList(ArgLead, CmdLine, CursorPos)
+  let all = "\n".s:relglob("",a:ArgLead."*")."\n"
+  let dirs = s:gsub(all,"[^\n]*[^/]\n",'')
+  return s:compact(dirs)
 endfunction
 
 function! RailsIncludeexpr()
