@@ -1573,9 +1573,9 @@ function! s:RailsFind()
   endif
   let res = s:findamethod('map\.resources','app/controllers/\1_controller.rb')
   if res != ""|return res|endif
-  let res = s:findamethod('layout','app/views/layouts/\1')
+  let res = s:findamethod('layout','\=s:findlayout(submatch(1))')
   if res != ""|return res|endif
-  let res = s:findasymbol('layout','app/views/layouts/\1')
+  let res = s:findasymbol('layout','\=s:findlayout(submatch(1))')
   if res != ""|return res|endif
   let res = s:findamethod('helper','app/helpers/\1_helper.rb')
   if res != ""|return res|endif
@@ -2226,7 +2226,7 @@ function! s:findview(name)
 endfunction
 
 function! s:findlayout(name)
-  return s:findview("layouts/".a:name)
+  return s:findview("layouts/".(a:name == '' ? 'application' : a:name))
 endfunction
 
 function! s:layoutEdit(bang,cmd,...)
@@ -2243,7 +2243,7 @@ function! s:layoutEdit(bang,cmd,...)
     let file = s:findlayout("application")
   endif
   if file == ""
-    let file = "app/views/layouts/application.rhtml"
+    let file = "app/views/layouts/application.html.erb"
   endif
   call s:edit(a:cmd.(a:bang?'!':''),s:sub(file,'^/',''))
 endfunction
@@ -2670,7 +2670,7 @@ function! s:RelatedFile()
   elseif t =~ '^controller\>'
     return s:sub(s:sub(f,'/controllers/','/helpers/'),'%(_controller)=\.rb$','_helper.rb')
   elseif t=~ '^helper\>'
-      return s:sub(s:sub(f,'/helpers/','/views/layouts/'),'%(_helper)=\.rb$','')
+    return s:findlayout(s:controller())
   elseif t =~ '^model-arb\>'
     "call s:migrationEdit(0,cmd,'create_'.s:pluralize(expand('%:t:r')))
     return s:migrationfor('create_'.s:pluralize(expand('%:t:r')))
