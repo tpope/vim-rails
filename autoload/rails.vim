@@ -1872,7 +1872,7 @@ function! s:viewList(A,L,P)
   let c = s:controller(1)
   let top = s:relglob("app/views/",a:A."*[^~]")
   if c != ''
-    let local = s:relglob("app/views/".c."/",a:A."*.*[^~]")
+    let local = s:relglob("app/views/".c."/",a:A.(a:A =~ '\.' ? '' : '*.')."*[^~]")
     if local != ''
       return local."\n".top
     endif
