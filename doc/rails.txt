@@ -104,9 +104,9 @@ If you are new to Vim, you need to create a vimrc.  For Windows, this file
 goes in ~\_vimrc (try :e ~\_vimrc if you don't know where this is).  On other
 platforms, use ~/.vimrc.  A very minimal example file is shown below.
 >
-  set nocompatible
-  syntax on
-  filetype plugin indent on
+	set nocompatible
+	syntax on
+	filetype plugin indent on
 >
 Installing and Using the Plugin ~
 						*rails-install-plugin*
