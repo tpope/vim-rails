@@ -971,7 +971,7 @@ function! s:Rake(bang,arg)
       make
     endif
   elseif t =~ '^spec\>'
-    if RailsFilePath() =~# '\<test/test_helper\.rb$'
+    if RailsFilePath() =~# '\<spec/spec_helper\.rb$'
       make spec SPEC_OPTS=
     else
       make spec SPEC="%:p" SPEC_OPTS=
