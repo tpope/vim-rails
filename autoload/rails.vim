@@ -3155,6 +3155,7 @@ function! s:BufSyntax()
         syn keyword rubyRailsTestMethod violated pending
         if t !~ '^spec-model\>'
           syn match   rubyRailsTestControllerMethod  '\.\@<!\<\%(get\|post\|put\|delete\|head\|process\|assigns\)\>'
+          syn keyword rubyRailsTestControllerMethod  integrate_views
           syn keyword rubyRailsMethod params request response session flash
         endif
       endif
