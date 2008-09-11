@@ -145,21 +145,21 @@ function! s:endof(lnum)
   return 0
 endfunction
 
-function! s:lastmethodline(...)
-  if a:0
-    let line = a:1
-  else
-    let line = line(".")
-  endif
-  while line > 0 && getline(line) !~ &l:define
+function! s:lastopeningline(pattern,limit,...)
+  let line = a:0 ? a:1 : line(".")
+  while line > a:limit && getline(line) !~ a:pattern
     let line = line - 1
   endwhile
   let lend = s:endof(line)
-  if lend < 0 || lend >= (a:0 ? a:1 : line("."))
+  if line > a:limit && lend >= (a:0 ? a:1 : line("."))
     return line
   else
-    return 0
+    return -1
   endif
+endfunction
+
+function! s:lastmethodline(...)
+  return s:lastopeningline(&l:define,0,a:0 ? a:1 : line("."))
 endfunction
 
 function! s:lastmethod()
@@ -172,21 +172,7 @@ function! s:lastmethod()
 endfunction
 
 function! s:lastrespondtoline(...)
-  let mline = s:lastmethodline()
-  if a:0
-    let line = a:1
-  else
-    let line = line(".")
-  endif
-  while line > mline && getline(line) !~ '\C^\s*respond_to\s*\%(\<do\)\s*|\zs\h\k*\ze|'
-    let line = line - 1
-  endwhile
-  let lend = s:endof(line)
-  if lend >= (a:0 ? a:1 : line("."))
-    return line
-  else
-    return -1
-  endif
+  return s:lastopeningline('\C^\s*respond_to\s*\%(\<do\)\s*|\zs\h\k*\ze|',s:lastmethodline(), a:0 ? a:1 : line("."))
 endfunction
 
 function! s:lastformat()
