@@ -959,6 +959,8 @@ function! s:Rake(bang,arg)
   elseif t =~ '^spec\>'
     if RailsFilePath() =~# '\<spec/spec_helper\.rb$'
       make spec SPEC_OPTS=
+    elseif search('\C^\s*\(describe\|context\)\>','bWnc') > search('\C^end\>','bWn')
+      exe 'make spec SPEC="%:p" SPEC_OPTS=--line='.line('.')
     else
       make spec SPEC="%:p" SPEC_OPTS=
     endif
