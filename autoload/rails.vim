@@ -469,6 +469,10 @@ function! RailsFileType()
     let r = "test-functional"
   elseif f =~ '\<test/integration/.*_test\.rb$'
     let r = "test-integration"
+  elseif f =~ '\<spec/lib/.*_spec\.rb$'
+    let r = 'spec-lib'
+  elseif f =~ '\<lib/.*\.rb$'
+    let r = 'lib'
   elseif f =~ '\<spec/\w*s/.*_spec\.rb$'
     let r = s:sub(f,'.*<spec/(\w*)s/.*','spec-\1')
   elseif f =~ '\<\%(test\|spec\)/fixtures\>'
@@ -2565,7 +2569,7 @@ function! s:AlternateFile()
       "return s:sub(file,'app/controllers/','test/functional/')
       return s:sub(file,'<app/controllers/','test/functional/')."\n".s:sub(s:sub(file,'_test\.rb$','_spec.rb'),'app/controllers/','spec/controllers/')
     elseif t =~ '^test-unit\>'
-      return s:sub(file,'test/unit/','app/models/')
+      return s:sub(file,'test/unit/','app/models/')."\n".s:sub(file,'test/unit/','lib/')
     elseif t =~ '^test-functional\>'
       if file =~ '_api\.rb'
         return s:sub(file,'test/functional/','app/apis/')
@@ -2574,7 +2578,11 @@ function! s:AlternateFile()
       else
         return s:sub(file,'test/functional/','')
       endif
-    elseif t =~ '^spec\>'
+    elseif t == 'spec-lib'
+      return s:sub(file,'<spec/','')
+    elseif t == 'lib'
+      return s:sub(f, '<lib/(.*)\.rb$', 'test/unit/\1_test\.rb')."\n".s:sub(f, '<lib/(.*)\.rb$', 'spec/lib/\1_spec\.rb')
+    elseif t == 'spec'
       return s:sub(file,'<spec/','app/')
     elseif file =~ '\<vendor/.*/lib/'
       return s:sub(file,'<vendor/.{-}/\zslib/','test/')
