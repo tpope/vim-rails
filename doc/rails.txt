@@ -139,13 +139,18 @@ actually edit a file from a Rails application.
 			application in {directory}, and loads the README.
 
 						*rails-:Rake*
-:Rake {targets}		Like calling |:make| {targets} (with 'makeprg' being
+:[range]Rake {targets}	Like calling |:make| {targets} (with 'makeprg' being
 			rake).  However, in some contexts, if {targets} are
 			omitted, :Rake defaults to something sensible (like
 			db:migrate in a migration, or your current test).
+			The optional range defaults to the current line and
+			affects the execution in some situations (like only
+			running the test method containing that line in a
+			test).  One can use :0Rake to override any line
+			specific behaviors (e.g., run the full test file).
 
 						*rails-:Rake!*
-:Rake! {targets}	Called with a bang, :Rake will use an alternate
+:[range]Rake! {targets}	Called with a bang, :Rake will use an alternate
 			'errorformat' which attempts to parse the full stack
 			backtrace.
 
