@@ -223,8 +223,8 @@ function! s:lastmethodline(...)
   return s:lastopeningline(&l:define,0,a:0 ? a:1 : line("."))
 endfunction
 
-function! s:lastmethod()
-  let line = s:lastmethodline()
+function! s:lastmethod(...)
+  let line = s:lastmethodline(a:0 ? a:1 : line("."))
   if line
     return s:sub(matchstr(getline(line),'\%('.&define.'\)\zs\h\%(\k\|[:.]\)*[?!=]\='),':$','')
   else
@@ -3998,17 +3998,18 @@ function! s:getopt(opt,...)
   else
     let scope = 'abgl'
   endif
+  let lnum = a:0 > 1 ? a:2 : line('.')
   if scope =~ 'l' && &filetype != 'ruby'
     let scope = s:sub(scope,'l','b')
   endif
   if scope =~ 'l'
-    call s:LocalModelines()
+    call s:LocalModelines(lnum)
   endif
   let opt = s:sub(opt,'<%(rake|rake_task|rake_target)$','task')
   " Get buffer option
   if scope =~ 'l' && exists("b:_".s:sname()."_".s:escvar(s:lastmethod())."_".opt)
-    return b:_{s:sname()}_{s:escvar(s:lastmethod())}_{opt}
-  elseif exists("b:".s:sname()."_".opt) && (scope =~ 'b' || (scope =~ 'l' && s:lastmethod() == ''))
+    return b:_{s:sname()}_{s:escvar(s:lastmethod(lnum))}_{opt}
+  elseif exists("b:".s:sname()."_".opt) && (scope =~ 'b' || (scope =~ 'l' && s:lastmethod(lnum) == ''))
     return b:{s:sname()}_{opt}
   elseif scope =~ 'a' && exists("s:_".s:rv()."_".s:environment()."_".opt)
     return s:_{s:rv()}_{s:environment()}_{opt}
@@ -4092,11 +4093,11 @@ function! s:BufModelines()
   endwhile
 endfunction
 
-function! s:LocalModelines()
+function! s:LocalModelines(lnum)
   if !g:rails_modelines
     return
   endif
-  let lbeg = s:lastmethodline()
+  let lbeg = s:lastmethodline(a:lnum)
   let lend = s:endof(lbeg)
   if lbeg == 0 || lend == 0
     return
