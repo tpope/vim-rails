@@ -628,7 +628,7 @@ function! s:BufCommands()
   call s:BufNavCommands()
   call s:BufScriptWrappers()
   Rcommand! -buffer -bar -nargs=? -bang -complete=customlist,s:RakeComplete Rake     :call s:Rake(<bang>0,<q-args>)
-  Rcommand! -buffer -bar -nargs=? -bang -complete=custom,s:PreviewComplete  Rpreview :call s:Preview(<bang>0,<q-args>)
+  Rcommand! -buffer -bar -nargs=? -bang -range -complete=custom,s:PreviewComplete Rpreview :call s:Preview(<bang>0,<line1>,<q-args>)
   Rcommand! -buffer -bar -nargs=? -bang -complete=custom,s:environments     Rlog     :call s:Log(<bang>0,<q-args>)
   Rcommand! -buffer -bar -nargs=* -bang -complete=custom,s:SetComplete      Rset     :call s:Set(<bang>0,<f-args>)
   command! -buffer -bar -nargs=0 Rtags       :call s:Tags(<bang>0)
@@ -1054,19 +1054,19 @@ function! s:scanlineforuri(lnum)
   endif
 endfunction
 
-function! s:defaultpreview()
+function! s:defaultpreview(lnum)
   let ret = ''
-  if s:getopt('preview','l') != ''
-    let uri = s:getopt('preview','l')
+  if s:getopt('preview','l',a:lnum) != ''
+    let uri = s:getopt('preview','l',a:lnum)
   elseif s:controller() != '' && s:controller() != 'application' && RailsFilePath() !~ '^public/'
     if RailsFileType() =~ '^controller\>'
-      let start = s:lastmethodline() - 1
+      let start = s:lastmethodline(a:lnum) - 1
       if start + 1
         while getline(start) =~ '^\s*\%(#.*\)\=$'
           let ret = s:scanlineforuri(start).ret
           let start = start - 1
         endwhile
-        let ret = ret.s:controller().'/'.s:lastmethod().'/'
+        let ret = ret.s:controller().'/'.s:lastmethod(a:lnum).'/'
       else
         let ret = ret.s:controller().'/'
       endif
@@ -1085,7 +1085,7 @@ function! s:defaultpreview()
   return ret
 endfunction
 
-function! s:Preview(bang,arg)
+function! s:Preview(bang,lnum,arg)
   let root = s:getopt("root_url")
   if root == ''
     let root = s:getopt("url")
@@ -1096,7 +1096,7 @@ function! s:Preview(bang,arg)
   elseif a:arg != ''
     let uri = root.'/'.s:sub(a:arg,'^/','')
   else
-    let uri = matchstr(s:defaultpreview(),'.\{-\}\%(\n\@=\|$\)')
+    let uri = matchstr(s:defaultpreview(a:lnum),'.\{-\}\%(\n\@=\|$\)')
     let uri = root.'/'.s:sub(s:sub(uri,'^/',''),'/$','')
   endif
   call s:initOpenURL()
@@ -1126,7 +1126,7 @@ function! s:Preview(bang,arg)
 endfunction
 
 function! s:PreviewComplete(A,L,P)
-  return s:defaultpreview()
+  return s:defaultpreview(a:L =~ '^\d' ? matchstr(a:L,'^\d\+') : line('.'))
 endfunction
 
 " }}}1
