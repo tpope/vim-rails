@@ -272,6 +272,8 @@ function! s:model(...)
     return s:sub(f,'.*<spec/models/(.*)_spec\.rb$','\1')
   elseif f =~ '\<\%(test\|spec\)/fixtures/.*\.\w*\~\=$'
     return s:singularize(s:sub(f,'.*<%(test|spec)/fixtures/(.*)\.\w*\~=$','\1'))
+  elseif f =~ '\<\%(test\|spec\)/exemplars/.*_exemplar\.rb$'
+    return s:sub(f,'.*<%(test|spec)/exemplars/(.*)_exemplar\.rb$','\1')
   elseif a:0 && a:1
     return s:singularize(s:controller())
   endif
