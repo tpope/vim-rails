@@ -627,7 +627,7 @@ function! s:BufCommands()
   call s:BufFinderCommands() " Provides Rcommand!
   call s:BufNavCommands()
   call s:BufScriptWrappers()
-  Rcommand! -buffer -bar -nargs=? -bang -range -complete=customlist,s:RakeComplete Rake    :call s:Rake(<bang>0,<line1>,<q-args>)
+  Rcommand! -buffer -bar -nargs=? -bang -count -complete=customlist,s:RakeComplete Rake    :call s:Rake(<bang>0,!<count> && <line1> ? -1 : <count>,<q-args>)
   Rcommand! -buffer -bar -nargs=? -bang -range -complete=custom,s:PreviewComplete Rpreview :call s:Preview(<bang>0,<line1>,<q-args>)
   Rcommand! -buffer -bar -nargs=? -bang -complete=custom,s:environments     Rlog     :call s:Log(<bang>0,<q-args>)
   Rcommand! -buffer -bar -nargs=* -bang -complete=custom,s:SetComplete      Rset     :call s:Set(<bang>0,<f-args>)
@@ -898,6 +898,7 @@ function! s:makewithruby(arg,...)
 endfunction
 
 function! s:Rake(bang,lnum,arg)
+  let lnum = a:lnum < 0 ? line('.') : a:lnum
   let oldefm = &efm
   if a:bang
     let &l:errorformat = s:efm_backtrace
@@ -905,8 +906,8 @@ function! s:Rake(bang,lnum,arg)
   let t = RailsFileType()
   let arg = a:arg
   if &filetype == "ruby" && arg == '' && g:rails_modelines
-    let lnum = s:lastmethodline(a:lnum)
-    let str = getline(lnum)."\n".getline(lnum+1)."\n".getline(lnum+2)."\n"
+    let mnum = s:lastmethodline(lnum)
+    let str = getline(mnum)."\n".getline(mnum+1)."\n".getline(mnum+2)."\n"
     let pat = '\s\+\zs.\{-\}\ze\%(\n\|\s\s\|#{\@!\|$\)'
     let mat = matchstr(str,'#\s*rake'.pat)
     let mat = s:sub(mat,'\s+$','')
@@ -927,7 +928,7 @@ function! s:Rake(bang,lnum,arg)
     exe "!".&makeprg." ".arg
     call s:QuickFixCmdPost()
   elseif arg =~ '^preview\>'
-    exe a:lnum.'R'.s:gsub(arg,':','/')
+    exe (lnum == 0 ? '' : lnum).'R'.s:gsub(arg,':','/')
   elseif arg =~ '^runner:'
     let arg = s:sub(arg,'^runner:','')
     let root = matchstr(arg,'%\%(:\w\)*')
@@ -954,8 +955,8 @@ function! s:Rake(bang,lnum,arg)
   elseif arg != ''
     exe 'make '.arg
   elseif t =~ '^task\>'
-    let lnum = s:lastmethodline(a:lnum)
-    let line = getline(lnum)
+    let mnum = s:lastmethodline(lnum)
+    let line = getline(mnum)
     " We can't grab the namespace so only run tasks at the start of the line
     if line =~ '^\%(task\|file\)\>'
       exe 'make '.s:lastmethod()
@@ -965,13 +966,13 @@ function! s:Rake(bang,lnum,arg)
   elseif t =~ '^spec\>'
     if RailsFilePath() =~# '\<spec/spec_helper\.rb$'
       make spec SPEC_OPTS=
-    elseif search('\C^\s*\(describe\|context\)\>','bWnc') > search('\C^end\>','bWn')
-      exe 'make spec SPEC="%:p" SPEC_OPTS=--line='.line('.')
+    elseif a:lnum > 0 || (a:lnum == -1 && search('\C^\s*\(describe\|context\)\>','bWnc') > search('\C^end\>','bWn'))
+      exe 'make spec SPEC="%:p" SPEC_OPTS=--line='.lnum
     else
       make spec SPEC="%:p" SPEC_OPTS=
     endif
   elseif t =~ '^test\>'
-    let meth = s:lastmethod(a:lnum)
+    let meth = s:lastmethod(lnum)
     if meth =~ '^test_'
       let call = " -n".meth.""
     else
