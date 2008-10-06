@@ -2585,7 +2585,7 @@ function! s:AlternateFile()
       return s:sub(file,'<spec/','')
     elseif t == 'lib'
       return s:sub(f, '<lib/(.*)\.rb$', 'test/unit/\1_test\.rb')."\n".s:sub(f, '<lib/(.*)\.rb$', 'spec/lib/\1_spec\.rb')
-    elseif t == 'spec'
+    elseif t =~ '^spec\>'
       return s:sub(file,'<spec/','app/')
     elseif file =~ '\<vendor/.*/lib/'
       return s:sub(file,'<vendor/.{-}/\zslib/','test/')
