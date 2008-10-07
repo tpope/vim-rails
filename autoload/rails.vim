@@ -1805,47 +1805,34 @@ function! RailsUserClasses()
   return s:{var}
 endfunction
 
-function! s:relglob(path,glob,...)
-  " How could such a simple operation be so complicated?
+function! s:app_relglob(path,glob,...) dict
   if exists("+shellslash") && ! &shellslash
     let old_ss = &shellslash
     let &shellslash = 1
   endif
-  if a:path =~ '[\/]$'
-    let path = a:path
-  else
-    let path = a:path . ''
-  endif
-  if path !~ '^/' && path !~ '^\w:' && RailsRoot() != ''
-    let path = RailsRoot() . '/' . path
+  let path = a:path
+  if path !~ '^/' && path !~ '^\w:' && self._root != ''
+    let path = self._root . '/' . path
   endif
   let suffix = a:0 ? a:1 : ''
-  let badres = glob(path.a:glob.suffix)."\n"
-  if v:version <= 602
-    " Nasty Vim bug in version 6.2
-    let badres = glob(path.a:glob.suffix)."\n"
-  endif
-  let goodres = ""
-  let striplen = strlen(path)
-  let stripend = strlen(suffix)
-  while strlen(badres) > 0
-    let idx = stridx(badres,"\n")
-    "if idx == -1
-      "let idx = strlen(badres)
-    "endif
-    let tmp = strpart(badres,0,idx)
-    let badres = strpart(badres,idx+1)
-    let goodres = goodres.strpart(tmp,striplen,strlen(tmp)-striplen-stripend)
-    if suffix == '' && isdirectory(tmp) && goodres !~ '/$'
-      let goodres = goodres."/"
+  let full_paths = split(glob(path.a:glob.suffix),"\n")
+  let relative_paths = []
+  for entry in full_paths
+    if suffix == '' && isdirectory(entry) && entry !~ '/$'
+      let entry .= '/'
     endif
-    let goodres = goodres."\n"
-  endwhile
-  "let goodres = s:gsub("\n".goodres,'\n.{-}\~\n','\n')
+    let relative_paths += [entry[strlen(path) : -strlen(suffix)-1]]
+  endfor
   if exists("old_ss")
     let &shellslash = old_ss
   endif
-  return s:compact(goodres)
+  return relative_paths
+endfunction
+
+call s:add_methods('app', ['relglob'])
+
+function! s:relglob(...)
+  return join(call(rails#app().relglob,a:000,rails#app()),"\n")
 endfunction
 
 if v:version <= 602
