@@ -1136,19 +1136,18 @@ endfunction
 " Depends: s:rquote, s:sub, s:getopt, s:usesubversion, s:user_classes_..., ..., s:pluginList, ...
 
 function! s:BufScriptWrappers()
-  Rcommand! -buffer -bar -nargs=+       -complete=custom,s:ScriptComplete   Rscript       :call s:Script(<bang>0,<f-args>)
-  Rcommand! -buffer -bar -nargs=*       -complete=custom,s:ConsoleComplete  Rconsole      :call s:Console(<bang>0,'console',<f-args>)
-  "Rcommand! -buffer -bar -nargs=*                                           Rbreakpointer :call s:Console(<bang>0,'breakpointer',<f-args>)
-  Rcommand! -buffer -bar -nargs=*       -complete=custom,s:GenerateComplete Rgenerate     :call s:Generate(<bang>0,<f-args>)
-  Rcommand! -buffer -bar -nargs=*       -complete=custom,s:DestroyComplete  Rdestroy      :call s:Destroy(<bang>0,<f-args>)
-  Rcommand! -buffer -bar -nargs=? -bang -complete=custom,s:ServerComplete   Rserver       :call s:Server(<bang>0,<q-args>)
-  Rcommand! -buffer -bang -nargs=1 -range=0 -complete=custom,s:RubyComplete Rrunner       :call s:Runner(<bang>0 ? -2 : (<count>==<line2>?<count>:-1),<f-args>)
-  Rcommand! -buffer       -nargs=1 -range=0 -complete=custom,s:RubyComplete Rp            :call s:Runner(<count>==<line2>?<count>:-1,'p begin '.<f-args>.' end')
-  Rcommand! -buffer       -nargs=1 -range=0 -complete=custom,s:RubyComplete Rpp           :call s:Runner(<count>==<line2>?<count>:-1,'require %{pp}; pp begin '.<f-args>.' end')
-  Rcommand! -buffer       -nargs=1 -range=0 -complete=custom,s:RubyComplete Ry            :call s:Runner(<count>==<line2>?<count>:-1,'y begin '.<f-args>.' end')
+  Rcommand! -buffer -bar -nargs=+       -complete=custom,s:Complete_script   Rscript       :call rails#app().script_command(<bang>0,<f-args>)
+  Rcommand! -buffer -bar -nargs=*       -complete=custom,s:Complete_console  Rconsole      :call rails#app().console_command(<bang>0,'console',<f-args>)
+  Rcommand! -buffer -bar -nargs=*       -complete=custom,s:Complete_generate Rgenerate     :call rails#app().generate_command(<bang>0,<f-args>)
+  Rcommand! -buffer -bar -nargs=*       -complete=custom,s:Complete_destroy  Rdestroy      :call rails#app().destroy_command(<bang>0,<f-args>)
+  Rcommand! -buffer -bar -nargs=? -bang -complete=custom,s:Complete_server   Rserver       :call rails#app().server_command(<bang>0,<q-args>)
+  Rcommand! -buffer -bang -nargs=1 -range=0 -complete=custom,s:Complete_ruby Rrunner       :call rails#app().runner_command(<bang>0 ? -2 : (<count>==<line2>?<count>:-1),<f-args>)
+  Rcommand! -buffer       -nargs=1 -range=0 -complete=custom,s:Complete_ruby Rp            :call rails#app().runner_command((<count>==<line2>?<count>:-1,'p begin '.<f-args>.' end')
+  Rcommand! -buffer       -nargs=1 -range=0 -complete=custom,s:Complete_ruby Rpp           :call rails#app().runner_command((<count>==<line2>?<count>:-1,'require %{pp}; pp begin '.<f-args>.' end')
+  Rcommand! -buffer       -nargs=1 -range=0 -complete=custom,s:Complete_ruby Ry            :call rails#app().runner_command((<count>==<line2>?<count>:-1,'y begin '.<f-args>.' end')
 endfunction
 
-function! s:Script(bang,cmd,...)
+function! s:app_script_command(bang,cmd,...) dict
   let str = ""
   let c = 1
   while c <= a:0
@@ -1156,17 +1155,17 @@ function! s:Script(bang,cmd,...)
     let c = c + 1
   endwhile
   if a:bang
-    return rails#app().background_ruby_command(s:rquote("script/".a:cmd).str)
+    return self.background_ruby_command(s:rquote("script/".a:cmd).str)
   else
-    return rails#app().execute_ruby_command(s:rquote("script/".a:cmd).str)
+    return self.execute_ruby_command(s:rquote("script/".a:cmd).str)
   endif
 endfunction
 
-function! s:Runner(count,args)
+function! s:app_runner_command(count,args) dict
   if a:count == -2
-    call s:Script(a:bang,"runner",a:args)
+    return self.script_command(a:bang,"runner",a:args)
   else
-    let str = rails#app().ruby_shell_command('-r./config/boot -e "require '."'commands/runner'".'" '.s:rquote(a:args))
+    let str = self.ruby_shell_command('-r./config/boot -e "require '."'commands/runner'".'" '.s:rquote(a:args))
     let res = s:sub(system(str),'\n$','')
     if a:count < 0
       echo res
@@ -1176,7 +1175,7 @@ function! s:Runner(count,args)
   endif
 endfunction
 
-function! s:Console(bang,cmd,...)
+function! s:app_console_command(bang,cmd,...) dict
   let str = ""
   let c = 1
   while c <= a:0
@@ -1199,7 +1198,7 @@ function! s:getpidfor(bind,port)
     return pid
 endfunction
 
-function! s:Server(bang,arg)
+function! s:app_server_command(bang,arg) dict
   let port = matchstr(a:arg,'\%(-p\|--port=\=\)\s*\zs\d\+')
   if port == ''
     let port = "3000"
@@ -1221,21 +1220,20 @@ function! s:Server(bang,arg)
       return
     endif
   endif
-  let app = rails#app()
   if has("win32") || has("win64") || (exists("$STY") && !has("gui_running") && s:getopt("gnu_screen","abg") && executable("screen"))
-    call app.background_ruby_command(s:rquote("script/server")." ".a:arg)
+    call self.background_ruby_command(s:rquote("script/server")." ".a:arg)
   else
     "--daemon would be more descriptive but lighttpd does not support it
-    call app.execute_ruby_command(s:rquote("script/server")." ".a:arg." -d")
+    call self.execute_ruby_command(s:rquote("script/server")." ".a:arg." -d")
   endif
   call s:setopt('a:root_url','http://'.(bind=='0.0.0.0'?'localhost': bind).':'.port.'/')
 endfunction
 
-function! s:Destroy(bang,...)
+function! s:app_destroy_command(bang,...) dict
   if a:0 == 0
-    return rails#app().execute_ruby_command("script/destroy")
+    return self.execute_ruby_command("script/destroy")
   elseif a:0 == 1
-    return rails#app().execute_ruby_command("script/destroy ".s:rquote(a:1))
+    return self.execute_ruby_command("script/destroy ".s:rquote(a:1))
   endif
   let str = ""
   let c = 1
@@ -1243,15 +1241,15 @@ function! s:Destroy(bang,...)
     let str = str . " " . s:rquote(a:{c})
     let c = c + 1
   endwhile
-  call rails#app().execute_ruby_command(s:rquote("script/destroy").str.(s:usesubversion()?' -c':''))
+  call self.execute_ruby_command(s:rquote("script/destroy").str.(s:usesubversion()?' -c':''))
   unlet! s:user_classes_{s:rv()}
 endfunction
 
-function! s:Generate(bang,...)
+function! s:app_generate_command(bang,...) dict
   if a:0 == 0
-    return rails#app().execute_ruby_command("script/generate")
+    return self.execute_ruby_command("script/generate")
   elseif a:0 == 1
-    return rails#app().execute_ruby_command("script/generate ".s:rquote(a:1))
+    return self.execute_ruby_command("script/generate ".s:rquote(a:1))
   endif
   let target = s:rquote(a:1)
   let str = ""
@@ -1261,7 +1259,7 @@ function! s:Generate(bang,...)
     let c = c + 1
   endwhile
   if str !~ '-p\>' && str !~ '--pretend\>'
-    let execstr = rails#app().ruby_shell_command('-r./config/boot -e "require '."'commands/generate'".'" -- '.target." -p -f".str)
+    let execstr = self.ruby_shell_command('-r./config/boot -e "require '."'commands/generate'".'" -- '.target." -p -f".str)
     let res = system(execstr)
     let file = matchstr(res,'\s\+\%(create\|force\)\s\+\zs\f\+\.rb\ze\n')
     if file == ""
@@ -1271,14 +1269,16 @@ function! s:Generate(bang,...)
   else
     let file = ""
   endif
-  if !rails#app().execute_ruby_command("script/generate ".target.(s:usesubversion()?' -c':'').str) && file != ""
+  if !self.execute_ruby_command("script/generate ".target.(s:usesubversion()?' -c':'').str) && file != ""
     unlet! s:user_classes_{s:rv()}
     "exe "edit ".s:ra()."/".file
-    edit `=RailsRoot().'/'.file`
+    edit `=self._root.'/'.file`
   endif
 endfunction
 
-function! s:ScriptComplete(ArgLead,CmdLine,P)
+call s:add_methods('app', ['script_command','runner_command','console_command','server_command','destroy_command','generate_command'])
+
+function! s:Complete_script(ArgLead,CmdLine,P)
   let cmd = s:sub(a:CmdLine,'^\u\w*\s+','')
   let P = a:P - strlen(a:CmdLine)+strlen(cmd)
   if cmd !~ '^[ A-Za-z0-9_=-]*$'
@@ -1339,26 +1339,26 @@ endfunction
 function! s:CustomComplete(A,L,P,cmd)
   let L = "Rscript ".a:cmd." ".s:sub(a:L,'^\h\w*\s+','')
   let P = a:P - strlen(a:L) + strlen(L)
-  return s:ScriptComplete(a:A,L,P)
+  return s:Complete_script(a:A,L,P)
 endfunction
 
-function! s:ServerComplete(A,L,P)
+function! s:Complete_server(A,L,P)
   return s:CustomComplete(a:A,a:L,a:P,"server")
 endfunction
 
-function! s:ConsoleComplete(A,L,P)
+function! s:Complete_console(A,L,P)
   return s:CustomComplete(a:A,a:L,a:P,"console")
 endfunction
 
-function! s:GenerateComplete(A,L,P)
+function! s:Complete_generate(A,L,P)
   return s:CustomComplete(a:A,a:L,a:P,"generate")
 endfunction
 
-function! s:DestroyComplete(A,L,P)
+function! s:Complete_destroy(A,L,P)
   return s:CustomComplete(a:A,a:L,a:P,"destroy")
 endfunction
 
-function! s:RubyComplete(A,L,R)
+function! s:Complete_ruby(A,L,R)
   return s:gsub(RailsUserClasses(),' ','\n')."\nActiveRecord::Base"
 endfunction
 
