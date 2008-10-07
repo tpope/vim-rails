@@ -1156,9 +1156,9 @@ function! s:Script(bang,cmd,...)
     let c = c + 1
   endwhile
   if a:bang
-    call rails#app().background_ruby_command(s:rquote("script/".a:cmd).str)
+    return rails#app().background_ruby_command(s:rquote("script/".a:cmd).str)
   else
-    call rails#app().execute_ruby_command((s:rquote("script/".a:cmd).str)
+    return rails#app().execute_ruby_command(s:rquote("script/".a:cmd).str)
   endif
 endfunction
 
@@ -1233,11 +1233,9 @@ endfunction
 
 function! s:Destroy(bang,...)
   if a:0 == 0
-    call rails#app().execute_ruby_command("script/destroy")
-    return
+    return rails#app().execute_ruby_command("script/destroy")
   elseif a:0 == 1
-    call rails#app().execute_ruby_command("script/destroy ".s:rquote(a:1))
-    return
+    return rails#app().execute_ruby_command("script/destroy ".s:rquote(a:1))
   endif
   let str = ""
   let c = 1
@@ -1251,11 +1249,9 @@ endfunction
 
 function! s:Generate(bang,...)
   if a:0 == 0
-    call rails#app().execute_ruby_command("script/generate")
-    return
+    return rails#app().execute_ruby_command("script/generate")
   elseif a:0 == 1
-    call rails#app().execute_ruby_command("script/generate ".s:rquote(a:1))
-    return
+    return rails#app().execute_ruby_command("script/generate ".s:rquote(a:1))
   endif
   let target = s:rquote(a:1)
   let str = ""
