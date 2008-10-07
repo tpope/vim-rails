@@ -789,7 +789,6 @@ function! s:Refresh(bang)
   while i <= max
     let rr = getbufvar(i,"rails_root")
     if rr != ""
-      unlet! s:user_classes_{s:escvar(rr)}
       unlet! s:dbext_type_{s:escvar(rr)}
       call setbufvar(i,"rails_refresh",1)
     endif
@@ -1133,7 +1132,7 @@ endfunction
 " }}}1
 " Script Wrappers {{{1
 
-" Depends: s:rquote, s:sub, s:getopt, s:usesubversion, s:user_classes_..., ..., s:pluginList, ...
+" Depends: s:rquote, s:sub, s:getopt, s:usesubversion, ..., s:pluginList, ...
 
 function! s:BufScriptWrappers()
   Rcommand! -buffer -bar -nargs=+       -complete=custom,s:Complete_script   Rscript       :call rails#app().script_command(<bang>0,<f-args>)
@@ -1242,7 +1241,7 @@ function! s:app_destroy_command(bang,...) dict
     let c = c + 1
   endwhile
   call self.execute_ruby_command(s:rquote("script/destroy").str.(s:usesubversion()?' -c':''))
-  unlet! s:user_classes_{s:rv()}
+  call self.cache.clear('user_classes')
 endfunction
 
 function! s:app_generate_command(bang,...) dict
@@ -1270,8 +1269,7 @@ function! s:app_generate_command(bang,...) dict
     let file = ""
   endif
   if !self.execute_ruby_command("script/generate ".target.(s:usesubversion()?' -c':'').str) && file != ""
-    unlet! s:user_classes_{s:rv()}
-    "exe "edit ".s:ra()."/".file
+    call self.cache.clear('user_classes')
     edit `=self._root.'/'.file`
   endif
 endfunction
@@ -1358,8 +1356,8 @@ function! s:Complete_destroy(A,L,P)
   return s:CustomComplete(a:A,a:L,a:P,"destroy")
 endfunction
 
-function! s:Complete_ruby(A,L,R)
-  return s:gsub(RailsUserClasses(),' ','\n')."\nActiveRecord::Base"
+function! s:Complete_ruby(A,L,P)
+  return join(rails#app().user_classes()+["ActiveRecord::Base"],"\n")
 endfunction
 
 " }}}1
@@ -1788,21 +1786,22 @@ function! s:autocamelize(files,test)
 endfunction
 
 function! RailsUserClasses()
-  if !exists("b:rails_root")
-    return ""
-  elseif s:getopt('classes','ab') != ''
-    return s:getopt('classes','ab')
+  return join(rails#app().user_classes(),' ')
+endfunction
+
+function! s:app_user_classes() dict
+  if self.cache.needs("user_classes")
+    let controllers = self.relglob("app/controllers/","**/*",".rb")
+    call map(controllers,'v:val == "application" ? v:val."_controller" : v:val')
+    let classes =
+          \ self.relglob("app/models/","**/*",".rb") +
+          \ controllers +
+          \ self.relglob("app/helpers/","**/*",".rb") +
+          \ self.relglob("lib/","**/*",".rb")
+    call map(classes,'s:camelize(v:val)')
+    call self.cache.set("user_classes",classes)
   endif
-  let var = "user_classes_".s:rv()
-  if !exists("s:".var)
-    let s:{var} = s:sub(s:sub(s:gsub(s:camelize(
-        \ s:relglob("app/models/","**/*",".rb") . "\n" .
-        \ s:sub(s:relglob("app/controllers/","**/*",".rb"),'<application>','&_controller') . "\n" .
-        \ s:relglob("app/helpers/","**/*",".rb") . "\n" .
-        \ s:relglob("lib/","**/*",".rb") . "\n" .
-        \ ""),'\n+',' '),'^\s+',''),'\s+$','')
-  endif
-  return s:{var}
+  return self.cache.get('user_classes')
 endfunction
 
 function! s:app_relglob(path,glob,...) dict
@@ -1829,7 +1828,7 @@ function! s:app_relglob(path,glob,...) dict
   return relative_paths
 endfunction
 
-call s:add_methods('app', ['relglob'])
+call s:add_methods('app', ['user_classes','relglob'])
 
 function! s:relglob(...)
   return join(call(rails#app().relglob,a:000,rails#app()),"\n")
@@ -3068,7 +3067,7 @@ function! s:BufSyntax()
     let s:prototype_classes = "Prototype Class Abstract Try PeriodicalExecuter Enumerable Hash ObjectRange Element Ajax Responders Base Request Updater PeriodicalUpdater Toggle Insertion Before Top Bottom After ClassNames Form Serializers TimedObserver Observer EventObserver Event Position Effect Effect2 Transitions ScopedQueue Queues DefaultOptions Parallel Opacity Move MoveBy Scale Highlight ScrollTo Fade Appear Puff BlindUp BlindDown SwitchOff DropOut Shake SlideDown SlideUp Squish Grow Shrink Pulsate Fold"
 
     let rails_helper_methods = '+\.\@<!\<\('.s:gsub(s:helpermethods(),'\s+','\\|').'\)\>+'
-    let classes = s:gsub(RailsUserClasses(),'::',' ')
+    let classes = s:gsub(join(rails#app().user_classes(),' '),'::',' ')
     if &syntax == 'ruby'
       if classes != ''
         exe "syn keyword rubyRailsUserClass ".classes." containedin=rubyClassDeclaration,rubyModuleDeclaration,rubyClass,rubyModule"
