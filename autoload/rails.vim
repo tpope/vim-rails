@@ -789,7 +789,6 @@ function! s:Refresh(bang)
   while i <= max
     let rr = getbufvar(i,"rails_root")
     if rr != ""
-      unlet! s:dbext_type_{s:escvar(rr)}
       call setbufvar(i,"rails_refresh",1)
     endif
     let i = i + 1
@@ -3589,48 +3588,30 @@ function! s:extractdbvar(str,arg)
   return matchstr("\n".a:str."\n",'\n'.a:arg.'=\zs.\{-\}\ze\n')
 endfunction
 
-function! s:BufDatabase(...)
-  if exists("s:lock_database")
-    return
+function! s:app_dbext_settings(environment) dict
+  if self.cache.needs('dbext_settings')
+    call self.cache.set('dbext_settings',{})
   endif
-  let s:lock_database = 1
-  let rv = s:rv()
-  if (a:0 && a:1 > 1)
-    unlet! s:dbext_type_{rv}
-  endif
-  if (a:0 > 1 && a:2 != '')
-    let env = a:2
-  else
-    let env = s:environment()
-  endif
-  " Crude caching mechanism
-  if !exists("s:dbext_type_".rv)
-    if exists("g:loaded_dbext") && (g:rails_dbext + (a:0 ? a:1 : 0)) > 0 && filereadable(RailsRoot()."/config/database.yml")
-      " Ideally we would filter this through ERB but that could be insecure.
-      " It might be possible to make use of taint checking.
+  let cache = self.cache.get('dbext_settings')
+  if !has_key(cache,a:environment)
+    let dict = {}
+    if filereadable(self._root."/config/database.yml")
       let out = ""
       if has("ruby")
-        ruby require 'yaml'; VIM::command('let out = %s' % File.open(VIM::evaluate("RailsRoot()")+"/config/database.yml") {|f| y = YAML::load(f); e = y[VIM::evaluate("env")]; i=0; e=y[e] while e.respond_to?(:to_str) && (i+=1)<16; e.map {|k,v| "#{k}=#{v}\n" if v}.compact.join }.inspect) rescue nil
+        ruby require 'yaml'; VIM::command('let out = %s' % File.open(VIM::evaluate("RailsRoot()")+"/config/database.yml") {|f| y = YAML::load(f); e = y[VIM::evaluate("a:environment")]; i=0; e=y[e] while e.respond_to?(:to_str) && (i+=1)<16; e.map {|k,v| "#{k}=#{v}\n" if v}.compact.join }.inspect) rescue nil
       endif
       if out == ""
-        let cmdb = 'require %{yaml}; File.open(%q{'.RailsRoot().'/config/database.yml}) {|f| y = YAML::load(f); e = y[%{'
+        let cmdb = 'require %{yaml}; File.open(%q{'.self._root.'/config/database.yml}) {|f| y = YAML::load(f); e = y[%{'
         let cmde = '}]; i=0; e=y[e] while e.respond_to?(:to_str) && (i+=1)<16; e.each{|k,v|puts k.to_s+%{=}+v.to_s}}'
-        if a:0 ? a:1 : g:rails_expensive
-          let out = rails#app().lightweight_ruby_eval(cmdb.env.cmde)
-        else
-          unlet! s:lock_database
-          return
-        endif
+        let out = self.lightweight_ruby_eval(cmdb.a:environment.cmde)
       endif
       let adapter = s:extractdbvar(out,'adapter')
-      let s:dbext_bin_{rv} = ''
-      let s:dbext_integratedlogin_{rv} = ''
       if adapter == 'postgresql'
         let adapter = 'pgsql'
       elseif adapter == 'sqlite3'
         let adapter = 'sqlite'
         " Does not appear to work
-        let s:dbext_bin = 'sqlite3'
+        let dict['bin'] = 'sqlite3'
       elseif adapter == 'sqlserver'
         let adapter = 'sqlsrv'
       elseif adapter == 'sybase'
@@ -3638,48 +3619,62 @@ function! s:BufDatabase(...)
       elseif adapter == 'oci'
         let adapter = 'ora'
       endif
-      let s:dbext_type_{rv} = toupper(adapter)
-      let s:dbext_user_{rv} = s:extractdbvar(out,'username')
-      let s:dbext_passwd_{rv} = s:extractdbvar(out,'password')
-      if s:dbext_passwd_{rv} == '' && adapter == 'mysql'
+      let dict['type'] = toupper(adapter)
+      let dict['user'] = s:extractdbvar(out,'username')
+      let dict['passwd'] = s:extractdbvar(out,'password')
+      if dict['passwd'] == '' && adapter == 'mysql'
         " Hack to override password from .my.cnf
-        let s:dbext_extra_{rv} = ' --password='
+        let dict['extra'] = ' --password='
       else
-        let s:dbext_extra_{rv} = ''
+        let dict['extra'] = ''
       endif
-      let s:dbext_dbname_{rv} = s:extractdbvar(out,'database')
-      if s:dbext_dbname_{rv} != '' && s:dbext_dbname_{rv} !~ '^:' && adapter =~? '^sqlite'
-        let s:dbext_dbname_{rv} = RailsRoot().'/'.s:dbext_dbname_{rv}
+      let dict['dbname'] = s:extractdbvar(out,'database')
+      if dict['dbname'] != '' && dict['dbname'] !~ '^:' && adapter =~? '^sqlite'
+        let dict['dbname'] = RailsRoot().'/'.dict['dbname']
       endif
-      let s:dbext_profile_{rv} = ''
-      let s:dbext_host_{rv} = s:extractdbvar(out,'host')
-      let s:dbext_port_{rv} = s:extractdbvar(out,'port')
-      let s:dbext_dsnname_{rv} = s:extractdbvar(out,'dsn')
-      if s:dbext_host_{rv} =~? '^\cDBI:'
-        if s:dbext_host_{rv} =~? '\c\<Trusted[_ ]Connection\s*=\s*yes\>'
-          let s:dbext_integratedlogin_{rv} = 1
+      let dict['profile'] = ''
+      let dict['host'] = s:extractdbvar(out,'host')
+      let dict['port'] = s:extractdbvar(out,'port')
+      let dict['dsnname'] = s:extractdbvar(out,'dsn')
+      if dict['host'] =~? '^\cDBI:'
+        if dict['host'] =~? '\c\<Trusted[_ ]Connection\s*=\s*yes\>'
+          let dict['integratedlogin'] = 1
         endif
-        let s:dbext_host_{rv} = matchstr(s:dbext_host_{rv},'\c\<\%(Server\|Data Source\)\s*=\s*\zs[^;]*')
+        let dict['host'] = matchstr(dict['host'],'\c\<\%(Server\|Data Source\)\s*=\s*\zs[^;]*')
       endif
+      call filter(dict,'v:val != ""')
     endif
+    let cache[a:environment] = dict
   endif
-  if exists("s:dbext_type_".rv)
-    silent! let b:dbext_type    = s:dbext_type_{rv}
-    silent! let b:dbext_profile = s:dbext_profile_{rv}
-    silent! let b:dbext_bin     = s:dbext_bin_{rv}
-    silent! let b:dbext_user    = s:dbext_user_{rv}
-    silent! let b:dbext_passwd  = s:dbext_passwd_{rv}
-    silent! let b:dbext_dbname  = s:dbext_dbname_{rv}
-    silent! let b:dbext_host    = s:dbext_host_{rv}
-    silent! let b:dbext_port    = s:dbext_port_{rv}
-    silent! let b:dbext_dsnname = s:dbext_dsnname_{rv}
-    silent! let b:dbext_extra   = s:dbext_extra_{rv}
-    silent! let b:dbext_integratedlogin = s:dbext_integratedlogin_{rv}
-    if b:dbext_type == 'PGSQL'
-      let $PGPASSWORD = b:dbext_passwd
-    elseif exists('$PGPASSWORD')
-      let $PGPASSWORD = ''
-    endif
+  return cache[a:environment]
+endfunction
+
+function! s:BufDatabase(...)
+  let self = rails#app()
+  if exists("s:lock_database") || !exists('g:loaded_dbext')
+    return
+  endif
+  let s:lock_database = 1
+  if (a:0 && a:1 > 1)
+    call self.cache.clear('dbext_settings')
+  endif
+  if (a:0 > 1 && a:2 != '')
+    let env = a:2
+  else
+    let env = s:environment()
+  endif
+  if (!self.cache.has('dbext_settings') || !has_key(self.cache.get('dbext_settings'),env)) && (g:rails_dbext + (a:0 ? a:1 : 0)) <= 0
+    unlet! s:lock_database
+    return
+  endif
+  let dict = self.dbext_settings(env)
+  for key in ['type', 'profile', 'bin', 'user', 'passwd', 'dbname', 'host', 'port', 'dsnname', 'extra', 'integratedlogin']
+    let b:dbext_{key} = get(dict,key,'')
+  endfor
+  if b:dbext_type == 'PGSQL'
+    let $PGPASSWORD = b:dbext_passwd
+  elseif exists('$PGPASSWORD')
+    let $PGPASSWORD = ''
   endif
   if a:0 >= 3 && a:3 && exists(":Create")
     if exists("b:dbext_dbname") && exists("b:dbext_type") && b:dbext_type !~? 'sqlite'
@@ -3698,6 +3693,8 @@ function! s:BufDatabase(...)
   endif
   unlet! s:lock_database
 endfunction
+
+call s:add_methods('app', ['dbext_settings'])
 
 " }}}1
 " Abbreviations {{{1
@@ -4315,7 +4312,7 @@ augroup railsPluginAuto
   autocmd User BufEnterRails call s:RefreshBuffer()
   autocmd User BufEnterRails call s:resetomnicomplete()
   autocmd User BufEnterRails call s:BufDatabase(-1)
-  autocmd BufWritePost */config/database.yml unlet! s:dbext_type_{s:rv()} " Force reload
+  autocmd BufWritePost */config/database.yml call rails#cache_clear("dbext_settings")
   autocmd BufWritePost */test/test_helper.rb call rails#cache_clear("user_assertions")
   autocmd BufWritePost */config/routes.rb    call rails#cache_clear("named_routes")
   autocmd BufWritePost */tasks/**.rake       call rails#cache_clear("rake_tasks")
