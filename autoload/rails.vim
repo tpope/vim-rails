@@ -2996,7 +2996,7 @@ function! s:resetomnicomplete()
 endfunction
 
 function! s:helpermethods()
-  let s:rails_helper_methods = ""
+  return ""
         \."atom_feed auto_discovery_link_tag auto_link "
         \."benchmark button_to button_to_function "
         \."cache capture cdata_section check_box check_box_tag collection_select concat content_for content_tag content_tag_for country_options_for_select country_select cycle "
@@ -3017,31 +3017,6 @@ function! s:helpermethods()
         \."update_page update_page_tag url_for "
         \."visual_effect "
         \."word_wrap"
-
-  " The list of helper methods used to be derived automatically.  Let's keep
-  " this code around in case it's needed again.
-  if !exists("s:rails_helper_methods")
-    if g:rails_expensive
-      let s:rails_helper_methods = ""
-      if has("ruby")
-        " && (has("win32") || has("win32unix"))
-        ruby begin; require 'rubygems'; rescue LoadError; end
-        if exists("g:rubycomplete_rails") && g:rubycomplete_rails
-          ruby begin; require VIM::evaluate('RailsRoot()')+'/config/environment'; rescue Exception; end
-        else
-          ruby begin; require 'active_support'; require 'action_controller'; require 'action_view'; rescue LoadError; end
-        end
-        ruby begin; h = ActionView::Helpers.constants.grep(/Helper$/).collect {|c|ActionView::Helpers.const_get c}.collect {|c| c.public_instance_methods(false)}.collect {|es| es.reject {|e| e =~ /_with(out)?_deprecation$/ || es.include?("#{e}_without_deprecation")}}.flatten.sort.uniq.reject {|m| m =~ /[=?!]$/}; VIM::command('let s:rails_helper_methods = "%s"' % h.join(" ")); rescue Exception; end
-      endif
-      if s:rails_helper_methods == ""
-        let s:rails_helper_methods = rails#app().lightweight_ruby_eval('require %{action_controller}; require %{action_view}; h = ActionView::Helpers.constants.grep(/Helper$/).collect {|c|ActionView::Helpers.const_get c}.collect {|c| c.public_instance_methods(false)}.collect {|es| es.reject {|e| e =~ /_with(out)?_deprecation$/ || es.include?(%{#{e}_without_deprecation})}}.flatten.sort.uniq.reject {|m| m =~ /[=?!]$/}; puts h.join(%{ })',"link_to")
-      endif
-    else
-      let s:rails_helper_methods = "link_to"
-    endif
-  endif
-  "let g:rails_helper_methods = s:rails_helper_methods
-  return s:rails_helper_methods
 endfunction
 
 function! s:app_user_assertions() dict
