@@ -1106,8 +1106,8 @@ The latest stable version can be found at
 In Vim 7, you can keep up to date with |GetLatestVimScripts|.
 
 The very latest development versions can be retrieved from Git:
-    http://git.tpope.net/?p=vim-rails.git
-    git clone git://git.tpope.net/git/vim-rails.git
+    http://github.com/tpope/vim-rails
+    git clone git://github.com/tpope/vim-rails.git
 
 Feedback is highly desired on this plugin.  Please send all comments,
 complaints, and compliments to the author.  No bug is too small to report.
