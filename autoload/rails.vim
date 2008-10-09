@@ -279,7 +279,6 @@ function! s:underscore(str)
   let str = s:gsub(a:str,'::','/')
   let str = s:gsub(str,'(\u+)(\u\l)','\1_\2')
   let str = s:gsub(str,'(\l|\d)(\u)','\1_\2')
-  let str = s:gsub(str,'-','_')
   let str = tolower(str)
   return str
 endfunction
