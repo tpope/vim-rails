@@ -79,11 +79,6 @@ function! s:ra()
   return s:escarg(RailsRoot())
 endfunction
 
-function! s:rc()
-  " Rails root, escaped for use with a command (spaces not escaped)
-  return s:esccmd(RailsRoot())
-endfunction
-
 function! s:escvar(r)
   let r = fnamemodify(a:r,':~')
   let r = s:gsub(r,'\W','\="_".char2nr(submatch(0))."_"')
@@ -449,7 +444,6 @@ function! RailsFileType()
       let class = "ares"
       let r = "model-ares"
     elseif class != ''
-      "let class = s:sub(class,'::Base$','')
       let class = tolower(s:gsub(class,'[^A-Z]',''))
       let r = "model-".s:sub(class,'^amb>','mailer')
     elseif f =~ '_mailer\.rb$'
@@ -583,7 +577,6 @@ function! s:QuickFixCmdPre()
     if strpart(getcwd(),0,strlen(RailsRoot())) != RailsRoot()
       let s:last_dir = getcwd()
       echo "lchdir ".s:ra()
-      "exe "lchdir ".s:ra()
       lchdir `=RailsRoot()`
     endif
   endif
@@ -591,7 +584,6 @@ endfunction
 
 function! s:QuickFixCmdPost()
   if exists("s:last_dir")
-    "exe "lchdir ".s:escarg(s:last_dir)
     lchdir `=s:last_dir`
     unlet s:last_dir
   endif
@@ -697,7 +689,6 @@ function! s:Log(bang,arg)
       " TODO: check if :Tail works with `=`
       exe "Tail ".s:ra().'/'.lf
     else
-      "exe "pedit ".s:ra().'/'.lf
       pedit `=RailsRoot().'/'.lf`
     endif
   endif
@@ -726,7 +717,6 @@ function! rails#new_app_command(bang,...)
     let str = str . " " . s:rquote(expand(a:{c}))
     let c = c + 1
   endwhile
-  "let str = s:sub(str,'^ ','')
   let dir = expand(dir)
   if isdirectory(fnamemodify(dir,':h')."/.svn") && g:rails_subversion
     let append = " -c"
@@ -741,7 +731,6 @@ function! rails#new_app_command(bang,...)
   endif
   exe "!rails".append.str
   if filereadable(dir."/".g:rails_default_file)
-    "exe "edit ".s:escarg(dir)."/".g:rails_default_file
     edit `=dir.'/'.g:rails_default_file`
   endif
 endfunction
@@ -1263,7 +1252,6 @@ function! s:app_generate_command(bang,...) dict
     if file == ""
       let file = matchstr(res,'\s\+\%(exists\)\s\+\zs\f\+\.rb\ze\n')
     endif
-    "echo file
   else
     let file = ""
   endif
@@ -1301,7 +1289,6 @@ function! s:Complete_script(ArgLead,CmdLine,P)
     elseif target == 'integration_test'
       return s:integrationtestList(pattern,"","")
     elseif target == 'observer'
-      " script/generate observer is in Edge Rails
       let observers = s:observerList(pattern,"","")
       let models = s:modelList(pattern,"","")
       if cmd =~ '^destroy\>'
@@ -1390,7 +1377,6 @@ function! s:BufNavCommands()
   command! -buffer -bar -nargs=0 RS :call s:Related(<bang>0,"S")
   command! -buffer -bar -nargs=0 RV :call s:Related(<bang>0,"V")
   command! -buffer -bar -nargs=0 RT :call s:Related(<bang>0,"T")
-  "command! -buffer -bar -nargs=0 RN :call s:Alternate(<bang>0,"")
 endfunction
 
 function! s:djump(def)
@@ -1405,7 +1391,6 @@ function! s:djump(def)
       let end = s:endof(line('.'))
       let rline = search(rpat,'',end)
       if rline > 0
-        "call cursor(rline,1)
         let variable = matchstr(getline(rline),rpat)
         let success = search('\C^\s*'.variable.'\s*\.\s*\zs'.ext.'\>','',end)
         if !success
@@ -1437,17 +1422,7 @@ function! s:Find(bang,count,arg,...)
     let file = s:RailsFind()
     let tail = ""
   endif
-  if file =~ '^\%(app\|config\|db\|public\|spec\|test\|vendor\)/.*\.' || !a:0 || 1
-    call s:findedit((a:count==1?'' : a:count).cmd,file.tail,str)
-  else
-    " Old way
-    let fcmd = (a:count==1?'' : a:count).s:findcmdfor(cmd)
-    let fcmd = s:sub(fcmd,'(\d+)vert ','vert \1')
-    if file != ""
-      exe fcmd.' '.str.s:escarg(file)
-    endif
-    call s:djump(tail)
-  endif
+  call s:findedit((a:count==1?'' : a:count).cmd,file.tail,str)
 endfunction
 
 function! s:Edit(bang,count,arg,...)
@@ -1456,7 +1431,6 @@ function! s:Edit(bang,count,arg,...)
     let str = ""
     let i = 1
     while i < a:0
-      "let str = str . s:escarg(a:{i}) . " "
       let str = str . "`=a:".i."` "
       let i = i + 1
     endwhile
@@ -1654,7 +1628,6 @@ function! s:RailsIncludefind(str,...)
   let str = s:sub(str,'^\s*','')
   let str = s:sub(str,'\s*$','')
   let str = s:sub(str,'^[:@]','')
-  "let str = s:sub(str,"\\([\"']\\)\\(.*\\)\\1",'\2')
   let str = s:sub(str,':0x\x+$','') " For #<Object:0x...> style output
   let str = s:gsub(str,"[\"']",'')
   if line =~ '\<\(require\|load\)\s*(\s*$'
@@ -1695,7 +1668,6 @@ function! s:RailsIncludefind(str,...)
     let str = 'app/models/'.s:singularize(str).'.rb'
   elseif line =~ '\<def\s\+' && expand("%:t") =~ '_controller\.rb'
     let str = s:sub(s:sub(RailsFilePath(),'/controllers/','/views/'),'_controller\.rb$','/'.str)
-    "let str = s:sub(expand("%:p"),'.*[\/]app[\/]controllers[\/](.{-})_controller.rb','views/\1').'/'.str
     " FIXME: support nested extensions
     let vt = s:view_types.","
     while vt != ""
@@ -2043,9 +2015,7 @@ function! s:EditSimpleRb(bang,cmd,name,target,prefix,suffix)
   let cmd = s:findcmdfor(a:cmd.(a:bang?'!':''))
   if a:target == ""
     " Good idea to emulate error numbers like this?
-    return s:error("E471: Argument required") " : R',a:name)
-  "else
-    "let g:target = a:target
+    return s:error("E471: Argument required")
   endif
   let f = s:underscore(a:target)
   let jump = matchstr(f,'[@#].*')
@@ -2054,9 +2024,6 @@ function! s:EditSimpleRb(bang,cmd,name,target,prefix,suffix)
     let f = s:sub(f,'\.$','')
   else
     let f = f.a:suffix.jump
-    if a:suffix !~ '\.'
-      "let f = f.".rb"
-    endif
   endif
   let f = s:gsub(a:prefix,'\n',f.'\n').f
   return s:findedit(cmd,f)
@@ -2453,12 +2420,10 @@ function! s:edit(cmd,file,...)
   let cmd = cmd.' '.(a:0 ? a:1 . ' ' : '')
   let file = a:file
   if file !~ '^/' && file !~ '^\w:' && file !~ '://'
-    "let file = s:ra().'/'.file
     exe cmd."`=RailsRoot().'/'.file`"
   else
     exe cmd.file
   endif
-  "exe cmd.file
 endfunction
 
 function! s:Alternate(bang,cmd)
@@ -2550,7 +2515,6 @@ function! s:AlternateFile()
     if t =~ '^model\>'
       return s:sub(file,'app/models/','test/unit/')."\n".s:sub(s:sub(file,'_test\.rb$','_spec.rb'),'app/models/','spec/models/')
     elseif t =~ '^controller\>'
-      "return s:sub(file,'app/controllers/','test/functional/')
       return s:sub(file,'<app/controllers/','test/functional/')."\n".s:sub(s:sub(file,'_test\.rb$','_spec.rb'),'app/controllers/','spec/controllers/')
     elseif t =~ '^test-unit\>'
       return s:sub(file,'test/unit/','app/models/')."\n".s:sub(file,'test/unit/','lib/')
@@ -2633,8 +2597,6 @@ function! s:RelatedFile()
     return "public/javascripts/application.js"
   elseif t =~ '^view-layout\>'
     return s:sub(s:sub(s:sub(f,'/views/','/controllers/'),'/layouts/(\k+)\..*$','/\1_controller.rb'),'<application_controller\.rb$','application.rb')
-  "elseif t=~ '^view-partial\>'
-    "call s:warn("No related file is defined")
   elseif t =~ '^view\>'
     let controller  = s:sub(s:sub(f,'/views/','/controllers/'),'/(\k+%(\.\k+)=)\..*$','_controller.rb#\1')
     let controller2 = s:sub(s:sub(f,'/views/','/controllers/'),'/(\k+%(\.\k+)=)\..*$','.rb#\1')
@@ -2655,7 +2617,6 @@ function! s:RelatedFile()
   elseif t=~ '^helper\>'
     return s:findlayout(s:controller())
   elseif t =~ '^model-arb\>'
-    "call s:migrationEdit(0,cmd,'create_'.s:pluralize(expand('%:t:r')))
     return s:migrationfor('create_'.s:pluralize(expand('%:t:r')))
   elseif t =~ '^model-aro\>'
     return s:sub(f,'_observer\.rb$','.rb')
@@ -2664,7 +2625,6 @@ function! s:RelatedFile()
   elseif f =~ '\<db/schema\.rb$'
     return s:migrationfor(1)
   else
-    "call s:warn("No related file is defined")
     return ""
   endif
 endfunction
@@ -2724,8 +2684,6 @@ function! s:Extract(bang,...) range abort
   endif
   if filereadable(out)
     let partial_warn = 1
-    "echoerr "Partial exists"
-    "return
   endif
   if bufnr(out) > 0
     if bufloaded(out)
@@ -2759,7 +2717,6 @@ function! s:Extract(bang,...) range abort
   else
     let fspaces = spaces
   endif
-  "silent exe range."write ".out
   let renderstr = "render :partial => '".fnamemodify(file,":r:r")."'"
   if collection != ""
     let renderstr = renderstr.", :collection => ".collection
@@ -2797,7 +2754,6 @@ function! s:Extract(bang,...) range abort
     new
   endif
   let shortout = fnamemodify(out,':~:.')
-  "exe "silent file ".s:escarg(shortout)
   silent file `=shortout`
   let &ft = ft
   let @@ = partial
@@ -3066,7 +3022,6 @@ function! s:BufSyntax()
       endif
       if t =~ '^model-mailer\>'
         syn keyword rubyRailsMethod logger
-        " Misnomer but who cares
         syn keyword rubyRailsControllerMethod helper helper_attr helper_method
       endif
       if t =~ '^controller\>' || t =~ '^view\>' || t=~ '^helper\>'
@@ -3077,14 +3032,12 @@ function! s:BufSyntax()
         syn keyword rubyRailsMethod logger
       endif
       if t =~ '^helper\>' || t=~ '^view\>'
-        "exe "syn match rubyRailsHelperMethod ".rails_helper_methods
         exe "syn keyword rubyRailsHelperMethod ".s:sub(s:helpermethods(),'<select\s+','')
         syn match rubyRailsHelperMethod '\<select\>\%(\s*{\|\s*do\>\|\s*(\=\s*&\)\@!'
         syn match rubyRailsViewMethod '\.\@<!\<\(h\|html_escape\|u\|url_encode\|controller\)\>'
         if t =~ '\<partial\>'
           syn keyword rubyRailsMethod local_assigns
         endif
-        "syn keyword rubyRailsDeprecatedMethod start_form_tag end_form_tag link_to_image human_size update_element_function
       elseif t =~ '^controller\>'
         syn keyword rubyRailsControllerMethod helper helper_attr helper_method filter layout url_for serialize exempt_from_layout filter_parameter_logging hide_action cache_sweeper
         syn match rubyRailsDeprecatedMethod '\<render_\%(action\|text\|file\|template\|nothing\|without_layout\)\>'
@@ -3153,7 +3106,6 @@ function! s:BufSyntax()
       exe "syn sync minlines=" . g:ruby_minlines
       syn case match
       syn region  rubyString   matchgroup=rubyStringDelimiter start=+%Q\=<+ end=+>+ contains=@htmlTop,@rubyStringSpecial
-      "syn region  rubyString   matchgroup=rubyStringDelimiter start=+%q<+ end=+>+ contains=@htmlTop
       syn cluster htmlArgCluster add=@rubyStringSpecial
       syn cluster htmlPreProc    add=@rubyStringSpecial
 
@@ -3419,7 +3371,6 @@ function! s:BufMappings()
     endif
     if exists("$CREAM")
       imap <buffer> <C-CR> <C-O><Plug>RailsFind
-      " Are these a good idea?
       imap <buffer> <M-[>  <C-O><Plug>RailsAlternate
       imap <buffer> <M-]>  <C-O><Plug>RailsRelated
     endif
@@ -4167,7 +4118,6 @@ function! RailsBufInit(path)
   call s:callback("config/rails.vim")
   call s:BufModelines()
   call s:BufMappings()
-  "unlet! b:rails_cached_file_type
   let &cpo = cpo_save
   return b:rails_root
 endfunction
@@ -4220,7 +4170,6 @@ function! s:BufSettings()
   let &l:suffixesadd=".rb,.".s:gsub(s:view_types,',',',.').",.css,.js,.yml,.csv,.rake,.sql,.html,.xml"
   if &ft =~ '^\%(e\=ruby\|[yh]aml\|javascript\|css\|sass\)$'
     setlocal sw=2 sts=2 et
-    "set include=\\<\\zsAct\\f*::Base\\ze\\>\\\|^\\s*\\(require\\\|load\\)\\s\\+['\"]\\zs\\f\\+\\ze
     if exists('+completefunc')
       if &completefunc == ''
         set completefunc=syntaxcomplete#Complete
