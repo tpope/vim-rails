@@ -703,7 +703,7 @@ function! s:Log(bang,arg)
   endif
 endfunction
 
-function! RailsNewApp(bang,...)
+function! rails#new_app_command(bang,...)
   if a:0 == 0
     if a:bang
       echo "rails.vim version ".g:autoloaded_rails
@@ -3288,7 +3288,7 @@ function! s:HiDefaults()
   hi def link railsStringSpecial              Identifier
 endfunction
 
-function! RailslogSyntax()
+function! rails#log_syntax()
   syn match   railslogRender      '^\s*\<\%(Processing\|Rendering\|Rendered\|Redirected\|Completed\)\>'
   syn match   railslogComment     '^\s*# .*'
   syn match   railslogModel       '^\s*\u\%(\w\|:\)* \%(Load\%( Including Associations\| IDs For Limited Eager Loading\)\=\|Columns\|Count\|Update\|Destroy\|Delete all\)\>' skipwhite nextgroup=railslogModelNum
