@@ -37,7 +37,7 @@ function! s:error(str)
 endfunction
 
 function! s:autoload(...)
-  if !exists("g:autoloaded_rails")
+  if !exists("g:autoloaded_rails") && v:version >= 700
     runtime! autoload/rails.vim
   endif
   if exists("g:autoloaded_rails")
@@ -48,7 +48,11 @@ function! s:autoload(...)
   endif
   if !exists("g:rails_no_autoload_warning")
     let g:rails_no_autoload_warning = 1
-    call s:error("Disabling rails.vim: autoload/rails.vim is missing")
+    if v:version >= 700
+      call s:error("Disabling rails.vim: autoload/rails.vim is missing")
+    else
+      call s:error("Disabling rails.vim: Vim version 7 or higher required")
+    endif
   endif
   return ""
 endfunction
@@ -69,7 +73,6 @@ call s:SetOptDefault("rails_mappings",1)
 call s:SetOptDefault("rails_abbreviations",1)
 call s:SetOptDefault("rails_expensive",1+0*(has("win32")||has("win32unix")))
 call s:SetOptDefault("rails_dbext",g:rails_expensive)
-call s:SetOptDefault("rails_subversion",0)
 call s:SetOptDefault("rails_default_file","README")
 call s:SetOptDefault("rails_default_database","")
 call s:SetOptDefault("rails_root_url",'http://localhost:3000/')
@@ -144,10 +147,10 @@ augroup railsPluginDetect
   autocmd FileType netrw if !exists("b:rails_root") | call s:Detect(expand("<afile>:p")) | endif | if exists("b:rails_root") | silent doau User BufEnterRails | endif
   autocmd BufEnter * if exists("b:rails_root")|silent doau User BufEnterRails|endif
   autocmd BufLeave * if exists("b:rails_root")|silent doau User BufLeaveRails|endif
-  autocmd FileType railslog if s:autoload()|call RailslogSyntax()|endif
+  autocmd Syntax railslog if s:autoload()|call rails#log_syntax()|endif
 augroup END
 
-command! -bar -bang -nargs=* -complete=dir Rails :if s:autoload()|call RailsNewApp(<bang>0,<f-args>)|endif
+command! -bar -bang -nargs=* -complete=dir Rails :if s:autoload()|call rails#new_app_command(<bang>0,<f-args>)|endif
 
 " }}}1
 " Menus {{{1
@@ -200,6 +203,7 @@ function! s:CreateMenus() abort
     exe menucmd.g:rails_installed_menu.'.&Other\ files.&Test\ Helper :find test/test_helper.rb<CR>'
     exe menucmd.g:rails_installed_menu.'.-FSep- :'
     exe menucmd.g:rails_installed_menu.'.Ra&ke\	:Rake :Rake<CR>'
+    " TODO: use dynamically generated task list from app
     let tasks = g:rails_rake_tasks
     while tasks != ''
       let task = matchstr(tasks,'.\{-\}\ze\%(\n\|$\)')
