@@ -98,9 +98,15 @@ function! s:sname()
   return fnamemodify(s:file,':t:r')
 endfunction
 
-function! s:hasfile(file)
-  return filereadable(RailsRoot().'/'.a:file)
+function! s:app_path(...) dict
+  return join([self.root]+a:000,'/')
 endfunction
+
+function! s:app_has_file(file) dict
+  return filereadable(self.path(a:file))
+endfunction
+
+call s:add_methods('app',['path','has_file'])
 
 function! s:endof(lnum)
   if a:lnum == 0
@@ -496,10 +502,10 @@ endfunction
 " Ruby Execution {{{1
 
 function! s:app_ruby_shell_command(cmd) dict abort
-  if self._root =~ '://'
+  if self.path() =~ '://'
     return "ruby ".a:cmd
   else
-    return "ruby -C ".s:rquote(self._root)." ".a:cmd
+    return "ruby -C ".s:rquote(self.path())." ".a:cmd
   endif
 endfunction
 
@@ -541,7 +547,7 @@ function! s:app_eval(ruby,...) dict abort
   if !executable("ruby")
     return def
   endif
-  let args = "-r./config/boot -r ".s:rquote(self._root."/config/environment")." -e ".s:rquote(a:ruby)
+  let args = "-r./config/boot -r ".s:rquote(self.path("config/environment"))." -e ".s:rquote(a:ruby)
   let cmd = self.ruby_shell_command(args)
   " If the shell is messed up, this command could cause an error message
   silent! let results = system(cmd)
@@ -791,7 +797,7 @@ endfunction
 
 function! s:app_rake_tasks() dict
   if self.cache.needs('rake_tasks')
-    let rakefile = s:rquote(self._root."/Rakefile")
+    let rakefile = s:rquote(self.path("Rakefile"))
     let lines = split(system("rake -T -f ".rakefile),"\n")
     call map(lines,'matchstr(v:val,"^rake\\s\\+\\zs\\S*")')
     call filter(lines,'v:val != ""')
@@ -876,6 +882,7 @@ function! s:makewithruby(arg,...)
 endfunction
 
 function! s:Rake(bang,lnum,arg)
+  let self = rails#app()
   let lnum = a:lnum < 0 ? line('.') : a:lnum
   let oldefm = &efm
   if a:bang
@@ -917,7 +924,7 @@ function! s:Rake(bang,lnum,arg)
     else
       let extra = ''
     endif
-    if s:hasfile(file) || s:hasfile(file.'.rb')
+    if self.has_file(file) || self.has_file(file.'.rb')
       call s:makewithruby(withrubyargs.'-r"'.file.'"'.extra,file !~# '_\%(spec\|test\)\%(\.rb\)\=$')
     else
       call s:makewithruby(withrubyargs.'-e '.s:esccmd(s:rquote(arg)))
@@ -1248,7 +1255,7 @@ function! s:app_generate_command(bang,...) dict
   endif
   if !self.execute_ruby_command("script/generate ".target.(s:usesubversion()?' -c':'').str) && file != ""
     call self.cache.clear('user_classes')
-    edit `=self._root.'/'.file`
+    edit `=self.path(file)`
   endif
 endfunction
 
@@ -1772,8 +1779,8 @@ function! s:app_relglob(path,glob,...) dict
     let &shellslash = 1
   endif
   let path = a:path
-  if path !~ '^/' && path !~ '^\w:' && self._root != ''
-    let path = self._root . '/' . path
+  if path !~ '^/' && path !~ '^\w:'
+    let path = self.path(path)
   endif
   let suffix = a:0 ? a:1 : ''
   let full_paths = split(glob(path.a:glob.suffix),"\n")
@@ -2073,7 +2080,7 @@ function! s:fixturesEdit(bang,cmd,...)
   let e = e == '' ? e : '.'.e
   let c = fnamemodify(c,':r')
   let file = 'test/fixtures/'.c.e
-  if file =~ '\.\w\+$' && !s:hasfile("spec/fixtures/".c.e)
+  if file =~ '\.\w\+$' && !rails#app().has_file("spec/fixtures/".c.e)
     call s:edit(a:cmd.(a:bang?'!':''),file)
   else
     call s:findedit(a:cmd.(a:bang?'!':''),file."\nspec/fixtures/".c.e)
@@ -2136,9 +2143,9 @@ function! s:findview(name)
   endif
   if c =~ '\.\w\+\.\w\+$' || c =~ '\.'.s:viewspattern().'$'
     return pre.c
-  elseif s:hasfile(pre.c.".rhtml")
+  elseif rails#app().has_file(pre.c.".rhtml")
     let file = pre.c.".rhtml"
-  elseif s:hasfile(pre.c.".rxml")
+  elseif rails#app().has_file(pre.c.".rxml")
     let file = pre.c.".rxml"
   else
     let format = "." . s:format('html')
@@ -2147,7 +2154,7 @@ function! s:findview(name)
       while vt != ""
         let t = matchstr(vt,'[^,]*')
         let vt = s:sub(vt,'[^,]*,','')
-        if s:hasfile(pre.c.format.".".t)
+        if rails#app().has_file(pre.c.format.".".t)
           let file = pre.c.format.".".t
           break
         endif
@@ -2195,7 +2202,7 @@ function! s:controllerEdit(bang,cmd,...)
   else
     let controller = a:1
   endif
-  if s:hasfile("app/controllers/".controller."_controller.rb") || !s:hasfile("app/controllers/".controller.".rb")
+  if rails#app().has_file("app/controllers/".controller."_controller.rb") || !rails#app().has_file("app/controllers/".controller.".rb")
     let suffix = "_controller".suffix
   endif
   return s:EditSimpleRb(a:bang,a:cmd,"controller",controller,"app/controllers/",suffix)
@@ -2220,7 +2227,7 @@ endfunction
 function! s:unittestEdit(bang,cmd,...)
   let f = a:0 ? a:1 : s:model(1)
   if !a:0 && RailsFileType() =~ '^model-aro\>' && f != '' && f !~ '_observer$'
-    if s:hasfile("test/unit/".f."_observer.rb") || !s:hasfile("test/unit/".f.".rb")
+    if rails#app().has_file("test/unit/".f."_observer.rb") || !rails#app().has_file("test/unit/".f.".rb")
       let f = f . "_observer"
     endif
   endif
@@ -2233,10 +2240,10 @@ function! s:functionaltestEdit(bang,cmd,...)
   else
     let f = s:controller()
   endif
-  if f != '' && !s:hasfile("test/functional/".f."_test.rb")
-    if s:hasfile("test/functional/".f."_controller_test.rb")
+  if f != '' && !rails#app().has_file("test/functional/".f."_test.rb")
+    if rails#app().has_file("test/functional/".f."_controller_test.rb")
       let f = f . "_controller"
-    elseif s:hasfile("test/functional/".f."_api_test.rb")
+    elseif rails#app().has_file("test/functional/".f."_api_test.rb")
       let f = f . "_api"
     endif
   endif
@@ -2263,7 +2270,7 @@ function! s:pluginEdit(bang,cmd,...)
     let extra = "vendor/plugins/" . plugin . "/\n"
   endif
   if a:0
-    if a:1 =~ '^[^/.]*/\=$' && s:hasfile("vendor/plugins/".a:1."/init.rb")
+    if a:1 =~ '^[^/.]*/\=$' && rails#app().has_file("vendor/plugins/".a:1."/init.rb")
       return s:EditSimpleRb(a:bang,a:cmd,"plugin",s:sub(a:1,'/$',''),"vendor/plugins/","/init.rb")
     elseif plugin == ""
       call s:edit(cmd,"vendor/plugins/".s:sub(a:1,'\.$',''))
@@ -2366,7 +2373,7 @@ function! s:findedit(cmd,file,...) abort
     while file == '' && filelist != ''
       let maybe = matchstr(filelist,'^.\{-\}\ze\n')
       let filelist = s:sub(filelist,'^.{-}\n','')
-      if s:hasfile(s:sub(maybe,'[@#].*',''))
+      if rails#app().has_file(s:sub(maybe,'[@#].*',''))
         let file = maybe
       endif
     endwhile
@@ -2460,14 +2467,14 @@ function! s:AlternateFile()
     let helper     = fnamemodify(dest,':h:s?/views/?/helpers/?')."_helper.rb"
     let controller = fnamemodify(dest,':h:s?/views/?/controllers/?')."_controller.rb"
     let model      = fnamemodify(dest,':h:s?/views/?/models/?').".rb"
-    if s:hasfile(spec)
+    if rails#app().has_file(spec)
       return spec
-    elseif s:hasfile(helper)
+    elseif rails#app().has_file(helper)
       return helper
-    elseif s:hasfile(controller)
+    elseif rails#app().has_file(controller)
       let jumpto = expand("%:t:r")
       return controller.'#'.jumpto
-    elseif s:hasfile(model)
+    elseif rails#app().has_file(model)
       return model
     else
       return helper
@@ -2479,7 +2486,7 @@ function! s:AlternateFile()
     let controller = s:sub(s:sub(f,'/helpers/','/controllers/'),'_helper\.rb$','_controller.rb')
     let controller = s:sub(controller,'application_controller','application')
     let spec = s:sub(s:sub(f,'<app/','spec/'),'\.rb$','_spec.rb')
-    if s:hasfile(spec)
+    if rails#app().has_file(spec)
       return spec
     else
       return controller
@@ -2968,8 +2975,8 @@ endfunction
 
 function! s:app_user_assertions() dict
   if self.cache.needs("user_assertions")
-    if filereadable(self._root."/test/test_helper.rb")
-      let assertions = map(filter(readfile(self._root."/test/test_helper.rb"),'v:val =~ "^  def assert_"'),'matchstr(v:val,"^  def \\zsassert_\\w\\+")')
+    if self.has_file("test/test_helper.rb")
+      let assertions = map(filter(readfile(self.path("test/test_helper.rb")),'v:val =~ "^  def assert_"'),'matchstr(v:val,"^  def \\zsassert_\\w\\+")')
     else
       let assertions = []
     endif
@@ -3512,13 +3519,13 @@ function! s:app_dbext_settings(environment) dict
   let cache = self.cache.get('dbext_settings')
   if !has_key(cache,a:environment)
     let dict = {}
-    if filereadable(self._root."/config/database.yml")
+    if self.has_file("config/database.yml")
       let out = ""
       if has("ruby")
         ruby require 'yaml'; VIM::command('let out = %s' % File.open(VIM::evaluate("RailsRoot()")+"/config/database.yml") {|f| y = YAML::load(f); e = y[VIM::evaluate("a:environment")]; i=0; e=y[e] while e.respond_to?(:to_str) && (i+=1)<16; e.map {|k,v| "#{k}=#{v}\n" if v}.compact.join }.inspect) rescue nil
       endif
       if out == ""
-        let cmdb = 'require %{yaml}; File.open(%q{'.self._root.'/config/database.yml}) {|f| y = YAML::load(f); e = y[%{'
+        let cmdb = 'require %{yaml}; File.open(%q{'.self.path().'/config/database.yml}) {|f| y = YAML::load(f); e = y[%{'
         let cmde = '}]; i=0; e=y[e] while e.respond_to?(:to_str) && (i+=1)<16; e.each{|k,v|puts k.to_s+%{=}+v.to_s}}'
         let out = self.lightweight_ruby_eval(cmdb.a:environment.cmde)
       endif
@@ -4003,7 +4010,7 @@ function! s:callback(file)
   if RailsRoot() != ""
     let var = "callback_".s:rv()."_".s:escvar(a:file)
     if !exists("s:".var) || exists("b:rails_refresh")
-      let s:{var} = s:hasfile(a:file)
+      let s:{var} = rails#app().has_file(a:file)
     endif
     if s:{var}
       if exists(":sandbox")
@@ -4022,7 +4029,7 @@ function! RailsBufInit(path)
   let b:rails_root = a:path
   if !has_key(s:apps,a:path)
     let s:apps[a:path] = deepcopy(s:app_prototype)
-    let s:apps[a:path]._root = a:path
+    let s:apps[a:path].root = a:path
   endif
   " Apparently RailsFileType() can be slow if the underlying file system is
   " slow (even though it doesn't really do anything IO related).  This caching
