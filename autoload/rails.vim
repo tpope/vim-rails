@@ -308,13 +308,6 @@ function! s:pluralize(word)
   return word
 endfunction
 
-function! s:usesubversion()
-  if !exists("b:rails_use_subversion")
-    let b:rails_use_subversion = s:getopt("subversion","abg") && (RailsRoot()!="") && isdirectory(RailsRoot()."/.svn")
-  endif
-  return b:rails_use_subversion
-endfunction
-
 function! s:environment()
   if exists('$RAILS_ENV')
     return $RAILS_ENV
@@ -707,11 +700,6 @@ function! rails#new_app_command(bang,...)
     let c += 1
   endwhile
   let dir = expand(dir)
-  if isdirectory(fnamemodify(dir,':h')."/.svn") && g:rails_subversion
-    let append = " -c"
-  else
-    let append = ""
-  endif
   if g:rails_default_database != "" && str !~ '-d \|--database='
     let append .= " -d ".g:rails_default_database
   endif
@@ -777,7 +765,7 @@ endfunction
 function! s:RefreshBuffer()
   if exists("b:rails_refresh") && b:rails_refresh
     let oldroot = b:rails_root
-    unlet! b:rails_root b:rails_use_subversion
+    unlet! b:rails_root
     let b:rails_refresh = 0
     call RailsBufInit(oldroot)
     unlet! b:rails_refresh
@@ -1105,7 +1093,7 @@ endfunction
 " }}}1
 " Script Wrappers {{{1
 
-" Depends: s:rquote, s:sub, s:getopt, s:usesubversion, ..., s:pluginList, ...
+" Depends: s:rquote, s:sub, s:getopt, ..., s:pluginList, ...
 
 function! s:BufScriptWrappers()
   Rcommand! -buffer -bar -nargs=+       -complete=custom,s:Complete_script   Rscript       :call rails#app().script_command(<bang>0,<f-args>)
@@ -1213,7 +1201,7 @@ function! s:app_destroy_command(bang,...) dict
     let str .= " " . s:rquote(a:{c})
     let c += 1
   endwhile
-  call self.execute_ruby_command(s:rquote("script/destroy").str.(s:usesubversion()?' -c':''))
+  call self.execute_ruby_command(s:rquote("script/destroy").str)
   call self.cache.clear('user_classes')
 endfunction
 
@@ -1240,7 +1228,7 @@ function! s:app_generate_command(bang,...) dict
   else
     let file = ""
   endif
-  if !self.execute_ruby_command("script/generate ".target.(s:usesubversion()?' -c':'').str) && file != ""
+  if !self.execute_ruby_command("script/generate ".target.str) && file != ""
     call self.cache.clear('user_classes')
     edit `=self.path(file)`
   endif
