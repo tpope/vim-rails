@@ -988,6 +988,8 @@ Modelines can also be local to a method.  Example: >
 	  # rset alternate=app/models/comment.rb
 These two forms differ only in case.
 
+Modelines are deprecated.
+
 ==============================================================================
 GLOBAL SETTINGS					*rails-global-settings*
 
@@ -1059,8 +1061,7 @@ Modelines set buffer-local options using the :Rset command.
 Also enables method specific modelines (note the case difference): >
 	  def show
 	    # rset preview=blog/show/1
-Modelines are extremely useful but may cause security concerns when editing
-projects from an untrusted source. Enabled by default.
+Modelines are deprecated and disabled by default.
 
 						*g:rails_menu*  >
 	let g:rails_menu=1
