@@ -3824,8 +3824,6 @@ endfunction
 " }}}1
 " Settings {{{1
 
-" Depends: s:error, s:sub, s:sname, s:escvar, s:lastmethod, s:environment, s:gsub, s:lastmethodlib, s:gsub
-
 function! s:Set(bang,...)
   let c = 1
   let defscope = ''
@@ -3854,6 +3852,7 @@ function! s:Set(bang,...)
 endfunction
 
 function! s:getopt(opt,...)
+  let app = rails#app()
   let opt = a:opt
   if a:0
     let scope = a:1
@@ -3870,22 +3869,25 @@ function! s:getopt(opt,...)
   if scope =~ 'l'
     call s:LocalModelines(lnum)
   endif
-  let opt = s:sub(opt,'<%(rake|rake_task|rake_target)$','task')
+  let var = s:sname().'_'.opt
+  let lastmethod = s:lastmethod(lnum)
+  if lastmethod == '' | let lastmethod = ' ' | endif
   " Get buffer option
-  if scope =~ 'l' && exists("b:_".s:sname()."_".s:escvar(s:lastmethod())."_".opt)
-    return b:_{s:sname()}_{s:escvar(s:lastmethod(lnum))}_{opt}
-  elseif exists("b:".s:sname()."_".opt) && (scope =~ 'b' || (scope =~ 'l' && s:lastmethod(lnum) == ''))
-    return b:{s:sname()}_{opt}
-  elseif scope =~ 'a' && exists("s:_".s:rv()."_".s:environment()."_".opt)
-    return s:_{s:rv()}_{s:environment()}_{opt}
+  if scope =~ 'l' && exists('b:_'.var) && has_key(b:_{var},lastmethod)
+    return b:_{var}[lastmethod]
+  elseif exists('b:'.var) && (scope =~ 'b' || (scope =~ 'l' && lastmethod == ' '))
+    return b:{var}
+  elseif scope =~ 'a' && has_key(app,'options') && has_key(app.options,opt)
+    return app.options[opt]
   elseif scope =~ 'g' && exists("g:".s:sname()."_".opt)
-    return g:{s:sname()}_{opt}
+    return g:{var}
   else
     return ""
   endif
 endfunction
 
 function! s:setopt(opt,val)
+  let app = rails#app()
   if a:opt =~? '[abgl]:'
     let scope = matchstr(a:opt,'^\w')
     let opt = s:sub(a:opt,'^\w:','')
@@ -3893,7 +3895,6 @@ function! s:setopt(opt,val)
     let scope = ''
     let opt = a:opt
   endif
-  let opt = s:sub(opt,'<%(rake|rake_task|rake_target)$','task')
   let defscope = matchstr(s:opts(),'\n\zs\w\ze:'.opt,'\n')
   if defscope == ''
     let defscope = 'a'
@@ -3901,21 +3902,26 @@ function! s:setopt(opt,val)
   if scope == ''
     let scope = defscope
   endif
-  if &filetype == 'ruby' && (scope == 'B' || scope == 'l')
+  if &filetype != 'ruby' && (scope ==# 'B' || scope ==# 'l')
     let scope = 'b'
   endif
+  let var = s:sname().'_'.opt
   if opt =~ '\W'
     return s:error("Invalid option ".a:opt)
-  elseif scope =~? 'a'
-    let s:_{s:rv()}_{s:environment()}_{opt} = a:val
-  elseif scope == 'B' && defscope == 'l'
-    let b:_{s:sname()}_{s:escvar('')}_{opt} = a:val
+  elseif scope ==# 'B' && defscope == 'l'
+    if !exists('b:_'.var) | let b:_{var} = {} | endif
+    let b:_{var}[' '] = a:val
   elseif scope =~? 'b'
-    let b:{s:sname()}_{opt} = a:val
+    let b:{var} = a:val
+  elseif scope =~? 'a'
+    if !has_key(app,'options') | let app.options = {} | endif
+    let app.options[opt] = a:val
   elseif scope =~? 'g'
-    let g:{s:sname()}_{opt} = a:val
+    let g:{var} = a:val
   elseif scope =~? 'l'
-    let b:_{s:sname()}_{s:escvar(s:lastmethod())}_{opt} = a:val
+    if !exists('b:_'.var) | let b:_{var} = {} | endif
+    let lastmethod = s:lastmethod(lnum)
+    let b:_{var}[lastmethod == '' ? ' ' : lastmethod] = a:val
   else
     return s:error("Invalid scope for ".a:opt)
   endif
