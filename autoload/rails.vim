@@ -2301,10 +2301,10 @@ function! s:libEdit(bang,cmd,...)
     let extra = s:sub(RailsFilePath(),'<vendor/plugins/[^/]*/\zs.*','lib/')."\n"
   endif
   if a:0
-    call s:EditSimpleRb(a:bang,a:cmd,"task",a:0? a:1 : "",extra."lib/",".rb")
+    call s:EditSimpleRb(a:bang,a:cmd,"lib",a:0? a:1 : "",extra."lib/",".rb")
   else
     " Easter egg
-    call s:EditSimpleRb(a:bang,a:cmd,"task","environment","config/",".rb")
+    call s:EditSimpleRb(a:bang,a:cmd,"lib","routes","config/",".rb")
   endif
 endfunction
 
