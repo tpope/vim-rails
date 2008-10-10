@@ -403,7 +403,7 @@ function! RailsFileType()
   let f = RailsFilePath()
   let e = fnamemodify(RailsFilePath(),':e')
   let r = ""
-  let top = getline(1)." ".getline(2)." ".getline(3)." ".getline(4)." ".getline(5).getline(6)." ".getline(7)." ".getline(8)." ".getline(9)." ".getline(10)
+  let top = join(getline(1,50),"\n")
   if f == ""
     let r = f
   elseif f =~ '_controller\.rb$' || f =~ '\<app/controllers/.*\.rb$'
