@@ -18,7 +18,6 @@ let g:autoloaded_rails = '2.1'
 let s:cpo_save = &cpo
 set cpo&vim
 
-" }}}1
 " Utility Functions {{{1
 
 let s:app_prototype = {}
