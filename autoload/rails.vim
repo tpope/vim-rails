@@ -644,7 +644,7 @@ function! s:BufCommands()
   let ext = expand("%:e")
   if ext =~ s:viewspattern()
     " TODO: complete controller names with trailing slashes here
-    command! -buffer -bar -nargs=? -range -complete=custom,s:controllerList Rextract :<line1>,<line2>call s:Extract(<bang>0,<f-args>)
+    command! -buffer -bar -nargs=? -range -complete=customlist,s:controllerList Rextract :<line1>,<line2>call s:Extract(<bang>0,<f-args>)
     command! -buffer -bar -nargs=? -range Rpartial :call s:warn("Warning: :Rpartial has been deprecated in favor of :Rextract") | <line1>,<line2>Rextract<bang> <args>
   endif
   if RailsFilePath() =~ '\<db/migrate/.*\.rb$'
@@ -1272,23 +1272,23 @@ function! s:Complete_script(ArgLead,CmdLine,P)
   elseif cmd =~ '^\%(plugin\)\s\+'.a:ArgLead.'$'
     return "discover\nlist\ninstall\nupdate\nremove\nsource\nunsource\nsources"
   elseif cmd =~ '\%(plugin\)\s\+\%(install\|remove\)\s\+'.a:ArgLead.'$' || cmd =~ '\%(generate\|destroy\)\s\+plugin\s\+'.a:ArgLead.'$'
-    return s:pluginList(a:ArgLead,a:CmdLine,a:P)
+    return join(s:pluginList(a:ArgLead,a:CmdLine,a:P),"\n")
   elseif cmd =~ '^\%(generate\|destroy\)\s\+'.a:ArgLead.'$'
     return g:rails_generators
   elseif cmd =~ '^\%(generate\|destroy\)\s\+\w\+\s\+'.a:ArgLead.'$'
     let target = matchstr(cmd,'^\w\+\s\+\zs\w\+\ze\s\+')
     let pattern = "" " TODO
     if target =~# '^\%(\w*_\)\=controller$'
-      return s:sub(s:controllerList(pattern,"",""),'^application\n=','')
+      return s:sub(join(s:controllerList(pattern,"",""),"\n"),'^application\n=','')
     elseif target =~# '^\%(\w*_\)\=model$' || target =~# '^scaffold\%(_resource\)\=$' || target == 'mailer'
-      return s:modelList(pattern,"","")
+      return join(s:modelList(pattern,"",""),"\n")
     elseif target == 'migration' || target == 'session_migration'
-      return s:migrationList(pattern,"","")
+      return join(s:migrationList(pattern,"",""),"\n")
     elseif target == 'integration_test'
-      return s:integrationtestList(pattern,"","")
+      return join(s:integrationtestList(pattern,"",""),"\n")
     elseif target == 'observer'
-      let observers = s:observerList(pattern,"","")
-      let models = s:modelList(pattern,"","")
+      let observers = join(s:observerList(pattern,"",""),"\n")
+      let models = join(s:modelList(pattern,"",""),"\n")
       if cmd =~ '^destroy\>'
         let models = ""
       endif
@@ -1301,12 +1301,12 @@ function! s:Complete_script(ArgLead,CmdLine,P)
       endwhile
       return s:sub(observers,'^\n','')
     elseif target == 'web_service'
-      return s:apiList(pattern,"","")
+      return join(s:apiList(pattern,"",""),"\n")
     else
       return ""
     endif
   elseif cmd =~ '^\%(generate\|destroy\)\s\+scaffold\s\+\w\+\s\+'.a:ArgLead.'$'
-    return s:sub(s:controllerList("","",""),'^application\n=','')
+    return s:sub(join(s:controllerList("","",""),"\n"),'^application\n=','')
   elseif cmd =~ '^\%(console\)\s\+\(--\=\w\+\s\+\)\='.a:ArgLead."$"
     return s:environments()."\n-s\n--sandbox"
   elseif cmd =~ '^\%(server\)\s\+.*-e\s\+'.a:ArgLead."$"
@@ -1715,7 +1715,7 @@ function! s:addfilecmds(type)
   let cmds = 'ESVT '
   let cmd = ''
   while cmds != ''
-    let cplt = " -complete=custom,".s:sid.l."List"
+    let cplt = " -complete=customlist,".s:sid.l."List"
     exe "command! -buffer -bar -nargs=*".cplt." R".cmd.l." :call s:".l.'Edit(<bang>0,"'.cmd.'",<f-args>)'
     let cmd = strpart(cmds,0,1)
     let cmds = strpart(cmds,1)
@@ -1744,11 +1744,22 @@ function! s:BufFinderCommands()
   call s:addfilecmds("plugin")
 endfunction
 
+function! s:completion_filter(results,A)
+  let results = sort(type(a:results) == type("") ? split(a:results,"\n") : copy(a:results))
+  let filtered = filter(copy(results),'s:startswith(v:val,a:A)')
+  if !empty(filtered) | return filtered | endif
+  let regex = s:sub(a:A,'.','&.*')
+  let filtered = filter(copy(results),'v:val =~ "^".regex')
+  if !empty(filtered) | return filtered | endif
+  let filtered = filter(copy(results),'v:val =~ regex')
+  return filtered
+endfunction
+
 function! s:autocamelize(files,test)
   if a:test =~# '^\u'
-    return s:camelize(a:files)
+    return s:completion_filter(s:camelize(a:files),a:test)
   else
-    return a:files
+    return s:completion_filter(a:files,a:test)
   endif
 endfunction
 
@@ -1818,27 +1829,28 @@ function! s:controllerList(A,L,P)
 endfunction
 
 function! s:viewList(A,L,P)
+  let prefix = s:sub(a:A,'[^/]*$','')
   let c = s:controller(1)
-  let top = s:relglob("app/views/",a:A."*[^~]")
-  if c != ''
-    let local = s:relglob("app/views/".c."/",a:A.(a:A =~ '\.' ? '' : '*.')."*[^~]")
+  let top = s:relglob("app/views/",prefix."*[^~]")
+  if c != '' && prefix == ''
+    let local = s:relglob("app/views/".c."/","*.*[^~]")
     if local != ''
-      return local."\n".top
+      return s:completion_filter(local."\n".top,a:A)
     endif
   endif
-  return top
+  return s:completion_filter(top,a:A)
 endfunction
 
 function! s:layoutList(A,L,P)
-  return s:relglob("app/views/layouts/","*")
+  return s:completion_filter(s:relglob("app/views/layouts/","*"),a:A)
 endfunction
 
 function! s:stylesheetList(A,L,P)
-  return s:relglob("public/stylesheets/",s:recurse,".css")
+  return s:completion_filter(s:relglob("public/stylesheets/",s:recurse,".css"),a:A)
 endfunction
 
 function! s:javascriptList(A,L,P)
-  return s:relglob("public/javascripts/",s:recurse,".js")
+  return s:completion_filter(s:relglob("public/javascripts/",s:recurse,".js"),a:A)
 endfunction
 
 function! s:modelList(A,L,P)
@@ -1854,16 +1866,16 @@ function! s:observerList(A,L,P)
 endfunction
 
 function! s:fixturesList(A,L,P)
-  return s:compact(s:relglob("test/fixtures/",s:recurse)."\n".s:relglob("spec/fixtures/",s:recurse))
+  return s:completion_filter(s:compact(s:relglob("test/fixtures/",s:recurse)."\n".s:relglob("spec/fixtures/",s:recurse)),a:A)
 endfunction
 
 function! s:migrationList(A,L,P)
   if a:A =~ '^\d'
     let migrations = s:relglob("db/migrate/",a:A."[0-9_]*",".rb")
     let migrations = s:gsub(migrations,'_.{-}($|\n)','\1')
-    return migrations
+    return split(migrations,"\n")
   else
-    let migrations = s:relglob("db/migrate/","[0-9]*[0-9]_".a:A."*",".rb")
+    let migrations = s:relglob("db/migrate/","[0-9]*[0-9]_*",".rb")
     let migrations = s:gsub(migrations,'(^|\n)\d+_','\1')
     return s:autocamelize(migrations,a:A)
   endif
@@ -1887,9 +1899,9 @@ endfunction
 
 function! s:pluginList(A,L,P)
   if a:A =~ '/'
-    return s:relglob('vendor/plugins/',matchstr(a:A,'.\{-\}/').'**/*')
+    return s:completion_filter(s:relglob('vendor/plugins/',matchstr(a:A,'.\{-\}/').'**/*'),a:A)
   else
-    return s:relglob('vendor/plugins/',"*","/init.rb")
+    return s:completion_filter(s:relglob('vendor/plugins/',"*","/init.rb"),a:A)
   endif
 endfunction
 
@@ -1898,9 +1910,9 @@ function! s:taskList(A,L,P)
   let top = s:relglob("lib/tasks/",s:recurse,".rake")
   if RailsFilePath() =~ '\<vendor/plugins/.'
     let path = s:sub(RailsFilePath(),'<vendor/plugins/[^/]*/\zs.*','tasks/')
-    return s:relglob(path,s:recurse,".rake") . "\n" . top
+    return s:completion_filter(s:relglob(path,s:recurse,".rake") . "\n" . top,a:A)
   else
-    return top
+    return s:completion_filter(top,a:A)
   endif
 endfunction
 
@@ -1945,7 +1957,7 @@ function! s:Navcommand(bang,...)
   let cmds = 'ESVT '
   let cmd = ''
   while cmds != ''
-    exe 'command! -buffer -bar -bang -nargs=* -complete=custom,'.s:sid.'CommandList R'.cmd.name." :call s:CommandEdit(<bang>0,'".cmd."','".name."',\"".prefix."\",".string(suffix).",".string(filter).",".string(default).",<f-args>)"
+    exe 'command! -buffer -bar -bang -nargs=* -complete=customlist,'.s:sid.'CommandList R'.cmd.name." :call s:CommandEdit(<bang>0,'".cmd."','".name."',\"".prefix."\",".string(suffix).",".string(filter).",".string(default).",<f-args>)"
     let cmd = strpart(cmds,0,1)
     let cmds = strpart(cmds,1)
   endwhile
@@ -1965,7 +1977,7 @@ function! s:CommandList(A,L,P)
   if s:last_camelize
     return s:autocamelize(res,a:A)
   else
-    return res
+    return s:completion_filter(res,a:A)
   endif
 endfunction
 
