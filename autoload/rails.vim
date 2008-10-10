@@ -3992,21 +3992,20 @@ endfunction
 " }}}1
 " Detection {{{1
 
-function! s:callback(file)
-  if RailsRoot() != ""
-    let var = "callback_".s:rv()."_".s:escvar(a:file)
-    if !exists("s:".var) || exists("b:rails_refresh")
-      let s:{var} = rails#app().has_file(a:file)
-    endif
-    if s:{var}
-      if exists(":sandbox")
-        sandbox source `=RailsRoot().'/'.a:file`
-      elseif g:rails_modelines
-        source `=RailsRoot().'/'.a:file`
-      endif
-    endif
+function! s:app_source_callback(file) dict
+  if self.cache.needs('existence')
+    call self.cache.set('existence',{})
+  endif
+  let cache = self.cache.get('existence')
+  if !has_key(cache,a:file)
+    let cache[a:file] = self.has_file(a:file)
+  endif
+  if cache[a:file]
+    sandbox source `=self.path(a:file)`
   endif
 endfunction
+
+call s:add_methods('app',['source_callback'])
 
 function! RailsBufInit(path)
   let cpo_save = &cpo
@@ -4040,7 +4039,7 @@ function! RailsBufInit(path)
     let g:RAILS_HISTORY = path."\n".g:RAILS_HISTORY
     let g:RAILS_HISTORY = s:sub(g:RAILS_HISTORY,'%(.{-}\n){,'.g:rails_history_size.'}\zs.*','')
   endif
-  call s:callback("config/syntax.vim")
+  call app.source_callback("config/syntax.vim")
   if &ft == "mason"
     setlocal filetype=eruby
   elseif &ft =~ '^\%(conf\|ruby\)\=$' && expand("%:e") =~ '^\%(rjs\|rxml\|builder\|rake\|mab\)$'
@@ -4099,7 +4098,7 @@ function! RailsBufInit(path)
   if f != ''
     exe "silent doautocmd User Rails".f
   endif
-  call s:callback("config/rails.vim")
+  call app.source_callback("config/rails.vim")
   call s:BufModelines()
   call s:BufMappings()
   let &cpo = cpo_save
