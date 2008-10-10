@@ -191,7 +191,7 @@ function! s:format(...)
     let format = s:lastformat()
   endif
   if format == ''
-    return get({'rhtml': 'html', 'rxml': 'xml', 'rjs': 'js'},fnamemodify(RailsFilePath(),':e'),a;0 ? a:1 : '')
+    return get({'rhtml': 'html', 'rxml': 'xml', 'rjs': 'js'},fnamemodify(RailsFilePath(),':e'),a:0 ? a:1 : '')
   endif
   return format
 endfunction
