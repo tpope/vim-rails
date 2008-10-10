@@ -1251,6 +1251,9 @@ function! s:app_generate_command(bang,...) dict
   endif
   if !self.execute_ruby_command("script/generate ".target.str) && file != ""
     call self.cache.clear('user_classes')
+    if file =~ '^db/migrate/\d\d\d\d'
+      let file = get(self.relglob('',s:sub(file,'\d+','[0-9]*[0-9]')),-1,file)
+    endif
     edit `=self.path(file)`
   endif
 endfunction
