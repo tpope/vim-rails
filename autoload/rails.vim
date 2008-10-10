@@ -626,7 +626,7 @@ function! s:BufCommands()
   Rcommand! -buffer -bar -nargs=? -bang -count -complete=customlist,s:RakeComplete Rake    :call s:Rake(<bang>0,!<count> && <line1> ? -1 : <count>,<q-args>)
   Rcommand! -buffer -bar -nargs=? -bang -range -complete=custom,s:PreviewComplete Rpreview :call s:Preview(<bang>0,<line1>,<q-args>)
   Rcommand! -buffer -bar -nargs=? -bang -complete=custom,s:environments     Rlog     :call s:Log(<bang>0,<q-args>)
-  Rcommand! -buffer -bar -nargs=* -bang -complete=custom,s:SetComplete      Rset     :call s:Set(<bang>0,<f-args>)
+  Rcommand! -buffer -bar -nargs=* -bang -complete=customlist,s:Complete_set Rset     :call s:Set(<bang>0,<f-args>)
   command! -buffer -bar -nargs=0 Rtags       :call s:Tags(<bang>0)
   " Embedding all this logic directly into the command makes the error
   " messages more concise.
@@ -3924,15 +3924,15 @@ function! s:opts()
   return {'alternate': 'b', 'controller': 'b', 'gnu_screen': 'a', 'model': 'b', 'preview': 'l', 'task': 'b', 'related': 'l', 'root_url': 'a'}
 endfunction
 
-function! s:SetComplete(A,L,P)
+function! s:Complete_set(A,L,P)
   if a:A =~ '='
     let opt = matchstr(a:A,'[^=]*')
-    return opt."=".s:getopt(opt)
+    return [opt."=".s:getopt(opt)]
   else
     let extra = matchstr(a:A,'^[abgl]:')
-    return join(filter(sort(map(keys(s:opts()),'extra.v:val')),'s:startswith(v:val,a:A)'),"\n")
+    return filter(sort(map(keys(s:opts()),'extra.v:val')),'s:startswith(v:val,a:A)')
   endif
-  return ""
+  return []
 endfunction
 
 function! s:BufModelines()
