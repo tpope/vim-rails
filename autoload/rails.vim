@@ -406,17 +406,26 @@ endfunction
 function! RailsFileType()
   if !exists("b:rails_root")
     return ""
-  elseif exists("b:rails_file_type")
-    return b:rails_file_type
   elseif exists("b:rails_cached_file_type")
     return b:rails_cached_file_type
+  else
+    return rails#app().calculate_file_type(RailsFilePath())
   endif
-  let f = RailsFilePath()
-  let e = fnamemodify(RailsFilePath(),':e')
+endfunction
+
+function! s:app_calculate_file_type(path) dict
+  let f = a:path
+  let e = fnamemodify(f,':e')
   let r = ""
-  let full_path = expand('%:p')
+  let full_path = self.path(f)
+  let nr = bufnr('^'.full_path.'$')
+  if nr < 0 && exists('+shellslash') && ! &shellslash
+    let nr = bufnr('^'.s:gsub(full_path,'/','\\').'$')
+  endif
   if f == ""
     let r = f
+  elseif nr > 0 && getbufvar(nr,'rails_file_type') != ''
+    return getbufvar(nr,'rails_file_type')
   elseif f =~ '_controller\.rb$' || f =~ '\<app/controllers/.*\.rb$'
     if join(s:readfile(full_path,50),"\n") =~ '\<wsdl_service_name\>'
       let r = "controller-api"
@@ -491,10 +500,6 @@ function! RailsFileType()
   return r
 endfunction
 
-function! RailsType()
-  return RailsFileType()
-endfunction
-
 function! s:app_environments() dict
   if self.cache.needs('environments')
     call self.cache.set('environments',self.relglob('config/environments/','**/*','.rb'))
@@ -502,7 +507,7 @@ function! s:app_environments() dict
   return self.cache.get('environments')
 endfunction
 
-call s:add_methods('app',['environments'])
+call s:add_methods('app',['calculate_file_type','environments'])
 
 " }}}1
 " Ruby Execution {{{1
@@ -4012,12 +4017,12 @@ function! RailsBufInit(path)
     let s:apps[a:path] = deepcopy(s:app_prototype)
     let s:apps[a:path].root = a:path
   endif
+  let app = s:apps[a:path]
   " Apparently RailsFileType() can be slow if the underlying file system is
   " slow (even though it doesn't really do anything IO related).  This caching
   " is a temporary hack; if it doesn't cause problems it should probably be
   " refactored.
-  unlet! b:rails_cached_file_type
-  let b:rails_cached_file_type = RailsFileType()
+  let b:rails_cached_file_type = app.calculate_file_type(RailsFilePath())
   if g:rails_history_size > 0
     if !exists("g:RAILS_HISTORY")
       let g:RAILS_HISTORY = ""
