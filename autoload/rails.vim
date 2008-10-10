@@ -3823,7 +3823,7 @@ function! s:Set(bang,...)
         let arg = defscope.':'.opt
       endif
       let val = s:getopt(arg)
-      if val == '' && s:opts() !~ '\<'.arg.'\n'
+      if val == '' && !has_key(s:opts(),arg)
         call s:error("No such rails.vim option: ".arg)
       else
         echo arg."=".val
@@ -3883,10 +3883,7 @@ function! s:setopt(opt,val)
     let scope = ''
     let opt = a:opt
   endif
-  let defscope = matchstr(s:opts(),'\n\zs\w\ze:'.opt,'\n')
-  if defscope == ''
-    let defscope = 'a'
-  endif
+  let defscope = get(s:opts(),opt,'a')
   if scope == ''
     let scope = defscope
   endif
@@ -3916,7 +3913,7 @@ function! s:setopt(opt,val)
 endfunction
 
 function! s:opts()
-  return "\nb:alternate\nb:controller\na:gnu_screen\nb:model\nl:preview\nb:task\nl:related\na:root_url\n"
+  return {'alternate': 'b', 'controller': 'b', 'gnu_screen': 'a', 'model': 'b', 'preview': 'l', 'task': 'b', 'related': 'l', 'root_url': 'a'}
 endfunction
 
 function! s:SetComplete(A,L,P)
@@ -3925,8 +3922,7 @@ function! s:SetComplete(A,L,P)
     return opt."=".s:getopt(opt)
   else
     let extra = matchstr(a:A,'^[abgl]:')
-    let opts = s:gsub(s:sub(s:gsub(s:opts(),'\n\w:','\n'.extra),'^\n',''),'\n','=\n')
-    return opts
+    return join(filter(sort(map(keys(s:opts()),'extra.v:val')),'v:val =~ "^".a:A'),"\n")
   endif
   return ""
 endfunction
