@@ -308,6 +308,22 @@ function! s:pluralize(word)
   return word
 endfunction
 
+function! s:readfile(path,...)
+  let nr = bufnr('^'.a:path.'$')
+  if nr < 0 && exists('+shellslash') && ! &shellslash
+    let nr = bufnr('^'.s:gsub(a:path,'/','\\').'$')
+  endif
+  if bufloaded(nr)
+    return getbufline(nr,1,a:0 ? a:1 : '$')
+  elseif !filereadable(a:path)
+    return []
+  elseif a:0
+    return readfile(a:path,'',a:1)
+  else
+    return readfile(a:path)
+  endif
+endfunction
+
 function! s:environment()
   if exists('$RAILS_ENV')
     return $RAILS_ENV
@@ -403,11 +419,11 @@ function! RailsFileType()
   let f = RailsFilePath()
   let e = fnamemodify(RailsFilePath(),':e')
   let r = ""
-  let top = join(getline(1,50),"\n")
+  let full_path = expand('%:p')
   if f == ""
     let r = f
   elseif f =~ '_controller\.rb$' || f =~ '\<app/controllers/.*\.rb$'
-    if top =~ '\<wsdl_service_name\>'
+    if join(s:readfile(full_path,50),"\n") =~ '\<wsdl_service_name\>'
       let r = "controller-api"
     else
       let r = "controller"
@@ -421,6 +437,7 @@ function! RailsFileType()
   elseif f =~ '_helper\.rb$'
     let r = "helper"
   elseif f =~ '\<app/models\>'
+    let top = join(s:readfile(full_path,50),"\n")
     let class = matchstr(top,'\<Acti\w\w\u\w\+\%(::\h\w*\)\+\>')
     if class == "ActiveResource::Base"
       let class = "ares"
@@ -2947,7 +2964,7 @@ endfunction
 function! s:app_user_assertions() dict
   if self.cache.needs("user_assertions")
     if self.has_file("test/test_helper.rb")
-      let assertions = map(filter(readfile(self.path("test/test_helper.rb")),'v:val =~ "^  def assert_"'),'matchstr(v:val,"^  def \\zsassert_\\w\\+")')
+      let assertions = map(filter(s:readfile(self.path("test/test_helper.rb")),'v:val =~ "^  def assert_"'),'matchstr(v:val,"^  def \\zsassert_\\w\\+")')
     else
       let assertions = []
     endif
