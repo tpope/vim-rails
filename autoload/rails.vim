@@ -2644,7 +2644,7 @@ function! s:Extract(bang,...) range abort
   let collection = ""
   if dir =~ '^/'
     let out = (rails_root).dir."/_".fname
-  elseif dir == ""
+  elseif dir == "" || dir == "."
     let out = (curdir)."/_".fname
   elseif isdirectory(curdir."/".dir)
     let out = (curdir)."/".dir."/_".fname
