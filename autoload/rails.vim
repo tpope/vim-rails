@@ -333,12 +333,7 @@ function! s:environment()
 endfunction
 
 function! s:environments(...)
-  let e = s:getopt("environment","abg")
-  if e == ''
-    return "development\ntest\nproduction"
-  else
-    return s:gsub(e,'[:;,- ]',"\n")
-  endif
+  return join(rails#app().environments(),"\n")
 endfunction
 
 function! s:warn(str)
@@ -499,6 +494,15 @@ endfunction
 function! RailsType()
   return RailsFileType()
 endfunction
+
+function! s:app_environments() dict
+  if self.cache.needs('environments')
+    call self.cache.set('environments',self.relglob('config/environments/','**/*','.rb'))
+  endif
+  return self.cache.get('environments')
+endfunction
+
+call s:add_methods('app',['environments'])
 
 " }}}1
 " Ruby Execution {{{1
@@ -4208,10 +4212,11 @@ augroup railsPluginAuto
   autocmd User BufEnterRails call s:RefreshBuffer()
   autocmd User BufEnterRails call s:resetomnicomplete()
   autocmd User BufEnterRails call s:BufDatabase(-1)
-  autocmd BufWritePost */config/database.yml call rails#cache_clear("dbext_settings")
-  autocmd BufWritePost */test/test_helper.rb call rails#cache_clear("user_assertions")
-  autocmd BufWritePost */config/routes.rb    call rails#cache_clear("named_routes")
-  autocmd BufWritePost */tasks/**.rake       call rails#cache_clear("rake_tasks")
+  autocmd BufWritePost */config/database.yml      call rails#cache_clear("dbext_settings")
+  autocmd BufWritePost */test/test_helper.rb      call rails#cache_clear("user_assertions")
+  autocmd BufWritePost */config/routes.rb         call rails#cache_clear("named_routes")
+  autocmd BufWritePost */config/environments/*.rb call rails#cache_clear("environments")
+  autocmd BufWritePost */tasks/**.rake            call rails#cache_clear("rake_tasks")
   autocmd FileType * if exists("b:rails_root") | call s:BufSettings() | endif
   autocmd Syntax ruby,eruby,yaml,haml,javascript,railslog if exists("b:rails_root") | call s:BufSyntax() | endif
   silent! autocmd QuickFixCmdPre  make* call s:QuickFixCmdPre()
