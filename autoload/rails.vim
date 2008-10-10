@@ -71,18 +71,6 @@ function! s:ra()
   return s:escarg(RailsRoot())
 endfunction
 
-function! s:escvar(r)
-  let r = fnamemodify(a:r,':~')
-  let r = s:gsub(r,'\W','\="_".char2nr(submatch(0))."_"')
-  let r = s:gsub(r,'^\d','_&')
-  return r
-endfunction
-
-function! s:rv()
-  " Rails root, escaped to be a variable name
-  return s:escvar(RailsRoot())
-endfunction
-
 function! s:rquote(str)
   " Imperfect but adequate for Ruby arguments
   if a:str =~ '^[A-Za-z0-9_/.:-]\+$'
