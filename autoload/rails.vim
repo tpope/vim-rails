@@ -40,6 +40,10 @@ function! s:gsub(str,pat,rep)
   return substitute(a:str,'\v\C'.a:pat,a:rep,'g')
 endfunction
 
+function! s:startswith(string,prefix)
+  return strpart(a:string, 0, strlen(a:prefix)) == a:prefix
+endfunction
+
 function! s:compact(ary)
   return s:sub(s:sub(s:gsub(a:ary,'\n\n+','\n'),'\n$',''),'^\n','')
 endfunction
@@ -379,7 +383,7 @@ function! RailsFilePath()
   endif
   let f = s:gsub(expand('%:p'),'\\ @!','/')
   let f = s:sub(f,'/$','')
-  if s:gsub(b:rails_root,'\\ @!','/') == strpart(f,0,strlen(b:rails_root))
+  if s:startswith(f,s:gsub(b:rails_root,'\\ @!','/'))
     return strpart(f,strlen(b:rails_root)+1)
   else
     return f
@@ -569,10 +573,10 @@ endfunction
 
 function! s:QuickFixCmdPre()
   if exists("b:rails_root")
-    if strpart(getcwd(),0,strlen(RailsRoot())) != RailsRoot()
+    if !s:startswith(getcwd(), rails#app().path())
       let s:last_dir = getcwd()
       echo "lchdir ".s:ra()
-      lchdir `=RailsRoot()`
+      lchdir `=rails#app().path()`
     endif
   endif
 endfunction
@@ -2040,7 +2044,7 @@ function! s:migrationfor(file)
   if migr == '' && tryagain
     let migr = s:sub(glob(RailsRoot().'/db/migrate/*.rb'),'.*\n','')
   endif
-  if strpart(migr,0,strlen(RailsRoot())) == RailsRoot()
+  if s:startswith(migr,rails#app().path())
     let migr = strpart(migr,1+strlen(RailsRoot()))
   endif
   return migr
@@ -3921,7 +3925,7 @@ function! s:SetComplete(A,L,P)
     return opt."=".s:getopt(opt)
   else
     let extra = matchstr(a:A,'^[abgl]:')
-    return join(filter(sort(map(keys(s:opts()),'extra.v:val')),'v:val =~ "^".a:A'),"\n")
+    return join(filter(sort(map(keys(s:opts()),'extra.v:val')),'s:startswith(v:val,a:A)'),"\n")
   endif
   return ""
 endfunction
