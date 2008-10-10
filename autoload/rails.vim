@@ -512,14 +512,19 @@ function! s:app_ruby_shell_command(cmd) dict abort
 endfunction
 
 function! s:app_background_ruby_command(cmd) dict abort
-  let cmd = s:esccmd(rails#app().ruby_shell_command(a:cmd))
+  let cmd = s:esccmd(self.ruby_shell_command(a:cmd))
+  if has_key(self,'options') && has_key(self.options,'gnu_screen')
+    let screen = self.options.gnu_screen
+  else
+    let screen = g:rails_gnu_screen
+  endif
   if has("gui_win32")
     if &shellcmdflag == "-c" && ($PATH . &shell) =~? 'cygwin'
-      silent exe "!cygstart -d ".s:rquote(RailsRoot())." ruby ".a:cmd
+      silent exe "!cygstart -d ".s:rquote(self.path())." ruby ".a:cmd
     else
       exe "!start ".cmd
     endif
-  elseif exists("$STY") && !has("gui_running") && s:getopt("gnu_screen","abg") && executable("screen")
+  elseif exists("$STY") && !has("gui_running") && screen && executable("screen")
     silent exe "!screen -ln -fn -t ".s:sub(s:sub(a:cmd,'\s.*',''),'^%(script|-rcommand)/','rails-').' '.cmd
   else
     exe "!".cmd
