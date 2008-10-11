@@ -1723,7 +1723,8 @@ function! s:addfilecmds(type)
 endfunction
 
 function! s:BufFinderCommands()
-  command! -buffer -bar -nargs=+ Rcommand :call s:Command(<bang>0,<f-args>)
+  command! -buffer -bar -nargs=+ Rnavcommand :call s:Navcommand(<bang>0,<f-args>)
+  command! -buffer -bar -nargs=+ Rcommand    :call s:warn("Warning: :Rcommand has been deprecated in favor of :Rnavcommand")|call s:Navcommand(<bang>0,<f-args>)
   call s:addfilecmds("model")
   call s:addfilecmds("view")
   call s:addfilecmds("controller")
@@ -1912,7 +1913,7 @@ function! s:libList(A,L,P)
   return s:autocamelize(all,a:A)
 endfunction
 
-function! s:Command(bang,...)
+function! s:Navcommand(bang,...)
   let suffix = ".rb"
   let filter = "**/*"
   let prefix = ""

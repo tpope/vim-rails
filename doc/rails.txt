@@ -431,7 +431,7 @@ or modeline like: >
 						*rails-:Rapi*
 :Rapi [{name}]		Edit the API for the specified controller.  This
 			command is deprecated; add it yourself with
-			|:Rcommand| if you still desire it.
+			|:Rnavcommand| if you still desire it.
 
 						*rails-:Rfunctionaltest*
 :Rfunctionaltest [{name}]
@@ -489,7 +489,10 @@ in an initialization routine of some sort (e.g., an autocommand); see
 |rails-configuration| for details.
 
 						*rails-:Rcommand*
-:Rcommand [options] {name} [{path} ...]
+:Rcommand		Deprecated alias for |:Rnavcommand|
+
+						*rails-:Rnavcommand*
+:Rnavcommand [options] {name} [{path} ...]
 			Create a navigation command with the supplied
 			name, looking in the supplied paths, using the
 			supplied options.  The -suffix option specifies what
@@ -503,13 +506,11 @@ in an initialization routine of some sort (e.g., an autocommand); see
 			model, controller, or both (as with :Rintegrationtest)
 			is used as a default.
 
-:Rcommand is still under development and far from fully documented, but the
-following examples should illustrate the basics:
->
-	Rcommand api         app/apis -glob=**/* -suffix=_api.rb
-	Rcommand config      config   -glob=*.*  -suffix= -default=routes.rb
-	Rcommand environment config/environments -default=../environment
-	Rcommand concern     app/concerns -glob=**/*
+Examples: >
+	Rnavcommand api         app/apis -glob=**/* -suffix=_api.rb
+	Rnavcommand config      config   -glob=*.*  -suffix= -default=routes.rb
+	Rnavcommand environment config/environments -default=../environment
+	Rnavcommand concern     app/concerns -glob=**/*
 
 Finally, one Vim feature that proves helpful in conjunction with all of the
 above is |CTRL-^|.  This keystroke edits the previous file, and is helpful to
@@ -742,15 +743,15 @@ mandatory and tab completion will not work.  :Rake will run the currently
 edited spec.
 
 While there are currently no built-in dedicated RSpec navigation commands, you
-can approximate your own with |:Rcommand|.
+can approximate your own with |:Rnavcommand|.
 >
-	Rcommand specmodel      spec/models      -glob=**/*
+	Rnavcommand specmodel      spec/models      -glob=**/*
 		\ -suffix=_spec.rb               -default=model()
-	Rcommand spechelper     spec/helpers     -glob=**/* 
+	Rnavcommand spechelper     spec/helpers     -glob=**/*
 		\ -suffix=_helper_spec.rb        -default=controller()
-	Rcommand speccontroller spec/controllers -glob=**/* 
+	Rnavcommand speccontroller spec/controllers -glob=**/*
 		\ -suffix=_controller_spec.rb    -default=controller()
-	Rcommand specview spec/views -glob=**/* -suffix=_view_spec.rb
+	Rnavcommand specview spec/views -glob=**/* -suffix=_view_spec.rb
 <
 ==============================================================================
 ABBREVIATIONS				*rails-abbreviations* *rails-snippets*
