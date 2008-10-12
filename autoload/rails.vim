@@ -3338,12 +3338,12 @@ endfunction
 " Exports: s:BufMappings
 
 function! s:BufMappings()
-  map <buffer> <silent> <Plug>RailsAlternate  :A<CR>
-  map <buffer> <silent> <Plug>RailsRelated    :R<CR>
-  map <buffer> <silent> <Plug>RailsFind       :REfind<CR>
-  map <buffer> <silent> <Plug>RailsSplitFind  :RSfind<CR>
-  map <buffer> <silent> <Plug>RailsVSplitFind :RVfind<CR>
-  map <buffer> <silent> <Plug>RailsTabFind    :RTfind<CR>
+  nnoremap <buffer> <silent> <Plug>RailsAlternate  :<C-U>A<CR>
+  nnoremap <buffer> <silent> <Plug>RailsRelated    :<C-U>R<CR>
+  nnoremap <buffer> <silent> <Plug>RailsFind       :<C-U>REfind<CR>
+  nnoremap <buffer> <silent> <Plug>RailsSplitFind  :<C-U>RSfind<CR>
+  nnoremap <buffer> <silent> <Plug>RailsVSplitFind :<C-U>RVfind<CR>
+  nnoremap <buffer> <silent> <Plug>RailsTabFind    :<C-U>RTfind<CR>
   if g:rails_mappings
     if !hasmapto("<Plug>RailsFind")
       nmap <buffer> gf              <Plug>RailsFind
