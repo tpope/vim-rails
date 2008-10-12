@@ -267,7 +267,7 @@ Example uses of |gf|, and where they might lead.
 <	app/controllers/blog_controller.rb ~
 >
 	<%= render :partial => 'sh*ared/sidebar' %>
-<	app/views/shared/_sidebar.rhtml ~
+<	app/views/shared/_sidebar.html.erb ~
 >
 	<%= stylesheet_link_tag :scaf*fold %>
 <	public/stylesheets/scaffold.css ~
@@ -282,7 +282,7 @@ Example uses of |gf|, and where they might lead.
 <	test/fixtures/posts.yml ~
 >
 	layout :pri*nt
-<	app/views/layouts/print.rhtml ~
+<	app/views/layouts/print.html.erb ~
 >
 	<%= link_to "New", new_comme*nt_path %>
 <	app/controllers/comments_controller.rb (jumps to def new) ~
@@ -586,7 +586,7 @@ The :Rextract command can be used to extract a partial to a new file.
 :[range]Rpartial [{controller}/]{name}	
 			Deprecated alias for :Rextract.
 
-If this is your file, in app/views/blog/show.rhtml: >
+If this is your file, in app/views/blog/show.html.erb: >
 
   1	<div>
   2	  <h2><%= @post.title %></h2>
@@ -603,7 +603,7 @@ Your file will change to this: >
   2	  <%= render :partial => 'post' %>
   3	</div>
 
-And app/views/blog/_post.rhtml will now contain: >
+And app/views/blog/_post.html.erb will now contain: >
 
   1	<h2><%= post.title %></h2>
   2	<p><%= post.body %></p>
@@ -876,7 +876,7 @@ This makes it easy to access a buried file: >
 	:find blog_controller.rb
 <
 					*rails-'suffixesadd'*	*rails-'sua'*
-This is filetype dependent, but typically includes .rb, .rhtml, and several
+This is filetype dependent, but typically includes .rb, .rake, and several
 others.  This allows shortening the above example: >
 	:find blog_controller
 <
@@ -918,7 +918,7 @@ These are based off the information shown in the 'statusline' (see
 |rails-'statusline'|), with hyphens changed to periods. A few examples: >
 	autocmd User Rails.controller*	iabbr <buffer> wsn wsdl_service_name
 	autocmd User Rails.model.arb*	iabbr <buffer> vfo validates_format_of
-	autocmd User Rails.view.rhtml*  imap  <buffer> <C-Z> <%=  %><C-O>3h
+	autocmd User Rails.view.erb*    imap  <buffer> <C-Z> <%=  %><C-O>3h
 End all such Rails autocommands with asterisks, even if you have an exact
 specification.  There is also a filename matching syntax: >
 	autocmd User Rails/db/schema.rb  Rset task=db:schema:dump
@@ -971,7 +971,7 @@ a:ruby_fork_port Experimental: use ruby_fork on given port to speed things up
 
 Examples: >
 	:Rset root_url=http://localhost:12345
-	:Rset related=app/views/blog/edit.rhtml preview=blog/edit/1
+	:Rset related=app/views/blog/edit.html.erb preview=blog/edit/1
 	:Rset alternate=app/models/
 	:Rset l:task=preview        " Special pseudo-task for :Rake
 
@@ -982,7 +982,7 @@ If |g:rails_modelines| is enabled, these options can also be set from
 modelines near the beginning or end of the file.  These modelines will always
 set buffer-local options; scope should never be specified.  Examples: >
 	# Rset task=db:schema:load
-	<%# Rset alternate=app/views/layouts/application.rhtml %>
+	<%# Rset alternate=app/views/layouts/application.html.erb %>
 Modelines can also be local to a method.  Example: >
 	def test_comment
 	  # rset alternate=app/models/comment.rb
