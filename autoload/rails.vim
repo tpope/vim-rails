@@ -41,7 +41,7 @@ function! s:gsub(str,pat,rep)
 endfunction
 
 function! s:startswith(string,prefix)
-  return strpart(a:string, 0, strlen(a:prefix)) == a:prefix
+  return strpart(a:string, 0, strlen(a:prefix)) ==# a:prefix
 endfunction
 
 function! s:compact(ary)
