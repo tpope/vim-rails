@@ -660,8 +660,8 @@ function! s:Doc(bang, string)
     else
       return s:error("specify a g:rails_search_url with %s for a query placeholder")
     endif
-  elseif isdirectory(RailsRoot()."/doc/api/classes")
-    let url = RailsRoot()."/doc/api/index.html"
+  elseif isdirectory(rails#app().path("doc/api/classes"))
+    let url = rails#app().path("/doc/api/index.html")
   elseif s:getpidfor("0.0.0.0","8808") > 0
     let url = "http://localhost:8808"
   else
@@ -681,7 +681,7 @@ function! s:Log(bang,arg)
   else
     let lf = "log/".a:arg.".log"
   endif
-  let size = getfsize(RailsRoot()."/".lf)
+  let size = getfsize(rails#app().path(lf))
   if size >= 1048576
     call s:warn("Log file is ".((size+512)/1024)."KB.  Consider :Rake log:clear")
   endif
@@ -693,7 +693,7 @@ function! s:Log(bang,arg)
       " TODO: check if :Tail works with `=`
       exe "Tail ".s:ra().'/'.lf
     else
-      pedit `=RailsRoot().'/'.lf`
+      pedit `=rails#app().path(lf)`
     endif
   endif
 endfunction
@@ -908,7 +908,7 @@ function! s:Rake(bang,lnum,arg)
       let arg = opt
     endif
   endif
-  let withrubyargs = '-r ./config/boot -r '.s:rquote(RailsRoot().'/config/environment').' -e "puts \%((in \#{Dir.getwd}))" '
+  let withrubyargs = '-r ./config/boot -r '.s:rquote(self.path('config/environment')).' -e "puts \%((in \#{Dir.getwd}))" '
   if arg =~# '^\%(stats\|routes\|notes\|db:\%(charset\|collation\|version\)\)\%(:\|$\)'
     " So you can see the output even with an inadequate redirect
     call s:QuickFixCmdPre()
@@ -1099,7 +1099,7 @@ function! s:Preview(bang,lnum,arg)
         setlocal filetype=xhtml
       endif
     endif
-    call RailsBufInit(RailsRoot())
+    call RailsBufInit(rails#app().path())
     map <buffer> <silent> q :bwipe<CR>
     wincmd p
     if !a:bang
@@ -2032,12 +2032,12 @@ function! s:migrationfor(file)
   else
     let glob = '*'.s:underscore(arg).'*rb'
   endif
-  let migr = s:sub(glob(RailsRoot().'/db/migrate/'.glob),'.*\n','')
+  let migr = s:sub(glob(rails#app().path('db/migrate/').glob),'.*\n','')
   if migr == '' && tryagain
-    let migr = s:sub(glob(RailsRoot().'/db/migrate/*.rb'),'.*\n','')
+    let migr = s:sub(glob(rails#app().path().'/db/migrate/*.rb'),'.*\n','')
   endif
   if s:startswith(migr,rails#app().path())
-    let migr = strpart(migr,1+strlen(RailsRoot()))
+    let migr = strpart(migr,1+strlen(rails#app().path()))
   endif
   return migr
 endfunction
@@ -2109,7 +2109,7 @@ function! s:viewEdit(bang,cmd,...)
     call s:findedit(a:cmd.(a:bang?'!':''),file)
   else
     let format = s:format('html')
-    if glob(RailsRoot().'/'.file.'.'.format.'.*[^~]') != ''
+    if glob(rails#app().path(file.'.'.format).'.*[^~]') != ''
       let file .= '.' . format
     endif
     call s:findedit(a:cmd.(a:bang?'!':''),file)
@@ -2262,7 +2262,7 @@ function! s:pluginEdit(bang,cmd,...)
       call s:edit(cmd,"vendor/plugins/".s:sub(a:1,'\.$',''))
     elseif a:1 == "."
       call s:findedit(cmd,"vendor/plugins/".plugin)
-    elseif isdirectory(RailsRoot()."/vendor/plugins/".matchstr(a:1,'^[^/]*'))
+    elseif isdirectory(rails#app().path("vendor/plugins/".matchstr(a:1,'^[^/]*')))
       call s:edit(cmd,"vendor/plugins/".a:1)
     else
       call s:findedit(cmd,"vendor/plugins/".a:1."\nvendor/plugins/".plugin."/".a:1)
@@ -2374,12 +2374,12 @@ function! s:findedit(cmd,file,...) abort
   endif
   if file == ''
     let testcmd = "edit"
-  elseif RailsRoot() =~ '://' || cmd =~ 'edit' || cmd =~ 'split'
+  elseif rails#app().path() =~ '://' || cmd =~ 'edit' || cmd =~ 'split'
     if file !~ '^/' && file !~ '^\w:' && file !~ '://'
       let file = s:ra().'/'.file
     endif
     let testcmd = s:editcmdfor(cmd).' '.(a:0 ? a:1 . ' ' : '').file
-  elseif isdirectory(RailsRoot().'/'.file)
+  elseif isdirectory(rails#app().path(file))
     let testcmd = s:editcmdfor(cmd).' '.(a:0 ? a:1 . ' ' : '').s:ra().'/'.file
     exe testcmd
     return
@@ -2401,7 +2401,7 @@ function! s:edit(cmd,file,...)
   let cmd .= ' '.(a:0 ? a:1 . ' ' : '')
   let file = a:file
   if file !~ '^/' && file !~ '^\w:' && file !~ '://'
-    exe cmd."`=RailsRoot().'/'.file`"
+    exe cmd."`=rails#app().path(file)`"
   else
     exe cmd.file
   endif
@@ -2544,7 +2544,7 @@ function! s:RelatedFile()
   elseif t =~ '^\%(controller\|model-mailer\)\>' && lastmethod != ""
     let root = s:sub(s:sub(s:sub(f,'/application\.rb$','/shared_controller.rb'),'/%(controllers|models)/','/views/'),'%(_controller)=\.rb$','/'.lastmethod)
     let format = s:format('html')
-    if glob(RailsRoot().'/'.root.'.'.format.'.*[^~]') != ''
+    if glob(rails#app().path().'/'.root.'.'.format.'.*[^~]') != ''
       return root . '.' . format
     else
       return root
@@ -2622,7 +2622,7 @@ function! s:Extract(bang,...) range abort
   if a:1 =~ '[^a-z0-9_/.]'
     return s:error("Invalid partial name")
   endif
-  let rails_root = RailsRoot()
+  let rails_root = rails#app().path()
   let ext = expand("%:e")
   let file = a:1
   let first = a:firstline
@@ -3366,7 +3366,7 @@ endfunction
 " Depends: s:gsub, s:escarg, s:warn, s:sub, s:relglob
 
 function! s:Project(bang,arg)
-  let rr = RailsRoot()
+  let rr = rails#app().path()
   exe "Project ".a:arg
   let line = search('^[^ =]*="'.s:gsub(rr,'[\/]','[\\/]').'"')
   let projname = s:gsub(fnamemodify(rr,':t'),'\=','-') " .'_on_rails'
@@ -3505,7 +3505,7 @@ function! s:app_dbext_settings(environment) dict
     if self.has_file("config/database.yml")
       let out = ""
       if has("ruby")
-        ruby require 'yaml'; VIM::command('let out = %s' % File.open(VIM::evaluate("RailsRoot()")+"/config/database.yml") {|f| y = YAML::load(f); e = y[VIM::evaluate("a:environment")]; i=0; e=y[e] while e.respond_to?(:to_str) && (i+=1)<16; e.map {|k,v| "#{k}=#{v}\n" if v}.compact.join }.inspect) rescue nil
+        ruby require 'yaml'; VIM::command('let out = %s' % File.open(VIM::evaluate("self.path()")+"/config/database.yml") {|f| y = YAML::load(f); e = y[VIM::evaluate("a:environment")]; i=0; e=y[e] while e.respond_to?(:to_str) && (i+=1)<16; e.map {|k,v| "#{k}=#{v}\n" if v}.compact.join }.inspect) rescue nil
       endif
       if out == ""
         let cmdb = 'require %{yaml}; File.open(%q{'.self.path().'/config/database.yml}) {|f| y = YAML::load(f); e = y[%{'
@@ -3525,7 +3525,7 @@ function! s:app_dbext_settings(environment) dict
       endif
       let dict['dbname'] = s:extractdbvar(out,'database')
       if dict['dbname'] != '' && dict['dbname'] !~ '^:' && adapter =~? '^sqlite'
-        let dict['dbname'] = RailsRoot().'/'.dict['dbname']
+        let dict['dbname'] = self.path(dict['dbname'])
       endif
       let dict['profile'] = ''
       let dict['host'] = s:extractdbvar(out,'host')
@@ -4091,7 +4091,7 @@ function! RailsBufInit(path)
 endfunction
 
 function! s:SetBasePath()
-  let rp = s:gsub(RailsRoot(),'[ ,]','\\&')
+  let rp = s:gsub(rails#app().path(),'[ ,]','\\&')
   let t = RailsFileType()
   let oldpath = s:sub(&l:path,'^\.,','')
   if stridx(oldpath,rp) == 2
@@ -4115,7 +4115,7 @@ function! s:BufSettings()
     return ''
   endif
   call s:SetBasePath()
-  let rp = s:gsub(RailsRoot(),'[ ,]','\\&')
+  let rp = s:gsub(rails#app().path(),'[ ,]','\\&')
   let &l:errorformat = s:efm
   setlocal makeprg=rake
   if stridx(&tags,rp) == -1
