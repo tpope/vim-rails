@@ -993,7 +993,7 @@ function! s:Rake(bang,lnum,arg)
 endfunction
 
 function! s:Complete_rake(A,L,P)
-  return rails#app().rake_tasks()
+  return s:completion_filter(rails#app().rake_tasks(),a:A)
 endfunction
 
 " }}}1
