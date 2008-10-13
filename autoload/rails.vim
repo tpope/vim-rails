@@ -1823,9 +1823,7 @@ function! s:viewList(A,L,P)
   let top = rails#app().relglob("app/views/",prefix."*[^~]")
   if c != '' && prefix == ''
     let local = rails#app().relglob("app/views/".c."/","*.*[^~]")
-    if local != ''
-      return s:completion_filter(local+top,a:A)
-    endif
+    return s:completion_filter(local+top,a:A)
   endif
   return s:completion_filter(top,a:A)
 endfunction
