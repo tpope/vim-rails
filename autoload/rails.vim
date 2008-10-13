@@ -69,11 +69,6 @@ function! s:esccmd(p)
   return s:gsub(a:p,'[!%#]','\\&')
 endfunction
 
-function! s:ra()
-  " Rails root, escaped for use as single argument
-  return s:escarg(RailsRoot())
-endfunction
-
 function! s:rquote(str)
   " Imperfect but adequate for Ruby arguments
   if a:str =~ '^[A-Za-z0-9_/.:-]\+$'
@@ -580,7 +575,7 @@ function! s:QuickFixCmdPre()
   if exists("b:rails_root")
     if !s:startswith(getcwd(), rails#app().path())
       let s:last_dir = getcwd()
-      echo "lchdir ".s:ra()
+      echo "lchdir ".s:escarg(rails#app().path())
       lchdir `=rails#app().path()`
     endif
   endif
@@ -691,7 +686,7 @@ function! s:Log(bang,arg)
   else
     if exists(":Tail")
       " TODO: check if :Tail works with `=`
-      exe "Tail ".s:ra().'/'.lf
+      exe "Tail ".s:escarg(rails#app().path(lf))
     else
       pedit `=rails#app().path(lf)`
     endif
@@ -748,7 +743,7 @@ function! s:Tags(bang)
   else
     return s:error("ctags not found")
   endif
-  exe "!".cmd." -R ".s:ra()
+  exe "!".cmd." -R ".s:escarg(rails#app().path())
 endfunction
 
 function! s:Refresh(bang)
@@ -985,7 +980,7 @@ function! s:Rake(bang,lnum,arg)
     make test:units TEST="%:p:r:s?[\/]app[\/]apis[\/]?/test/functional/?_test.rb"
   elseif t=~ '^\<\%(controller\|helper\|view\)\>'
     if RailsFilePath() =~ '\<app/' && s:controller() !~# '^\%(application\)\=$'
-      exe 'make test:functionals TEST="'.s:ra().'/test/functional/'.s:controller().'_controller_test.rb"'
+      exe 'make test:functionals TEST="'.s:escarg(rails#app.path('test/functional/'.s:controller().'_controller_test.rb')).'"'
     else
       make test:functionals
     endif
@@ -2376,11 +2371,11 @@ function! s:findedit(cmd,file,...) abort
     let testcmd = "edit"
   elseif rails#app().path() =~ '://' || cmd =~ 'edit' || cmd =~ 'split'
     if file !~ '^/' && file !~ '^\w:' && file !~ '://'
-      let file = s:ra().'/'.file
+      let file = s:escarg(rails#app.path(file))
     endif
     let testcmd = s:editcmdfor(cmd).' '.(a:0 ? a:1 . ' ' : '').file
   elseif isdirectory(rails#app().path(file))
-    let testcmd = s:editcmdfor(cmd).' '.(a:0 ? a:1 . ' ' : '').s:ra().'/'.file
+    let testcmd = s:editcmdfor(cmd).' '.(a:0 ? a:1 . ' ' : '').s:escarg(rails#app().path(file))
     exe testcmd
     return
   else
