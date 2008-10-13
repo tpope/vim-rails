@@ -623,8 +623,8 @@ function! s:BufCommands()
   call s:BufFinderCommands()
   call s:BufNavCommands()
   call s:BufScriptWrappers()
-  command! -buffer -bar -nargs=? -bang -count -complete=customlist,s:RakeComplete Rake    :call s:Rake(<bang>0,!<count> && <line1> ? -1 : <count>,<q-args>)
-  command! -buffer -bar -nargs=? -bang -range -complete=custom,s:PreviewComplete Rpreview :call s:Preview(<bang>0,<line1>,<q-args>)
+  command! -buffer -bar -nargs=? -bang -count -complete=customlist,s:Complete_rake Rake    :call s:Rake(<bang>0,!<count> && <line1> ? -1 : <count>,<q-args>)
+  command! -buffer -bar -nargs=? -bang -range -complete=customlist,s:Complete_preview Rpreview :call s:Preview(<bang>0,<line1>,<q-args>)
   command! -buffer -bar -nargs=? -bang -complete=custom,s:environments     Rlog     :call s:Log(<bang>0,<q-args>)
   command! -buffer -bar -nargs=* -bang -complete=customlist,s:Complete_set Rset     :call s:Set(<bang>0,<f-args>)
   command! -buffer -bar -nargs=0 Rtags       :call s:Tags(<bang>0)
@@ -997,7 +997,7 @@ function! s:Rake(bang,lnum,arg)
   endif
 endfunction
 
-function! s:RakeComplete(A,L,P)
+function! s:Complete_rake(A,L,P)
   return rails#app().rake_tasks()
 endfunction
 
@@ -1108,8 +1108,8 @@ function! s:Preview(bang,lnum,arg)
   endif
 endfunction
 
-function! s:PreviewComplete(A,L,P)
-  return s:defaultpreview(a:L =~ '^\d' ? matchstr(a:L,'^\d\+') : line('.'))
+function! s:Complete_preview(A,L,P)
+  return split(s:defaultpreview(a:L =~ '^\d' ? matchstr(a:L,'^\d\+') : line('.')),"\n")
 endfunction
 
 " }}}1
@@ -1347,8 +1347,8 @@ endfunction
 " Navigation {{{1
 
 function! s:BufNavCommands()
-  command!   -buffer -bar -nargs=? -complete=custom,s:DirList Rcd   :cd `=RailsRoot().'/'.<q-args>`
-  command!   -buffer -bar -nargs=? -complete=custom,s:DirList Rlcd :lcd `=RailsRoot().'/'.<q-args>`
+  command!   -buffer -bar -nargs=? -complete=customlist,s:Complete_cd Rcd   :cd `=rails#app().path(<q-args>)`
+  command!   -buffer -bar -nargs=? -complete=customlist,s:Complete_cd Rlcd :lcd `=rails#app().path(<q-args>)`
   command!   -buffer -bar -nargs=* -count=1 -complete=custom,s:FindList Rfind       :call s:Find(<bang>0,<count>,'' ,<f-args>)
   command!   -buffer -bar -nargs=* -count=1 -complete=custom,s:FindList REfind      :call s:Find(<bang>0,<count>,'E',<f-args>)
   command!   -buffer -bar -nargs=* -count=1 -complete=custom,s:FindList RSfind      :call s:Find(<bang>0,<count>,'S',<f-args>)
@@ -1356,11 +1356,11 @@ function! s:BufNavCommands()
   command!   -buffer -bar -nargs=* -count=1 -complete=custom,s:FindList RTfind      :call s:Find(<bang>0,<count>,'T',<f-args>)
   command!   -buffer -bar -nargs=* -count=1 -complete=custom,s:FindList Rsfind      :<count>RSfind<bang> <args>
   command!   -buffer -bar -nargs=* -count=1 -complete=custom,s:FindList Rtabfind    :<count>RTfind<bang> <args>
-  command!   -buffer -bar -nargs=* -bang    -complete=custom,s:EditList Redit       :call s:Edit(<bang>0,<count>,'' ,<f-args>)
-  command!   -buffer -bar -nargs=* -bang    -complete=custom,s:EditList REedit      :call s:Edit(<bang>0,<count>,'E',<f-args>)
-  command!   -buffer -bar -nargs=* -bang    -complete=custom,s:EditList RSedit      :call s:Edit(<bang>0,<count>,'S',<f-args>)
-  command!   -buffer -bar -nargs=* -bang    -complete=custom,s:EditList RVedit      :call s:Edit(<bang>0,<count>,'V',<f-args>)
-  command!   -buffer -bar -nargs=* -bang    -complete=custom,s:EditList RTedit      :call s:Edit(<bang>0,<count>,'T',<f-args>)
+  command!   -buffer -bar -nargs=* -bang    -complete=customlist,s:Complete_edit Redit       :call s:Edit(<bang>0,<count>,'' ,<f-args>)
+  command!   -buffer -bar -nargs=* -bang    -complete=customlist,s:Complete_edit REedit      :call s:Edit(<bang>0,<count>,'E',<f-args>)
+  command!   -buffer -bar -nargs=* -bang    -complete=customlist,s:Complete_edit RSedit      :call s:Edit(<bang>0,<count>,'S',<f-args>)
+  command!   -buffer -bar -nargs=* -bang    -complete=customlist,s:Complete_edit RVedit      :call s:Edit(<bang>0,<count>,'V',<f-args>)
+  command!   -buffer -bar -nargs=* -bang    -complete=customlist,s:Complete_edit RTedit      :call s:Edit(<bang>0,<count>,'T',<f-args>)
   command! -buffer -bar -nargs=0 A  :call s:Alternate(<bang>0,"")
   command! -buffer -bar -nargs=0 AE :call s:Alternate(<bang>0,"E")
   command! -buffer -bar -nargs=0 AS :call s:Alternate(<bang>0,"S")
@@ -1444,14 +1444,14 @@ function! s:FindList(ArgLead, CmdLine, CursorPos)
   endif
 endfunction
 
-function! s:EditList(ArgLead, CmdLine, CursorPos)
-  return s:relglob("",a:ArgLead."*[^~]")
+function! s:Complete_edit(ArgLead, CmdLine, CursorPos)
+  return rails#app().relglob("",a:ArgLead."*[^~]")
 endfunction
 
-function! s:DirList(ArgLead, CmdLine, CursorPos)
-  let all = "\n".s:relglob("",a:ArgLead."*")."\n"
-  let dirs = s:gsub(all,"[^\n]*[^/]\n",'')
-  return s:compact(dirs)
+function! s:Complete_cd(ArgLead, CmdLine, CursorPos)
+  let all = rails#app().relglob("",a:ArgLead."*")
+  call filter(all,'v:val =~ "/$"')
+  return filter(all,'s:startswith(v:val,a:ArgLead)')
 endfunction
 
 function! RailsIncludeexpr()
@@ -1757,7 +1757,7 @@ endfunction
 
 function! s:autocamelize(files,test)
   if a:test =~# '^\u'
-    return s:completion_filter(s:camelize(a:files),a:test)
+    return s:completion_filter(map(copy(a:files),'s:camelize(v:val)'),a:test)
   else
     return s:completion_filter(a:files,a:test)
   endif
@@ -1812,115 +1812,106 @@ function! s:relglob(...)
   return join(call(rails#app().relglob,a:000,rails#app()),"\n")
 endfunction
 
-if v:version <= 602
-  " Yet another  Vim 6.2 limitation
-  let s:recurse = "*"
-else
-  let s:recurse = "**/*"
-endif
-
 function! s:helperList(A,L,P)
-  return s:autocamelize(s:relglob("app/helpers/",s:recurse,"_helper.rb"),a:A)
+  return s:autocamelize(rails#app().relglob("app/helpers/","**/*","_helper.rb"),a:A)
 endfunction
 
 function! s:controllerList(A,L,P)
-  let con = s:gsub(s:relglob("app/controllers/",s:recurse,".rb"),'_controller>','')
+  let con = rails#app().relglob("app/controllers/","**/*",".rb")
+  call map(con,'s:sub(v:val,"_controller$","")')
   return s:autocamelize(con,a:A)
 endfunction
 
 function! s:viewList(A,L,P)
   let prefix = s:sub(a:A,'[^/]*$','')
   let c = s:controller(1)
-  let top = s:relglob("app/views/",prefix."*[^~]")
+  let top = rails#app().relglob("app/views/",prefix."*[^~]")
   if c != '' && prefix == ''
-    let local = s:relglob("app/views/".c."/","*.*[^~]")
+    let local = rails#app().relglob("app/views/".c."/","*.*[^~]")
     if local != ''
-      return s:completion_filter(local."\n".top,a:A)
+      return s:completion_filter(local+top,a:A)
     endif
   endif
   return s:completion_filter(top,a:A)
 endfunction
 
 function! s:layoutList(A,L,P)
-  return s:completion_filter(s:relglob("app/views/layouts/","*"),a:A)
+  return s:completion_filter(rails#app().relglob("app/views/layouts/","*"),a:A)
 endfunction
 
 function! s:stylesheetList(A,L,P)
-  return s:completion_filter(s:relglob("public/stylesheets/",s:recurse,".css"),a:A)
+  return s:completion_filter(rails#app().relglob("public/stylesheets/","**/*",".css"),a:A)
 endfunction
 
 function! s:javascriptList(A,L,P)
-  return s:completion_filter(s:relglob("public/javascripts/",s:recurse,".js"),a:A)
+  return s:completion_filter(rails#app().relglob("public/javascripts/","**/*",".js"),a:A)
 endfunction
 
 function! s:modelList(A,L,P)
-  let models = s:relglob("app/models/",s:recurse,".rb")."\n"
-  " . matches everything, and no good way to exclude newline.  Lame.
-  let models = s:gsub(models,'[ -~]*_observer\n',"")
-  let models = s:compact(models)
+  let models = rails#app().relglob("app/models/","**/*",".rb")
+  call filter(models,'v:val !~# "_observer$"')
   return s:autocamelize(models,a:A)
 endfunction
 
 function! s:observerList(A,L,P)
-  return s:autocamelize(s:relglob("app/models/",s:recurse,"_observer.rb"),a:A)
+  return s:autocamelize(rails#app().relglob("app/models/","**/*","_observer.rb"),a:A)
 endfunction
 
 function! s:fixturesList(A,L,P)
-  return s:completion_filter(s:compact(s:relglob("test/fixtures/",s:recurse)."\n".s:relglob("spec/fixtures/",s:recurse)),a:A)
+  return s:completion_filter(rails#app().relglob("test/fixtures/","**/*")+rails#app().relglob("spec/fixtures/","**/*"),a:A)
 endfunction
 
 function! s:migrationList(A,L,P)
   if a:A =~ '^\d'
-    let migrations = s:relglob("db/migrate/",a:A."[0-9_]*",".rb")
-    let migrations = s:gsub(migrations,'_.{-}($|\n)','\1')
-    return split(migrations,"\n")
+    let migrations = rails#app().relglob("db/migrate/",a:A."[0-9_]*",".rb")
+    return map(migrations,'matchstr(v:val,"^[0-9]*")')
   else
-    let migrations = s:relglob("db/migrate/","[0-9]*[0-9]_*",".rb")
-    let migrations = s:gsub(migrations,'(^|\n)\d+_','\1')
+    let migrations = rails#app().relglob("db/migrate/","[0-9]*[0-9]_*",".rb")
+    call map(migrations,'s:sub(v:val,"^[0-9]*_","")')
     return s:autocamelize(migrations,a:A)
   endif
 endfunction
 
 function! s:apiList(A,L,P)
-  return s:autocamelize(s:relglob("app/apis/",s:recurse,"_api.rb"),a:A)
+  return s:autocamelize(rails#app().relglob("app/apis/","**/*","_api.rb"),a:A)
 endfunction
 
 function! s:unittestList(A,L,P)
-  return s:autocamelize(s:relglob("test/unit/",s:recurse,"_test.rb"),a:A)
+  return s:autocamelize(rails#app().relglob("test/unit/","**/*","_test.rb"),a:A)
 endfunction
 
 function! s:functionaltestList(A,L,P)
-  return s:autocamelize(s:relglob("test/functional/",s:recurse,"_test.rb"),a:A)
+  return s:autocamelize(rails#app().relglob("test/functional/","**/*","_test.rb"),a:A)
 endfunction
 
 function! s:integrationtestList(A,L,P)
-  return s:autocamelize(s:relglob("test/integration/",s:recurse,"_test.rb"),a:A)
+  return s:autocamelize(rails#app().relglob("test/integration/","**/*","_test.rb"),a:A)
 endfunction
 
 function! s:pluginList(A,L,P)
   if a:A =~ '/'
-    return s:completion_filter(s:relglob('vendor/plugins/',matchstr(a:A,'.\{-\}/').'**/*'),a:A)
+    return s:completion_filter(rails#app().relglob('vendor/plugins/',matchstr(a:A,'.\{-\}/').'**/*'),a:A)
   else
-    return s:completion_filter(s:relglob('vendor/plugins/',"*","/init.rb"),a:A)
+    return s:completion_filter(rails#app().relglob('vendor/plugins/',"*","/init.rb"),a:A)
   endif
 endfunction
 
 " Task files, not actual rake tasks
 function! s:taskList(A,L,P)
-  let top = s:relglob("lib/tasks/",s:recurse,".rake")
+  let top = rails#app().relglob("lib/tasks/","**/*",".rake")
   if RailsFilePath() =~ '\<vendor/plugins/.'
     let path = s:sub(RailsFilePath(),'<vendor/plugins/[^/]*/\zs.*','tasks/')
-    return s:completion_filter(s:relglob(path,s:recurse,".rake") . "\n" . top,a:A)
+    return s:completion_filter(rails#app().relglob(path,"**/*",".rake")+top,a:A)
   else
     return s:completion_filter(top,a:A)
   endif
 endfunction
 
 function! s:libList(A,L,P)
-  let all = s:relglob('lib/',s:recurse,".rb")
+  let all = rails#app().relglob('lib/',"**/*",".rb")
   if RailsFilePath() =~ '\<vendor/plugins/.'
     let path = s:sub(RailsFilePath(),'<vendor/plugins/[^/]*/\zs.*','lib/')
-    let all = s:relglob(path,s:recurse,".rb") . "\n" . all
+    let all = rails#app().relglob(path,"**/*",".rb") + all
   endif
   return s:autocamelize(all,a:A)
 endfunction
@@ -1967,13 +1958,12 @@ function! s:CommandList(A,L,P)
   let cmd = matchstr(a:L,'\CR[A-Z]\=\w\+')
   exe cmd." &"
   let lp = s:last_prefix . "\n"
-  let res = ""
+  let res = []
   while lp != ""
     let p = matchstr(lp,'.\{-\}\ze\n')
     let lp = s:sub(lp,'.{-}\n','')
-    let res .= s:relglob(p,s:last_filter,s:last_suffix)."\n"
+    let res += rails#app().relglob(p,s:last_filter,s:last_suffix)
   endwhile
-  let res = s:compact(res)
   if s:last_camelize
     return s:autocamelize(res,a:A)
   else
