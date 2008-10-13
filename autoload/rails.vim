@@ -2040,7 +2040,7 @@ function! s:migrationfor(file)
       let glob = '*.rb'
     endif
   else
-    let glob = '*'.arg.'*rb'
+    let glob = '*'.s:underscore(arg).'*rb'
   endif
   let migr = s:sub(glob(RailsRoot().'/db/migrate/'.glob),'.*\n','')
   if migr == '' && tryagain
