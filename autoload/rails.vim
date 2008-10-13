@@ -3030,7 +3030,7 @@ function! s:BufSyntax()
           syn keyword rubyRailsMethod local_assigns
         endif
       elseif t =~ '^controller\>'
-        syn keyword rubyRailsControllerMethod helper helper_attr helper_method filter layout url_for serialize exempt_from_layout filter_parameter_logging hide_action cache_sweeper
+        syn keyword rubyRailsControllerMethod helper helper_attr helper_method filter layout url_for serialize exempt_from_layout filter_parameter_logging hide_action cache_sweeper protect_from_forgery
         syn match rubyRailsDeprecatedMethod '\<render_\%(action\|text\|file\|template\|nothing\|without_layout\)\>'
         syn keyword rubyRailsRenderMethod render_to_string redirect_to head
         syn match   rubyRailsRenderMethod '\<respond_to\>?\@!'
