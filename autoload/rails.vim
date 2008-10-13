@@ -381,6 +381,10 @@ function! RailsFilePath()
   if s:startswith(f,s:gsub(b:rails_root,'\\ @!','/'))
     return strpart(f,strlen(b:rails_root)+1)
   else
+    if !exists("s:path_warn")
+      let s:path_warn = 1
+      call s:warn("File ".f." does not appear to be under the Rails root ".b:rails_root.". Please report to the rails.vim author!")
+    endif
     return f
   endif
 endfunction
