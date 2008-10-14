@@ -94,6 +94,13 @@ endfunction
 
 call s:add_methods('app',['path','has_file'])
 
+" Split a path into a list.  From pathogen.vim
+function! s:pathsplit(path) abort " {{{1
+  if type(a:path) == type([]) | return a:path | endif
+  let split = split(a:path,'\\\@<!\%(\\\\\)*\zs,')
+  return map(split,'substitute(v:val,''\\\([\\,]\)'',''\1'',"g")')
+endfunction " }}}1
+
 function! s:endof(lnum)
   if a:lnum == 0
     return 0
@@ -260,7 +267,7 @@ function! s:underscore(str)
 endfunction
 
 function! s:camelize(str)
-  let str = s:gsub(a:str,'/(.)','::\u\1')
+  let str = s:gsub(a:str,'/(.=)','::\u\1')
   let str = s:gsub(str,'%([_-]|<)(.)','\u\1')
   return str
 endfunction
@@ -1348,13 +1355,13 @@ endfunction
 function! s:BufNavCommands()
   command!   -buffer -bar -nargs=? -complete=customlist,s:Complete_cd Rcd   :cd `=rails#app().path(<q-args>)`
   command!   -buffer -bar -nargs=? -complete=customlist,s:Complete_cd Rlcd :lcd `=rails#app().path(<q-args>)`
-  command!   -buffer -bar -nargs=* -count=1 -complete=custom,s:FindList Rfind       :call s:Find(<bang>0,<count>,'' ,<f-args>)
-  command!   -buffer -bar -nargs=* -count=1 -complete=custom,s:FindList REfind      :call s:Find(<bang>0,<count>,'E',<f-args>)
-  command!   -buffer -bar -nargs=* -count=1 -complete=custom,s:FindList RSfind      :call s:Find(<bang>0,<count>,'S',<f-args>)
-  command!   -buffer -bar -nargs=* -count=1 -complete=custom,s:FindList RVfind      :call s:Find(<bang>0,<count>,'V',<f-args>)
-  command!   -buffer -bar -nargs=* -count=1 -complete=custom,s:FindList RTfind      :call s:Find(<bang>0,<count>,'T',<f-args>)
-  command!   -buffer -bar -nargs=* -count=1 -complete=custom,s:FindList Rsfind      :<count>RSfind<bang> <args>
-  command!   -buffer -bar -nargs=* -count=1 -complete=custom,s:FindList Rtabfind    :<count>RTfind<bang> <args>
+  command!   -buffer -bar -nargs=* -count=1 -complete=customlist,s:Complete_find Rfind       :call s:Find(<bang>0,<count>,'' ,<f-args>)
+  command!   -buffer -bar -nargs=* -count=1 -complete=customlist,s:Complete_find REfind      :call s:Find(<bang>0,<count>,'E',<f-args>)
+  command!   -buffer -bar -nargs=* -count=1 -complete=customlist,s:Complete_find RSfind      :call s:Find(<bang>0,<count>,'S',<f-args>)
+  command!   -buffer -bar -nargs=* -count=1 -complete=customlist,s:Complete_find RVfind      :call s:Find(<bang>0,<count>,'V',<f-args>)
+  command!   -buffer -bar -nargs=* -count=1 -complete=customlist,s:Complete_find RTfind      :call s:Find(<bang>0,<count>,'T',<f-args>)
+  command!   -buffer -bar -nargs=* -count=1 -complete=customlist,s:Complete_find Rsfind      :<count>RSfind<bang> <args>
+  command!   -buffer -bar -nargs=* -count=1 -complete=customlist,s:Complete_find Rtabfind    :<count>RTfind<bang> <args>
   command!   -buffer -bar -nargs=* -bang    -complete=customlist,s:Complete_edit Redit       :call s:Edit(<bang>0,<count>,'' ,<f-args>)
   command!   -buffer -bar -nargs=* -bang    -complete=customlist,s:Complete_edit REedit      :call s:Edit(<bang>0,<count>,'E',<f-args>)
   command!   -buffer -bar -nargs=* -bang    -complete=customlist,s:Complete_edit RSedit      :call s:Edit(<bang>0,<count>,'S',<f-args>)
@@ -1435,12 +1442,21 @@ function! s:Edit(bang,count,arg,...)
   endif
 endfunction
 
-function! s:FindList(ArgLead, CmdLine, CursorPos)
-  if exists("*UserFileComplete") " genutils.vim
-    return UserFileComplete(s:RailsIncludefind(a:ArgLead), a:CmdLine, a:CursorPos, 1, &path)
-  else
-    return ""
+function! s:Complete_find(ArgLead, CmdLine, CursorPos)
+  let paths = s:pathsplit(&l:path)
+  if has("win32") || has("win64")
+    call map(paths,'s:gsub("\\","/")')
   endif
+  let seen = {}
+  for path in paths
+    if s:startswith(path,rails#app().path()) && path !~ '[][*]'
+      for file in rails#app().relglob(path."/",s:underscore(a:ArgLead)."*", a:ArgLead =~# '\u' ? '.rb' : '')
+        let seen[file] = 1
+      endfor
+    endif
+  endfor
+  let results = sort(map(keys(seen),'s:sub(v:val,"[.]rb$","")'))
+  return s:autocamelize(results,a:ArgLead)
 endfunction
 
 function! s:Complete_edit(ArgLead, CmdLine, CursorPos)
