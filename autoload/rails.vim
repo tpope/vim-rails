@@ -95,7 +95,7 @@ endfunction
 function! s:app_find_file(name, ...) dict abort
   let trim = strlen(self.path())+1
   if a:0
-    let path = s:pathjoin(map(copy(s:pathsplit(a:1)),'self.path(v:val)'))
+    let path = s:pathjoin(map(s:pathsplit(a:1),'self.path(v:val)'))
   else
     let path = s:pathjoin([self.path()])
   endif
@@ -110,7 +110,7 @@ function! s:app_find_file(name, ...) dict abort
       if v:version < 702
         call filter(all,'!isdirectory(v:val)')
       endif
-      call map(all,'strpart(fnamemodify(v:val,":p"),trim)')
+      call map(all,'s:gsub(strpart(fnamemodify(v:val,":p"),trim),"\\\\","/")')
       return default < 0 ? all : get(all,default-1,'')
     elseif type(default) == type(0)
       let found = findfile(a:name,path,default)
@@ -122,7 +122,7 @@ function! s:app_find_file(name, ...) dict abort
         let found = findfile(a:name,path,i)
       endwhile
     endif
-    return found == "" ? found : strpart(fnamemodify(found,':p'),trim)
+    return found == "" ? found : s:gsub(strpart(fnamemodify(found,':p'),trim),'\\','/')
   finally
     let &l:suffixesadd = oldsuffixesadd
   endtry
