@@ -2140,7 +2140,7 @@ function! s:fixturesEdit(bang,cmd,...)
   if file =~ '\.\w\+$' && !rails#app().has_file("spec/fixtures/".c.e)
     call s:edit(a:cmd.(a:bang?'!':''),file)
   else
-    call s:findedit(a:cmd.(a:bang?'!':''),file."\nspec/fixtures/".c.e)
+    call s:findedit(a:cmd.(a:bang?'!':''),rails#app().find_file(c.e,["test/fixtures","spec/fixtures"],[".yml",".csv"],file))
   endif
 endfunction
 
