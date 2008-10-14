@@ -132,9 +132,9 @@ call s:add_methods('app',['path','has_file','find_file'])
 
 " Split a path into a list.  From pathogen.vim
 function! s:pathsplit(path) abort
-  if type(a:path) == type([]) | return a:path | endif
+  if type(a:path) == type([]) | return copy(a:path) | endif
   let split = split(a:path,'\\\@<!\%(\\\\\)*\zs,')
-  return map(split,'substitute(v:val,''\\\([\\,]\)'',''\1'',"g")')
+  return map(split,'substitute(v:val,''\\\([\\, ]\)'',''\1'',"g")')
 endfunction
 
 " Convert a list to a path.  From pathogen.vim
@@ -146,7 +146,11 @@ function! s:pathjoin(...) abort
       let list = a:000[i]
       let j = 0
       while j < len(list)
-        let path .= "," . substitute(list[j],'[\\,]','\\&','g')
+        let escaped = substitute(list[j],'[\\, ]','\\&','g')
+        if exists("+shellslash") && !&shellslash
+          let escaped = substitute(escaped,'^\(\w:\\\)\\','\1','','')
+        endif
+        let path .= ',' . escaped
         let j += 1
       endwhile
     else
