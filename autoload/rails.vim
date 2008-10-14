@@ -3630,16 +3630,16 @@ function! s:selectiveexpand(pat,good,default,...)
   endif
 endfunction
 
-function! s:TheMagicC()
+function! s:TheCWord()
   let l = s:linepeak()
-  if l =~ '\<find\s*\((\|:first,\|:all,\)' || l =~ '\<paginate\>'
+  if l =~ '\<\%(find\|first\|last\|all\|paginate\)\>'
     return s:selectiveexpand('..',':conditions => ',':c')
-  elseif l =~ '\<render\s*(\=\s*:partial\s\*=>\s*'
+  elseif l =~ '\<render\s*(\=\s*:partial\s*=>\s*'
     return s:selectiveexpand('..',':collection => ',':c')
-  elseif RailsFileType() =~ '^model\>'
-    return s:selectiveexpand('..',':conditions => ',':c')
-  else
+  elseif l =~ '\<\%(url_for\|link_to\|form_tag\)\>' || l =~ ':url\s*=>\s*{\s*'
     return s:selectiveexpand('..',':controller => ',':c')
+  else
+    return s:selectiveexpand('..',':conditions => ',':c')
   endif
 endfunction
 
@@ -3746,7 +3746,7 @@ function! s:BufAbbreviations()
     Rabbrev :a    :action\ =>\ 
     " hax
     Rabbrev :c    :co________\ =>\ 
-    inoreabbrev <buffer> <silent> :c <C-R>=<SID>TheMagicC()<CR>
+    inoreabbrev <buffer> <silent> :c <C-R>=<SID>TheCWord()<CR>
     Rabbrev :i    :id\ =>\ 
     Rabbrev :o    :object\ =>\ 
     Rabbrev :p    :partial\ =>\ 
