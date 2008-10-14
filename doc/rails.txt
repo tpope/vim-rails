@@ -200,8 +200,9 @@ actually edit a file from a Rails application.
 :Rpreview! [{path}]	As with :Rpreview, except :OpenURL is never used.
 
 						*rails-:Rtags*
-:Rtags			Calls ctags -R on the current application root.
-			Exuberant ctags must be installed.
+:Rtags			Calls ctags -R on the current application root and
+			writes the result to tmp/tags.  Exuberant ctags must
+			be installed.
 
 						*rails-:Rrefresh*
 :Rrefresh		Refreshes certain cached settings.  Most noticeably,

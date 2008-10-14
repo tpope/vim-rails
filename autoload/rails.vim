@@ -633,7 +633,7 @@ function! s:BufCommands()
   command! -buffer -bar -nargs=? -bang -range -complete=customlist,s:Complete_preview Rpreview :call s:Preview(<bang>0,<line1>,<q-args>)
   command! -buffer -bar -nargs=? -bang -complete=custom,s:environments     Rlog     :call s:Log(<bang>0,<q-args>)
   command! -buffer -bar -nargs=* -bang -complete=customlist,s:Complete_set Rset     :call s:Set(<bang>0,<f-args>)
-  command! -buffer -bar -nargs=0 Rtags       :call s:Tags(<bang>0)
+  command! -buffer -bar -nargs=0 Rtags       :call rails#app().tags_command()
   " Embedding all this logic directly into the command makes the error
   " messages more concise.
   command! -buffer -bar -nargs=? -bang Rdoc  :
@@ -740,7 +740,7 @@ function! rails#new_app_command(bang,...)
   endif
 endfunction
 
-function! s:Tags(bang)
+function! s:app_tags_command() dict
   if exists("g:Tlist_Ctags_Cmd")
     let cmd = g:Tlist_Ctags_Cmd
   elseif executable("exuberant-ctags")
@@ -754,8 +754,10 @@ function! s:Tags(bang)
   else
     return s:error("ctags not found")
   endif
-  exe "!".cmd." -R ".s:escarg(rails#app().path())
+  exe "!".cmd." -f ".s:escarg(self.path("tmp/tags"))." -R ".s:escarg(self.path())
 endfunction
+
+call s:add_methods('app',['tags_command'])
 
 function! s:Refresh(bang)
   " What else?
@@ -4132,7 +4134,7 @@ function! s:BufSettings()
   let &l:errorformat = s:efm
   setlocal makeprg=rake
   if stridx(&tags,rp) == -1
-    let &l:tags = &tags . "," . rp . "/tags," . rp . "/.tags"
+    let &l:tags = rp . "/tmp/tags," . &tags . "," . rp . "/tags"
   endif
   if has("gui_win32") || has("gui_running")
     let code      = '*.rb;*.rake;Rakefile'
