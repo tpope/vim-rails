@@ -1840,25 +1840,6 @@ function! s:autocamelize(files,test)
   endif
 endfunction
 
-function! RailsUserClasses()
-  return join(rails#app().user_classes(),' ')
-endfunction
-
-function! s:app_user_classes() dict
-  if self.cache.needs("user_classes")
-    let controllers = self.relglob("app/controllers/","**/*",".rb")
-    call map(controllers,'v:val == "application" ? v:val."_controller" : v:val')
-    let classes =
-          \ self.relglob("app/models/","**/*",".rb") +
-          \ controllers +
-          \ self.relglob("app/helpers/","**/*",".rb") +
-          \ self.relglob("lib/","**/*",".rb")
-    call map(classes,'s:camelize(v:val)')
-    call self.cache.set("user_classes",classes)
-  endif
-  return self.cache.get('user_classes')
-endfunction
-
 function! s:app_relglob(path,glob,...) dict
   if exists("+shellslash") && ! &shellslash
     let old_ss = &shellslash
@@ -1883,7 +1864,7 @@ function! s:app_relglob(path,glob,...) dict
   return relative_paths
 endfunction
 
-call s:add_methods('app', ['user_classes','relglob'])
+call s:add_methods('app', ['relglob'])
 
 function! s:relglob(...)
   return join(call(rails#app().relglob,a:000,rails#app()),"\n")
@@ -3024,6 +3005,21 @@ function! s:helpermethods()
         \."word_wrap"
 endfunction
 
+function! s:app_user_classes() dict
+  if self.cache.needs("user_classes")
+    let controllers = self.relglob("app/controllers/","**/*",".rb")
+    call map(controllers,'v:val == "application" ? v:val."_controller" : v:val')
+    let classes =
+          \ self.relglob("app/models/","**/*",".rb") +
+          \ controllers +
+          \ self.relglob("app/helpers/","**/*",".rb") +
+          \ self.relglob("lib/","**/*",".rb")
+    call map(classes,'s:camelize(v:val)')
+    call self.cache.set("user_classes",classes)
+  endif
+  return self.cache.get('user_classes')
+endfunction
+
 function! s:app_user_assertions() dict
   if self.cache.needs("user_assertions")
     if self.has_file("test/test_helper.rb")
@@ -3036,7 +3032,7 @@ function! s:app_user_assertions() dict
   return self.cache.get('user_assertions')
 endfunction
 
-call s:add_methods('app', ['user_assertions'])
+call s:add_methods('app', ['user_classes','user_assertions'])
 
 function! s:BufSyntax()
   if (!exists("g:rails_syntax") || g:rails_syntax)
