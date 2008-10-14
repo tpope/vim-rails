@@ -2366,20 +2366,13 @@ function! s:try(cmd) abort
   return 1
 endfunction
 
-function! s:findedit(cmd,file,...) abort
+function! s:findedit(cmd,files,...) abort
   let cmd = s:findcmdfor(a:cmd)
-  if a:file =~ '\n'
-    let file = ''
-    for candidate in split(a:file,"\n")
-      if rails#app().has_file(s:sub(candidate,'[@#].*',''))
-        let file = candidate
-      endif
-    endfor
-    if file == ''
-      let file = split(a:file,"\n")[0]
-    endif
+  let files = type(a:files) == type([]) ? copy(a:files) : split(a:files,"\n")
+  if len(files) == 1
+    let file = files[0]
   else
-    let file = a:file
+    let file = get(filter(copy(files),'rails#app().has_file(s:sub(v:val,"[@#].*",""))'),0,get(files,0,''))
   endif
   if file =~ '[@#]'
     let djump = matchstr(file,'[@#]\zs.*')
