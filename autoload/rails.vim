@@ -385,7 +385,7 @@ function! RailsFilePath()
   endif
   let f = s:gsub(expand('%:p'),'\\ @!','/')
   let f = s:sub(f,'/$','')
-  if s:startswith(f,s:gsub(b:rails_root,'\\ @!','/'))
+  if s:startswith(f,s:gsub(b:rails_root,'\\ @!','/')) || f == ""
     return strpart(f,strlen(b:rails_root)+1)
   else
     if !exists("s:path_warn")
