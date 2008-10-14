@@ -1053,7 +1053,7 @@ function! s:Rake(bang,lnum,arg)
     make test:units TEST="%:p:r:s?[\/]app[\/]apis[\/]?/test/functional/?_test.rb"
   elseif t=~ '^\<\%(controller\|helper\|view\)\>'
     if RailsFilePath() =~ '\<app/' && s:controller() !~# '^\%(application\)\=$'
-      exe 'make test:functionals TEST="'.s:escarg(rails#app.path('test/functional/'.s:controller().'_controller_test.rb')).'"'
+      exe 'make test:functionals TEST="'.s:escarg(rails#app().path('test/functional/'.s:controller().'_controller_test.rb')).'"'
     else
       make test:functionals
     endif
@@ -2444,7 +2444,7 @@ function! s:findedit(cmd,files,...) abort
     let testcmd = "edit"
   elseif rails#app().path() =~ '://' || cmd =~ 'edit' || cmd =~ 'split'
     if file !~ '^/' && file !~ '^\w:' && file !~ '://'
-      let file = s:escarg(rails#app.path(file))
+      let file = s:escarg(rails#app().path(file))
     endif
     let testcmd = s:editcmdfor(cmd).' '.(a:0 ? a:1 . ' ' : '').file
   elseif isdirectory(rails#app().path(file))
