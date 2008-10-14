@@ -92,13 +92,69 @@ function! s:app_has_file(file) dict
   return filereadable(self.path(a:file))
 endfunction
 
-call s:add_methods('app',['path','has_file'])
+function! s:app_find_file(name, ...) dict abort
+  let trim = strlen(self.path())+1
+  if a:0
+    let path = s:pathjoin(map(copy(s:pathsplit(a:1)),'self.path(v:val)'))
+  else
+    let path = s:pathjoin([self.path()])
+  endif
+  let suffixesadd = s:pathjoin(get(a:000,1,&suffixesadd))
+  let default = get(a:000,2,'')
+  let oldsuffixesadd = &l:suffixesadd
+  try
+    let &suffixesadd = suffixesadd
+    " Versions before 7.1.256 returned directories from findfile
+    if type(default) == type(0) && (v:version < 702 || default == -1)
+      let all = findfile(a:name,path,-1)
+      if v:version < 702
+        call filter(all,'!isdirectory(v:val)')
+      endif
+      call map(all,'strpart(fnamemodify(v:val,":p"),trim)')
+      return default < 0 ? all : get(all,default-1,'')
+    elseif type(default) == type(0)
+      let found = findfile(a:name,path,default)
+    else
+      let i = 1
+      let found = findfile(a:name,path)
+      while v:version < 702 && found != "" && isdirectory(found)
+        let i += 1
+        let found = findfile(a:name,path,i)
+      endwhile
+    endif
+    return found == "" ? found : strpart(fnamemodify(found,':p'),trim)
+  finally
+    let &l:suffixesadd = oldsuffixesadd
+  endtry
+endfunction
+
+call s:add_methods('app',['path','has_file','find_file'])
 
 " Split a path into a list.  From pathogen.vim
 function! s:pathsplit(path) abort
   if type(a:path) == type([]) | return a:path | endif
   let split = split(a:path,'\\\@<!\%(\\\\\)*\zs,')
   return map(split,'substitute(v:val,''\\\([\\,]\)'',''\1'',"g")')
+endfunction
+
+" Convert a list to a path.  From pathogen.vim
+function! s:pathjoin(...) abort
+  let i = 0
+  let path = ""
+  while i < a:0
+    if type(a:000[i]) == type([])
+      let list = a:000[i]
+      let j = 0
+      while j < len(list)
+        let path .= "," . substitute(list[j],'[\\,]','\\&','g')
+        let j += 1
+      endwhile
+    else
+      let path .= "," . a:000[i]
+    endif
+    let i += 1
+  endwhile
+  return substitute(path,'^,','','')
 endfunction
 
 function! s:endof(lnum)
