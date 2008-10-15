@@ -1317,7 +1317,7 @@ function! s:app_generate_command(bang,...) dict
   endif
 endfunction
 
-call s:add_methods('app', ['script_command','runner_command','console_command','server_command','destroy_command','generate_command'])
+call s:add_methods('app', ['script_command','runner_command','server_command','destroy_command','generate_command'])
 
 function! s:Complete_script(ArgLead,CmdLine,P)
   let cmd = s:sub(a:CmdLine,'^\u\w*\s+','')
