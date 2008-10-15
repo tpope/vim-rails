@@ -1196,17 +1196,18 @@ function! s:BufScriptWrappers()
   command! -buffer       -nargs=1 -range=0 -complete=custom,s:Complete_ruby Ry            :call rails#app().runner_command((<count>==<line2>?<count>:-1,'y begin '.<f-args>.' end')
 endfunction
 
-function! s:app_script_command(bang,cmd,...) dict
+function! s:app_script_command(bang,...) dict
   let str = ""
-  let c = 1
+  let cmd = a:0 ? a:1 : "console"
+  let c = 2
   while c <= a:0
     let str .= " " . s:rquote(a:{c})
     let c += 1
   endwhile
-  if a:bang
-    return self.background_ruby_command(s:rquote("script/".a:cmd).str)
+  if a:bang || cmd == "console"
+    return self.background_ruby_command(s:rquote("script/".cmd).str)
   else
-    return self.execute_ruby_command(s:rquote("script/".a:cmd).str)
+    return self.execute_ruby_command(s:rquote("script/".cmd).str)
   endif
 endfunction
 

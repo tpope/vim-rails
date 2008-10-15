@@ -525,7 +525,8 @@ A limited amount of completion with <Tab> is supported.
 
 						*rails-:Rscript*
 :Rscript {script} {options}
-			Call ruby script/{script} {options}.
+			Call ruby script/{script} {options}.  Defaults to
+			calling script/console.
 
 						*rails-:Rconsole*
 :Rconsole {options}	Start script/console.  On Windows it will be launched
