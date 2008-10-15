@@ -746,9 +746,8 @@ Support for RSpec is currently experimental and incomplete, with only a
 handful of features being implemented.  :A knows about specs and will jump to
 them, but only if no test file is found.  The associated controller or model
 of a spec is detected, so all navigation commands should work as expected
-inside a spec file.  :Rfixtures will find spec fixtures, but the extension is
-mandatory and tab completion will not work.  :Rake will run the currently
-edited spec.
+inside a spec file.  :Rake in a spec runs just that spec, and in a model,
+controller, or helper, runs the associated spec.
 
 |:Runittest| and |:Rfunctionaltest| lead double lives, handling model and
 controller specs respectively.  For helper and view specs, you can define your
