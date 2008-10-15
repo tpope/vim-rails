@@ -1196,6 +1196,19 @@ function! s:BufScriptWrappers()
   command! -buffer       -nargs=1 -range=0 -complete=custom,s:Complete_ruby Ry            :call rails#app().runner_command((<count>==<line2>?<count>:-1,'y begin '.<f-args>.' end')
 endfunction
 
+function! s:app_generators() dict
+  if self.cache.needs('generators')
+    let generators = self.relglob("vendor/plugins/","*/generators/*")
+    let generators += self.relglob("","lib/generators/*")
+    call filter(generators,'v:val =~ "/$"')
+    let generators += split(glob(expand("~/.rails/generators")."/*"),"\n")
+    call map(generators,'s:sub(v:val,"^.*[\\\\/]generators[\\\\/]\\ze.","")')
+    call map(generators,'s:sub(v:val,"[\\\\/]$","")')
+    call self.cache.set('generators',generators)
+  endif
+  return sort(split(g:rails_generators,"\n") + self.cache.get('generators'))
+endfunction
+
 function! s:app_script_command(bang,...) dict
   let str = ""
   let cmd = a:0 ? a:1 : "console"
@@ -1204,6 +1217,9 @@ function! s:app_script_command(bang,...) dict
     let str .= " " . s:rquote(a:{c})
     let c += 1
   endwhile
+  if cmd ==# "plugin"
+    call self.cache.clear('generators')
+  endif
   if a:bang || cmd == "console"
     return self.background_ruby_command(s:rquote("script/".cmd).str)
   else
@@ -1317,7 +1333,7 @@ function! s:app_generate_command(bang,...) dict
   endif
 endfunction
 
-call s:add_methods('app', ['script_command','runner_command','server_command','destroy_command','generate_command'])
+call s:add_methods('app', ['generators','script_command','runner_command','server_command','destroy_command','generate_command'])
 
 function! s:Complete_script(ArgLead,CmdLine,P)
   let cmd = s:sub(a:CmdLine,'^\u\w*\s+','')
@@ -1331,7 +1347,7 @@ function! s:Complete_script(ArgLead,CmdLine,P)
   elseif cmd =~# '\%(plugin\)\s\+\%(install\|remove\)\s\+'.a:ArgLead.'$' || cmd =~ '\%(generate\|destroy\)\s\+plugin\s\+'.a:ArgLead.'$'
     return s:pluginList(a:ArgLead,a:CmdLine,a:P)
   elseif cmd =~# '^\%(generate\|destroy\)\s\+'.a:ArgLead.'$'
-    return s:completion_filter(split(g:rails_generators,"\n"),a:ArgLead)
+    return s:completion_filter(rails#app().generators(),a:ArgLead)
   elseif cmd =~# '^\%(generate\|destroy\)\s\+\w\+\s\+'.a:ArgLead.'$'
     let target = matchstr(cmd,'^\w\+\s\+\zs\w\+\ze\s\+')
     if target =~# '^\%(\w*_\)\=controller$'
@@ -4260,6 +4276,7 @@ augroup railsPluginAuto
   autocmd BufWritePost */config/routes.rb         call rails#cache_clear("named_routes")
   autocmd BufWritePost */config/environments/*.rb call rails#cache_clear("environments")
   autocmd BufWritePost */tasks/**.rake            call rails#cache_clear("rake_tasks")
+  autocmd BufWritePost */generators/**            call rails#cache_clear("generators")
   autocmd FileType * if exists("b:rails_root") | call s:BufSettings() | endif
   autocmd Syntax ruby,eruby,yaml,haml,javascript,railslog if exists("b:rails_root") | call s:BufSyntax() | endif
   silent! autocmd QuickFixCmdPre  make* call s:QuickFixCmdPre()
