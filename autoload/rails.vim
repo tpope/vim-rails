@@ -756,8 +756,7 @@ function! s:Log(bang,arg)
     clast
   else
     if exists(":Tail")
-      " TODO: check if :Tail works with `=`
-      exe "Tail ".s:escarg(rails#app().path(lf))
+      Tail  `=rails#app().path(lf)`
     else
       pedit `=rails#app().path(lf)`
     endif
