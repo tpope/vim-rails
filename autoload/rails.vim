@@ -385,8 +385,8 @@ function! s:environment()
   endif
 endfunction
 
-function! s:environments(...)
-  return join(rails#app().environments(),"\n")
+function! s:Complete_environments(...)
+  return s:completion_filter(rails#app().environments(),a:0 ? a:1 : "")
 endfunction
 
 function! s:warn(str)
@@ -689,10 +689,10 @@ function! s:BufCommands()
   call s:BufFinderCommands()
   call s:BufNavCommands()
   call s:BufScriptWrappers()
-  command! -buffer -bar -nargs=? -bang -count -complete=customlist,s:Complete_rake Rake    :call s:Rake(<bang>0,!<count> && <line1> ? -1 : <count>,<q-args>)
+  command! -buffer -bar -nargs=? -bang -count -complete=customlist,s:Complete_rake    Rake     :call s:Rake(<bang>0,!<count> && <line1> ? -1 : <count>,<q-args>)
   command! -buffer -bar -nargs=? -bang -range -complete=customlist,s:Complete_preview Rpreview :call s:Preview(<bang>0,<line1>,<q-args>)
-  command! -buffer -bar -nargs=? -bang -complete=custom,s:environments     Rlog     :call s:Log(<bang>0,<q-args>)
-  command! -buffer -bar -nargs=* -bang -complete=customlist,s:Complete_set Rset     :call s:Set(<bang>0,<f-args>)
+  command! -buffer -bar -nargs=? -bang -complete=customlist,s:Complete_environments   Rlog     :call s:Log(<bang>0,<q-args>)
+  command! -buffer -bar -nargs=* -bang -complete=customlist,s:Complete_set            Rset     :call s:Set(<bang>0,<f-args>)
   command! -buffer -bar -nargs=0 Rtags       :call rails#app().tags_command()
   " Embedding all this logic directly into the command makes the error
   " messages more concise.
@@ -705,7 +705,7 @@ function! s:BufCommands()
     command! -buffer -bar -nargs=? -bang  Rproject :call s:Project(<bang>0,<q-args>)
   endif
   if exists("g:loaded_dbext")
-    command! -buffer -bar -nargs=? -bang  -complete=custom,s:environments   Rdbext   :call s:BufDatabase(2,<q-args>,<bang>0)
+    command! -buffer -bar -nargs=? -bang  -complete=customlist,s:Complete_environments Rdbext  :call s:BufDatabase(2,<q-args>,<bang>0)
   endif
   let ext = expand("%:e")
   if ext =~ s:viewspattern()
@@ -1376,9 +1376,9 @@ function! s:Complete_script(ArgLead,CmdLine,P)
   elseif cmd =~ '^\%(generate\|destroy\)\s\+scaffold\s\+\w\+\s\+'.a:ArgLead.'$'
     return s:sub(join(s:controllerList("","",""),"\n"),'^application\n=','')
   elseif cmd =~ '^\%(console\)\s\+\(--\=\w\+\s\+\)\='.a:ArgLead."$"
-    return s:environments()."\n-s\n--sandbox"
+    return join(rails#app().environments()+["-s","--sandbox"],"\n")
   elseif cmd =~ '^\%(server\)\s\+.*-e\s\+'.a:ArgLead."$"
-    return s:environments()
+    return join(rails#app().environments(),"\n")
   elseif cmd =~ '^\%(server\)\s\+'
     return "-p\n-b\n-e\n-m\n-d\n-u\n-c\n-h\n--port=\n--binding=\n--environment=\n--mime-types=\n--daemon\n--debugger\n--charset=\n--help\n"
   endif
