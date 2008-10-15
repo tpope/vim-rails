@@ -288,7 +288,7 @@ function! s:controller(...)
   elseif f =~ '\<public/stylesheets/.*\.css$'
     return s:sub(f,'.*<public/stylesheets/(.{-})\.css$','\1')
   elseif a:0 && a:1
-    return s:pluralize(s:model())
+    return rails#pluralize(s:model())
   endif
   return ""
 endfunction
@@ -309,56 +309,13 @@ function! s:model(...)
   elseif f =~ '\<spec/models/.*_spec\.rb$'
     return s:sub(f,'.*<spec/models/(.*)_spec\.rb$','\1')
   elseif f =~ '\<\%(test\|spec\)/fixtures/.*\.\w*\~\=$'
-    return s:singularize(s:sub(f,'.*<%(test|spec)/fixtures/(.*)\.\w*\~=$','\1'))
+    return rails#singularize(s:sub(f,'.*<%(test|spec)/fixtures/(.*)\.\w*\~=$','\1'))
   elseif f =~ '\<\%(test\|spec\)/exemplars/.*_exemplar\.rb$'
     return s:sub(f,'.*<%(test|spec)/exemplars/(.*)_exemplar\.rb$','\1')
   elseif a:0 && a:1
-    return s:singularize(s:controller())
+    return rails#singularize(s:controller())
   endif
   return ""
-endfunction
-
-function! s:underscore(str)
-  let str = s:gsub(a:str,'::','/')
-  let str = s:gsub(str,'(\u+)(\u\l)','\1_\2')
-  let str = s:gsub(str,'(\l|\d)(\u)','\1_\2')
-  let str = tolower(str)
-  return str
-endfunction
-
-function! s:camelize(str)
-  let str = s:gsub(a:str,'/(.=)','::\u\1')
-  let str = s:gsub(str,'%([_-]|<)(.)','\u\1')
-  return str
-endfunction
-
-function! s:singularize(word)
-  " Probably not worth it to be as comprehensive as Rails but we can
-  " still hit the common cases.
-  let word = a:word
-  if word =~? '\.js$' || word == ''
-    return word
-  endif
-  let word = s:sub(word,'eople$','ersons')
-  let word = s:sub(word,'[aeio]@<!ies$','ys')
-  let word = s:sub(word,'xe[ns]$','xs')
-  let word = s:sub(word,'ves$','fs')
-  let word = s:sub(word,'ss%(es)=$','sss')
-  let word = s:sub(word,'s$','')
-  return word
-endfunction
-
-function! s:pluralize(word)
-  let word = a:word
-  if word == ''
-    return word
-  endif
-  let word = s:sub(word,'[aeio]@<!y$','ie')
-  let word = s:sub(word,'%([osxz]|[cs]h)$','&e')
-  let word = s:sub(word,'f@<!f$','ve')
-  let word .= "s"
-  let word = s:sub(word,'ersons$','eople')
-  return word
 endfunction
 
 function! s:readfile(path,...)
@@ -417,6 +374,49 @@ endfunction
 " "Public" Interface {{{1
 
 " RailsRoot() is the only official public function
+
+function! rails#underscore(str)
+  let str = s:gsub(a:str,'::','/')
+  let str = s:gsub(str,'(\u+)(\u\l)','\1_\2')
+  let str = s:gsub(str,'(\l|\d)(\u)','\1_\2')
+  let str = tolower(str)
+  return str
+endfunction
+
+function! rails#camelize(str)
+  let str = s:gsub(a:str,'/(.=)','::\u\1')
+  let str = s:gsub(str,'%([_-]|<)(.)','\u\1')
+  return str
+endfunction
+
+function! rails#singularize(word)
+  " Probably not worth it to be as comprehensive as Rails but we can
+  " still hit the common cases.
+  let word = a:word
+  if word =~? '\.js$' || word == ''
+    return word
+  endif
+  let word = s:sub(word,'eople$','ersons')
+  let word = s:sub(word,'[aeio]@<!ies$','ys')
+  let word = s:sub(word,'xe[ns]$','xs')
+  let word = s:sub(word,'ves$','fs')
+  let word = s:sub(word,'ss%(es)=$','sss')
+  let word = s:sub(word,'s$','')
+  return word
+endfunction
+
+function! rails#pluralize(word)
+  let word = a:word
+  if word == ''
+    return word
+  endif
+  let word = s:sub(word,'[aeio]@<!y$','ie')
+  let word = s:sub(word,'%([osxz]|[cs]h)$','&e')
+  let word = s:sub(word,'f@<!f$','ve')
+  let word .= "s"
+  let word = s:sub(word,'ersons$','eople')
+  return word
+endfunction
 
 function! rails#app(...)
   let root = a:0 ? a:1 : RailsRoot()
@@ -1499,7 +1499,7 @@ function! s:Complete_find(ArgLead, CmdLine, CursorPos)
   let seen = {}
   for path in paths
     if s:startswith(path,rails#app().path()) && path !~ '[][*]'
-      for file in rails#app().relglob(path."/",s:underscore(a:ArgLead)."*", a:ArgLead =~# '\u' ? '.rb' : '')
+      for file in rails#app().relglob(path."/",rails#underscore(a:ArgLead)."*", a:ArgLead =~# '\u' ? '.rb' : '')
         let seen[file] = 1
       endfor
     endif
@@ -1579,17 +1579,17 @@ function! s:RailsFind()
   if res != ""|return res.(fnamemodify(res,':e') == '' ? '.rb' : '')|endif
   let res = s:findit('\v<File.dirname\(__FILE__\)\s*\+\s*[:'."'".'"](\f+)>['."'".'"]=',expand('%:h').'\1')
   if res != ""|return res|endif
-  let res = s:underscore(s:findit('\v\s*<%(include|extend)\(=\s*<(\f+)>','\1'))
+  let res = rails#underscore(s:findit('\v\s*<%(include|extend)\(=\s*<(\f+)>','\1'))
   if res != ""|return res.".rb"|endif
   let res = s:findamethod('require','\1')
   if res != ""|return res.(fnamemodify(res,':e') == '' ? '.rb' : '')|endif
   let res = s:findamethod('belongs_to\|has_one\|composed_of\|validates_associated\|scaffold','app/models/\1.rb')
   if res != ""|return res|endif
-  let res = s:singularize(s:findamethod('has_many\|has_and_belongs_to_many','app/models/\1'))
+  let res = rails#singularize(s:findamethod('has_many\|has_and_belongs_to_many','app/models/\1'))
   if res != ""|return res.".rb"|endif
-  let res = s:singularize(s:findamethod('create_table\|change_table\|drop_table\|add_column\|rename_column\|remove_column\|add_index','app/models/\1'))
+  let res = rails#singularize(s:findamethod('create_table\|change_table\|drop_table\|add_column\|rename_column\|remove_column\|add_index','app/models/\1'))
   if res != ""|return res.".rb"|endif
-  let res = s:singularize(s:findasymbol('through','app/models/\1'))
+  let res = rails#singularize(s:findasymbol('through','app/models/\1'))
   if res != ""|return res.".rb"|endif
   let res = s:findamethod('fixtures','fixtures/\1')
   if res != ""
@@ -1692,7 +1692,7 @@ function! s:RailsIncludefind(str,...)
   if line =~ '\<\(require\|load\)\s*(\s*$'
     return str
   endif
-  let str = s:underscore(str)
+  let str = rails#underscore(str)
   let fpat = '\(\s*\%("\f*"\|:\f*\|'."'\\f*'".'\)\s*,\s*\)*'
   if a:str =~ '\u'
     " Classes should always be in .rb files
@@ -1724,7 +1724,7 @@ function! s:RailsIncludefind(str,...)
   elseif line =~ '\<\(has_one\|belongs_to\)\s*(\=\s*'
     let str = 'app/models/'.str.'.rb'
   elseif line =~ '\<has_\(and_belongs_to_\)\=many\s*(\=\s*'
-    let str = 'app/models/'.s:singularize(str).'.rb'
+    let str = 'app/models/'.rails#singularize(str).'.rb'
   elseif line =~ '\<def\s\+' && expand("%:t") =~ '_controller\.rb'
     let str = s:sub(s:sub(RailsFilePath(),'/controllers/','/views/'),'_controller\.rb$','/'.str)
     " FIXME: support nested extensions
@@ -1745,12 +1745,12 @@ function! s:RailsIncludefind(str,...)
     if file == ""
       let str = s:sub(str,'^formatted_','')
       if str =~ '^\%(new\|edit\)_'
-        let str = 'app/controllers/'.s:sub(s:pluralize(str),'^(new|edit)_(.*)','\2_controller.rb#\1')
-      elseif str == s:singularize(str)
+        let str = 'app/controllers/'.s:sub(rails#pluralize(str),'^(new|edit)_(.*)','\2_controller.rb#\1')
+      elseif str == rails#singularize(str)
         " If the word can't be singularized, it's probably a link to the show
         " method.  We should verify by checking for an argument, but that's
         " difficult the way things here are currently structured.
-        let str = 'app/controllers/'.s:pluralize(str).'_controller.rb#show'
+        let str = 'app/controllers/'.rails#pluralize(str).'_controller.rb#show'
       else
         let str = 'app/controllers/'.str.'_controller.rb#index'
       endif
@@ -1759,7 +1759,7 @@ function! s:RailsIncludefind(str,...)
     endif
   elseif str !~ '/'
     " If we made it this far, we'll risk making it singular.
-    let str = s:singularize(str)
+    let str = rails#singularize(str)
     let str = s:sub(str,'_id$','')
   endif
   if str =~ '^/' && !filereadable(str)
@@ -1821,7 +1821,7 @@ endfunction
 
 function! s:autocamelize(files,test)
   if a:test =~# '^\u'
-    return s:completion_filter(map(copy(a:files),'s:camelize(v:val)'),a:test)
+    return s:completion_filter(map(copy(a:files),'rails#camelize(v:val)'),a:test)
   else
     return s:completion_filter(a:files,a:test)
   endif
@@ -2044,7 +2044,7 @@ function! s:EditSimpleRb(bang,cmd,name,target,prefix,suffix)
     " Good idea to emulate error numbers like this?
     return s:error("E471: Argument required")
   endif
-  let f = s:underscore(a:target)
+  let f = rails#underscore(a:target)
   let jump = matchstr(f,'[@#].*')
   let f = s:sub(f,'[@#].*','')
   if f == '.'
@@ -2067,13 +2067,13 @@ function! s:migrationfor(file)
     let glob = ''.arg.'_*.rb'
   elseif arg == ''
     if s:model(1) != ''
-      let glob = '*_'.s:pluralize(s:model(1)).'.rb'
+      let glob = '*_'.rails#pluralize(s:model(1)).'.rb'
       let tryagain = 1
     else
       let glob = '*.rb'
     endif
   else
-    let glob = '*'.s:underscore(arg).'*rb'
+    let glob = '*'.rails#underscore(arg).'*rb'
   endif
   let migr = s:sub(glob(rails#app().path('db/migrate/').glob),'.*\n','')
   if migr == '' && tryagain
@@ -2098,9 +2098,9 @@ endfunction
 
 function! s:fixturesEdit(bang,cmd,...)
   if a:0
-    let c = s:underscore(a:1)
+    let c = rails#underscore(a:1)
   else
-    let c = s:pluralize(s:model(1))
+    let c = rails#pluralize(s:model(1))
   endif
   if c == ""
     return s:error("E471: Argument required")
@@ -2204,7 +2204,7 @@ endfunction
 
 function! s:layoutEdit(bang,cmd,...)
   if a:0
-    let c = s:underscore(a:1)
+    let c = rails#underscore(a:1)
   else
     let c = s:controller(1)
   endif
@@ -2511,10 +2511,10 @@ function! s:AlternateFile()
       return controller
     endif
   elseif t =~ '\<fixtures\>' && f =~ '\<spec/'
-    let file = s:singularize(expand("%:t:r")).'_spec.rb'
+    let file = rails#singularize(expand("%:t:r")).'_spec.rb'
     return file
   elseif t =~ '\<fixtures\>'
-    let file = s:singularize(expand("%:t:r")).'_test.rb' " .expand('%:e')
+    let file = rails#singularize(expand("%:t:r")).'_test.rb' " .expand('%:e')
     return file
   elseif f == ''
     call s:warn("No filename present")
@@ -2634,7 +2634,7 @@ function! s:RelatedFile()
   elseif t=~ '^helper\>'
     return s:findlayout(s:controller())
   elseif t =~ '^model-arb\>'
-    return s:migrationfor('create_'.s:pluralize(expand('%:t:r')))
+    return s:migrationfor('create_'.rails#pluralize(expand('%:t:r')))
   elseif t =~ '^model-aro\>'
     return s:sub(f,'_observer\.rb$','.rb')
   elseif t =~ '^api\>'
@@ -3001,7 +3001,7 @@ function! s:app_user_classes() dict
           \ controllers +
           \ self.relglob("app/helpers/","**/*",".rb") +
           \ self.relglob("lib/","**/*",".rb")
-    call map(classes,'s:camelize(v:val)')
+    call map(classes,'rails#camelize(v:val)')
     call self.cache.set("user_classes",classes)
   endif
   return self.cache.get('user_classes')
