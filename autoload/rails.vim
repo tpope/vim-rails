@@ -564,7 +564,21 @@ function! s:app_environments() dict
   return copy(self.cache.get('environments'))
 endfunction
 
-call s:add_methods('app',['calculate_file_type','environments'])
+" Check for Test::Unit and rSpec by calling this method with an argument of
+" 'test' or 'spec'.  Given no arguments, returns a list.
+function! s:app_test_suites(...) dict
+  if self.cache.needs('test_suites')
+    let suites = filter(['test','spec'],'isdirectory(self.path(v:val))')
+    call self.cache.set('test_suites',suites)
+  endif
+  if a:0
+    return index(self.cache.get('test_suites'),a:1) + 1
+  else
+    return copy(self.cache.get('test_suites'))
+  endif
+endfunction
+
+call s:add_methods('app',['calculate_file_type','environments','test_suites'])
 
 " }}}1
 " Ruby Execution {{{1
@@ -1342,6 +1356,7 @@ function! s:app_generate_command(bang,...) dict
   endif
   if !self.execute_ruby_command("script/generate ".target.str) && file != ""
     call self.cache.clear('user_classes')
+    call self.cache.clear('test_suites')
     if file =~ '^db/migrate/\d\d\d\d'
       let file = get(self.relglob('',s:sub(file,'\d+','[0-9]*[0-9]')),-1,file)
     endif
