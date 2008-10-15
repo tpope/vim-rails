@@ -507,10 +507,11 @@ in an initialization routine of some sort (e.g., an autocommand); see
 			is used as a default.
 
 Examples: >
-	Rnavcommand api         app/apis -glob=**/* -suffix=_api.rb
-	Rnavcommand config      config   -glob=*.*  -suffix= -default=routes.rb
-	Rnavcommand environment config/environments -default=../environment
-	Rnavcommand concern     app/concerns -glob=**/*
+	Rnavcommand api      app/apis -glob=**/* -suffix=_api.rb
+	Rnavcommand config   config   -glob=*.*  -suffix= -default=routes.rb
+	Rnavcommand concern  app/concerns -glob=**/*
+	Rnavcommand exemplar test/exemplars spec/exemplars -glob=**/*
+			\ -default=model() -suffix=_exemplar.rb
 
 Finally, one Vim feature that proves helpful in conjunction with all of the
 above is |CTRL-^|.  This keystroke edits the previous file, and is helpful to
