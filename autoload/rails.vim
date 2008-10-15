@@ -2350,7 +2350,6 @@ function! s:libEdit(bang,cmd,...)
   if a:0
     call s:EditSimpleRb(a:bang,a:cmd,"lib",a:0? a:1 : "",extra."lib/",".rb")
   else
-    " Easter egg
     call s:EditSimpleRb(a:bang,a:cmd,"lib","routes","config/",".rb")
   endif
 endfunction

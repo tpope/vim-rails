@@ -463,10 +463,11 @@ The following commands are not clearly associated with models or controllers.
 			is omitted, it defaults to init.rb.
 
 						*rails-:Rlib*
-:Rlib {name}		Edit the library from the lib directory for the
+:Rlib [{name}]		Edit the library from the lib directory for the
 			specified name.  If the current file is part of a
 			plugin, the libraries from that plugin can be
-			specified as well.
+			specified as well.  With no argument, defaults to
+			editing config/routes.rb.
 
 						*rails-:Rtask*
 :Rtask [{name}]		Edit the .rake file from lib/tasks for the specified
