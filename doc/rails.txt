@@ -529,10 +529,14 @@ A limited amount of completion with <Tab> is supported.
 			calling script/console.
 
 						*rails-:Rconsole*
-:Rconsole {options}	Start script/console.  On Windows it will be launched
-			in the background with |!start|.  In the terminal
-			version GNU Screen is used if it is running and
-			|g:rails_gnu_screen| is set.
+:Rconsole {options}	Start script/console.  This command has been
+			deprecated for the pragmatic reason of making
+			|:Rcontroller| easier to tab complete.  To compensate
+			for the eventual disappearance of this command,
+			|:Rscript| now defaults to calling script/console if
+			no other arguments are given.  (If in spite of this
+			you still feel you would miss this command, speak up
+			now!)
 
 						*rails-:Rrunner*
 :[range]Rrunner {code}	Executes {code} with script/runner.  Differs from

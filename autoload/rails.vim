@@ -1186,7 +1186,7 @@ endfunction
 
 function! s:BufScriptWrappers()
   command! -buffer -bar -nargs=*       -complete=customlist,s:Complete_script   Rscript       :call rails#app().script_command(<bang>0,<f-args>)
-  command! -buffer -bar -nargs=*       -complete=customlist,s:Complete_console  Rconsole      :call rails#app().console_command(<bang>0,'console',<f-args>)
+  command! -buffer -bar -nargs=*       -complete=customlist,s:Complete_console  Rconsole      :call s:warn("Warning: :Rconsole has been deprecated in favor of :Rscript")|call rails#app().script_command(<bang>0,'console',<f-args>)
   command! -buffer -bar -nargs=*       -complete=customlist,s:Complete_generate Rgenerate     :call rails#app().generate_command(<bang>0,<f-args>)
   command! -buffer -bar -nargs=*       -complete=customlist,s:Complete_destroy  Rdestroy      :call rails#app().destroy_command(<bang>0,<f-args>)
   command! -buffer -bar -nargs=? -bang -complete=customlist,s:Complete_server   Rserver       :call rails#app().server_command(<bang>0,<q-args>)
@@ -1223,16 +1223,6 @@ function! s:app_runner_command(count,args) dict
       exe a:count.'put =res'
     endif
   endif
-endfunction
-
-function! s:app_console_command(bang,cmd,...) dict
-  let str = ""
-  let c = 1
-  while c <= a:0
-    let str .= " " . s:rquote(a:{c})
-    let c += 1
-  endwhile
-  call rails#app().background_ruby_command(s:rquote("script/".a:cmd).str)
 endfunction
 
 function! s:getpidfor(bind,port)
