@@ -207,23 +207,7 @@ function! s:CreateMenus() abort
     exe menucmd.g:rails_installed_menu.'.&Other\ files.&Test\ Helper :find test/test_helper.rb<CR>'
     exe menucmd.g:rails_installed_menu.'.-FSep- :'
     exe menucmd.g:rails_installed_menu.'.Ra&ke\	:Rake :Rake<CR>'
-    let menucmd = substitute(menucmd,'200 $','300 ','')
-    " TODO: use dynamically generated task list from app
-    let tasks = g:rails_rake_tasks
-    while tasks != ''
-      let task = matchstr(tasks,'.\{-\}\ze\%(\n\|$\)')
-      let tasks = s:sub(tasks,'.{-}%(\n|$)','')
-      exe menucmd.g:rails_installed_menu.'.Rake\ &tasks\	:Rake.'.s:sub(s:sub(task,'^[^:]*$','&:all'),':','.').' :Rake '.task.'<CR>'
-    endwhile
-    let menucmd = substitute(menucmd,'300 $','400 ','')
-    let tasks = g:rails_generators
-    while tasks != ''
-      let task = matchstr(tasks,'.\{-\}\ze\%(\n\|$\)')
-      let tasks = s:sub(tasks,'.{-}%(\n|$)','')
-      exe substitute(menucmd,'<script>','<script> <silent>','').g:rails_installed_menu.'.&Generate\	:Rgen.'.s:gsub(task,'_','\\ ').' :call <SID>menuprompt("Rgenerate '.task.'","Arguments for script/generate '.task.': ")<CR>'
-      exe substitute(menucmd,'<script>','<script> <silent>','').g:rails_installed_menu.'.&Destroy\	:Rdestroy.'.s:gsub(task,'_','\\ ').' :call <SID>menuprompt("Rdestroy '.task.'","Arguments for script/destroy '.task.': ")<CR>'
-    endwhile
-    let menucmd = substitute(menucmd,'400 $','500 ','')
+    let menucmd = substitute(menucmd,'200 $','500 ','')
     exe menucmd.g:rails_installed_menu.'.&Server\	:Rserver.&Start\	:Rserver :Rserver<CR>'
     exe menucmd.g:rails_installed_menu.'.&Server\	:Rserver.&Force\ start\	:Rserver! :Rserver!<CR>'
     exe menucmd.g:rails_installed_menu.'.&Server\	:Rserver.&Kill\	:Rserver!\ - :Rserver! -<CR>'
@@ -275,6 +259,23 @@ function! s:menuBufEnter()
       exe 'amenu disable '.menu.'.Migration\ writer'
     endif
     call s:ProjectMenu()
+    silent! exe 'aunmenu       '.menu.'.Rake\ tasks'
+    silent! exe 'aunmenu       '.menu.'.Generate'
+    silent! exe 'aunmenu       '.menu.'.Destroy'
+    let i = 0
+    while i < len(rails#app().rake_tasks())
+      let task = rails#app().rake_tasks()[i]
+      exe s:menucmd(300).g:rails_installed_menu.'.Rake\ &tasks\	:Rake.'.s:sub(s:sub(task,'^[^:]*$','&:all'),':','.').' :Rake '.task.'<CR>'
+      let i += 1
+    endwhile
+    let i = 0
+    let menucmd = substitute(s:menucmd(400),'<script>','<script> <silent>','').g:rails_installed_menu
+    while i < len(rails#app().generators())
+      let generator = rails#app().generators()[i]
+      exe menucmd.'.&Generate\	:Rgen.'.s:gsub(generator,'_','\\ ').' :call <SID>menuprompt("Rgenerate '.generator.'","Arguments for script/generate '.generator.': ")<CR>'
+      exe menucmd.'.&Destroy\	:Rdestroy.'.s:gsub(generator,'_','\\ ').' :call <SID>menuprompt("Rdestroy '.generator.'","Arguments for script/destroy '.generator.': ")<CR>'
+      let i += 1
+    endwhile
   endif
 endfunction
 
@@ -285,6 +286,12 @@ function! s:menuBufLeave()
     exe 'amenu enable  '.menu.'.Help\	'
     exe 'amenu enable  '.menu.'.About\	'
     exe 'amenu enable  '.menu.'.Projects'
+    silent! exe 'aunmenu       '.menu.'.Rake\ tasks'
+    silent! exe 'aunmenu       '.menu.'.Generate'
+    silent! exe 'aunmenu       '.menu.'.Destroy'
+    exe s:menucmd(300).g:rails_installed_menu.'.Rake\ tasks\	:Rake.-TSep- :'
+    exe s:menucmd(400).g:rails_installed_menu.'.&Generate\	:Rgen.-GSep- :'
+    exe s:menucmd(400).g:rails_installed_menu.'.&Destroy\	:Rdestroy.-DSep- :'
   endif
 endfunction
 
