@@ -265,7 +265,7 @@ function! s:menuBufEnter()
     let i = 0
     while i < len(rails#app().rake_tasks())
       let task = rails#app().rake_tasks()[i]
-      exe s:menucmd(300).g:rails_installed_menu.'.Rake\ &tasks\	:Rake.'.s:sub(s:sub(task,'^[^:]*$','&:all'),':','.').' :Rake '.task.'<CR>'
+      exe s:menucmd(300).g:rails_installed_menu.'.Rake\ &tasks\	:Rake.'.s:sub(task,':',':.').' :Rake '.task.'<CR>'
       let i += 1
     endwhile
     let i = 0
