@@ -2297,13 +2297,10 @@ endfunction
 
 function! s:integrationtestEdit(bang,cmd,...)
   if a:0
-    let f = a:1
-  elseif s:model() != ''
-    let f = s:model()
+    return s:EditSimpleRb(a:bang,a:cmd,"integrationtest",a:1,"test/integration/","_test.rb")
   else
-    let f = s:controller()
+    call s:EditSimpleRb(a:bang,a:cmd,"integrationtest","test_helper","test/",".rb")
   endif
-  return s:EditSimpleRb(a:bang,a:cmd,"integrationtest",f,"test/integration/","_test.rb")
 endfunction
 
 function! s:pluginEdit(bang,cmd,...)

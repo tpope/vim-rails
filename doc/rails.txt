@@ -477,9 +477,8 @@ The following commands are not clearly associated with models or controllers.
 
 						*rails-:Rintegrationtest*
 :Rintegrationtest [{name}]
-			Edit the integration test specified.  The default
-			is based on the current controller or model, with no
-			singularization or pluralization done.
+			Edit the integration test specified.  With no
+			argument, defaults to editing test/test_helper.rb.
 
 Custom Navigation Commands  ~
 						*rails-custom-navigation*
