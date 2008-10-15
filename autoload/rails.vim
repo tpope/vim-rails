@@ -561,7 +561,7 @@ function! s:app_environments() dict
   if self.cache.needs('environments')
     call self.cache.set('environments',self.relglob('config/environments/','**/*','.rb'))
   endif
-  return self.cache.get('environments')
+  return copy(self.cache.get('environments'))
 endfunction
 
 call s:add_methods('app',['calculate_file_type','environments'])
@@ -1185,11 +1185,11 @@ endfunction
 " Depends: s:rquote, s:sub, s:getopt, ..., s:pluginList, ...
 
 function! s:BufScriptWrappers()
-  command! -buffer -bar -nargs=+       -complete=custom,s:Complete_script   Rscript       :call rails#app().script_command(<bang>0,<f-args>)
-  command! -buffer -bar -nargs=*       -complete=custom,s:Complete_console  Rconsole      :call rails#app().console_command(<bang>0,'console',<f-args>)
-  command! -buffer -bar -nargs=*       -complete=custom,s:Complete_generate Rgenerate     :call rails#app().generate_command(<bang>0,<f-args>)
-  command! -buffer -bar -nargs=*       -complete=custom,s:Complete_destroy  Rdestroy      :call rails#app().destroy_command(<bang>0,<f-args>)
-  command! -buffer -bar -nargs=? -bang -complete=custom,s:Complete_server   Rserver       :call rails#app().server_command(<bang>0,<q-args>)
+  command! -buffer -bar -nargs=*       -complete=customlist,s:Complete_script   Rscript       :call rails#app().script_command(<bang>0,<f-args>)
+  command! -buffer -bar -nargs=*       -complete=customlist,s:Complete_console  Rconsole      :call rails#app().console_command(<bang>0,'console',<f-args>)
+  command! -buffer -bar -nargs=*       -complete=customlist,s:Complete_generate Rgenerate     :call rails#app().generate_command(<bang>0,<f-args>)
+  command! -buffer -bar -nargs=*       -complete=customlist,s:Complete_destroy  Rdestroy      :call rails#app().destroy_command(<bang>0,<f-args>)
+  command! -buffer -bar -nargs=? -bang -complete=customlist,s:Complete_server   Rserver       :call rails#app().server_command(<bang>0,<q-args>)
   command! -buffer -bang -nargs=1 -range=0 -complete=custom,s:Complete_ruby Rrunner       :call rails#app().runner_command(<bang>0 ? -2 : (<count>==<line2>?<count>:-1),<f-args>)
   command! -buffer       -nargs=1 -range=0 -complete=custom,s:Complete_ruby Rp            :call rails#app().runner_command((<count>==<line2>?<count>:-1,'p begin '.<f-args>.' end')
   command! -buffer       -nargs=1 -range=0 -complete=custom,s:Complete_ruby Rpp           :call rails#app().runner_command((<count>==<line2>?<count>:-1,'require %{pp}; pp begin '.<f-args>.' end')
@@ -1330,56 +1330,53 @@ call s:add_methods('app', ['script_command','runner_command','console_command','
 
 function! s:Complete_script(ArgLead,CmdLine,P)
   let cmd = s:sub(a:CmdLine,'^\u\w*\s+','')
-  let P = a:P - strlen(a:CmdLine)+strlen(cmd)
-  if cmd !~ '^[ A-Za-z0-9_=-]*$'
-    " You're on your own, bud
-    return ""
-  elseif cmd =~ '^\w*$'
-    return "about\nconsole\ndestroy\ngenerate\nperformance/benchmarker\nperformance/profiler\nplugin\nproccess/reaper\nprocess/spawner\nrunner\nserver"
-  elseif cmd =~ '^\%(plugin\)\s\+'.a:ArgLead.'$'
-    return "discover\nlist\ninstall\nupdate\nremove\nsource\nunsource\nsources"
-  elseif cmd =~ '\%(plugin\)\s\+\%(install\|remove\)\s\+'.a:ArgLead.'$' || cmd =~ '\%(generate\|destroy\)\s\+plugin\s\+'.a:ArgLead.'$'
-    return join(s:pluginList(a:ArgLead,a:CmdLine,a:P),"\n")
-  elseif cmd =~ '^\%(generate\|destroy\)\s\+'.a:ArgLead.'$'
-    return g:rails_generators
-  elseif cmd =~ '^\%(generate\|destroy\)\s\+\w\+\s\+'.a:ArgLead.'$'
+  "let P = a:P - strlen(a:CmdLine)+strlen(cmd)
+  if cmd !~ '^[ A-Za-z0-9_=:-]*$'
+    return []
+  elseif cmd =~# '^\w*$'
+    return s:completion_filter(rails#app().relglob("script/","**/*"),a:ArgLead)
+  elseif cmd =~# '^\%(plugin\)\s\+'.a:ArgLead.'$'
+    return s:completion_filter(["discover","list","install","update","remove","source","unsource","sources"],a:ArgLead)
+  elseif cmd =~# '\%(plugin\)\s\+\%(install\|remove\)\s\+'.a:ArgLead.'$' || cmd =~ '\%(generate\|destroy\)\s\+plugin\s\+'.a:ArgLead.'$'
+    return s:pluginList(a:ArgLead,a:CmdLine,a:P)
+  elseif cmd =~# '^\%(generate\|destroy\)\s\+'.a:ArgLead.'$'
+    return s:completion_filter(split(g:rails_generators,"\n"),a:ArgLead)
+  elseif cmd =~# '^\%(generate\|destroy\)\s\+\w\+\s\+'.a:ArgLead.'$'
     let target = matchstr(cmd,'^\w\+\s\+\zs\w\+\ze\s\+')
-    let pattern = "" " TODO
     if target =~# '^\%(\w*_\)\=controller$'
-      return s:sub(join(s:controllerList(pattern,"",""),"\n"),'^application\n=','')
-    elseif target =~# '^\%(\w*_\)\=model$' || target =~# '^scaffold\%(_resource\)\=$' || target == 'mailer'
-      return join(s:modelList(pattern,"",""),"\n")
-    elseif target == 'migration' || target == 'session_migration'
-      return join(s:migrationList(pattern,"",""),"\n")
-    elseif target == 'integration_test'
-      return join(s:integrationtestList(pattern,"",""),"\n")
-    elseif target == 'observer'
-      let observers = join(s:observerList(pattern,"",""),"\n")
-      let models = join(s:modelList(pattern,"",""),"\n")
-      if cmd =~ '^destroy\>'
-        let models = ""
+      return filter(s:controllerList(a:ArgLead,"",""),'v:val !=# "application"')
+    elseif target =~# '^\%(\w*_\)\=model$' || target =~# '^scaffold\%(_resource\)\=$' || target ==# 'mailer'
+      return s:modelList(a:ArgLead,"","")
+    elseif target ==# 'migration' || target ==# 'session_migration'
+      return s:migrationList(a:ArgLead,"","")
+    elseif target ==# 'integration_test'
+      return s:integrationtestList(a:ArgLead,"","")
+    elseif target ==# 'observer'
+      let observers = s:observerList("","","")
+      let models = s:modelList("","","")
+      if cmd =~# '^destroy\>'
+        let models = []
       endif
-      while strlen(models) > 0
-        let tmp = matchstr(models."\n",'.\{-\}\ze\n')
-        let models = s:sub(models,'.{-}%(\n|$)','')
-        if stridx("\n".observers."\n","\n".tmp."\n") == -1 && tmp !~'_observer$'
-          let observers .= "\n".tmp
-        endif
-      endwhile
-      return s:sub(observers,'^\n','')
-    elseif target == 'web_service'
-      return join(s:apiList(pattern,"",""),"\n")
+      call filter(models,'index(observers,v:val) < 0')
+      return s:completion_filter(observers + models,a:ArgLead)
+    elseif target ==# 'web_service'
+      return s:apiList(a:ArgLead,"","")
     else
-      return ""
+      return []
     endif
-  elseif cmd =~ '^\%(generate\|destroy\)\s\+scaffold\s\+\w\+\s\+'.a:ArgLead.'$'
-    return s:sub(join(s:controllerList("","",""),"\n"),'^application\n=','')
-  elseif cmd =~ '^\%(console\)\s\+\(--\=\w\+\s\+\)\='.a:ArgLead."$"
-    return join(rails#app().environments()+["-s","--sandbox"],"\n")
-  elseif cmd =~ '^\%(server\)\s\+.*-e\s\+'.a:ArgLead."$"
-    return join(rails#app().environments(),"\n")
-  elseif cmd =~ '^\%(server\)\s\+'
-    return "-p\n-b\n-e\n-m\n-d\n-u\n-c\n-h\n--port=\n--binding=\n--environment=\n--mime-types=\n--daemon\n--debugger\n--charset=\n--help\n"
+  elseif cmd =~# '^\%(generate\|destroy\)\s\+scaffold\s\+\w\+\s\+'.a:ArgLead.'$'
+    return filter(s:controllerList(a:ArgLead,"",""),'v:val !=# "application"')
+    return s:completion_filter(rails#app().environments())
+  elseif cmd =~# '^\%(console\)\s\+\(--\=\w\+\s\+\)\='.a:ArgLead."$"
+    return s:completion_filter(rails#app().environments()+["-s","--sandbox"],a:ArgLead)
+  elseif cmd =~# '^\%(server\)\s\+.*-e\s\+'.a:ArgLead."$"
+    return s:completion_filter(rails#app().environments(),a:ArgLead)
+  elseif cmd =~# '^\%(server\)\s\+'
+    if a:ArgLead =~# '^--environment='
+      return s:completion_filter(map(copy(rails#app().environments()),'"--environment=".v:val'),a:ArgLead)
+    else
+      return filter(["-p","-b","-e","-m","-d","-u","-c","-h","--port=","--binding=","--environment=","--mime-types=","--daemon","--debugger","--charset=","--help"],'s:startswith(v:val,a:ArgLead)')
+    endif
   endif
   return ""
 endfunction
