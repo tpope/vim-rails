@@ -2272,7 +2272,7 @@ endfunction
 function! s:unittestEdit(bang,cmd,...)
   let f = a:0 ? a:1 : s:model(1)
   if !a:0 && RailsFileType() =~ '^model-aro\>' && f != '' && f !~ '_observer$'
-    if rails#app().has_file("test/unit/".f."_observer.rb") || !rails#app().has_file("test/unit/".f.".rb")
+    if rails#app().has_file("test/unit/".f."_observer_test.rb") || !rails#app().has_file("test/unit/".f."_test.rb")
       let f .= "_observer"
     endif
   endif
