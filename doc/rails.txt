@@ -766,6 +766,12 @@ controller specs respectively.  For helper and view specs, you can use
 		\ -suffix=_helper_spec.rb        -default=controller()
 	Rnavcommand specview spec/views -glob=**/* -suffix=_spec.rb
 <
+						*rails-merb*
+Merb support is a long term possibility.  For now, if you touch
+config/environment.rb in your Merb application, rails.vim will activate.
+Send feedback on what's missing to the |rails-plugin-author| and perhaps one
+day Merb can be officially supported.
+
 ==============================================================================
 ABBREVIATIONS				*rails-abbreviations* *rails-snippets*
 
