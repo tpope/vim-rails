@@ -1847,9 +1847,16 @@ function! s:BufFinderCommands()
   call s:addfilecmds("api")
   call s:addfilecmds("layout")
   call s:addfilecmds("fixtures")
-  call s:addfilecmds("unittest")
-  call s:addfilecmds("functionaltest")
-  call s:addfilecmds("integrationtest")
+  if rails#app().test_suites('test') || rails#app().test_suites('spec')
+    call s:addfilecmds("unittest")
+    call s:addfilecmds("functionaltest")
+  endif
+  if rails#app().test_suites('test')
+    call s:addfilecmds("integrationtest")
+  endif
+  if rails#app().test_suites('spec')
+    call s:addfilecmds("spec")
+  endif
   call s:addfilecmds("stylesheet")
   call s:addfilecmds("javascript")
   call s:addfilecmds("task")
@@ -1992,6 +1999,10 @@ endfunction
 
 function! s:integrationtestList(A,L,P)
   return s:autocamelize(rails#app().relglob("test/integration/","**/*","_test.rb"),a:A)
+endfunction
+
+function! s:specList(A,L,P)
+  return s:autocamelize(rails#app().relglob("spec/","**/*","_spec.rb"),a:A)
 endfunction
 
 function! s:pluginList(A,L,P)
@@ -2364,6 +2375,14 @@ function! s:integrationtestEdit(bang,cmd,...)
     return s:EditSimpleRb(a:bang,a:cmd,"integrationtest",a:1,"test/integration/","_test.rb")
   else
     call s:EditSimpleRb(a:bang,a:cmd,"integrationtest","test_helper","test/",".rb")
+  endif
+endfunction
+
+function! s:specEdit(bang,cmd,...)
+  if a:0
+    return s:EditSimpleRb(a:bang,a:cmd,"spec",a:1,"spec/","_spec.rb")
+  else
+    call s:EditSimpleRb(a:bang,a:cmd,"spec","spec_helper","spec/",".rb")
   endif
 endfunction
 

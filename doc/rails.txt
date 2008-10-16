@@ -450,6 +450,7 @@ The following commands are not clearly associated with models or controllers.
 :Rlib						|rails-:Rlib|
 :Rtask						|rails-:Rtask|
 :Rintegrationtest				|rails-:Rintegrationtest|
+:Rspec						|rails-:Rspec|
 
 						*rails-:Rstylesheet*
 :Rstylesheet [{name}]	Edit the stylesheet for the specified name, defaulting
@@ -482,6 +483,14 @@ The following commands are not clearly associated with models or controllers.
 :Rintegrationtest [{name}]
 			Edit the integration test specified.  With no
 			argument, defaults to editing test/test_helper.rb.
+
+						*rails-:Rspec*
+:Rspec [{name}]
+			Edit the given spec.  With no argument, defaults to
+			editing spec/spec_helper.rb (If you want to jump to
+			the spec for the given file, use |:A| instead).  This
+			command is only defined if there is a spec folder in
+			the root of the application.
 
 Custom Navigation Commands  ~
 						*rails-custom-navigation*
@@ -750,12 +759,12 @@ inside a spec file.  :Rake in a spec runs just that spec, and in a model,
 controller, or helper, runs the associated spec.
 
 |:Runittest| and |:Rfunctionaltest| lead double lives, handling model and
-controller specs respectively.  For helper and view specs, you can define your
-own navigation commands:
+controller specs respectively.  For helper and view specs, you can use
+|:Rspec| or define your own navigation commands:
 >
 	Rnavcommand spechelper     spec/helpers     -glob=**/*
 		\ -suffix=_helper_spec.rb        -default=controller()
-	Rnavcommand specview spec/views -glob=**/* -suffix=_view_spec.rb
+	Rnavcommand specview spec/views -glob=**/* -suffix=_spec.rb
 <
 ==============================================================================
 ABBREVIATIONS				*rails-abbreviations* *rails-snippets*
