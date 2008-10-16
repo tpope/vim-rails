@@ -4243,23 +4243,26 @@ function! RailsBufInit(path)
 endfunction
 
 function! s:SetBasePath()
-  let rp = s:gsub(rails#app().path(),'[ ,]','\\&')
-  let t = RailsFileType()
-  let oldpath = s:sub(&l:path,'^\.,','')
-  if stridx(oldpath,rp) == 2
-    let oldpath = ''
+  if rails#app().path() =~ '://'
+    return
   endif
-  let &l:path = '.,'.rp.",".rp."/app/controllers,".rp."/app,".rp."/app/models,".rp."/app/helpers,".rp."/config,".rp."/lib,".rp."/vendor,".rp."/vendor/plugins/*/lib,".rp."/test/unit,".rp."/test/functional,".rp."/test/integration,".rp."/app/apis,".rp."/app/services,".rp."/test,"."/vendor/plugins/*/test,".rp."/vendor/rails/*/lib,".rp."/vendor/rails/*/test,".rp."/spec,".rp."/spec/*,"
+  let transformed_path = s:pathsplit(s:pathjoin([rails#app().path()]))[0]
+  let old_path = s:pathsplit(s:sub(&l:path,'^\.,=',''))
+  call filter(old_path,'!s:startswith(v:val,transformed_path)')
+
+  let path = ['app', 'app/models', 'app/controllers', 'app/helpers', 'config', 'lib', 'app/views']
   if s:controller() != ''
-    let &l:path .= rp . '/app/views/' . s:controller() . ',' . rp . '/app/views,' . rp . '/public,'
+    let path += ['app/views/'.s:controller(), 'public']
   endif
-  if t =~ '^log\>'
-    let &l:path .= rp . '/app/views,'
+  if rails#app().test_suites('test')
+    let path += ['test', 'test/unit', 'test/functional', 'test/integration']
   endif
-  if &l:path =~ '://'
-    let &l:path = ".,"
+  if rails#app().test_suites('spec')
+    let path += ['spec', 'spec/models', 'spec/controllers', 'spec/helpers', 'spec/views', 'spec/lib']
   endif
-  let &l:path .= oldpath
+  let path += ['app/*', 'vendor', 'vendor/plugins/*/lib', 'vendor/plugins/*/test', 'vendor/rails/*/lib', 'vendor/rails/*/test']
+  call map(path,'rails#app().path(v:val)')
+  let &l:path = s:pathjoin('.',rails#app().path(),path,old_path)
 endfunction
 
 function! s:BufSettings()
