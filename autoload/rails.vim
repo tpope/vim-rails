@@ -1252,7 +1252,7 @@ function! s:app_script_command(bang,...) dict
   if cmd ==# "plugin"
     call self.cache.clear('generators')
   endif
-  if a:bang || cmd == "console"
+  if a:bang || cmd =~# 'console'
     return self.background_ruby_command(s:rquote("script/".cmd).str)
   else
     return self.execute_ruby_command(s:rquote("script/".cmd).str)
