@@ -1544,6 +1544,10 @@ function! s:Edit(bang,count,arg,...)
   endif
 endfunction
 
+function! s:fuzzyglob(arg)
+  return s:gsub(a:arg,'[^/]|/$','&*')
+endfunction
+
 function! s:Complete_find(ArgLead, CmdLine, CursorPos)
   let paths = s:pathsplit(&l:path)
   if has("win32") || has("win64")
@@ -1552,7 +1556,7 @@ function! s:Complete_find(ArgLead, CmdLine, CursorPos)
   let seen = {}
   for path in paths
     if s:startswith(path,rails#app().path()) && path !~ '[][*]'
-      for file in rails#app().relglob(path."/",rails#underscore(a:ArgLead)."*", a:ArgLead =~# '\u' ? '.rb' : '')
+      for file in rails#app().relglob(path."/",s:fuzzyglob(rails#underscore(a:ArgLead)), a:ArgLead =~# '\u' ? '.rb' : '')
         let seen[file] = 1
       endfor
     endif
@@ -1562,7 +1566,7 @@ function! s:Complete_find(ArgLead, CmdLine, CursorPos)
 endfunction
 
 function! s:Complete_edit(ArgLead, CmdLine, CursorPos)
-  return rails#app().relglob("",a:ArgLead."*[^~]")
+  return rails#app().relglob("",s:fuzzyglob(a:ArgLead))
 endfunction
 
 function! s:Complete_cd(ArgLead, CmdLine, CursorPos)
@@ -1870,6 +1874,7 @@ endfunction
 
 function! s:completion_filter(results,A)
   let results = sort(type(a:results) == type("") ? split(a:results,"\n") : copy(a:results))
+  call filter(results,'v:val !~# "\\~$"')
   let filtered = filter(copy(results),'s:startswith(v:val,a:A)')
   if !empty(filtered) | return filtered | endif
   let regex = s:sub(a:A,'.','&.*')
