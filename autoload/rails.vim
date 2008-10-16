@@ -1008,6 +1008,10 @@ function! s:Rake(bang,lnum,arg)
     call s:makewithruby(withrubyargs.'-r'.arg,arg !~# '_\%(spec\|test\)\.rb$')
   elseif arg != ''
     exe 'make '.arg
+  elseif t =~ '^config-routes\>'
+    call s:QuickFixCmdPre()
+    exe "!".&makeprg." routes"
+    call s:QuickFixCmdPost()
   elseif t =~ '^task\>'
     let mnum = s:lastmethodline(lnum)
     let line = getline(mnum)
