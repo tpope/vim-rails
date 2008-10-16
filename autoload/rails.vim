@@ -1475,11 +1475,11 @@ function! s:BufNavCommands()
   command! -buffer -bar -nargs=0 AV :call s:Alternate(<bang>0,"V")
   command! -buffer -bar -nargs=0 AT :call s:Alternate(<bang>0,"T")
   command! -buffer -bar -nargs=0 AN :call s:Related(<bang>0,"")
-  command! -buffer -bar -nargs=0 R  :call s:Related(<bang>0,"")
-  command! -buffer -bar -nargs=0 RE :call s:Related(<bang>0,"E")
-  command! -buffer -bar -nargs=0 RS :call s:Related(<bang>0,"S")
-  command! -buffer -bar -nargs=0 RV :call s:Related(<bang>0,"V")
-  command! -buffer -bar -nargs=0 RT :call s:Related(<bang>0,"T")
+  command! -buffer -bar -nargs=* -complete=customlist,s:Complete_related R  :call s:Related(<bang>0,"" ,<q-args>)
+  command! -buffer -bar -nargs=* -complete=customlist,s:Complete_related RE :call s:Related(<bang>0,"E",<q-args>)
+  command! -buffer -bar -nargs=* -complete=customlist,s:Complete_related RS :call s:Related(<bang>0,"S",<q-args>)
+  command! -buffer -bar -nargs=* -complete=customlist,s:Complete_related RV :call s:Related(<bang>0,"V",<q-args>)
+  command! -buffer -bar -nargs=* -complete=customlist,s:Complete_related RT :call s:Related(<bang>0,"T",<q-args>)
 endfunction
 
 function! s:djump(def)
@@ -1567,6 +1567,14 @@ endfunction
 
 function! s:Complete_edit(ArgLead, CmdLine, CursorPos)
   return rails#app().relglob("",s:fuzzyglob(a:ArgLead))
+endfunction
+
+function! s:Complete_related(ArgLead, CmdLine, CursorPos)
+  if a:ArgLead =~# '^\u'
+    return s:Complete_find(a:ArgLead, a:CmdLine, a:CursorPos)
+  else
+    return s:Complete_edit(a:ArgLead, a:CmdLine, a:CursorPos)
+  endif
 endfunction
 
 function! s:Complete_cd(ArgLead, CmdLine, CursorPos)
@@ -2671,13 +2679,17 @@ function! s:AlternateFile()
   endif
 endfunction
 
-function! s:Related(bang,cmd)
-  let cmd = a:cmd.(a:bang?"!":"")
-  let file = s:RelatedFile()
-  if file != ""
-    call s:findedit(cmd,file)
+function! s:Related(bang,cmd,...)
+  if a:0
+    return call(a:1 =~# '^\u' ? 's:Find' : 's:Edit',[a:bang,1,a:cmd]+a:000)
   else
-    call s:warn("No related file is defined")
+    let cmd = a:cmd.(a:bang?"!":"")
+    let file = s:RelatedFile()
+    if file != ""
+      call s:findedit(cmd,file)
+    else
+      call s:warn("No related file is defined")
+    endif
   endif
 endfunction
 
