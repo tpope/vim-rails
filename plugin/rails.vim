@@ -261,12 +261,16 @@ function! s:menuBufEnter()
     silent! exe 'aunmenu       '.menu.'.Rake\ tasks'
     silent! exe 'aunmenu       '.menu.'.Generate'
     silent! exe 'aunmenu       '.menu.'.Destroy'
-    let i = 0
-    while i < len(rails#app().rake_tasks())
-      let task = rails#app().rake_tasks()[i]
-      exe s:menucmd(300).g:rails_installed_menu.'.Rake\ &tasks\	:Rake.'.s:sub(task,':',':.').' :Rake '.task.'<CR>'
-      let i += 1
-    endwhile
+    if rails#app().cache.needs('rake_tasks') || empty(rails#app().rake_tasks())
+      exe substitute(s:menucmd(300),'<script>','<script> <silent>','').g:rails_installed_menu.'.Rake\ &tasks\	:Rake.Fill\ this\ menu :call rails#app().rake_tasks()<Bar>call <SID>menuBufEnter()<CR>'
+    else
+      let i = 0
+      while i < len(rails#app().rake_tasks())
+        let task = rails#app().rake_tasks()[i]
+        exe s:menucmd(300).g:rails_installed_menu.'.Rake\ &tasks\	:Rake.'.s:sub(task,':',':.').' :Rake '.task.'<CR>'
+        let i += 1
+      endwhile
+    endif
     let i = 0
     let menucmd = substitute(s:menucmd(400),'<script>','<script> <silent>','').g:rails_installed_menu
     while i < len(rails#app().generators())
