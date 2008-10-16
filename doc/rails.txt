@@ -391,7 +391,8 @@ modeline like: >
 			between YAML and CSV fixtures.
 
 						*rails-:Runittest*
-:Runittest [{name}]	Edit the unit test for the specified model.
+:Runittest [{name}]	Edit the unit test or model spec for the specified
+			model.
 
 Controller Navigation Commands  ~
 						*rails-controller-navigation*
@@ -435,7 +436,8 @@ or modeline like: >
 
 						*rails-:Rfunctionaltest*
 :Rfunctionaltest [{name}]
-			Edit the functional test for the specified controller.
+			Edit the functional test or controller spec for the
+			specified controller.
 
 Miscellaneous Navigation Commands  ~
 						*rails-misc-navigation*
@@ -748,15 +750,12 @@ inside a spec file.  :Rfixtures will find spec fixtures, but the extension is
 mandatory and tab completion will not work.  :Rake will run the currently
 edited spec.
 
-While there are currently no built-in dedicated RSpec navigation commands, you
-can approximate your own with |:Rnavcommand|.
+|:Runittest| and |:Rfunctionaltest| lead double lives, handling model and
+controller specs respectively.  For helper and view specs, you can define your
+own navigation commands:
 >
-	Rnavcommand specmodel      spec/models      -glob=**/*
-		\ -suffix=_spec.rb               -default=model()
 	Rnavcommand spechelper     spec/helpers     -glob=**/*
 		\ -suffix=_helper_spec.rb        -default=controller()
-	Rnavcommand speccontroller spec/controllers -glob=**/*
-		\ -suffix=_controller_spec.rb    -default=controller()
 	Rnavcommand specview spec/views -glob=**/* -suffix=_view_spec.rb
 <
 ==============================================================================

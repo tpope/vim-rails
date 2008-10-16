@@ -1967,11 +1967,25 @@ function! s:apiList(A,L,P)
 endfunction
 
 function! s:unittestList(A,L,P)
-  return s:autocamelize(rails#app().relglob("test/unit/","**/*","_test.rb"),a:A)
+  let found = []
+  if rails#app().test_suites('test')
+    let found += rails#app().relglob("test/unit/","**/*","_test.rb")
+  endif
+  if rails#app().test_suites('spec')
+    let found += rails#app().relglob("spec/models/","**/*","_spec.rb")
+  endif
+  return s:autocamelize(found,a:A)
 endfunction
 
 function! s:functionaltestList(A,L,P)
-  return s:autocamelize(rails#app().relglob("test/functional/","**/*","_test.rb"),a:A)
+  let found = []
+  if rails#app().test_suites('test')
+    let found += rails#app().relglob("test/functional/","**/*","_test.rb")
+  endif
+  if rails#app().test_suites('spec')
+    let found += rails#app().relglob("spec/controllers/","**/*","_spec.rb")
+  endif
+  return s:autocamelize(found,a:A)
 endfunction
 
 function! s:integrationtestList(A,L,P)
@@ -2301,29 +2315,46 @@ function! s:javascriptEdit(bang,cmd,...)
 endfunction
 
 function! s:unittestEdit(bang,cmd,...)
-  let f = a:0 ? a:1 : s:model(1)
-  if !a:0 && RailsFileType() =~ '^model-aro\>' && f != '' && f !~ '_observer$'
-    if rails#app().has_file("test/unit/".f."_observer_test.rb") || !rails#app().has_file("test/unit/".f."_test.rb")
-      let f .= "_observer"
-    endif
+  let cmd = s:findcmdfor(a:cmd.(a:bang?'!':''))
+  let f = rails#underscore(a:0 ? a:1 : s:model(1))
+  let mapping = {'test': ['test/unit/','_test.rb'], 'spec': ['spec/models/','_spec.rb']}
+  let tests = map(rails#app().test_suites(),'get(mapping,v:val,"test")')
+  if empty(tests)
+    let tests = [mapping[tests]]
   endif
-  return s:EditSimpleRb(a:bang,a:cmd,"unittest",f,"test/unit/","_test.rb")
+  for [prefix, suffix] in tests
+    if !a:0 && RailsFileType() =~# '^model-aro\>' && f != '' && f !~# '_observer$'
+      if rails#app().has_file(prefix.f.'_observer'.suffix)
+        return s:findedit(cmd,prefix.f.'_observer'.suffix)
+      endif
+    endif
+  endfor
+  for [prefix, suffix] in tests
+    if rails#app().has_file(prefix.f.suffix)
+      return s:findedit(cmd,prefix.f.suffix)
+    endif
+  endfor
+  return s:findedit(cmd,tests[0][0].f.tests[0][1])
 endfunction
 
 function! s:functionaltestEdit(bang,cmd,...)
-  if a:0
-    let f = a:1
-  else
-    let f = s:controller()
+  let cmd = s:findcmdfor(a:cmd.(a:bang?'!':''))
+  let f = rails#underscore(a:0 ? a:1 : s:controller(1))
+  let mapping = {'test': ['test/functional/','_test.rb'], 'spec': ['spec/controllers/','_spec.rb']}
+  let tests = map(rails#app().test_suites(),'get(mapping,v:val,"test")')
+  if empty(tests)
+    let tests = [mapping[tests]]
   endif
-  if f != '' && !rails#app().has_file("test/functional/".f."_test.rb")
-    if rails#app().has_file("test/functional/".f."_controller_test.rb")
-      let f .= "_controller"
-    elseif rails#app().has_file("test/functional/".f."_api_test.rb")
-      let f .= "_api"
+  for [prefix, suffix] in tests
+    if rails#app().has_file(prefix.f.suffix)
+      return s:findedit(cmd,prefix.f.suffix)
+    elseif rails#app().has_file(prefix.f.'_controller'.suffix)
+      return s:findedit(cmd,prefix.f.'_controller'.suffix)
+    elseif rails#app().has_file(prefix.f.'_api'.suffix)
+      return s:findedit(cmd,prefix.f.'_api'.suffix)
     endif
-  endif
-  return s:EditSimpleRb(a:bang,a:cmd,"functionaltest",f,"test/functional/","_test.rb")
+  endfor
+  return s:findedit(cmd,tests[0][0].f.tests[0][1])
 endfunction
 
 function! s:integrationtestEdit(bang,cmd,...)
