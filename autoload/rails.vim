@@ -976,7 +976,7 @@ function! s:Rake(bang,lnum,arg)
     endif
   endif
   let withrubyargs = '-r ./config/boot -r '.s:rquote(self.path('config/environment')).' -e "puts \%((in \#{Dir.getwd}))" '
-  if arg =~# '^\%(stats\|routes\|notes\|db:\%(charset\|collation\|version\)\)\%(:\|$\)'
+  if arg =~# '^\%(stats\|routes\|secret\|notes\|db:\%(charset\|collation\|fixtures:identify\|version\)\)\%(:\|$\)'
     " So you can see the output even with an inadequate redirect
     call s:QuickFixCmdPre()
     exe "!".&makeprg." ".arg
