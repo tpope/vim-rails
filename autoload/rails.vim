@@ -1012,12 +1012,24 @@ function! s:Rake(bang,lnum,arg)
     call s:QuickFixCmdPre()
     exe "!".&makeprg." routes"
     call s:QuickFixCmdPost()
+  elseif t =~ '^fixtures-yaml\>' && lnum
+    let cnum = lnum
+    let label = ""
+    while cnum > 0 && label == ""
+      let label = matchstr(getline(cnum),'^\w\+\ze:')
+      let cnum -= 1
+    endwhile
+    call s:QuickFixCmdPre()
+    exe "!".&makeprg." db:fixtures:identify LABEL=".label
+    call s:QuickFixCmdPost()
+  elseif t =~ '^fixtures\>' && lnum == 0
+    exe "make db:fixtures:load FIXTURES=".s:sub(fnamemodify(RailsFilePath(),':r'),'^.{-}/fixtures/','')
   elseif t =~ '^task\>'
     let mnum = s:lastmethodline(lnum)
     let line = getline(mnum)
     " We can't grab the namespace so only run tasks at the start of the line
     if line =~ '^\%(task\|file\)\>'
-      exe 'make '.s:lastmethod()
+      exe 'make '.s:lastmethod(lnum)
     else
       make
     endif
