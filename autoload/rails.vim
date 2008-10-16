@@ -2510,12 +2510,18 @@ function! s:AlternateFile()
       let dest = f
     endif
     " Go to the (r)spec, helper, controller, or (mailer) model
-    let spec       = fnamemodify(dest,':r:s?\<app/?spec/?')."_spec.rb"
+    let spec1      = fnamemodify(dest,':s?\<app/?spec/?')."_spec.rb"
+    let spec2      = fnamemodify(dest,':r:s?\<app/?spec/?')."_spec.rb"
+    let spec3      = fnamemodify(dest,':r:r:s?\<app/?spec/?')."_spec.rb"
     let helper     = fnamemodify(dest,':h:s?/views/?/helpers/?')."_helper.rb"
     let controller = fnamemodify(dest,':h:s?/views/?/controllers/?')."_controller.rb"
     let model      = fnamemodify(dest,':h:s?/views/?/models/?').".rb"
-    if rails#app().has_file(spec)
-      return spec
+    if rails#app().has_file(spec1)
+      return spec1
+    elseif rails#app().has_file(spec2)
+      return spec2
+    elseif rails#app().has_file(spec3)
+      return spec3
     elseif rails#app().has_file(helper)
       return helper
     elseif rails#app().has_file(controller)
