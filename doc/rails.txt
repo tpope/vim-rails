@@ -499,9 +499,6 @@ It is also possible to create custom navigation commands.  This is best done
 in an initialization routine of some sort (e.g., an autocommand); see
 |rails-configuration| for details.
 
-						*rails-:Rcommand*
-:Rcommand		Deprecated alias for |:Rnavcommand|
-
 						*rails-:Rnavcommand*
 :Rnavcommand [options] {name} [{path} ...]
 			Create a navigation command with the supplied
@@ -516,6 +513,9 @@ in an initialization routine of some sort (e.g., an autocommand); see
 			-default=controller(), or -default=both(), the current
 			model, controller, or both (as with :Rintegrationtest)
 			is used as a default.
+
+						*rails-:Rcommand*
+:Rcommand		Deprecated alias for |:Rnavcommand|
 
 Examples: >
 	Rnavcommand api      app/apis -glob=**/* -suffix=_api.rb
@@ -744,19 +744,19 @@ core.  Supporting plugins and other add-ons to Rails has the potential to
 rapidly get out of hand.  However, a few pragmatic exceptions have been made.
 
 						*rails-template-types*
-Commands like :Rview use a hardwired list of extensions (rhtml, rjs, etc.)
+Commands like :Rview use a hardwired list of extensions (erb, rjs, etc.)
 when searching for files.  In order to facilitate working with non-standard
 template types, several popular extensions are featured in this list,
 including haml, liquid, and mab (markaby).  These extensions will disappear
 once a related configuration option is added to rails.vim.
 
 						*rails-rspec*
-Support for RSpec is currently experimental and incomplete, with only a
-handful of features being implemented.  :A knows about specs and will jump to
-them, but only if no test file is found.  The associated controller or model
-of a spec is detected, so all navigation commands should work as expected
-inside a spec file.  :Rake in a spec runs just that spec, and in a model,
-controller, or helper, runs the associated spec.
+The presence of a spec directory causes several additional behaviors to
+activate.  :A knows about specs and will jump to them (but Test::Unit files
+still get priority).  The associated controller or model of a spec is
+detected, so all navigation commands should work as expected inside a spec
+file.  :Rake in a spec runs just that spec, and in a model, controller, or
+helper, runs the associated spec.
 
 |:Runittest| and |:Rfunctionaltest| lead double lives, handling model and
 controller specs respectively.  For helper and view specs, you can use
@@ -775,7 +775,7 @@ day Merb can be officially supported.
 ==============================================================================
 ABBREVIATIONS				*rails-abbreviations* *rails-snippets*
 
-Abbreviations are still experimental.  They may later be extracted into a
+Abbreviations are "snippets lite".  They may later be extracted into a
 separate plugin, or removed entirely.
 
 						*rails-:Rabbrev*
@@ -986,7 +986,6 @@ l:preview	 URL stub for :Rpreview (e.g., blog/show/1)
 b:task		 Default task used with :Rake
 l:related	 Custom related file for :R, relative to the Rails root
 a:root_url	 Root URL for commands like :Rpreview
-a:ruby_fork_port Experimental: use ruby_fork on given port to speed things up
 
 Examples: >
 	:Rset root_url=http://localhost:12345
@@ -1095,7 +1094,8 @@ b:rails_url.
 						*g:rails_statusline*  >
 	let g:rails_statusline=1
 Give a clue in the statusline when this plugin is enabled.  Enabled by
-default.
+default.  (Does anybody care about this?  Years after writing it the author is
+beginning to think it is mostly a waste of space.)
 
 						*g:rails_syntax*  >
 	let g:rails_syntax=1
