@@ -2032,19 +2032,19 @@ endfunction
 
 " Task files, not actual rake tasks
 function! s:taskList(A,L,P)
-  let top = rails#app().relglob("lib/tasks/","**/*",".rake")
+  let all = rails#app().relglob("lib/tasks/","**/*",".rake")
   if RailsFilePath() =~ '\<vendor/plugins/.'
-    let path = s:sub(RailsFilePath(),'<vendor/plugins/[^/]*/\zs.*','tasks/')
-    return s:completion_filter(rails#app().relglob(path,"**/*",".rake")+top,a:A)
-  else
-    return s:completion_filter(top,a:A)
+    let path = s:sub(RailsFilePath(),'<vendor/plugins/[^/]*/\zs.*','')
+    let all = rails#app().relglob(path."tasks/","**/*",".rake")+rails#app().relglob(path."lib/tasks/","**/*",".rake")+all
   endif
+  return s:autocamelize(all,a:A)
 endfunction
 
 function! s:libList(A,L,P)
   let all = rails#app().relglob('lib/',"**/*",".rb")
   if RailsFilePath() =~ '\<vendor/plugins/.'
     let path = s:sub(RailsFilePath(),'<vendor/plugins/[^/]*/\zs.*','lib/')
+    let g:path = path
     let all = rails#app().relglob(path,"**/*",".rb") + all
   endif
   return s:autocamelize(all,a:A)
@@ -2433,7 +2433,7 @@ function! s:taskEdit(bang,cmd,...)
   let extra = ""
   if RailsFilePath() =~ '\<vendor/plugins/.'
     let plugin = matchstr(RailsFilePath(),'\<vendor/plugins/[^/]*')
-    let extra = plugin."/tasks/\n"
+    let extra = plugin."/tasks/\n".plugin."/lib/tasks/\n"
   endif
   if a:0
     call s:EditSimpleRb(a:bang,a:cmd,"task",a:1,extra."lib/tasks/",".rake")
