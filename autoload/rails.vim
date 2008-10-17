@@ -843,7 +843,7 @@ function! s:Refresh(bang)
   endif
   if exists("g:rubycomplete_rails") && g:rubycomplete_rails && has("ruby")
     silent! ruby ActiveRecord::Base.reset_subclasses if defined?(ActiveRecord)
-    silent! ruby Dependencies.clear if defined?(Dependencies)
+    silent! ruby if defined?(ActiveSupport::Dependencies); ActiveSupport::Dependencies.clear; elsif defined?(Dependencies); Dependencies.clear; end
     if a:bang
       silent! ruby ActiveRecord::Base.clear_reloadable_connections! if defined?(ActiveRecord)
     endif
