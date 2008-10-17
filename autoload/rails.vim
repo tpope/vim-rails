@@ -2534,11 +2534,6 @@ function! s:findedit(cmd,files,...) abort
     let testcmd = cmd.' '.(a:0 ? a:1 . ' ' : '').file
   endif
   if s:try(testcmd)
-    " Shorten the file name (I don't fully understand how Vim decides when to
-    " use a relative/absolute path for the file name, so lets blindly force it
-    " to be as short as possible)
-    "silent! file %:~:.
-    "silent! lcd .
     call s:djump(djump)
   endif
 endfunction
@@ -2548,7 +2543,7 @@ function! s:edit(cmd,file,...)
   let cmd .= ' '.(a:0 ? a:1 . ' ' : '')
   let file = a:file
   if file !~ '^/' && file !~ '^\w:' && file !~ '://'
-    exe cmd."`=rails#app().path(file)`"
+    exe cmd."`=fnamemodify(rails#app().path(file),':~:.')`"
   else
     exe cmd.file
   endif
