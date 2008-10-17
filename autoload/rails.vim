@@ -148,7 +148,7 @@ function! s:pathjoin(...) abort
       while j < len(list)
         let escaped = substitute(list[j],'[\\, ]','\\&','g')
         if exists("+shellslash") && !&shellslash
-          let escaped = substitute(escaped,'^\(\w:\\\)\\','\1','','')
+          let escaped = substitute(escaped,'^\(\w:\\\)\\','\1','')
         endif
         let path .= ',' . escaped
         let j += 1
@@ -1550,9 +1550,6 @@ endfunction
 
 function! s:Complete_find(ArgLead, CmdLine, CursorPos)
   let paths = s:pathsplit(&l:path)
-  if has("win32") || has("win64")
-    call map(paths,'s:gsub("\\","/")')
-  endif
   let seen = {}
   for path in paths
     if s:startswith(path,rails#app().path()) && path !~ '[][*]'
