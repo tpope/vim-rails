@@ -855,6 +855,7 @@ function! s:Refresh(bang)
       if type(s:apps[key]) == type({})
         call s:apps[key].cache.clear()
       endif
+      call extend(s:apps[key],filter(copy(s:app_prototype),'type(v:val) == type(function("tr"))'),'force')
     endfor
   endif
   let i = 1
