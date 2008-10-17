@@ -1659,6 +1659,8 @@ function! s:RailsFind()
   endif
   let res = s:findamethod('map\.resources','app/controllers/\1_controller.rb')
   if res != ""|return res|endif
+  let res = s:findamethod('map\.resource','app/controllers/\1')
+  if res != ""|return rails#pluralize(res)."_controller.rb"|endif
   let res = s:findamethod('layout','\=s:findlayout(submatch(1))')
   if res != ""|return res|endif
   let res = s:findasymbol('layout','\=s:findlayout(submatch(1))')
