@@ -3691,6 +3691,9 @@ function! s:app_dbext_settings(environment) dict
         let dict['extra'] = ''
       endif
       let dict['dbname'] = s:extractdbvar(out,'database')
+      if dict['dbname'] == ''
+        let dict['dbname'] = s:extractdbvar(out,'dbfile')
+      endif
       if dict['dbname'] != '' && dict['dbname'] !~ '^:' && adapter =~? '^sqlite'
         let dict['dbname'] = self.path(dict['dbname'])
       endif
