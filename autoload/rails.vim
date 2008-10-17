@@ -883,6 +883,9 @@ function! s:app_rake_tasks() dict
   if self.cache.needs('rake_tasks')
     let rakefile = s:rquote(self.path("Rakefile"))
     let lines = split(system("rake -T -f ".rakefile),"\n")
+    if v:shell_error != 0
+      return []
+    endif
     call map(lines,'matchstr(v:val,"^rake\\s\\+\\zs\\S*")')
     call filter(lines,'v:val != ""')
     call self.cache.set('rake_tasks',lines)
