@@ -1545,7 +1545,7 @@ function! s:Edit(bang,count,arg,...)
 endfunction
 
 function! s:fuzzyglob(arg)
-  return s:gsub(a:arg,'[^/]|/$','&*')
+  return a:arg == '' ? '*' : s:gsub(a:arg,'[^/]|/$','&*')
 endfunction
 
 function! s:Complete_find(ArgLead, CmdLine, CursorPos)
@@ -1556,7 +1556,8 @@ function! s:Complete_find(ArgLead, CmdLine, CursorPos)
   let seen = {}
   for path in paths
     if s:startswith(path,rails#app().path()) && path !~ '[][*]'
-      for file in rails#app().relglob(path."/",s:fuzzyglob(rails#underscore(a:ArgLead)), a:ArgLead =~# '\u' ? '.rb' : '')
+      let path = path[strlen(rails#app().path()) + 1 : ]
+      for file in rails#app().relglob(path == '' ? '' : path.'/',s:fuzzyglob(rails#underscore(a:ArgLead)), a:ArgLead =~# '\u' ? '.rb' : '')
         let seen[file] = 1
       endfor
     endif
