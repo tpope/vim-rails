@@ -445,6 +445,10 @@ function! RailsFilePath()
   endif
   let f = s:gsub(expand('%:p'),'\\ @!','/')
   let f = s:sub(f,'/$','')
+  let sep = matchstr(f,'^[^\\/]\{3,\}\zs[\\/]')
+  if sep != ""
+    let f = getcwd().sep.f
+  endif
   if s:startswith(f,s:gsub(b:rails_root,'\\ @!','/')) || f == ""
     return strpart(f,strlen(b:rails_root)+1)
   else

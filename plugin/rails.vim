@@ -101,6 +101,10 @@ endfunction
 
 function! s:Detect(filename)
   let fn = substitute(fnamemodify(a:filename,":p"),'\c^file://','','')
+  let sep = matchstr(fn,'^[^\\/]\{3,\}\zs[\\/]')
+  if sep != ""
+    let fn = getcwd().sep.fn
+  endif
   if fn =~ '[\/]config[\/]environment\.rb$'
     return s:BufInit(strpart(fn,0,strlen(fn)-22))
   endif
