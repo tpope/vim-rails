@@ -837,10 +837,6 @@ endfunction
 call s:add_methods('app',['tags_command'])
 
 function! s:Refresh(bang)
-  " What else?
-  if a:bang
-    unlet! s:rails_helper_methods
-  endif
   if exists("g:rubycomplete_rails") && g:rubycomplete_rails && has("ruby")
     silent! ruby ActiveRecord::Base.reset_subclasses if defined?(ActiveRecord)
     silent! ruby if defined?(ActiveSupport::Dependencies); ActiveSupport::Dependencies.clear; elsif defined?(Dependencies); Dependencies.clear; end
