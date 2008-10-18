@@ -1562,7 +1562,7 @@ function! s:Complete_find(ArgLead, CmdLine, CursorPos)
 endfunction
 
 function! s:Complete_edit(ArgLead, CmdLine, CursorPos)
-  return rails#app().relglob("",s:fuzzyglob(a:ArgLead))
+  return s:completion_filter(rails#app().relglob("",s:fuzzyglob(a:ArgLead)),a:ArgLead)
 endfunction
 
 function! s:Complete_related(ArgLead, CmdLine, CursorPos)
