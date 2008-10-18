@@ -895,8 +895,6 @@ endfunction
 
 call s:add_methods('app', ['rake_tasks'])
 
-" Depends: s:sub, s:lastmethodline, s:getopt, s;rquote, s:QuickFixCmdPre, ...
-
 " Current directory
 let s:efm='%D(in\ %f),'
 " Failure and Error headers, start a multiline message
@@ -1107,9 +1105,6 @@ endfunction
 " }}}1
 " Preview {{{1
 
-" Depends: s:getopt, s:sub, s:controller, s:lastmethod
-" Provides: s:initOpenURL
-
 function! s:initOpenURL()
   if !exists(":OpenURL")
     if has("gui_mac") || has("gui_macvim") || exists("$SECURITYSESSIONID")
@@ -1217,8 +1212,6 @@ endfunction
 
 " }}}1
 " Script Wrappers {{{1
-
-" Depends: s:rquote, s:sub, s:getopt, ..., s:pluginList, ...
 
 function! s:BufScriptWrappers()
   command! -buffer -bar -nargs=*       -complete=customlist,s:Complete_script   Rscript       :call rails#app().script_command(<bang>0,<f-args>)
@@ -2771,8 +2764,6 @@ endfunction
 " }}}1
 " Partial Extraction {{{1
 
-" Depends: s:error, s:sub, s:viewspattern, s:warn
-
 function! s:Extract(bang,...) range abort
   if a:0 == 0 || a:0 > 1
     return s:error("Incorrect number of arguments")
@@ -2912,8 +2903,6 @@ endfunction
 
 " }}}1
 " Migration Inversion {{{1
-
-" Depends: s:sub, s:endof, s:gsub, s:error
 
 function! s:mkeep(str)
   " Things to keep (like comments) from a migration statement
@@ -3077,8 +3066,6 @@ let s:app_prototype.cache = s:cache_prototype
 
 " }}}1
 " Syntax {{{1
-
-" Depends: s:gsub, cache functions
 
 function! s:resetomnicomplete()
   if exists("+completefunc") && &completefunc == 'syntaxcomplete#Complete'
@@ -3409,9 +3396,6 @@ endfunction
 " }}}1
 " Statusline {{{1
 
-" Depends: nothing!
-" Provides: s:BufInitStatusline
-
 function! s:addtostatus(letter,status)
   let status = a:status
   if status !~ 'Rails' && g:rails_statusline
@@ -3497,9 +3481,6 @@ endfunction
 " }}}1
 " Mappings {{{1
 
-" Depends: nothing!
-" Exports: s:BufMappings
-
 function! s:BufMappings()
   nnoremap <buffer> <silent> <Plug>RailsAlternate  :<C-U>A<CR>
   nnoremap <buffer> <silent> <Plug>RailsRelated    :<C-U>R<CR>
@@ -3535,8 +3516,6 @@ endfunction
 
 " }}}1
 " Project {{{
-
-" Depends: s:gsub, s:escarg, s:warn, s:sub, s:relglob
 
 function! s:Project(bang,arg)
   let rr = rails#app().path()
@@ -3662,8 +3641,6 @@ endfunction
 " }}}1
 " Database {{{1
 
-" Depends: s:environment, s:rv, reloadability
-
 function! s:extractdbvar(str,arg)
   return matchstr("\n".a:str."\n",'\n'.a:arg.'=\zs.\{-\}\ze\n')
 endfunction
@@ -3769,8 +3746,6 @@ call s:add_methods('app', ['dbext_settings'])
 
 " }}}1
 " Abbreviations {{{1
-
-" Depends: s:sub, s:gsub, s:string, s:linepeak, s:error
 
 function! s:selectiveexpand(pat,good,default,...)
   if a:0 > 0
