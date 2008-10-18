@@ -63,9 +63,9 @@ Rails application development.
    and several other commands are provided.  |rails-navigation|
 
 5. Enhanced syntax highlighting.  From has_and_belongs_to_many to
-   distance_of_time_in_words, it's here.  For Vim 7 users, 'completefunc' is
-   set to enable syntax based completion on |i_CTRL-X_CTRL-U|, making it easy
-   to complete such long method names. |rails-syntax|
+   distance_of_time_in_words, it's here.  For easy completion of these long
+   method names, 'completefunc' is set to enable syntax based completion on
+   |i_CTRL-X_CTRL-U|. |rails-syntax|
 
 6. Interface to script/*.  Generally, use ":Rscript about" to call
    "script/about".  Most commands have wrappers with additional features:
@@ -92,13 +92,9 @@ directly to |rails-install-plugin| below.
 
 Installing and Configuring Vim ~
 						*rails-install-vim*
-Because it is common for users to utilize an older version of Vim that came
-installed on a system, rails.vim has a design goal of remaining compatible
-with versions of Vim 6.2 and newer.  However, if you have a choice in the
-matter, you are strongly encouraged to install the latest version available.
-Older versions of Vim should work, but increasingly, new plugin features will
-require Vim 7 or newer.  If possible, install a version of Vim with the |Ruby|
-interface compiled in, as a few features will make use of it when available.
+Vim 7 or newer is required.  If possible, install a version of Vim with the
+|Ruby| interface compiled in, as a few features will make use of it when
+available.
 
 If you are new to Vim, you need to create a vimrc.  For Windows, this file
 goes in ~\_vimrc (try :e ~\_vimrc if you don't know where this is).  On other
@@ -954,8 +950,7 @@ Rails file is loaded.
 						*config/rails.vim*
 If you have settings particular to a specific project, they can be put in a
 config/rails.vim file in the root directory of the application.  The file is
-sourced in the |sandbox| for security reasons.  This only works in Vim 7 or
-newer.
+sourced in the |sandbox| for security reasons.
 
 						*rails-:Rset*
 :Rset {option}[={value}]
@@ -1036,8 +1031,7 @@ like table name completion and commands like >
 	:Create database brablog_development
 	:Select * from posts where title like '%Denmark%'
 Note that dbext is a complicated plugin, and may require additional
-configuration.  See |dbext| (if installed) and |sql-completion-dynamic| (in
-Vim 7).
+configuration.  See |dbext| (if installed) and |sql-completion-dynamic|.
 
 						*g:rails_default_file*  >
 	let g:rails_default_file='config/database.yml'
@@ -1124,7 +1118,7 @@ The official homepage is
     http://rails.vim.tpope.net
 The latest stable version can be found at
     http://www.vim.org/scripts/script.php?script_id=1567
-In Vim 7, you can keep up to date with |GetLatestVimScripts|.
+You can keep up to date with |GetLatestVimScripts|.
 
 The very latest development versions can be retrieved from Git:
     http://github.com/tpope/vim-rails
