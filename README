@@ -1,3 +1,7 @@
+rails.vim
+
 To install, simply copy autoload/rails.vim, plugin/rails.vim, and
-doc/rails.txt to the appropriate directories in ~/.vim.  It is not necessary
-to use rake.
+doc/rails.txt to the appropriate directories in ~/.vim.  Alternatively,
+`rake install` may be used.
+
+See doc/rails.txt for documentation.
