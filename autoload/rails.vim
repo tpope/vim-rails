@@ -3013,6 +3013,7 @@ function! s:Invert(bang)
     exe (beg+1).",".(end-1)."delete _"
   endif
   if str != ""
+    exe beg."foldopen"
     let reg_keep = @"
     let @" = str
     exe beg."put"
