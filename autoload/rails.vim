@@ -1312,7 +1312,12 @@ function! s:app_server_command(bang,arg) dict
       return
     endif
   endif
-  if has("win32") || has("win64") || (exists("$STY") && !has("gui_running") && s:getopt("gnu_screen","abg") && executable("screen"))
+  if has_key(self,'options') && has_key(self.options,'gnu_screen')
+    let screen = self.options.gnu_screen
+  else
+    let screen = g:rails_gnu_screen
+  endif
+  if has("win32") || has("win64") || (exists("$STY") && !has("gui_running") && screen && executable("screen"))
     call self.background_ruby_command(s:rquote("script/server")." ".a:arg)
   else
     "--daemon would be more descriptive but lighttpd does not support it
