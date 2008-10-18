@@ -66,12 +66,11 @@ function! s:SetOptDefault(opt,val)
   endif
 endfunction
 
-call s:SetOptDefault("rails_level",3)
 call s:SetOptDefault("rails_statusline",1)
 call s:SetOptDefault("rails_syntax",1)
 call s:SetOptDefault("rails_mappings",1)
 call s:SetOptDefault("rails_abbreviations",1)
-call s:SetOptDefault("rails_expensive",1+0*(has("win32")||has("win32unix")))
+call s:SetOptDefault("rails_expensive",1)
 call s:SetOptDefault("rails_dbext",g:rails_expensive)
 call s:SetOptDefault("rails_default_file","README")
 call s:SetOptDefault("rails_default_database","")
@@ -80,7 +79,6 @@ call s:SetOptDefault("rails_modelines",0)
 call s:SetOptDefault("rails_menu",1)
 call s:SetOptDefault("rails_gnu_screen",1)
 call s:SetOptDefault("rails_history_size",5)
-call s:SetOptDefault("rails_debug",0)
 call s:SetOptDefault("rails_generators","controller\nintegration_test\nmailer\nmigration\nmodel\nobserver\nplugin\nresource\nscaffold\nsession_migration")
 if g:rails_dbext
   if exists("g:loaded_dbext") && executable("sqlite3") && ! executable("sqlite")

@@ -1016,8 +1016,9 @@ can be enabled by setting them to 1 in your vimrc, and disabled by setting
 them to 0. >
 	let g:rails_some_option=1
 	let g:rails_some_option=0
-Most of these should never need to be used.  The two that might be interesting
-are |g:rails_expensive| and |g:rails_default_database|.
+Most of these seldom need to be used.  So seldom, in fact, that you should
+notify the |rails-plugin-author| if you find any of them useful, as nearly all
+are being considered for removal.
 
 						*g:loaded_rails*  >
 	let g:loaded_rails=1

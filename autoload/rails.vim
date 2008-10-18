@@ -363,7 +363,7 @@ function! s:error(str)
 endfunction
 
 function! s:debug(str)
-  if g:rails_debug
+  if exists("g:rails_debug") && g:rails_debug
     echohl Debug
     echomsg a:str
     echohl None
