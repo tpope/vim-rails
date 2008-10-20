@@ -3010,11 +3010,13 @@ function! s:Invert(bang)
   if !beg || !end
     return s:error(err)
   endif
+  if foldclosed(beg) > 0
+    exe beg."foldopen!"
+  endif
   if beg + 1 < end
     exe (beg+1).",".(end-1)."delete _"
   endif
   if str != ""
-    exe beg."foldopen"
     let reg_keep = @"
     let @" = str
     exe beg."put"
