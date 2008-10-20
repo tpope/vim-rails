@@ -1570,7 +1570,7 @@ function! s:Complete_related(ArgLead, CmdLine, CursorPos)
   if a:ArgLead =~# '^\u'
     return s:Complete_find(a:ArgLead, a:CmdLine, a:CursorPos)
   else
-    return s:Complete_edit(a:ArgLead, a:CmdLine, a:CursorPos)
+    return filter(s:Complete_edit(a:ArgLead, a:CmdLine, a:CursorPos),'v:val !~# "^\\u"')
   endif
 endfunction
 
