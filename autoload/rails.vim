@@ -1884,10 +1884,10 @@ function! s:completion_filter(results,A)
   call filter(results,'v:val !~# "\\~$"')
   let filtered = filter(copy(results),'s:startswith(v:val,a:A)')
   if !empty(filtered) | return filtered | endif
-  let regex = s:sub(a:A,'.','&.*')
-  let filtered = filter(copy(results),'v:val =~ "^".regex')
+  let regex = s:gsub(a:A,'.','[&].*')
+  let filtered = filter(copy(results),'v:val =~# "^".regex')
   if !empty(filtered) | return filtered | endif
-  let filtered = filter(copy(results),'v:val =~ regex')
+  let filtered = filter(copy(results),'v:val =~# regex')
   return filtered
 endfunction
 
