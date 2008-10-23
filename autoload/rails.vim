@@ -2043,7 +2043,6 @@ function! s:libList(A,L,P)
   let all = rails#app().relglob('lib/',"**/*",".rb")
   if RailsFilePath() =~ '\<vendor/plugins/.'
     let path = s:sub(RailsFilePath(),'<vendor/plugins/[^/]*/\zs.*','lib/')
-    let g:path = path
     let all = rails#app().relglob(path,"**/*",".rb") + all
   endif
   return s:autocamelize(all,a:A)
