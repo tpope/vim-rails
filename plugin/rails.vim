@@ -203,7 +203,7 @@ function! s:CreateMenus() abort
     exe menucmd.g:rails_installed_menu.'.&Other\ files.Application\ &README :find doc/README_FOR_APP<CR>'
     exe menucmd.g:rails_installed_menu.'.&Other\ files.&Environment :find config/environment.rb<CR>'
     exe menucmd.g:rails_installed_menu.'.&Other\ files.&Database\ Configuration :find config/database.yml<CR>'
-    exe menucmd.g:rails_installed_menu.'.&Other\ files.Database\ &Schema :call <SID>findschema()<CR>'
+    exe menucmd.g:rails_installed_menu.'.&Other\ files.Database\ &Schema :Rmigration 0<CR>'
     exe menucmd.g:rails_installed_menu.'.&Other\ files.R&outes :find config/routes.rb<CR>'
     exe menucmd.g:rails_installed_menu.'.&Other\ files.&Test\ Helper :find test/test_helper.rb<CR>'
     exe menucmd.g:rails_installed_menu.'.-FSep- :'
@@ -306,17 +306,6 @@ function! s:menuprompt(vimcmd,prompt)
     return ""
   endif
   exe a:vimcmd." ".res
-endfunction
-
-function! s:findschema()
-  let env = exists('$RAILS_ENV') ? $RAILS_ENV : "development"
-  if filereadable(b:rails_root."/db/schema.rb")
-    edit `=b:rails_root.'/db/schema.rb'`
-  elseif filereadable(b:rails_root.'/db/'.env.'_structure.sql')
-    edit `=b:rails_root.'/db/'.env.'_structure.sql'`
-  else
-    return s:error("Schema not found: try :Rake db:schema:dump")
-  endif
 endfunction
 
 call s:CreateMenus()

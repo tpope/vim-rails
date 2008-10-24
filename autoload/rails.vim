@@ -2140,9 +2140,18 @@ function! s:EditSimpleRb(bang,cmd,name,target,prefix,suffix)
 endfunction
 
 function! s:migrationfor(file)
+  let self = rails#app()
   let tryagain = 0
   let arg = a:file
-  if arg =~ '^\d$'
+  if arg =~ '^0\+$'
+    if self.has_file('db/schema.rb')
+      return 'db/schema.rb'
+    elseif self.has_file('db/'.s:environment().'_structure.sql')
+      return 'db/'.s:environment().'_structure.sql'
+    else
+      return 'db/schema.rb'
+    endif
+  elseif arg =~ '^\d$'
     let glob = '00'.arg.'_*.rb'
   elseif arg =~ '^\d\d$'
     let glob = '0'.arg.'_*.rb'

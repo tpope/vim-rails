@@ -364,7 +364,8 @@ name will be singularized and used.  To override this, use a command like: >
 			given pattern.  The pattern defaults to the current
 			model name, pluralized.  So when editing the Post
 			model, :Rmigration with no arguments might find
-			create_posts.rb, or add_date_to_posts.rb.
+			create_posts.rb, or add_date_to_posts.rb.  Give a
+			numeric argument of 0 to edit db/schema.rb.
 
 						*rails-:Robserver*
 :Robserver [{name}]	Find the observer with a name like
