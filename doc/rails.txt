@@ -329,10 +329,10 @@ For the less common cases, a more deliberate set of commands are provided.
 Each of the following takes an optional argument (with tab completion) but
 defaults to a reasonable guess that follows Rails conventions.  For example,
 when editing app/models/employee.rb, :Rcontroller will default to
-app/controllers/employees_controller.rb.  The controller and model options,
-ideally set from  |rails-modelines|,  can override the mapping from model
-related files to controller related files (Rset controller=hiring) and vice
-versa (Rset model=employee).  See |rails-:Rset|.
+app/controllers/employees_controller.rb.  The controller and model options
+can override the mapping from model related files to controller related files
+(Rset controller=hiring) and vice versa (Rset model=employee).  See
+|rails-:Rset|.
 
 Each of the following commands has variants for splitting, vertical splitting
 and opening in a new tab.  For :Rmodel, those variants would be :RSmodel,
@@ -345,8 +345,7 @@ Model Navigation Commands ~
 The default for model navigation commands is the current model, if it can be
 determined.  For example, test/unit/post_test.rb would have a current model
 of post.  Otherwise, if a controller name can be determined, said controller
-name will be singularized and used.  To override this, use a command or
-modeline like: >
+name will be singularized and used.  To override this, use a command like: >
 	Rset model=comment
 
 :Rmodel						|rails-:Rmodel|
@@ -394,7 +393,7 @@ The default for controller navigation commands is the current controller, if
 it can be determined.  For example, test/functional/blog_test.rb would have a
 current controller of blog.  Otherwise, if a model name can be determined,
 said model name will be pluralized and used.  To override this, use a command
-or modeline like: >
+like: >
 	Rset controller=blog
 
 :Rcontroller					|rails-:Rcontroller|
@@ -479,8 +478,7 @@ The following commands are not clearly associated with models or controllers.
 			argument, defaults to editing test/test_helper.rb.
 
 						*rails-:Rspec*
-:Rspec [{name}]
-			Edit the given spec.  With no argument, defaults to
+:Rspec [{name}]		Edit the given spec.  With no argument, defaults to
 			editing spec/spec_helper.rb (If you want to jump to
 			the spec for the given file, use |:A| instead).  This
 			command is only defined if there is a spec folder in
@@ -833,7 +831,7 @@ they all link by default to railsMethod.
 If you feel a method has been wrongfully omitted, submit it to the
 |rails-plugin-author|.
 
-					*rails-@params* *rails-syntax-deprecated*
+				*rails-@params* *rails-syntax-deprecated*
 Certain deprecated syntax (like @params and render_text) is highlighted as an
 error.  If you trigger this highlighting, generally it means you need to
 update your code.
@@ -861,11 +859,11 @@ syntax group is used.  The list of assertions can be refreshed with
 						*rails-syntax-strings*
 In the following line of code, the "?" in the conditions clause and the "ASC"
 in the order clause will be highlighted: >
-  Post.find(:all, :conditions => ["body like ?","%e%"] :order => "title ASC")
+  Post.find(:all, :conditions => ["body like ?","%e%"], :order => "title ASC")
 <
-A string literal using %Q<> delimiters will have its contents highlighted as
-HTML.  This is sometimes useful when writing helpers. >
-  link = %Q<<a href="http://www.vim.org">Vim</a>>
+A string literal using %Q<> or %<> delimiters will have its contents
+highlighted as HTML.  This is sometimes useful when writing helpers. >
+  link = %<<a href="http://www.vim.org">Vim</a>>
 <
 						*rails-syntax-yaml*
 YAML syntax highlighting has been extended to highlight eRuby, which can be
