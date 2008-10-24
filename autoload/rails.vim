@@ -969,7 +969,7 @@ endfunction
 
 function! s:Rake(bang,lnum,arg)
   let self = rails#app()
-  let lnum = a:lnum < 0 ? line('.') : a:lnum
+  let lnum = a:lnum < 0 ? 0 : a:lnum
   let oldefm = &efm
   if a:bang
     let &l:errorformat = s:efm_backtrace
@@ -1047,7 +1047,7 @@ function! s:Rake(bang,lnum,arg)
   elseif t =~ '^spec\>'
     if RailsFilePath() =~# '\<spec/spec_helper\.rb$'
       make spec SPEC_OPTS=
-    elseif a:lnum > 0 || (a:lnum == -1 && search('\C^\s*\(describe\|context\)\>','bWnc') > search('\C^end\>','bWn'))
+    elseif lnum > 0
       exe 'make spec SPEC="%:p" SPEC_OPTS=--line='.lnum
     else
       make spec SPEC="%:p" SPEC_OPTS=
