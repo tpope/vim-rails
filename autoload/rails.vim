@@ -1462,12 +1462,12 @@ function! s:BufNavCommands()
   command!   -buffer -bar -nargs=* -bang    -complete=customlist,s:Complete_edit RSedit      :call s:Edit(<bang>0,<count>,'S',<f-args>)
   command!   -buffer -bar -nargs=* -bang    -complete=customlist,s:Complete_edit RVedit      :call s:Edit(<bang>0,<count>,'V',<f-args>)
   command!   -buffer -bar -nargs=* -bang    -complete=customlist,s:Complete_edit RTedit      :call s:Edit(<bang>0,<count>,'T',<f-args>)
-  command! -buffer -bar -nargs=0 A  :call s:Alternate(<bang>0,"")
-  command! -buffer -bar -nargs=0 AE :call s:Alternate(<bang>0,"E")
-  command! -buffer -bar -nargs=0 AS :call s:Alternate(<bang>0,"S")
-  command! -buffer -bar -nargs=0 AV :call s:Alternate(<bang>0,"V")
-  command! -buffer -bar -nargs=0 AT :call s:Alternate(<bang>0,"T")
-  command! -buffer -bar -nargs=0 AN :call s:Related(<bang>0,"")
+  command! -buffer -bar -nargs=* -complete=customlist,s:Complete_find    A  :call s:Alternate(<bang>0,"", <f-args>)
+  command! -buffer -bar -nargs=* -complete=customlist,s:Complete_find    AE :call s:Alternate(<bang>0,"E",<f-args>)
+  command! -buffer -bar -nargs=* -complete=customlist,s:Complete_find    AS :call s:Alternate(<bang>0,"S",<f-args>)
+  command! -buffer -bar -nargs=* -complete=customlist,s:Complete_find    AV :call s:Alternate(<bang>0,"V",<f-args>)
+  command! -buffer -bar -nargs=* -complete=customlist,s:Complete_find    AT :call s:Alternate(<bang>0,"T",<f-args>)
+  command! -buffer -bar -nargs=* -complete=customlist,s:Complete_related AN :call s:Related(<bang>0,"" ,<f-args>)
   command! -buffer -bar -nargs=* -complete=customlist,s:Complete_related R  :call s:Related(<bang>0,"" ,<f-args>)
   command! -buffer -bar -nargs=* -complete=customlist,s:Complete_related RE :call s:Related(<bang>0,"E",<f-args>)
   command! -buffer -bar -nargs=* -complete=customlist,s:Complete_related RS :call s:Related(<bang>0,"S",<f-args>)
@@ -2551,13 +2551,17 @@ function! s:edit(cmd,file,...)
   endif
 endfunction
 
-function! s:Alternate(bang,cmd)
-  let cmd = a:cmd.(a:bang?"!":"")
-  let file = s:AlternateFile()
-  if file != ""
-    call s:findedit(cmd,file)
+function! s:Alternate(bang,cmd,...)
+  if a:0
+    return call('s:Find',[a:bang,1,a:cmd]+a:000)
   else
-    call s:warn("No alternate file is defined")
+    let cmd = a:cmd.(a:bang?"!":"")
+    let file = s:AlternateFile()
+    if file != ""
+      call s:findedit(cmd,file)
+    else
+      call s:warn("No alternate file is defined")
+    endif
   endif
 endfunction
 
