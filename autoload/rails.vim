@@ -1030,14 +1030,8 @@ function! s:Rake(bang,lnum,arg)
     exe "!".&makeprg." routes"
     call s:QuickFixCmdPost()
   elseif t =~ '^fixtures-yaml\>' && lnum
-    let cnum = lnum
-    let label = ""
-    while cnum > 0 && label == ""
-      let label = matchstr(getline(cnum),'^\w\+\ze:')
-      let cnum -= 1
-    endwhile
     call s:QuickFixCmdPre()
-    exe "!".&makeprg." db:fixtures:identify LABEL=".label
+    exe "!".&makeprg." db:fixtures:identify LABEL=".s:lastmethod(lnum)
     call s:QuickFixCmdPost()
   elseif t =~ '^fixtures\>' && lnum == 0
     exe "make db:fixtures:load FIXTURES=".s:sub(fnamemodify(RailsFilePath(),':r'),'^.{-}/fixtures/','')
