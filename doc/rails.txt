@@ -139,11 +139,9 @@ actually edit a file from a Rails application.
 			rake).  However, in some contexts, if {targets} are
 			omitted, :Rake defaults to something sensible (like
 			db:migrate in a migration, or your current test).
-			The optional range defaults to the current line and
-			affects the execution in some situations (like only
-			running the test method containing that line in a
-			test).  One can use :0Rake to override any line
-			specific behaviors (e.g., run the full test file).
+			In tests (and specs), giving a line argument runs only
+			the test method (or example) at that line.  Use :.Rake
+			to run the test method at the cursor position.
 
 						*rails-:Rake!*
 :[range]Rake! {targets}	Called with a bang, :Rake will use an alternate
