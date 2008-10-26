@@ -798,7 +798,7 @@ Rabbrev pa[ params		pa.inspect		params.inspect
 Rabbrev AR:: ActionRecord	AR::Base		ActiveRecord::Base
 Rabbrev :a :action\ =>\		render :a<Tab>		render :action => 
 
-In short, :: expands on :, ( expands on (, and [ expands on both . and [.
+In short, ( expands on (, :: expands on . and :, and [ expands on . and [.
 These trailing punctuation marks are NOT part of the final abbreviation, and
 you cannot have two mappings that differ only by punctuation.
 
@@ -807,11 +807,11 @@ an abbreviation ending with "(", you may define where to insert the
 parenthesis by splitting the expansion into two parts (divided by an unescaped
 space).
 
-Many abbreviations abbreviations are provided by default: use :Rabbrev to list
-them.  They vary depending on the type of file (models have different
-abbreviations than controllers).  There is one "smart" abbreviation, :c, which
-expands to ":controller => ", ":collection => ", or ":conditions => "
-depending on context.
+Many abbreviations are provided by default: use :Rabbrev to list them.  They
+vary depending on the type of file (models have different abbreviations than
+controllers).  There is one "smart" abbreviation, :c, which expands to
+":controller => ", ":collection => ", or ":conditions => " depending on
+context.
 
 ==============================================================================
 SYNTAX HIGHLIGHTING				*rails-syntax*

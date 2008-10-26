@@ -3809,7 +3809,7 @@ function! s:AddBracketExpand(abbr,expn)
 endfunction
 
 function! s:AddColonExpand(abbr,expn)
-  call s:AddSelectiveExpand(a:abbr,':',a:expn)
+  call s:AddSelectiveExpand(a:abbr,'[:.]',a:expn)
 endfunction
 
 function! s:AddParenExpand(abbr,expn,...)
