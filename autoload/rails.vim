@@ -1744,7 +1744,7 @@ function! s:RailsIncludefind(str,...)
   endif
   let str = s:sub(str,'^\s*','')
   let str = s:sub(str,'\s*$','')
-  let str = s:sub(str,'^[:@]','')
+  let str = s:sub(str,'^:=[:@]','')
   let str = s:sub(str,':0x\x+$','') " For #<Object:0x...> style output
   let str = s:gsub(str,"[\"']",'')
   if line =~ '\<\(require\|load\)\s*(\s*$'
