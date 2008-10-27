@@ -84,6 +84,23 @@ function! s:sname()
   return fnamemodify(s:file,':t:r')
 endfunction
 
+function! s:pop_command()
+  if exists("s:command_stack") && len(s:command_stack) > 0
+    exe remove(s:command_stack,-1)
+  endif
+endfunction
+
+function! s:push_chdir()
+  if !exists("s:command_stack") | let s:command_stack = [] | endif
+  if exists("b:rails_root") && !s:startswith(getcwd(), rails#app().path())
+    let chdir = exists("*haslocaldir") && haslocaldir() ? "lchdir " : "chdir "
+    call add(s:command_stack,chdir.s:escarg(getcwd()))
+    exe chdir.s:escarg(rails#app().path())
+  else
+    call add(s:command_stack,"")
+  endif
+endfunction
+
 function! s:app_path(...) dict
   return join([self.root]+a:000,'/')
 endfunction
@@ -658,26 +675,6 @@ function! RailsEval(ruby,...) abort
 endfunction
 
 " }}}1
-" Autocommand Functions {{{1
-
-function! s:QuickFixCmdPre()
-  if exists("b:rails_root")
-    if !s:startswith(getcwd(), rails#app().path())
-      let s:last_dir = getcwd()
-      echo "lchdir ".s:escarg(rails#app().path())
-      lchdir `=rails#app().path()`
-    endif
-  endif
-endfunction
-
-function! s:QuickFixCmdPost()
-  if exists("s:last_dir")
-    lchdir `=s:last_dir`
-    unlet s:last_dir
-  endif
-endfunction
-
-" }}}1
 " Commands {{{1
 
 function! s:prephelp()
@@ -882,8 +879,12 @@ endfunction
 
 function! s:app_rake_tasks() dict
   if self.cache.needs('rake_tasks')
-    let rakefile = s:rquote(self.path("Rakefile"))
-    let lines = split(system("rake -T -f ".rakefile),"\n")
+    call s:push_chdir()
+    try
+      let lines = split(system("rake -T"),"\n")
+    finally
+      call s:pop_command()
+    endtry
     if v:shell_error != 0
       return []
     endif
@@ -995,9 +996,9 @@ function! s:Rake(bang,lnum,arg)
   let withrubyargs = '-r ./config/boot -r '.s:rquote(self.path('config/environment')).' -e "puts \%((in \#{Dir.getwd}))" '
   if arg =~# '^\%(stats\|routes\|secret\|notes\|db:\%(charset\|collation\|fixtures:identify\|version\)\)\%(:\|$\)'
     " So you can see the output even with an inadequate redirect
-    call s:QuickFixCmdPre()
+    call s:push_chdir()
     exe "!".&makeprg." ".arg
-    call s:QuickFixCmdPost()
+    call s:pop_command()
   elseif arg =~ '^preview\>'
     exe (lnum == 0 ? '' : lnum).'R'.s:gsub(arg,':','/')
   elseif arg =~ '^runner:'
@@ -1026,13 +1027,13 @@ function! s:Rake(bang,lnum,arg)
   elseif arg != ''
     exe 'make '.arg
   elseif t =~ '^config-routes\>'
-    call s:QuickFixCmdPre()
+    call s:push_chdir()
     exe "!".&makeprg." routes"
-    call s:QuickFixCmdPost()
+    call s:pop_command()
   elseif t =~ '^fixtures-yaml\>' && lnum
-    call s:QuickFixCmdPre()
+    call s:push_chdir()
     exe "!".&makeprg." db:fixtures:identify LABEL=".s:lastmethod(lnum)
-    call s:QuickFixCmdPost()
+    call s:pop_command()
   elseif t =~ '^fixtures\>' && lnum == 0
     exe "make db:fixtures:load FIXTURES=".s:sub(fnamemodify(RailsFilePath(),':r'),'^.{-}/fixtures/','')
   elseif t =~ '^task\>'
@@ -4377,8 +4378,8 @@ augroup railsPluginAuto
   autocmd BufWritePost */generators/**            call rails#cache_clear("generators")
   autocmd FileType * if exists("b:rails_root") | call s:BufSettings() | endif
   autocmd Syntax ruby,eruby,yaml,haml,javascript,railslog if exists("b:rails_root") | call s:BufSyntax() | endif
-  silent! autocmd QuickFixCmdPre  make* call s:QuickFixCmdPre()
-  silent! autocmd QuickFixCmdPost make* call s:QuickFixCmdPost()
+  autocmd QuickFixCmdPre  make* call s:push_chdir()
+  autocmd QuickFixCmdPost make* call s:pop_command()
 augroup END
 
 " }}}1
