@@ -1725,9 +1725,9 @@ function! RailsNamedRoutes()
 endfunction
 
 function! s:RailsIncludefind(str,...)
-  if a:str == "ApplicationController"
+  if a:str ==# "ApplicationController"
     return "app/controllers/application.rb"
-  elseif a:str == "Test::Unit::TestCase"
+  elseif a:str ==# "Test::Unit::TestCase"
     return "test/unit/testcase.rb"
   elseif a:str == "<%="
     " Probably a silly idea
@@ -1747,43 +1747,43 @@ function! s:RailsIncludefind(str,...)
   let str = s:sub(str,'^:=[:@]','')
   let str = s:sub(str,':0x\x+$','') " For #<Object:0x...> style output
   let str = s:gsub(str,"[\"']",'')
-  if line =~ '\<\(require\|load\)\s*(\s*$'
+  if line =~# '\<\(require\|load\)\s*(\s*$'
     return str
   endif
   let str = rails#underscore(str)
   let fpat = '\(\s*\%("\f*"\|:\f*\|'."'\\f*'".'\)\s*,\s*\)*'
-  if a:str =~ '\u'
+  if a:str =~# '\u'
     " Classes should always be in .rb files
     let str .= '.rb'
-  elseif line =~ ':partial\s*=>\s*'
+  elseif line =~# ':partial\s*=>\s*'
     let str = s:sub(str,'([^/]+)$','_\1')
     let str = s:findview(str)
-  elseif line =~ '\<layout\s*(\=\s*' || line =~ ':layout\s*=>\s*'
+  elseif line =~# '\<layout\s*(\=\s*' || line =~# ':layout\s*=>\s*'
     let str = s:findview(s:sub(str,'^/=','layouts/'))
-  elseif line =~ ':controller\s*=>\s*'
+  elseif line =~# ':controller\s*=>\s*'
     let str = 'app/controllers/'.str.'_controller.rb'
-  elseif line =~ '\<helper\s*(\=\s*'
+  elseif line =~# '\<helper\s*(\=\s*'
     let str = 'app/helpers/'.str.'_helper.rb'
-  elseif line =~ '\<fixtures\s*(\='.fpat
+  elseif line =~# '\<fixtures\s*(\='.fpat
     if RailsFilePath() =~# '\<spec/'
       let str = s:sub(str,'^/@!','spec/fixtures/')
     else
       let str = s:sub(str,'^/@!','test/fixtures/')
     endif
-  elseif line =~ '\<stylesheet_\(link_tag\|path\)\s*(\='.fpat
+  elseif line =~# '\<stylesheet_\(link_tag\|path\)\s*(\='.fpat
     let str = s:sub(str,'^/@!','/stylesheets/')
     let str = 'public'.s:sub(str,'^[^.]*$','&.css')
-  elseif line =~ '\<javascript_\(include_tag\|path\)\s*(\='.fpat
-    if str == "defaults"
+  elseif line =~# '\<javascript_\(include_tag\|path\)\s*(\='.fpat
+    if str ==# "defaults"
       let str = "application"
     endif
     let str = s:sub(str,'^/@!','/javascripts/')
     let str = 'public'.s:sub(str,'^[^.]*$','&.js')
-  elseif line =~ '\<\(has_one\|belongs_to\)\s*(\=\s*'
+  elseif line =~# '\<\(has_one\|belongs_to\)\s*(\=\s*'
     let str = 'app/models/'.str.'.rb'
-  elseif line =~ '\<has_\(and_belongs_to_\)\=many\s*(\=\s*'
+  elseif line =~# '\<has_\(and_belongs_to_\)\=many\s*(\=\s*'
     let str = 'app/models/'.rails#singularize(str).'.rb'
-  elseif line =~ '\<def\s\+' && expand("%:t") =~ '_controller\.rb'
+  elseif line =~# '\<def\s\+' && expand("%:t") =~# '_controller\.rb'
     let str = s:sub(s:sub(RailsFilePath(),'/controllers/','/views/'),'_controller\.rb$','/'.str)
     " FIXME: support nested extensions
     let vt = s:view_types.","
@@ -1795,16 +1795,16 @@ function! s:RailsIncludefind(str,...)
         break
       endif
     endwhile
-  elseif str =~ '_\%(path\|url\)$'
+  elseif str =~# '_\%(path\|url\)$'
     " REST helpers
     let str = s:sub(str,'_%(path|url)$','')
     let str = s:sub(str,'^hash_for_','')
     let file = rails#app().named_route_file(str)
     if file == ""
       let str = s:sub(str,'^formatted_','')
-      if str =~ '^\%(new\|edit\)_'
+      if str =~# '^\%(new\|edit\)_'
         let str = 'app/controllers/'.s:sub(rails#pluralize(str),'^(new|edit)_(.*)','\2_controller.rb#\1')
-      elseif str == rails#singularize(str)
+      elseif str ==# rails#singularize(str)
         " If the word can't be singularized, it's probably a link to the show
         " method.  We should verify by checking for an argument, but that's
         " difficult the way things here are currently structured.
@@ -1823,7 +1823,7 @@ function! s:RailsIncludefind(str,...)
   if str =~ '^/' && !filereadable(str)
     let str = s:sub(str,'^/','')
   endif
-  if str =~ '^lib/' && !filereadable(str)
+  if str =~# '^lib/' && !filereadable(str)
     let str = s:sub(str,'^lib/','')
   endif
   return str
