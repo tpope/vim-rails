@@ -2547,7 +2547,7 @@ function! s:edit(cmd,file,...)
   let cmd .= ' '.(a:0 ? a:1 . ' ' : '')
   let file = a:file
   if file !~ '^/' && file !~ '^\w:' && file !~ '://'
-    exe cmd."`=fnamemodify(rails#app().path(file),':~:.')`"
+    exe cmd."`=fnamemodify(rails#app().path(file),':.')`"
   else
     exe cmd.file
   endif
@@ -2892,7 +2892,7 @@ function! s:Extract(bang,...) range abort
   else
     new
   endif
-  let shortout = fnamemodify(out,':~:.')
+  let shortout = fnamemodify(out,':.')
   silent file `=shortout`
   let &ft = ft
   let @@ = partial
