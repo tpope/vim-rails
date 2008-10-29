@@ -107,7 +107,7 @@ function! s:Detect(filename)
     return s:BufInit(strpart(fn,0,strlen(fn)-22))
   endif
   if isdirectory(fn)
-    let fn = fnamemodify(fn,":s?[\/]$??")
+    let fn = fnamemodify(fn,':s?[\/]$??')
   else
     let fn = fnamemodify(fn,':s?\(.*\)[\/][^\/]*$?\1?')
   endif
