@@ -3047,8 +3047,8 @@ function! s:cache_clear(...) dict
 endfunction
 
 function! rails#cache_clear(...)
-  if b:rails_root != ''
-    return call(rails#app().cache.clear,a:000,rails#app())
+  if exists('b:rails_root')
+    return call(rails#app().cache.clear,a:000,rails#app().cache)
   endif
 endfunction
 
