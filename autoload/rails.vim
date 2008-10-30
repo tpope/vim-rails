@@ -3723,7 +3723,6 @@ function! s:BufDatabase(...)
   else
     let env = s:environment()
   endif
-  unlet! b:dbext_buffer_defaulted
   if (!self.cache.has('dbext_settings') || !has_key(self.cache.get('dbext_settings'),env)) && (g:rails_dbext + (a:0 ? a:1 : 0)) <= 0
     unlet! s:lock_database
     return
