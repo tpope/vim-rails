@@ -3710,10 +3710,10 @@ function! s:app_dbext_settings(environment) dict
 endfunction
 
 function! s:BufDatabase(...)
-  let self = rails#app()
-  if exists("s:lock_database") || !exists('g:loaded_dbext')
+  if exists("s:lock_database") || !exists('g:loaded_dbext') || !exists('b:rails_root')
     return
   endif
+  let self = rails#app()
   let s:lock_database = 1
   if (a:0 && a:1 > 1)
     call self.cache.clear('dbext_settings')
@@ -3723,6 +3723,7 @@ function! s:BufDatabase(...)
   else
     let env = s:environment()
   endif
+  unlet! b:dbext_buffer_defaulted
   if (!self.cache.has('dbext_settings') || !has_key(self.cache.get('dbext_settings'),env)) && (g:rails_dbext + (a:0 ? a:1 : 0)) <= 0
     unlet! s:lock_database
     return
@@ -4225,7 +4226,9 @@ function! RailsBufInit(path)
   call s:BufSettings()
   call s:BufCommands()
   call s:BufAbbreviations()
-  call s:BufDatabase()
+  if exists("g:loaded_dbext") && g:loaded_dbext < 800
+    call s:BufDatabase()
+  endif
   " snippetsEmu.vim
   if exists('g:loaded_snippet')
     silent! runtime! ftplugin/rails_snippets.vim
@@ -4370,6 +4373,7 @@ augroup railsPluginAuto
   autocmd User BufEnterRails call s:RefreshBuffer()
   autocmd User BufEnterRails call s:resetomnicomplete()
   autocmd User BufEnterRails call s:BufDatabase(-1)
+  autocmd User dbextPreConnection call s:BufDatabase(1)
   autocmd BufWritePost */config/database.yml      call rails#cache_clear("dbext_settings")
   autocmd BufWritePost */test/test_helper.rb      call rails#cache_clear("user_assertions")
   autocmd BufWritePost */config/routes.rb         call rails#cache_clear("named_routes")
