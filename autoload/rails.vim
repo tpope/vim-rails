@@ -720,7 +720,7 @@ function! s:BufCommands()
     command! -buffer -bar -nargs=? -bang  Rproject :call s:Project(<bang>0,<q-args>)
   endif
   if exists("g:loaded_dbext")
-    command! -buffer -bar -nargs=? -bang  -complete=customlist,s:Complete_environments Rdbext  :call s:BufDatabase(2,<q-args>,<bang>0)
+    command! -buffer -bar -nargs=? -bang  -complete=customlist,s:Complete_environments Rdbext  :call s:BufDatabase(2,<q-args>,<bang>0)|let b:dbext_buffer_defaulted = 1
   endif
   let ext = expand("%:e")
   if ext =~ s:viewspattern()
