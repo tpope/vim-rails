@@ -1539,7 +1539,7 @@ function! s:Edit(bang,count,arg,...)
 endfunction
 
 function! s:fuzzyglob(arg)
-  return a:arg == '' ? '*' : s:gsub(a:arg,'[^/]|/$','&*')
+  return '*'.s:gsub(s:gsub(a:arg,'[^/]','[&]*'),'/','/*')
 endfunction
 
 function! s:Complete_find(ArgLead, CmdLine, CursorPos)
@@ -1879,9 +1879,10 @@ function! s:completion_filter(results,A)
   call filter(results,'v:val !~# "\\~$"')
   let filtered = filter(copy(results),'s:startswith(v:val,a:A)')
   if !empty(filtered) | return filtered | endif
-  let regex = s:gsub(a:A,'.','[&].*')
+  let regex = s:gsub(a:A,'[^/]','[&].*')
   let filtered = filter(copy(results),'v:val =~# "^".regex')
   if !empty(filtered) | return filtered | endif
+  let regex = s:gsub(a:A,'.','[&].*')
   let filtered = filter(copy(results),'v:val =~# regex')
   return filtered
 endfunction
@@ -1935,10 +1936,10 @@ function! s:controllerList(A,L,P)
 endfunction
 
 function! s:viewList(A,L,P)
-  let prefix = s:sub(a:A,'[^/]*$','')
   let c = s:controller(1)
-  let top = rails#app().relglob("app/views/",prefix."*[^~]")
-  if c != '' && prefix == ''
+  let top = rails#app().relglob("app/views/",s:fuzzyglob(a:A))
+  call filter(top,'v:val !~# "\\~$"')
+  if c != '' && a:A !~ '/'
     let local = rails#app().relglob("app/views/".c."/","*.*[^~]")
     return s:completion_filter(local+top,a:A)
   endif
@@ -2013,7 +2014,7 @@ function! s:integrationtestList(A,L,P)
 endfunction
 
 function! s:specList(A,L,P)
-  return s:autocamelize(rails#app().relglob("spec/","**/*","_spec.rb"),a:A)
+  return s:completion_filter(rails#app().relglob("spec/","**/*","_spec.rb"),a:A)
 endfunction
 
 function! s:pluginList(A,L,P)
