@@ -1468,12 +1468,12 @@ function! s:BufNavCommands()
   command! -buffer -bar -nargs=* -complete=customlist,s:Complete_find    AS :call s:Alternate(<bang>0,"S",<f-args>)
   command! -buffer -bar -nargs=* -complete=customlist,s:Complete_find    AV :call s:Alternate(<bang>0,"V",<f-args>)
   command! -buffer -bar -nargs=* -complete=customlist,s:Complete_find    AT :call s:Alternate(<bang>0,"T",<f-args>)
-  command! -buffer -bar -nargs=* -complete=customlist,s:Complete_related AN :call s:Related(<bang>0,"" ,<f-args>)
-  command! -buffer -bar -nargs=* -complete=customlist,s:Complete_related R  :call s:Related(<bang>0,"" ,<f-args>)
-  command! -buffer -bar -nargs=* -complete=customlist,s:Complete_related RE :call s:Related(<bang>0,"E",<f-args>)
-  command! -buffer -bar -nargs=* -complete=customlist,s:Complete_related RS :call s:Related(<bang>0,"S",<f-args>)
-  command! -buffer -bar -nargs=* -complete=customlist,s:Complete_related RV :call s:Related(<bang>0,"V",<f-args>)
-  command! -buffer -bar -nargs=* -complete=customlist,s:Complete_related RT :call s:Related(<bang>0,"T",<f-args>)
+  command! -buffer -bar -nargs=* -complete=customlist,s:Complete_edit    AN :call s:Related(<bang>0,"" ,<f-args>)
+  command! -buffer -bar -nargs=* -complete=customlist,s:Complete_edit    R  :call s:Related(<bang>0,"" ,<f-args>)
+  command! -buffer -bar -nargs=* -complete=customlist,s:Complete_edit    RE :call s:Related(<bang>0,"E",<f-args>)
+  command! -buffer -bar -nargs=* -complete=customlist,s:Complete_edit    RS :call s:Related(<bang>0,"S",<f-args>)
+  command! -buffer -bar -nargs=* -complete=customlist,s:Complete_edit    RV :call s:Related(<bang>0,"V",<f-args>)
+  command! -buffer -bar -nargs=* -complete=customlist,s:Complete_edit    RT :call s:Related(<bang>0,"T",<f-args>)
 endfunction
 
 function! s:djump(def)
@@ -1559,14 +1559,6 @@ endfunction
 
 function! s:Complete_edit(ArgLead, CmdLine, CursorPos)
   return s:completion_filter(rails#app().relglob("",s:fuzzyglob(a:ArgLead)),a:ArgLead)
-endfunction
-
-function! s:Complete_related(ArgLead, CmdLine, CursorPos)
-  if a:ArgLead =~# '^\u'
-    return s:Complete_find(a:ArgLead, a:CmdLine, a:CursorPos)
-  else
-    return filter(s:Complete_edit(a:ArgLead, a:CmdLine, a:CursorPos),'v:val !~# "^\\u"')
-  endif
 endfunction
 
 function! s:Complete_cd(ArgLead, CmdLine, CursorPos)
@@ -2684,7 +2676,7 @@ endfunction
 
 function! s:Related(bang,cmd,...)
   if a:0
-    return call(a:1 =~# '^\u' ? 's:Find' : 's:Edit',[a:bang,1,a:cmd]+a:000)
+    return call('s:Edit',[a:bang,1,a:cmd]+a:000)
   else
     let cmd = a:cmd.(a:bang?"!":"")
     let file = s:RelatedFile()
