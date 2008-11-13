@@ -419,6 +419,8 @@ function! rails#singularize(word)
   let word = s:sub(word,'ves$','fs')
   let word = s:sub(word,'ss%(es)=$','sss')
   let word = s:sub(word,'s$','')
+  let word = s:sub(word,'%(tatus|lias)\zse$','')
+  let word = s:sub(word,'%(nd|rt)\zsice$','ex')
   return word
 endfunction
 
@@ -428,9 +430,10 @@ function! rails#pluralize(word)
     return word
   endif
   let word = s:sub(word,'[aeio]@<!y$','ie')
+  let word = s:sub(word,'%(nd|rt)@<=ex$','ice')
   let word = s:sub(word,'%([osxz]|[cs]h)$','&e')
   let word = s:sub(word,'f@<!f$','ve')
-  let word .= "s"
+  let word .= 's'
   let word = s:sub(word,'ersons$','eople')
   return word
 endfunction
