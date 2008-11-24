@@ -974,6 +974,10 @@ endfunction
 function! s:Rake(bang,lnum,arg)
   let self = rails#app()
   let lnum = a:lnum < 0 ? 0 : a:lnum
+  if &l:makeprg !~# 'rake'
+    let old_make = &makeprg
+    let &makeprg = 'rake'
+  endif
   let oldefm = &efm
   if a:bang
     let &l:errorformat = s:efm_backtrace
@@ -1102,6 +1106,9 @@ function! s:Rake(bang,lnum,arg)
   endif
   if oldefm != ''
     let &l:errorformat = oldefm
+  endif
+  if old_make != ''
+    let &l:makeprg = old_make
   endif
 endfunction
 
