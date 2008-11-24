@@ -1107,7 +1107,7 @@ function! s:Rake(bang,lnum,arg)
   if oldefm != ''
     let &l:errorformat = oldefm
   endif
-  if old_make != ''
+  if exists('old_make')
     let &l:makeprg = old_make
   endif
 endfunction
