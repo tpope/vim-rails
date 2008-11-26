@@ -3615,48 +3615,40 @@ endfunction
 function! s:NewProjectTemplate(proj,rr)
   let str = a:proj.'="'.a:rr."\" CD=. filter=\"*\" {\n"
   let str .= " app=app {\n"
-  if isdirectory(a:rr.'/app/apis')
-    let str .= "  apis=apis {\n  }\n"
-  endif
-  let str .= "  controllers=controllers filter=\"**\" {\n  }\n"
-  let str .= "  helpers=helpers filter=\"**\" {\n  }\n"
-  let str .= "  models=models filter=\"**\" {\n  }\n"
-  let str .= "  views=views filter=\"**\" {\n  }\n"
+  for dir in ['apis','controller','helpers','models','views']
+    let str .= s:addprojectdir(a:rr,'app',dir)
+  endfor
   let str .= " }\n"
   let str .= " config=config {\n  environments=environments {\n  }\n }\n"
   let str .= " db=db {\n"
-  if isdirectory(a:rr.'/db/migrate')
-    let str .= "  migrate=migrate {\n  }\n"
-  endif
+  let str .= s:addprojectdir(a:rr,'db','migrate')
   let str .= " }\n"
   let str .= " lib=lib filter=\"* */**/*.rb \" {\n  tasks=tasks filter=\"**/*.rake\" {\n  }\n }\n"
   let str .= " public=public {\n  images=images {\n  }\n  javascripts=javascripts {\n  }\n  stylesheets=stylesheets {\n  }\n }\n"
   if isdirectory(a:rr.'/spec')
     let str .= " spec=spec {\n"
-    let str .= "  controllers=controllers filter=\"**\" {\n  }\n"
-    let str .= "  fixtures=fixtures filter=\"**\" {\n  }\n"
-    let str .= "  helpers=helpers filter=\"**\" {\n  }\n"
-    let str .= "  models=models filter=\"**\" {\n  }\n"
-    let str .= "  views=views filter=\"**\" {\n  }\n }\n"
+    for dir in ['controllers','fixtures','helpers','models','views']
+      let str .= s:addprojectdir(a:rr,'spec',dir)
+    endfor
+    let str .= " }\n"
   endif
-  let str .= " test=test {\n"
-  if isdirectory(a:rr.'/test/fixtures')
-    let str .= "  fixtures=fixtures filter=\"**\" {\n  }\n"
-  endif
-  if isdirectory(a:rr.'/test/functional')
-    let str .= "  functional=functional filter=\"**\" {\n  }\n"
-  endif
-  if isdirectory(a:rr.'/test/integration')
-    let str .= "  integration=integration filter=\"**\" {\n  }\n"
-  endif
-  if isdirectory(a:rr.'/test/mocks')
-    let str .= "  mocks=mocks filter=\"**\" {\n  }\n"
-  endif
-  if isdirectory(a:rr.'/test/unit')
-    let str .= "  unit=unit filter=\"**\" {\n  }\n"
-  endif
-  let str .= " }\n}\n"
+  if isdirectory(a:rr.'/test')
+    let str .= " test=test {\n"
+    for dir in ['fixtures','functional','integration','mocks','unit']
+      let str .= s:addprojectdir(a:rr,'test',dir)
+    endfor
+    let str .= " }\n"
+  end
+  let str .= "}\n"
   return str
+endfunction
+
+function! s:addprojectdir(rr,parentdir,dir)
+  if isdirectory(a:rr.'/'.a:parentdir.'/'.a:dir)
+    return '  '.a:dir.'='.a:dir." filter=\"**\" {\n  }\n"
+  else
+    return ''
+  endif
 endfunction
 
 " }}}1
