@@ -720,7 +720,7 @@ function! s:BufCommands()
         \ else | call s:Doc(<bang>0,<q-args>) | endif
   command! -buffer -bar -nargs=0 -bang Rrefresh :if <bang>0|unlet! g:autoloaded_rails|source `=s:file`|endif|call s:Refresh(<bang>0)
   if exists(":Project")
-    command! -buffer -bar -nargs=? -bang  Rproject :call s:Project(<bang>0,<q-args>)
+    command! -buffer -bar -nargs=? Rproject :call s:Project(<bang>0,<q-args>)
   endif
   if exists("g:loaded_dbext")
     command! -buffer -bar -nargs=? -bang  -complete=customlist,s:Complete_environments Rdbext  :call s:BufDatabase(2,<q-args>,<bang>0)|let b:dbext_buffer_defaulted = 1
@@ -3576,7 +3576,7 @@ function! s:Project(bang,arg)
 .
     endif
     let line = line('.')+1
-    call s:NewProject(projname,rr,a:bang)
+    call s:NewProject(projname,rr)
   endif
   normal! zMzo
   if search("^ app=app {","W",line+10)
@@ -3586,9 +3586,9 @@ function! s:Project(bang,arg)
   normal! 0zt
 endfunction
 
-function! s:NewProject(proj,rr,fancy)
+function! s:NewProject(proj,rr)
     let line = line('.')+1
-    let template = s:NewProjectTemplate(a:proj,a:rr,a:fancy)
+    let template = s:NewProjectTemplate(a:proj,a:rr)
     silent put =template
     exe line
     " Ugh. how else can I force detecting folds?
@@ -3612,7 +3612,7 @@ function! s:NewProject(proj,rr,fancy)
     endif
 endfunction
 
-function! s:NewProjectTemplate(proj,rr,fancy)
+function! s:NewProjectTemplate(proj,rr)
   let str = a:proj.'="'.a:rr."\" CD=. filter=\"*\" {\n"
   let str .= " app=app {\n"
   if isdirectory(a:rr.'/app/apis')
@@ -3621,18 +3621,7 @@ function! s:NewProjectTemplate(proj,rr,fancy)
   let str .= "  controllers=controllers filter=\"**\" {\n  }\n"
   let str .= "  helpers=helpers filter=\"**\" {\n  }\n"
   let str .= "  models=models filter=\"**\" {\n  }\n"
-  if a:fancy
-    let str .= "  views=views {\n"
-    let views = s:relglob(a:rr.'/app/views/','*')."\n"
-    while views != ''
-      let dir = matchstr(views,'^.\{-\}\ze\n')
-      let views = s:sub(views,'^.{-}\n','')
-      let str .= "   ".dir."=".dir.' filter="**" {'."\n   }\n"
-    endwhile
-    let str .= "  }\n"
-  else
-    let str .= "  views=views filter=\"**\" {\n  }\n"
-  endif
+  let str .= "  views=views filter=\"**\" {\n  }\n"
   let str .= " }\n"
   let str .= " config=config {\n  environments=environments {\n  }\n }\n"
   let str .= " db=db {\n"

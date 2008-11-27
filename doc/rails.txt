@@ -666,19 +666,6 @@ place) are also covered in this section.
 			a new project, with appropriate directories (app,
 			etc., but not vendor).
 
-						*rails-:Rproject!*
-:Rproject! [{file}]	Same as :Rproject, only delete existing project if it
-			exists and recreate it.  The logic to delete the old
-			project is convoluted and possibly erroneous; report
-			any problems to the |rails-plugin-author|.  A handy
-			mapping might look something like: >
-		autocmd User Rails map <buffer> <F6> :Rproject!|silent w<CR>
-<			As a bonus, this command organizes views into separate
-			directories for easier navigation.  The downside of
-			this is that you will have to regenerate your project
-			each time you add another view directory (which is why
-			this command recreates your project each time!).
-
 						*rails-:Rdbext* *rails-dbext*
 :Rdbext [{environment}] This command is only provided when the |dbext| plugin
 			is installed.  Loads the {environment} configuration
