@@ -1077,7 +1077,16 @@ function! s:Rake(bang,lnum,arg)
   elseif t=~ '^\%(db-\)\=migration\>' && RailsFilePath() !~# '\<db/schema\.rb$'
     let ver = matchstr(RailsFilePath(),'\<db/migrate/0*\zs\d*\ze_')
     if ver != ""
-      exe "make db:migrate VERSION=".ver
+      let method = s:lastmethod(lnum)
+      if method == "down"
+        exe "make db:migrate:down VERSION=".ver
+      elseif method == "up"
+        exe "make db:migrate:up VERSION=".ver
+      elseif lnum > 0
+        exe "make db:migrate:down db:migrate:up VERSION=".ver
+      else
+        exe "make db:migrate VERSION=".ver
+      endif
     else
       make db:migrate
     endif

@@ -141,7 +141,10 @@ actually edit a file from a Rails application.
 			db:migrate in a migration, or your current test).
 			In tests (and specs), giving a line argument runs only
 			the test method (or example) at that line.  Use :.Rake
-			to run the test method at the cursor position.
+			to run the test method at the cursor position.  Use
+			:.Rake inside a self.up or self.down method in a
+			migration to run the db:migrate:up or db:migrate:down
+			task for that particular migration.
 
 						*rails-:Rake!*
 :[range]Rake! {targets}	Called with a bang, :Rake will use an alternate
