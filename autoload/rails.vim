@@ -3615,7 +3615,7 @@ endfunction
 function! s:NewProjectTemplate(proj,rr)
   let str = a:proj.'="'.a:rr."\" CD=. filter=\"*\" {\n"
   let str .= " app=app {\n"
-  for dir in ['apis','controller','helpers','models','views']
+  for dir in ['apis','controllers','helpers','models','views']
     let str .= s:addprojectdir(a:rr,'app',dir)
   endfor
   let str .= " }\n"
