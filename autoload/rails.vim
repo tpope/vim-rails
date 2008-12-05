@@ -832,7 +832,7 @@ function! s:app_tags_command() dict
   else
     return s:error("ctags not found")
   endif
-  exe "!".cmd." -f ".s:escarg(self.path("tmp/tags"))." --exclude=facebox.js --exclude=\"*.*.js\" -R ".s:escarg(self.path())
+  exe "!".cmd." -f ".s:escarg(self.path("tmp/tags"))." --exclude=facebox.js --exclude=\"*.*.js\" --langmap=\"ruby:+.rake.builder.rjs\" -R ".s:escarg(self.path())
 endfunction
 
 call s:add_methods('app',['tags_command'])
