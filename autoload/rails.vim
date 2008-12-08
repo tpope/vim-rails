@@ -721,6 +721,8 @@ function! s:BufCommands()
   command! -buffer -bar -nargs=0 -bang Rrefresh :if <bang>0|unlet! g:autoloaded_rails|source `=s:file`|endif|call s:Refresh(<bang>0)
   if exists(":Project")
     command! -buffer -bar -nargs=? Rproject :call s:Project(<bang>0,<q-args>)
+  elseif exists(":NERDTree")
+    command! -buffer -bar -nargs=? Rproject :NERDTree `=rails#app().path()`
   endif
   if exists("g:loaded_dbext")
     command! -buffer -bar -nargs=? -bang  -complete=customlist,s:Complete_environments Rdbext  :call s:BufDatabase(2,<q-args>,<bang>0)|let b:dbext_buffer_defaulted = 1
