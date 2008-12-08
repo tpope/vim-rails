@@ -1106,12 +1106,12 @@ function! s:Rake(bang,lnum,arg)
     endif
   elseif RailsFilePath() =~# '\<features/.*\.feature$'
     if lnum > 0
-      exe 'make features CUCUMBER_COLORS_DISABLED=1 FEATURE="%:p" CUCUMBER_OPTS=--line='.lnum
+      exe 'make features FEATURE="%:p":'.lnum
     else
-      make features CUCUMBER_COLORS_DISABLED=1 FEATURE="%:p"
+      make features FEATURE="%:p"
     endif
   elseif RailsFilePath() =~# '\<features/'
-    make features CUCUMBER_COLORS_DISABLED=1
+    make features
   else
     make
   endif
