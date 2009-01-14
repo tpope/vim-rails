@@ -948,7 +948,7 @@ sourced in the |sandbox| for security reasons.
 			called directly, from an autocommand, or from
 			config/rails.vim.
 
-Options may be set set in one of four scopes, which my be indicated by an
+Options may be set in one of four scopes, which my be indicated by an
 optional prefix.  These scopes determine how broadly an option will apply.
 Generally, the default scope is sufficient
 
