@@ -2162,9 +2162,7 @@ function! s:EditSimpleRb(bang,cmd,name,target,prefix,suffix)
   return s:findedit(cmd,f)
 endfunction
 
-function! s:migrationfor(file)
-  let self = rails#app()
-  let tryagain = 0
+function! s:app_migration(file) dict
   let arg = a:file
   if arg =~ '^0\+$'
     if self.has_file('db/schema.rb')
@@ -2181,29 +2179,23 @@ function! s:migrationfor(file)
   elseif arg =~ '^\d\d\d$'
     let glob = ''.arg.'_*.rb'
   elseif arg == ''
-    if s:model(1) != ''
-      let glob = '*_'.rails#pluralize(s:model(1)).'.rb'
-      let tryagain = 1
-    else
-      let glob = '*.rb'
-    endif
+    let glob = '*.rb'
   else
     let glob = '*'.rails#underscore(arg).'*rb'
   endif
-  let migr = s:sub(glob(rails#app().path('db/migrate/').glob),'.*\n','')
-  if migr == '' && tryagain
-    let migr = s:sub(glob(rails#app().path().'/db/migrate/*.rb'),'.*\n','')
-  endif
-  if s:startswith(migr,rails#app().path())
-    let migr = strpart(migr,1+strlen(rails#app().path()))
+  let migr = s:sub(glob(self.path('db/migrate/').glob),'.*\n','')
+  if s:startswith(migr,self.path())
+    let migr = strpart(migr,1+strlen(self.path()))
   endif
   return migr
 endfunction
 
+call s:add_methods('app', ['migration'])
+
 function! s:migrationEdit(bang,cmd,...)
   let cmd = s:findcmdfor(a:cmd.(a:bang?'!':''))
   let arg = a:0 ? a:1 : ''
-  let migr = arg == "." ? "db/migrate" : s:migrationfor(arg)
+  let migr = arg == "." ? "db/migrate" : rails#app().migration(arg)
   if migr != ''
     call s:findedit(cmd,migr)
   else
@@ -2604,13 +2596,13 @@ function! s:AlternateFile()
   elseif f =~ '\<config/environment\.rb$' | return "config/database.yml"
   elseif f =~ '\<db/migrate/\d\d\d_'
     let num = matchstr(f,'\<db/migrate/0*\zs\d\+\ze_')-1
-    return num ? s:migrationfor(num) : "db/schema.rb"
+    return rails#app().migration(num)
   elseif f =~ '\<application\.js$'
     return "app/helpers/application_helper.rb"
   elseif t =~ '^js\>'
     return "public/javascripts/application.js"
   elseif f =~ '\<db/schema\.rb$'
-    return s:migrationfor("")
+    return rails#app().migration('')
   elseif t =~ '^view\>'
     if t =~ '\<layout\>'
       let dest = fnamemodify(f,':r:s?/layouts\>??').'/layout.'.fnamemodify(f,':e')
@@ -2748,7 +2740,7 @@ function! s:RelatedFile()
   elseif f =~ '\<config/environment\.rb$' | return "config/routes.rb"
   elseif f =~ '\<db/migrate/\d\d\d_'
     let num = matchstr(f,'\<db/migrate/0*\zs\d\+\ze_')+1
-    let migr = s:migrationfor(num)
+    let migr = rails#app().migration(num)
     return migr == '' ? "db/schema.rb" : migr
   elseif t =~ '^test\>' && f =~ '\<test/\w\+/'
     let target = s:sub(f,'.*<test/\w+/','test/mocks/test/')
@@ -2780,13 +2772,13 @@ function! s:RelatedFile()
   elseif t=~ '^helper\>'
     return s:findlayout(s:controller())
   elseif t =~ '^model-arb\>'
-    return s:migrationfor('create_'.rails#pluralize(expand('%:t:r')))
+    return rails#app().migration('create_'.rails#pluralize(s:gsub(s:model(),'/','_')))
   elseif t =~ '^model-aro\>'
     return s:sub(f,'_observer\.rb$','.rb')
   elseif t =~ '^api\>'
     return s:sub(s:sub(f,'/apis/','/controllers/'),'_api\.rb$','_controller.rb')
   elseif f =~ '\<db/schema\.rb$'
-    return s:migrationfor(1)
+    return rails#app().migration(1)
   else
     return ""
   endif

@@ -364,11 +364,9 @@ name will be singularized and used.  To override this, use a command like: >
 :Rmigration [{pattern}]	If {pattern} is a number, find the migration for that
 			particular set of digits, zero-padding if necessary.
 			Otherwise, find the newest migration containing the
-			given pattern.  The pattern defaults to the current
-			model name, pluralized.  So when editing the Post
-			model, :Rmigration with no arguments might find
-			create_posts.rb, or add_date_to_posts.rb.  Give a
-			numeric argument of 0 to edit db/schema.rb.
+			given pattern.  Omitting the pattern selects the
+			latest migration.  Give a numeric argument of 0 to edit
+			db/schema.rb.
 
 						*rails-:Robserver*
 :Robserver [{name}]	Find the observer with a name like
