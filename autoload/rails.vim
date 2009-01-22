@@ -555,6 +555,12 @@ function! s:app_calculate_file_type(path) dict
     let r = 'lib'
   elseif f =~ '\<spec/\w*s/.*_spec\.rb$'
     let r = s:sub(f,'.*<spec/(\w*)s/.*','spec-\1')
+  elseif f =~ '\<features/.*\.feature$'
+    let r = 'cucumber-feature'
+  elseif f =~ '\<features/step_definitions/.*_steps\.rb$'
+    let r = 'cucumber-steps'
+  elseif f =~ '\<features/.*\.rb$'
+    let r = 'cucumber'
   elseif f =~ '\<\%(test\|spec\)/fixtures\>'
     if e == "yml"
       let r = "fixtures-yaml"
@@ -1104,13 +1110,13 @@ function! s:Rake(bang,lnum,arg)
     else
       make test:functionals
     endif
-  elseif RailsFilePath() =~# '\<features/.*\.feature$'
+  elseif t =~ '^cucumber-feature\>'
     if lnum > 0
       exe 'make features FEATURE="%:p":'.lnum
     else
       make features FEATURE="%:p"
     endif
-  elseif RailsFilePath() =~# '\<features/'
+  elseif t =~ '^cucumber\>'
     make features
   else
     make
