@@ -2796,7 +2796,7 @@ function! s:Extract(bang,...) range abort
   endif
   let rails_root = rails#app().path()
   let ext = expand("%:e")
-  let file = a:1
+  let file = s:sub(a:1,'%(/|^)\zs_\ze[^/]*$','')
   let first = a:firstline
   let last = a:lastline
   let range = first.",".last
