@@ -594,11 +594,12 @@ function! s:app_environments() dict
   return copy(self.cache.get('environments'))
 endfunction
 
-" Check for Test::Unit and rSpec by calling this method with an argument of
-" 'test' or 'spec'.  Given no arguments, returns a list.
+" Check for Test::Unit, RSpec, and Cucumber by calling this method with an
+" argument of 'test', 'spec', or 'features'.  Given no arguments, returns a
+" list.
 function! s:app_test_suites(...) dict
   if self.cache.needs('test_suites')
-    let suites = filter(['test','spec'],'isdirectory(self.path(v:val))')
+    let suites = filter(['test','spec','features'],'isdirectory(self.path(v:val))')
     call self.cache.set('test_suites',suites)
   endif
   if a:0
