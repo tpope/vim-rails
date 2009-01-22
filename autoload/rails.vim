@@ -1892,9 +1892,11 @@ function! s:BufFinderCommands()
   endif
   call s:addfilecmds("stylesheet")
   call s:addfilecmds("javascript")
+  call s:addfilecmds("plugin")
   call s:addfilecmds("task")
   call s:addfilecmds("lib")
-  call s:addfilecmds("plugin")
+  call s:addfilecmds("environment")
+  call s:addfilecmds("initializer")
 endfunction
 
 function! s:completion_filter(results,A)
@@ -2065,6 +2067,14 @@ function! s:libList(A,L,P)
     let all = rails#app().relglob(path,"**/*",".rb") + all
   endif
   return s:autocamelize(all,a:A)
+endfunction
+
+function! s:environmentList(A,L,P)
+  return s:completion_filter(rails#app().relglob("config/environments/","**/*",".rb"),a:A)
+endfunction
+
+function! s:initializerList(A,L,P)
+  return s:completion_filter(rails#app().relglob("config/initializers/","**/*",".rb"),a:A)
 endfunction
 
 function! s:Navcommand(bang,...)
@@ -2470,6 +2480,14 @@ function! s:libEdit(bang,cmd,...)
   else
     call s:EditSimpleRb(a:bang,a:cmd,"lib","routes","config/",".rb")
   endif
+endfunction
+
+function! s:environmentEdit(bang,cmd,...)
+  return s:EditSimpleRb(a:bang,a:cmd,"environment",a:0? a:1 : "../environment","config/environments/",".rb")
+endfunction
+
+function! s:initializerEdit(bang,cmd,...)
+  return s:EditSimpleRb(a:bang,a:cmd,"initializer",a:0? a:1 : "../routes","config/initializers/",".rb")
 endfunction
 
 " }}}1
