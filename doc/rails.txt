@@ -168,7 +168,10 @@ actually edit a file from a Rails application.
 			|:help| rails.
 
 						*rails-:Redit*
-:Redit {file}		Edit {file}, relative to the application root.
+:Redit {file}		Edit {file}, relative to the application root.  Append
+			:line or #method to jump within the file, as in
+			:Redit app/controllers/users_controller.rb:12 or
+			:Redit app/models/user.rb#activate .
 
 						*rails-:Rlog*
 :Rlog [{logfile}]	Split window and open {logfile} ($RAILS_ENV or
@@ -340,7 +343,9 @@ can override the mapping from model related files to controller related files
 Each of the following commands has variants for splitting, vertical splitting
 and opening in a new tab.  For :Rmodel, those variants would be :RSmodel,
 :RVmodel, and :RTmodel.  There is also :REmodel which is a synonym for :Rmodel
-(future versions might allow customization of the behavior of :Rmodel).
+(future versions might allow customization of the behavior of :Rmodel).  They
+also allow for jumping to methods or line numbers using the same syntax as
+|:Redit|.
 
 
 Model Navigation Commands ~

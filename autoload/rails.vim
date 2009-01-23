@@ -1014,9 +1014,9 @@ function! s:Rake(bang,lnum,arg)
     let arg = s:sub(arg,'^runner:','')
     let root = matchstr(arg,'%\%(:\w\)*')
     let file = expand(root).matchstr(arg,'%\%(:\w\)*\zs.*')
-    if file =~ '[@#].*$'
-      let extra = " -- -n ".matchstr(file,'[@#]\zs.*')
-      let file = s:sub(file,'[@#].*','')
+    if file =~ '#.*$'
+      let extra = " -- -n ".matchstr(file,'#\zs.*')
+      let file = s:sub(file,'#.*','')
     else
       let extra = ''
     endif
@@ -1030,8 +1030,8 @@ function! s:Rake(bang,lnum,arg)
   elseif arg =~ '^run:'
     let arg = s:sub(arg,'^run:','')
     let arg = s:sub(arg,'^%:h',expand('%:h'))
-    let arg = s:sub(arg,'^%(\%|$|[@#]@=)',expand('%'))
-    let arg = s:sub(arg,'[@#](\w+)$',' -- -n\1')
+    let arg = s:sub(arg,'^%(\%|$|#@=)',expand('%'))
+    let arg = s:sub(arg,'#(\w+[?!=]=)$',' -- -n\1')
     call s:makewithruby(withrubyargs.'-r'.arg,arg !~# '_\%(spec\|test\)\.rb$')
   elseif arg != ''
     exe 'make '.arg
@@ -1506,8 +1506,10 @@ function! s:BufNavCommands()
 endfunction
 
 function! s:djump(def)
-  let def = s:sub(a:def,'^[@#]','')
-  if def != ''
+  let def = s:sub(a:def,'^[#:]','')
+  if def =~ '^\d\+$'
+    exe def
+  elseif def != ''
     let ext = matchstr(def,'\.\zs.*')
     let def = matchstr(def,'[^.]*')
     let v:errmsg = ''
@@ -1537,9 +1539,9 @@ function! s:Find(bang,count,arg,...)
       let i += 1
     endwhile
     let file = a:{i}
-    let tail = matchstr(file,'[@#].*$')
+    let tail = matchstr(file,'#.*$\|:\d*\%(:in\>.*\)\=$')
     if tail != ""
-      let file = s:sub(file,'[@#].*$','')
+      let file = s:sub(file,'#.*$|:\d*%(:in>.*)=$','')
     endif
     if file != ""
       let file = s:RailsIncludefind(file)
@@ -2151,8 +2153,8 @@ function! s:EditSimpleRb(bang,cmd,name,target,prefix,suffix)
     return s:error("E471: Argument required")
   endif
   let f = rails#underscore(a:target)
-  let jump = matchstr(f,'[@#].*')
-  let f = s:sub(f,'[@#].*','')
+  let jump = matchstr(f,'#.*\|:\d*\%(:in\)\=$')
+  let f = s:sub(f,'#.*|:\d*%(:in)=$','')
   if f == '.'
     let f = s:sub(f,'\.$','')
   else
@@ -2528,11 +2530,11 @@ function! s:findedit(cmd,files,...) abort
   if len(files) == 1
     let file = files[0]
   else
-    let file = get(filter(copy(files),'rails#app().has_file(s:sub(v:val,"[@#].*",""))'),0,get(files,0,''))
+    let file = get(filter(copy(files),'rails#app().has_file(s:sub(v:val,"#.*|:\\d*$",""))'),0,get(files,0,''))
   endif
-  if file =~ '[@#]'
-    let djump = matchstr(file,'[@#]\zs.*')
-    let file = matchstr(file,'.\{-\}\ze[@#]')
+  if file =~ '#\|:\d*\%(:in\)\=$'
+    let djump = matchstr(file,'#\zs.*\|:\zs\d*\ze\%(:in\)\=$')
+    let file = s:sub(file,'#.*|:\d*%(:in)=$','')
   else
     let djump = ''
   endif
