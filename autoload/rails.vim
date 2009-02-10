@@ -90,9 +90,9 @@ function! s:pop_command()
   endif
 endfunction
 
-function! s:push_chdir()
+function! s:push_chdir(...)
   if !exists("s:command_stack") | let s:command_stack = [] | endif
-  if exists("b:rails_root") && !s:startswith(getcwd(), rails#app().path())
+  if exists("b:rails_root") && a:0 ? getcwd() !=# rails#app().path() : !s:startswith(getcwd(), rails#app().path())
     let chdir = exists("*haslocaldir") && haslocaldir() ? "lchdir " : "chdir "
     call add(s:command_stack,chdir.s:escarg(getcwd()))
     exe chdir.s:escarg(rails#app().path())
@@ -1010,7 +1010,16 @@ function! s:Rake(bang,lnum,arg)
       endif
     endif
     let withrubyargs = '-r ./config/boot -r '.s:rquote(self.path('config/environment')).' -e "puts \%((in \#{Dir.getwd}))" '
-    if arg =~# '^\%(stats\|routes\|secret\|notes\|time:zones\|db:\%(charset\|collation\|fixtures:identify\>.*\|version\)\)\%(:\|$\)'
+    if arg =~# '^notes\>'
+      let &l:errorformat = '%-P%f:,\ \ *\ [%*[\ ]%l]\ [%t%*[^]]] %m,\ \ *\ [%*[\ ]%l] %m,%-Q'
+      " %D to chdir is apparently incompatible with %P multiline messages
+      call s:push_chdir(1)
+      exe "make ".arg
+      call s:pop_command()
+      if a:bang
+        copen
+      endif
+    elseif arg =~# '^\%(stats\|routes\|secret\|time:zones\|db:\%(charset\|collation\|fixtures:identify\>.*\|version\)\)\%(:\|$\)'
       let &l:errorformat = '%D(in\ %f),%+G%.%#'
       exe "make ".arg
       if a:bang
