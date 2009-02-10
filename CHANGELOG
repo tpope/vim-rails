@@ -1,0 +1,10 @@
+:Rtags ignores jquery plugins (can trip up ctags).
+:Rtags indexes .rake, .rjs, and .builder files [Mark Wilden].
+:Rproject is more robust against missing directories [Mark Wilden].
+:Rproject uses NERDTree if project.vim not present.
+Highlight #default_scope in models; setup/teardown/test in tests [Daniel Schierbeck].
+:.Rake in a migration method runs db:migrate:up or db:migrate:down.
+Gracefully ignore leading underscore in :Rextract _foo.
+Navigation commands accept a line number (:Redit Rakefile:5).
+:Rmigration with no argument always jumps to latest migration.
+:Renvironment and :Rinitializer navigation commands.

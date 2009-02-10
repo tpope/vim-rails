@@ -1,0 +1,6 @@
+Default port is 4000
+:Rserver should call merb
+app/views/layout
+config/router.rb
+config/init.rb
+TODO: =%> in eruby.vim
