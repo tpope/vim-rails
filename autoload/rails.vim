@@ -1011,10 +1011,11 @@ function! s:Rake(bang,lnum,arg)
     endif
     let withrubyargs = '-r ./config/boot -r '.s:rquote(self.path('config/environment')).' -e "puts \%((in \#{Dir.getwd}))" '
     if arg =~# '^\%(stats\|routes\|secret\|notes\|time:zones\|db:\%(charset\|collation\|fixtures:identify\>.*\|version\)\)\%(:\|$\)'
-      " So you can see the output even with an inadequate redirect
-      call s:push_chdir()
-      exe "!".&makeprg." ".arg
-      call s:pop_command()
+      let &l:errorformat = '%D(in\ %f),%+G%.%#'
+      exe "make ".arg
+      if a:bang
+        copen
+      endif
     elseif arg =~ '^preview\>'
       exe (lnum == 0 ? '' : lnum).'R'.s:gsub(arg,':','/')
     elseif arg =~ '^runner:'

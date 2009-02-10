@@ -149,7 +149,9 @@ actually edit a file from a Rails application.
 						*rails-:Rake!*
 :[range]Rake! {targets}	Called with a bang, :Rake will use an alternate
 			'errorformat' which attempts to parse the full stack
-			backtrace.
+			backtrace.  For purely informative rake tasks (stats,
+			routes, notes, etc), the preview pane is opened with
+			the full output of the command.
 
 						*rails-:Rcd*
 :Rcd [{directory}]	|:cd| to /path/to/railsapp/{directory}.
