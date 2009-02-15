@@ -32,6 +32,7 @@ task :publish => [:zip,:vimball] do
   Rake::SshFilePublisher.new("tpope.net","/var/www/railsvim",".","rails.zip","rails.vba").upload
 end
 
+desc "Install"
 task :install do
   vimfiles = if ENV['VIMFILES']
                ENV['VIMFILES']
