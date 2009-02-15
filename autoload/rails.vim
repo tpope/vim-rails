@@ -2395,7 +2395,7 @@ function! s:unittestEdit(bang,cmd,...)
   let cmd = s:findcmdfor(a:cmd.(a:bang?'!':''))
   let f = rails#underscore(a:0 ? a:1 : s:model(1))
   let mapping = {'test': ['test/unit/','_test.rb'], 'spec': ['spec/models/','_spec.rb']}
-  let tests = map(rails#app().test_suites(),'get(mapping,v:val,"test")')
+  let tests = map(filter(rails#app().test_suites(),'has_key(mapping,v:val)'),'get(mapping,v:val)')
   if empty(tests)
     let tests = [mapping[tests]]
   endif
@@ -2418,7 +2418,7 @@ function! s:functionaltestEdit(bang,cmd,...)
   let cmd = s:findcmdfor(a:cmd.(a:bang?'!':''))
   let f = rails#underscore(a:0 ? a:1 : s:controller(1))
   let mapping = {'test': ['test/functional/','_test.rb'], 'spec': ['spec/controllers/','_spec.rb']}
-  let tests = map(rails#app().test_suites(),'get(mapping,v:val,"test")')
+  let tests = map(filter(rails#app().test_suites(),'has_key(mapping,v:val)'),'get(mapping,v:val)')
   if empty(tests)
     let tests = [mapping[tests]]
   endif
