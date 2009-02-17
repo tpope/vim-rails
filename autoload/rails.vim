@@ -521,6 +521,8 @@ function! s:app_calculate_file_type(path) dict
     let r = "spec"
   elseif f =~ '_helper\.rb$'
     let r = "helper"
+  elseif f =~ '\<app/metal/.*\.rb$'
+    let r = "metal"
   elseif f =~ '\<app/models\>'
     let top = join(s:readfile(full_path,50),"\n")
     let class = matchstr(top,'\<Acti\w\w\u\w\+\%(::\h\w*\)\+\>')
@@ -1890,6 +1892,7 @@ endfunction
 function! s:BufFinderCommands()
   command! -buffer -bar -nargs=+ Rnavcommand :call s:Navcommand(<bang>0,<f-args>)
   command! -buffer -bar -nargs=+ Rcommand    :call s:warn("Warning: :Rcommand has been deprecated in favor of :Rnavcommand")|call s:Navcommand(<bang>0,<f-args>)
+  call s:addfilecmds("metal")
   call s:addfilecmds("model")
   call s:addfilecmds("view")
   call s:addfilecmds("controller")
@@ -2000,6 +2003,10 @@ endfunction
 
 function! s:javascriptList(A,L,P)
   return s:completion_filter(rails#app().relglob("public/javascripts/","**/*",".js"),a:A)
+endfunction
+
+function! s:metalList(A,L,P)
+  return s:autocamelize(rails#app().relglob("app/metal/","**/*",".rb"),a:A)
 endfunction
 
 function! s:modelList(A,L,P)
@@ -2252,6 +2259,10 @@ function! s:fixturesEdit(bang,cmd,...)
   else
     call s:findedit(a:cmd.(a:bang?'!':''),rails#app().find_file(c.e,["test/fixtures","spec/fixtures"],[".yml",".csv"],file))
   endif
+endfunction
+
+function! s:metalEdit(bang,cmd,...)
+  call s:EditSimpleRb(a:bang,a:cmd,"metal",a:0? a:1 : '../../config/boot',"app/metal/",".rb")
 endfunction
 
 function! s:modelEdit(bang,cmd,...)

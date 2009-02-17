@@ -451,8 +451,9 @@ The following commands are not clearly associated with models or controllers.
 :Rplugin					|rails-:Rplugin|
 :Rlib						|rails-:Rlib|
 :Rtask						|rails-:Rtask|
-:Renvironment                                   |rails-:Renvironment|
-:Rinitializer                                   |rails-:Rinitializer|
+:Rmetal						|rails-:Rmetal|
+:Renvironment					|rails-:Renvironment|
+:Rinitializer					|rails-:Rinitializer|
 :Rintegrationtest				|rails-:Rintegrationtest|
 :Rspec						|rails-:Rspec|
 
@@ -482,6 +483,10 @@ The following commands are not clearly associated with models or controllers.
 			tasks for that plugin can be specified as well.  If no
 			argument is given, either the current plugin's
 			Rakefile or the application Rakefile will be edited.
+
+						*rails-:Rmetal*
+:Renvironment [{name}]  Edit the app/metal file specified.  With no argument,
+			defaults to editing config/boot.rb.
 
 						*rails-:Renvironment*
 :Renvironment [{name}]  Edit the config/environments file specified.  With no
