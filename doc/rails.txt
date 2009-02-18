@@ -485,7 +485,7 @@ The following commands are not clearly associated with models or controllers.
 			Rakefile or the application Rakefile will be edited.
 
 						*rails-:Rmetal*
-:Renvironment [{name}]  Edit the app/metal file specified.  With no argument,
+:Rmetal [{name}]	Edit the app/metal file specified.  With no argument,
 			defaults to editing config/boot.rb.
 
 						*rails-:Renvironment*
