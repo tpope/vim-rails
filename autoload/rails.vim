@@ -1773,12 +1773,9 @@ endfunction
 
 function! s:RailsIncludefind(str,...)
   if a:str ==# "ApplicationController"
-    return "app/controllers/application.rb"
+    return "application_controller.rb\napp/controllers/application.rb"
   elseif a:str ==# "Test::Unit::TestCase"
     return "test/unit/testcase.rb"
-  elseif a:str == "<%="
-    " Probably a silly idea
-    return "action_view.rb"
   endif
   let str = a:str
   if a:0 == 1
@@ -1843,7 +1840,6 @@ function! s:RailsIncludefind(str,...)
       endif
     endwhile
   elseif str =~# '_\%(path\|url\)$'
-    " REST helpers
     let str = s:sub(str,'_%(path|url)$','')
     let str = s:sub(str,'^hash_for_','')
     let file = rails#app().named_route_file(str)
