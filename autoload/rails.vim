@@ -2187,13 +2187,13 @@ function! s:CommandEdit(bang,cmd,name,prefix,suffix,filter,default,...)
   endif
 endfunction
 
-function! s:EditSimpleRb(bang,cmd,name,target,prefix,suffix)
+function! s:EditSimpleRb(bang,cmd,name,target,prefix,suffix,...)
   let cmd = s:findcmdfor(a:cmd.(a:bang?'!':''))
   if a:target == ""
     " Good idea to emulate error numbers like this?
     return s:error("E471: Argument required")
   endif
-  let f = rails#underscore(a:target)
+  let f = a:0 ? a:target : rails#underscore(a:target)
   let jump = matchstr(f,'#.*\|:\d*\%(:in\)\=$')
   let f = s:sub(f,'#.*|:\d*%(:in)=$','')
   if f == '.'
@@ -2400,11 +2400,11 @@ function! s:apiEdit(bang,cmd,...)
 endfunction
 
 function! s:stylesheetEdit(bang,cmd,...)
-  return s:EditSimpleRb(a:bang,a:cmd,"stylesheet",a:0? a:1 : s:controller(1),"public/stylesheets/",".css")
+  return s:EditSimpleRb(a:bang,a:cmd,"stylesheet",a:0? a:1 : s:controller(1),"public/stylesheets/",".css",1)
 endfunction
 
 function! s:javascriptEdit(bang,cmd,...)
-  return s:EditSimpleRb(a:bang,a:cmd,"javascript",a:0? a:1 : "application","public/javascripts/",".js")
+  return s:EditSimpleRb(a:bang,a:cmd,"javascript",a:0? a:1 : "application","public/javascripts/",".js",1)
 endfunction
 
 function! s:unittestEdit(bang,cmd,...)
