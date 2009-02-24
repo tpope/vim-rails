@@ -2064,7 +2064,7 @@ function! s:integrationtestList(A,L,P)
     let found += s:autocamelize(rails#app().relglob("test/integration/","**/*","_test.rb"),a:A)
   endif
   if rails#app().test_suites('features')
-    let found += rails#app().relglob("features/","**/*",".feature")
+    let found += s:completion_filter(rails#app().relglob("features/","**/*",".feature"),a:A)
   endif
   return found
 endfunction
