@@ -329,6 +329,8 @@ function! s:model(...)
     return rails#singularize(s:sub(f,'.*<%(test|spec)/fixtures/(.*)\.\w*\~=$','\1'))
   elseif f =~ '\<\%(test\|spec\)/exemplars/.*_exemplar\.rb$'
     return s:sub(f,'.*<%(test|spec)/exemplars/(.*)_exemplar\.rb$','\1')
+  elseif f =~ '\<\%(test\|spec\)/factories/.*\.rb$'
+    return s:sub(f,'.*<%(test|spec)/factories/(.{-})%(_factory)=\.rb$','\1')
   elseif a:0 && a:1
     return rails#singularize(s:controller())
   endif
