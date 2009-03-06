@@ -979,15 +979,15 @@ let s:efm_backtrace='%D(in\ %f),'
       \.'%\\s%#[%f:%l:\ %#%m,'
       \.'%\\s%#%f:%l:\ %#%m'
 
-function! s:makewithruby(arg,...)
+function! s:makewithruby(arg,bang,...)
   if &efm == s:efm
-    if a:0 ? a:1 : 1
+    if (a:0 ? a:1 : 1) && !a:bang
       setlocal efm=\%-E-e:%.%#,\%+E%f:%l:\ parse\ error,%W%f:%l:\ warning:\ %m,%E%f:%l:in\ %*[^:]:\ %m,%E%f:%l:\ %m,%-C%\tfrom\ %f:%l:in\ %.%#,%-Z%\tfrom\ %f:%l,%-Z%p^,%-G%.%#
     endif
   endif
   let old_make = &makeprg
   let &l:makeprg = rails#app().ruby_shell_command(a:arg)
-  make
+  exe 'make'.(a:bang ? '!' : '')
   let &l:makeprg = old_make
 endfunction
 
@@ -1026,14 +1026,14 @@ function! s:Rake(bang,lnum,arg)
       let &l:errorformat = '%-P%f:,\ \ *\ [%*[\ ]%l]\ [%t%*[^]]] %m,\ \ *\ [%*[\ ]%l] %m,%-Q'
       " %D to chdir is apparently incompatible with %P multiline messages
       call s:push_chdir(1)
-      exe "make ".arg
+      exe 'make '.arg
       call s:pop_command()
       if a:bang
         copen
       endif
     elseif arg =~# '^\%(stats\|routes\|secret\|time:zones\|db:\%(charset\|collation\|fixtures:identify\>.*\|version\)\)\%(:\|$\)'
       let &l:errorformat = '%D(in\ %f),%+G%.%#'
-      exe "make ".arg
+      exe 'make '.arg
       if a:bang
         copen
       endif
@@ -1050,20 +1050,20 @@ function! s:Rake(bang,lnum,arg)
         let extra = ''
       endif
       if self.has_file(file) || self.has_file(file.'.rb')
-        call s:makewithruby(withrubyargs.'-r"'.file.'"'.extra,file !~# '_\%(spec\|test\)\%(\.rb\)\=$')
+        call s:makewithruby(withrubyargs.'-r"'.file.'"'.extra,a:bang,file !~# '_\%(spec\|test\)\%(\.rb\)\=$')
       else
-        call s:makewithruby(withrubyargs.'-e '.s:esccmd(s:rquote(arg)))
+        call s:makewithruby(withrubyargs.'-e '.s:esccmd(s:rquote(arg)),a:bang)
       endif
     elseif arg == 'run' || arg == 'runner'
-      call s:makewithruby(withrubyargs.'-r"'.RailsFilePath().'"',RailsFilePath() !~# '_\%(spec\|test\)\%(\.rb\)\=$')
+      call s:makewithruby(withrubyargs.'-r"'.RailsFilePath().'"',a:bang,RailsFilePath() !~# '_\%(spec\|test\)\%(\.rb\)\=$')
     elseif arg =~ '^run:'
       let arg = s:sub(arg,'^run:','')
-      let arg = s:sub(arg,'^%:h',expand('%:h'))
+      let arg = s:sub(arg,'^\%:h',expand('%:h'))
       let arg = s:sub(arg,'^%(\%|$|#@=)',expand('%'))
       let arg = s:sub(arg,'#(\w+[?!=]=)$',' -- -n\1')
-      call s:makewithruby(withrubyargs.'-r'.arg,arg !~# '_\%(spec\|test\)\.rb$')
+      call s:makewithruby(withrubyargs.'-r'.arg,a:bang,arg !~# '_\%(spec\|test\)\.rb$')
     else
-      exe 'make '.arg
+      exe 'make'.(a:bang ? '!' : '').' '.arg
     endif
   finally
     let &l:errorformat = old_errorformat
