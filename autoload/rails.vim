@@ -598,22 +598,29 @@ function! s:app_environments() dict
   return copy(self.cache.get('environments'))
 endfunction
 
-" Check for Test::Unit, RSpec, and Cucumber by calling this method with an
-" argument of 'test', 'spec', or 'features'.  Given no arguments, returns a
-" list.
-function! s:app_test_suites(...) dict
-  if self.cache.needs('test_suites')
-    let suites = filter(['test','spec','features'],'isdirectory(self.path(v:val))')
-    call self.cache.set('test_suites',suites)
+function! s:app_has(feature) dict
+  let map = {
+        \'test': 'test/',
+        \'spec': 'spec/',
+        \'cucumber': 'features/',
+        \'sass': 'public/stylesheets/sass/'}
+  if self.cache.needs('features')
+    call self.cache.set('features',{})
   endif
-  if a:0
-    return index(self.cache.get('test_suites'),a:1) + 1
-  else
-    return copy(self.cache.get('test_suites'))
+  let features = self.cache.get('features')
+  if !has_key(features,a:feature)
+    let path = get(map,a:feature,a:feature.'/')
+    let features[a:feature] = isdirectory(rails#app().path(path))
   endif
+  return features[a:feature]
 endfunction
 
-call s:add_methods('app',['calculate_file_type','environments','test_suites'])
+" Returns the subset of ['test', 'spec', 'cucumber'] present on the app.
+function! s:app_test_suites() dict
+  return filter(['test','spec','cucumber'],'self.has(v:val)')
+endfunction
+
+call s:add_methods('app',['calculate_file_type','environments','has','test_suites'])
 
 " }}}1
 " Ruby Execution {{{1
@@ -1121,7 +1128,7 @@ function! s:default_rake_task(lnum)
     else
       return 'db:migrate'
     endif
-  elseif self.test_suites('spec') && RailsFilePath() =~# '^app/.*\.rb' && self.has_file(s:sub(RailsFilePath(),'^app/(.*)\.rb$','spec/\1_spec.rb'))
+  elseif self.has('spec') && RailsFilePath() =~# '^app/.*\.rb' && self.has_file(s:sub(RailsFilePath(),'^app/(.*)\.rb$','spec/\1_spec.rb'))
     return 'spec SPEC="%:p:r:s?[\/]app[\/]?/spec/?_spec.rb" SPEC_OPTS='
   elseif t=~ '^model\>'
     return 'test:units TEST="%:p:r:s?[\/]app[\/]models[\/]?/test/unit/?_test.rb"'
@@ -1408,7 +1415,7 @@ function! s:app_generate_command(bang,...) dict
   endif
   if !self.execute_ruby_command("script/generate ".target.str) && file != ""
     call self.cache.clear('user_classes')
-    call self.cache.clear('test_suites')
+    call self.cache.clear('features')
     if file =~ '^db/migrate/\d\d\d\d'
       let file = get(self.relglob('',s:sub(file,'\d+','[0-9]*[0-9]')),-1,file)
     endif
@@ -1902,14 +1909,14 @@ function! s:BufFinderCommands()
   call s:addfilecmds("api")
   call s:addfilecmds("layout")
   call s:addfilecmds("fixtures")
-  if rails#app().test_suites('test') || rails#app().test_suites('spec')
+  if rails#app().has('test') || rails#app().has('spec')
     call s:addfilecmds("unittest")
     call s:addfilecmds("functionaltest")
   endif
-  if rails#app().test_suites('test') || rails#app().test_suites('features')
+  if rails#app().has('test') || rails#app().has('cucumber')
     call s:addfilecmds("integrationtest")
   endif
-  if rails#app().test_suites('spec')
+  if rails#app().has('spec')
     call s:addfilecmds("spec")
   endif
   call s:addfilecmds("stylesheet")
@@ -2040,10 +2047,10 @@ endfunction
 
 function! s:unittestList(A,L,P)
   let found = []
-  if rails#app().test_suites('test')
+  if rails#app().has('test')
     let found += rails#app().relglob("test/unit/","**/*","_test.rb")
   endif
-  if rails#app().test_suites('spec')
+  if rails#app().has('spec')
     let found += rails#app().relglob("spec/models/","**/*","_spec.rb")
   endif
   return s:autocamelize(found,a:A)
@@ -2051,10 +2058,10 @@ endfunction
 
 function! s:functionaltestList(A,L,P)
   let found = []
-  if rails#app().test_suites('test')
+  if rails#app().has('test')
     let found += rails#app().relglob("test/functional/","**/*","_test.rb")
   endif
-  if rails#app().test_suites('spec')
+  if rails#app().has('spec')
     let found += rails#app().relglob("spec/controllers/","**/*","_spec.rb")
   endif
   return s:autocamelize(found,a:A)
@@ -2062,10 +2069,10 @@ endfunction
 
 function! s:integrationtestList(A,L,P)
   let found = []
-  if rails#app().test_suites('test')
+  if rails#app().has('test')
     let found += s:autocamelize(rails#app().relglob("test/integration/","**/*","_test.rb"),a:A)
   endif
-  if rails#app().test_suites('features')
+  if rails#app().has('cucumber')
     let found += s:completion_filter(rails#app().relglob("features/","**/*",".feature"),a:A)
   endif
   return found
@@ -2454,14 +2461,14 @@ endfunction
 
 function! s:integrationtestEdit(bang,cmd,...)
   if !a:0
-    if rails#app().test_suites('features')
+    if rails#app().has('cucumber')
       return s:EditSimpleRb(a:bang,a:cmd,"integrationtest","support/env","features/",".rb")
     else
       return s:EditSimpleRb(a:bang,a:cmd,"integrationtest","test_helper","test/",".rb")
     endif
   endif
   let cmd = s:findcmdfor(a:cmd.(a:bang?'!':''))
-  let mapping = {'test': ['test/integration/','_test.rb'], 'features': ['features/','.feature']}
+  let mapping = {'test': ['test/integration/','_test.rb'], 'cucumber': ['features/','.feature']}
   let tests = map(filter(rails#app().test_suites(),'has_key(mapping,v:val)'),'get(mapping,v:val)')
   if empty(tests)
     let tests = [mapping['test']]
@@ -4337,10 +4344,10 @@ function! s:SetBasePath()
   if s:controller() != ''
     let path += ['app/views/'.s:controller(), 'public']
   endif
-  if rails#app().test_suites('test')
+  if rails#app().has('test')
     let path += ['test', 'test/unit', 'test/functional', 'test/integration']
   endif
-  if rails#app().test_suites('spec')
+  if rails#app().has('spec')
     let path += ['spec', 'spec/models', 'spec/controllers', 'spec/helpers', 'spec/views', 'spec/lib']
   endif
   let path += ['app/*', 'vendor', 'vendor/plugins/*/lib', 'vendor/plugins/*/test', 'vendor/rails/*/lib', 'vendor/rails/*/test']
