@@ -2409,7 +2409,12 @@ function! s:apiEdit(bang,cmd,...)
 endfunction
 
 function! s:stylesheetEdit(bang,cmd,...)
-  return s:EditSimpleRb(a:bang,a:cmd,"stylesheet",a:0? a:1 : s:controller(1),"public/stylesheets/",".css",1)
+  let name = a:0 ? a:1 : s:controller(1)
+  if rails#app().has('sass') && rails#app().has_file('public/stylesheets/sass/'.name.'.sass')
+    return s:EditSimpleRb(a:bang,a:cmd,"stylesheet",name,"public/stylesheets/sass/",".sass",1)
+  else
+    return s:EditSimpleRb(a:bang,a:cmd,"stylesheet",name,"public/stylesheets/",".css",1)
+  endif
 endfunction
 
 function! s:javascriptEdit(bang,cmd,...)
