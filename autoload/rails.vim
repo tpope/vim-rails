@@ -3082,14 +3082,14 @@ function! s:invertrange(beg,end)
       return -1
     endif
     if add == ""
-      let add = s:sub(line,'^\s*\zs.*','raise ActiveRecord::IrreversableMigration')
+      let add = s:sub(line,'^\s*\zs.*','raise ActiveRecord::IrreversibleMigration')
     elseif add == " "
       let add = ""
     endif
     let str = add."\n".str
     let lnum += 1
   endwhile
-  let str = s:gsub(str,'(\s*raise ActiveRecord::IrreversableMigration\n)+','\1')
+  let str = s:gsub(str,'(\s*raise ActiveRecord::IrreversibleMigration\n)+','\1')
   return str
 endfunction
 
