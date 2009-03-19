@@ -3123,12 +3123,9 @@ function! s:Invert(bang)
   if beg + 1 < end
     exe (beg+1).",".(end-1)."delete _"
   endif
-  if str != ""
-    let reg_keep = @"
-    let @" = str
-    exe beg."put"
+  if str != ''
+    exe beg.'put =str'
     exe 1+beg
-    let @" = reg_keep
   endif
 endfunction
 
