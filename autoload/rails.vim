@@ -3190,7 +3190,7 @@ function! s:helpermethods()
         \."atom_feed auto_discovery_link_tag auto_link "
         \."benchmark button_to button_to_function button_to_remote "
         \."cache capture cdata_section check_box check_box_tag collection_select concat content_for content_tag content_tag_for current_cycle cycle "
-        \."date_select datetime_select debug define_javascript_functions distance_of_time_in_words distance_of_time_in_words_to_now div_for dom_class dom_id draggable_element draggable_element_js drop_receiving_element drop_receiving_element_js "
+        \."date_select datetime_select debug distance_of_time_in_words distance_of_time_in_words_to_now div_for dom_class dom_id draggable_element draggable_element_js drop_receiving_element drop_receiving_element_js "
         \."error_message_on error_messages_for escape_javascript escape_once evaluate_remote_response excerpt "
         \."field_set_tag fields_for file_field file_field_tag form form_for form_remote_for form_remote_tag form_tag "
         \."hidden_field hidden_field_tag highlight "
