@@ -2283,7 +2283,11 @@ function! s:fixturesEdit(bang,cmd,...)
 endfunction
 
 function! s:metalEdit(bang,cmd,...)
-  call s:EditSimpleRb(a:bang,a:cmd,"metal",a:0? a:1 : '../../config/boot',"app/metal/",".rb")
+  if a:0
+    call s:EditSimpleRb(a:bang,a:cmd,"metal",a:1,"app/metal/",".rb")
+  else
+    call s:EditSimpleRb(a:bang,a:cmd,"metal",'config/boot',"",".rb")
+  endif
 endfunction
 
 function! s:modelEdit(bang,cmd,...)
