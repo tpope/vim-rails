@@ -2458,7 +2458,7 @@ function! s:unittestEdit(bang,cmd,...)
       return s:findedit(cmd,prefix.f.suffix.jump)
     endif
   endfor
-  return s:findedit(cmd,tests[0][0].f.tests[0][1].jump)
+  return s:EditSimpleRb(a:bang,a:cmd,"unittest",f.jump,tests[0][0],tests[0][1],1)
 endfunction
 
 function! s:functionaltestEdit(bang,cmd,...)
@@ -2483,7 +2483,7 @@ function! s:functionaltestEdit(bang,cmd,...)
       return s:findedit(cmd,prefix.f.'_api'.suffix.jump)
     endif
   endfor
-  return s:findedit(cmd,tests[0][0].f.tests[0][1].jump)
+  return s:EditSimpleRb(a:bang,a:cmd,"functionaltest",f.jump,tests[0][0],tests[0][1],1)
 endfunction
 
 function! s:integrationtestEdit(bang,cmd,...)
@@ -2513,7 +2513,7 @@ function! s:integrationtestEdit(bang,cmd,...)
       return s:findedit(cmd,prefix.rails#underscore(f).suffix.jump)
     endif
   endfor
-  return s:findedit(cmd,tests[0][0].f.tests[0][1].jump)
+  return s:EditSimpleRb(a:bang,a:cmd,"integrationtest",f.jump,tests[0][0],tests[0][1],1)
 endfunction
 
 function! s:specEdit(bang,cmd,...)
