@@ -80,9 +80,9 @@ Rails application development.
    |rails-refactoring|
 
 8. Integration with other plugins.  |:Rproject| creates a new project.vim
-   project.  |:Rdbext| loads database settings from database.yml for dbext.vim
-   (and this happens by default under most circumstances).  Cream users get
-   some additional mappings, and all GUI users get a menu. |rails-integration|
+   project or spawns NERDTree.  If dbext.vim is installed, it will be
+   transparently configured to reflect database.yml.  Cream users get some
+   additional mappings, and all GUI users get a menu. |rails-integration|
 
 ==============================================================================
 INSTALLATION AND USAGE				*rails-installation*
