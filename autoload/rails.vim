@@ -977,7 +977,8 @@ let s:efm_backtrace='%D(in\ %f),'
       \.'%\\s%#from\ %f:%l:%m,'
       \.'%\\s#{RAILS_ROOT}/%f:%l:\ %#%m,'
       \.'%\\s%#[%f:%l:\ %#%m,'
-      \.'%\\s%#%f:%l:\ %#%m'
+      \.'%\\s%#%f:%l:\ %#%m,'
+      \.'%\\s%#%f:%l:%\='
 
 function! s:makewithruby(arg,bang,...)
   if &efm == s:efm
