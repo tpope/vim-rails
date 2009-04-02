@@ -3802,6 +3802,7 @@ function! s:app_dbext_settings(environment) dict
         let dict['dbname'] = self.path(dict['dbname'])
       endif
       let dict['profile'] = ''
+      let dict['srvname'] = s:extractdbvar(out,'host')
       let dict['host'] = s:extractdbvar(out,'host')
       let dict['port'] = s:extractdbvar(out,'port')
       let dict['dsnname'] = s:extractdbvar(out,'dsn')
@@ -3837,7 +3838,7 @@ function! s:BufDatabase(...)
     return
   endif
   let dict = self.dbext_settings(env)
-  for key in ['type', 'profile', 'bin', 'user', 'passwd', 'dbname', 'host', 'port', 'dsnname', 'extra', 'integratedlogin']
+  for key in ['type', 'profile', 'bin', 'user', 'passwd', 'dbname', 'srvname', 'host', 'port', 'dsnname', 'extra', 'integratedlogin']
     let b:dbext_{key} = get(dict,key,'')
   endfor
   if b:dbext_type == 'PGSQL'
