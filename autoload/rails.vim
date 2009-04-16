@@ -421,7 +421,7 @@ function! rails#singularize(word)
   let word = s:sub(word,'ves$','fs')
   let word = s:sub(word,'ss%(es)=$','sss')
   let word = s:sub(word,'s$','')
-  let word = s:sub(word,'%(tatus|lias)\zse$','')
+  let word = s:sub(word,'%([nrt]ch|tatus|lias)\zse$','')
   let word = s:sub(word,'%(nd|rt)\zsice$','ex')
   return word
 endfunction
