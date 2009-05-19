@@ -920,59 +920,6 @@ endfunction
 
 call s:add_methods('app', ['rake_tasks'])
 
-" Current directory
-let s:efm='%D(in\ %f),'
-" Failure and Error headers, start a multiline message
-let s:efm=s:efm
-      \.'%A\ %\\+%\\d%\\+)\ Failure:,'
-      \.'%A\ %\\+%\\d%\\+)\ Error:,'
-      \.'%+A'."'".'%.%#'."'".'\ FAILED,'
-" Exclusions
-let s:efm=s:efm
-      \.'%C%.%#(eval)%.%#,'
-      \.'%C-e:%.%#,'
-      \.'%C%.%#/lib/gems/%\\d.%\\d/gems/%.%#,'
-      \.'%C%.%#/lib/ruby/%\\d.%\\d/%.%#,'
-      \.'%C%.%#/vendor/rails/%.%#,'
-" Specific to template errors
-let s:efm=s:efm
-      \.'%C\ %\\+On\ line\ #%l\ of\ %f,'
-      \.'%CActionView::TemplateError:\ compile\ error,'
-" stack backtrace is in brackets. if multiple lines, it starts on a new line.
-let s:efm=s:efm
-      \.'%Ctest_%.%#(%.%#):%#,'
-      \.'%C%.%#\ [%f:%l]:,'
-      \.'%C\ \ \ \ [%f:%l:%.%#,'
-      \.'%C\ \ \ \ %f:%l:%.%#,'
-      \.'%C\ \ \ \ \ %f:%l:%.%#]:,'
-      \.'%C\ \ \ \ \ %f:%l:%.%#,'
-" Catch all
-let s:efm=s:efm
-      \.'%Z%f:%l:\ %#%m,'
-      \.'%Z%f:%l:,'
-      \.'%C%m,'
-" Syntax errors in the test itself
-let s:efm=s:efm
-      \.'%.%#.rb:%\\d%\\+:in\ `load'."'".':\ %f:%l:\ syntax\ error\\\, %m,'
-      \.'%.%#.rb:%\\d%\\+:in\ `load'."'".':\ %f:%l:\ %m,'
-" And required files
-let s:efm=s:efm
-      \.'%.%#:in\ `require'."'".':in\ `require'."'".':\ %f:%l:\ syntax\ error\\\, %m,'
-      \.'%.%#:in\ `require'."'".':in\ `require'."'".':\ %f:%l:\ %m,'
-" Exclusions
-let s:efm=s:efm
-      \.'%-G%.%#/lib/gems/%\\d.%\\d/gems/%.%#,'
-      \.'%-G%.%#/lib/ruby/%\\d.%\\d/%.%#,'
-      \.'%-G%.%#/vendor/rails/%.%#,'
-      \.'%-G%.%#%\\d%\\d:%\\d%\\d:%\\d%\\d%.%#,'
-" Final catch all for one line errors
-let s:efm=s:efm
-      \.'%-G%\\s%#from\ %.%#,'
-      \.'%f:%l:\ %#%m,'
-" Drop everything else
-let s:efm=s:efm
-      \.'%-G%.%#'
-
 let s:efm_backtrace='%D(in\ %f),'
       \.'%\\s%#from\ %f:%l:%m,'
       \.'%\\s%#from\ %f:%l:,'
@@ -982,15 +929,13 @@ let s:efm_backtrace='%D(in\ %f),'
       \.'%\\s%#%f:%l:'
 
 function! s:makewithruby(arg,bang,...)
-  if &efm == s:efm
-    if (a:0 ? a:1 : 1) && !a:bang
-      setlocal efm=\%-E-e:%.%#,\%+E%f:%l:\ parse\ error,%W%f:%l:\ warning:\ %m,%E%f:%l:in\ %*[^:]:\ %m,%E%f:%l:\ %m,%-C%\tfrom\ %f:%l:in\ %.%#,%-Z%\tfrom\ %f:%l,%-Z%p^,%-G%.%#
-    endif
-  endif
   let old_make = &makeprg
   try
     let &l:makeprg = rails#app().ruby_shell_command(a:arg)
     exe 'make'.(a:bang ? '!' : '')
+    if !a:bang
+      cwindow
+    endif
   finally
     let &l:makeprg = old_make
   endtry
@@ -1005,7 +950,7 @@ function! s:Rake(bang,lnum,arg)
     if &l:makeprg !~# 'rake'
       let &l:makeprg = 'rake'
     endif
-    let &l:errorformat = a:bang ? s:efm_backtrace : s:efm
+    let &l:errorformat = s:efm_backtrace
     let t = RailsFileType()
     let arg = a:arg
     if &filetype == "ruby" && arg == '' && g:rails_modelines
@@ -1031,15 +976,15 @@ function! s:Rake(bang,lnum,arg)
       let &l:errorformat = '%-P%f:,\ \ *\ [%*[\ ]%l]\ [%t%*[^]]] %m,\ \ *\ [%*[\ ]%l] %m,%-Q'
       " %D to chdir is apparently incompatible with %P multiline messages
       call s:push_chdir(1)
-      exe 'make '.arg
+      exe 'make! '.arg
       call s:pop_command()
-      if a:bang
-        copen
+      if !a:bang
+        cwindow
       endif
     elseif arg =~# '^\%(stats\|routes\|secret\|time:zones\|db:\%(charset\|collation\|fixtures:identify\>.*\|version\)\)\%(:\|$\)'
       let &l:errorformat = '%D(in\ %f),%+G%.%#'
-      exe 'make '.arg
-      if a:bang
+      exe 'make! '.arg
+      if !a:bang
         copen
       endif
     elseif arg =~ '^preview\>'
@@ -1068,7 +1013,10 @@ function! s:Rake(bang,lnum,arg)
       let arg = s:sub(arg,'#(\w+[?!=]=)$',' -- -n\1')
       call s:makewithruby(withrubyargs.'-r'.arg,a:bang,arg !~# '_\%(spec\|test\)\.rb$')
     else
-      exe 'make'.(a:bang ? '!' : '').' '.arg
+      exe 'make! '.arg
+      if !a:bang
+        cwindow
+      endif
     endif
   finally
     let &l:errorformat = old_errorformat
@@ -4402,7 +4350,7 @@ function! s:BufSettings()
   endif
   call s:SetBasePath()
   let rp = s:gsub(rails#app().path(),'[ ,]','\\&')
-  let &l:errorformat = s:efm
+  let &l:errorformat = s:efm_backtrace
   setlocal makeprg=rake
   if stridx(&tags,rp) == -1
     let &l:tags = rp . "/tmp/tags," . &tags . "," . rp . "/tags"
