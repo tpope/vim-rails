@@ -324,7 +324,7 @@ The easiest way to learn these commands is to experiment.  A few examples of
 alternate and related files follow:
 
 Current file		Alternate file		Related file ~
-model			unit test		related migration
+model			unit test		schema definition
 controller (in method)	functional test		template (view)
 template (view)		helper			controller (jump to method)
 migration		previous migration	next migration

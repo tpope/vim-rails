@@ -2843,7 +2843,7 @@ function! s:RelatedFile()
   elseif t=~ '^helper\>'
     return s:findlayout(s:controller())
   elseif t =~ '^model-arb\>'
-    return rails#app().migration('create_'.rails#pluralize(s:gsub(s:model(),'/','_')))
+    return rails#app().migration('0#'.rails#pluralize(s:gsub(s:model(),'/','_')))
   elseif t =~ '^model-aro\>'
     return s:sub(f,'_observer\.rb$','.rb')
   elseif t =~ '^api\>'
