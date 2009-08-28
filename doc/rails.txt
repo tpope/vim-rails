@@ -432,15 +432,14 @@ like: >
 			that cannot be found.  A new layout will be created if
 			an extension is given.
 
-						*rails-:Rapi*
-:Rapi [{name}]		Edit the API for the specified controller.  This
-			command is deprecated; add it yourself with
-			|:Rnavcommand| if you still desire it.
-
 						*rails-:Rfunctionaltest*
 :Rfunctionaltest [{name}]
 			Edit the functional test or controller spec for the
 			specified controller.
+
+						*rails-:Rapi*
+:Rapi [{name}]		This command is obsolete; add it yourself with
+			|:Rnavcommand| if you still desire it.
 
 Miscellaneous Navigation Commands  ~
 						*rails-misc-navigation*
@@ -533,7 +532,7 @@ in an initialization routine of some sort (e.g., an autocommand); see
 			is used as a default.
 
 						*rails-:Rcommand*
-:Rcommand		Deprecated alias for |:Rnavcommand|
+:Rcommand		Obsolete alias for |:Rnavcommand|.
 
 Examples: >
 	Rnavcommand api      app/apis -glob=**/* -suffix=_api.rb
@@ -559,14 +558,7 @@ A limited amount of completion with <Tab> is supported.
 			calling script/console.
 
 						*rails-:Rconsole*
-:Rconsole {options}	Start script/console.  This command has been
-			deprecated for the pragmatic reason of making
-			|:Rcontroller| easier to tab complete.  To compensate
-			for the eventual disappearance of this command,
-			|:Rscript| now defaults to calling script/console if
-			no other arguments are given.  (If in spite of this
-			you still feel you would miss this command, speak up
-			now!)
+:Rconsole {options}	Obsolete. Call |:Rscript| instead.
 
 						*rails-:Rrunner*
 :[range]Rrunner {code}	Executes {code} with script/runner.  Differs from
@@ -619,7 +611,7 @@ The :Rextract command can be used to extract a partial to a new file.
 
 						*rails-:Rpartial*
 :[range]Rpartial [{controller}/]{name}	
-			Deprecated alias for :Rextract.
+			Obsolete alias for :Rextract.
 
 If this is your file, in app/views/blog/show.html.erb: >
 

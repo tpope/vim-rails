@@ -757,7 +757,6 @@ function! s:BufCommands()
   if ext =~ s:viewspattern()
     " TODO: complete controller names with trailing slashes here
     command! -buffer -bar -nargs=? -range -complete=customlist,s:controllerList Rextract :<line1>,<line2>call s:Extract(<bang>0,<f-args>)
-    command! -buffer -bar -nargs=? -range Rpartial :call s:warn("Warning: :Rpartial has been deprecated in favor of :Rextract") | <line1>,<line2>Rextract<bang> <args>
   endif
   if RailsFilePath() =~ '\<db/migrate/.*\.rb$'
     command! -buffer -bar                 Rinvert  :call s:Invert(<bang>0)
@@ -1231,7 +1230,6 @@ endfunction
 
 function! s:BufScriptWrappers()
   command! -buffer -bar -nargs=*       -complete=customlist,s:Complete_script   Rscript       :call rails#app().script_command(<bang>0,<f-args>)
-  command! -buffer -bar -nargs=*       -complete=customlist,s:Complete_console  Rconsole      :call s:warn("Warning: :Rconsole has been deprecated in favor of :Rscript")|call rails#app().script_command(<bang>0,'console',<f-args>)
   command! -buffer -bar -nargs=*       -complete=customlist,s:Complete_generate Rgenerate     :call rails#app().generate_command(<bang>0,<f-args>)
   command! -buffer -bar -nargs=*       -complete=customlist,s:Complete_destroy  Rdestroy      :call rails#app().destroy_command(<bang>0,<f-args>)
   command! -buffer -bar -nargs=? -bang -complete=customlist,s:Complete_server   Rserver       :call rails#app().server_command(<bang>0,<q-args>)
@@ -1867,7 +1865,6 @@ endfunction
 
 function! s:BufFinderCommands()
   command! -buffer -bar -nargs=+ Rnavcommand :call s:Navcommand(<bang>0,<f-args>)
-  command! -buffer -bar -nargs=+ Rcommand    :call s:warn("Warning: :Rcommand has been deprecated in favor of :Rnavcommand")|call s:Navcommand(<bang>0,<f-args>)
   call s:addfilecmds("metal")
   call s:addfilecmds("model")
   call s:addfilecmds("view")
@@ -1875,7 +1872,6 @@ function! s:BufFinderCommands()
   call s:addfilecmds("migration")
   call s:addfilecmds("observer")
   call s:addfilecmds("helper")
-  call s:addfilecmds("api")
   call s:addfilecmds("layout")
   call s:addfilecmds("fixtures")
   if rails#app().has('test') || rails#app().has('spec')
@@ -2008,10 +2004,6 @@ function! s:migrationList(A,L,P)
     call map(migrations,'s:sub(v:val,"^[0-9]*_","")')
     return s:autocamelize(migrations,a:A)
   endif
-endfunction
-
-function! s:apiList(A,L,P)
-  return s:autocamelize(rails#app().relglob("app/apis/","**/*","_api.rb"),a:A)
 endfunction
 
 function! s:unittestList(A,L,P)
@@ -2380,10 +2372,6 @@ endfunction
 
 function! s:helperEdit(bang,cmd,...)
   return s:EditSimpleRb(a:bang,a:cmd,"helper",a:0? a:1 : s:controller(1),"app/helpers/","_helper.rb")
-endfunction
-
-function! s:apiEdit(bang,cmd,...)
-  return s:EditSimpleRb(a:bang,a:cmd,"api",a:0 ? a:1 : s:controller(1),"app/apis/","_api.rb")
 endfunction
 
 function! s:stylesheetEdit(bang,cmd,...)
