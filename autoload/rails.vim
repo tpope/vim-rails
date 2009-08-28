@@ -1469,29 +1469,29 @@ endfunction
 function! s:BufNavCommands()
   command!   -buffer -bar -nargs=? -complete=customlist,s:Complete_cd Rcd   :cd `=rails#app().path(<q-args>)`
   command!   -buffer -bar -nargs=? -complete=customlist,s:Complete_cd Rlcd :lcd `=rails#app().path(<q-args>)`
-  command!   -buffer -bar -nargs=* -count=1 -complete=customlist,s:Complete_find Rfind       :call s:Find(<bang>0,<count>,'' ,<f-args>)
-  command!   -buffer -bar -nargs=* -count=1 -complete=customlist,s:Complete_find REfind      :call s:Find(<bang>0,<count>,'E',<f-args>)
-  command!   -buffer -bar -nargs=* -count=1 -complete=customlist,s:Complete_find RSfind      :call s:Find(<bang>0,<count>,'S',<f-args>)
-  command!   -buffer -bar -nargs=* -count=1 -complete=customlist,s:Complete_find RVfind      :call s:Find(<bang>0,<count>,'V',<f-args>)
-  command!   -buffer -bar -nargs=* -count=1 -complete=customlist,s:Complete_find RTfind      :call s:Find(<bang>0,<count>,'T',<f-args>)
+  command!   -buffer -bar -nargs=* -count=1 -complete=customlist,s:Complete_find Rfind       :call s:Find(<count>,'<bang>' ,<f-args>)
+  command!   -buffer -bar -nargs=* -count=1 -complete=customlist,s:Complete_find REfind      :call s:Find(<count>,'E<bang>',<f-args>)
+  command!   -buffer -bar -nargs=* -count=1 -complete=customlist,s:Complete_find RSfind      :call s:Find(<count>,'S<bang>',<f-args>)
+  command!   -buffer -bar -nargs=* -count=1 -complete=customlist,s:Complete_find RVfind      :call s:Find(<count>,'V<bang>',<f-args>)
+  command!   -buffer -bar -nargs=* -count=1 -complete=customlist,s:Complete_find RTfind      :call s:Find(<count>,'T<bang>',<f-args>)
   command!   -buffer -bar -nargs=* -count=1 -complete=customlist,s:Complete_find Rsfind      :<count>RSfind<bang> <args>
   command!   -buffer -bar -nargs=* -count=1 -complete=customlist,s:Complete_find Rtabfind    :<count>RTfind<bang> <args>
-  command!   -buffer -bar -nargs=* -bang    -complete=customlist,s:Complete_edit Redit       :call s:Edit(<bang>0,<count>,'' ,<f-args>)
-  command!   -buffer -bar -nargs=* -bang    -complete=customlist,s:Complete_edit REedit      :call s:Edit(<bang>0,<count>,'E',<f-args>)
-  command!   -buffer -bar -nargs=* -bang    -complete=customlist,s:Complete_edit RSedit      :call s:Edit(<bang>0,<count>,'S',<f-args>)
-  command!   -buffer -bar -nargs=* -bang    -complete=customlist,s:Complete_edit RVedit      :call s:Edit(<bang>0,<count>,'V',<f-args>)
-  command!   -buffer -bar -nargs=* -bang    -complete=customlist,s:Complete_edit RTedit      :call s:Edit(<bang>0,<count>,'T',<f-args>)
-  command! -buffer -bar -nargs=* -complete=customlist,s:Complete_find    A  :call s:Alternate(<bang>0,"", <f-args>)
-  command! -buffer -bar -nargs=* -complete=customlist,s:Complete_find    AE :call s:Alternate(<bang>0,"E",<f-args>)
-  command! -buffer -bar -nargs=* -complete=customlist,s:Complete_find    AS :call s:Alternate(<bang>0,"S",<f-args>)
-  command! -buffer -bar -nargs=* -complete=customlist,s:Complete_find    AV :call s:Alternate(<bang>0,"V",<f-args>)
-  command! -buffer -bar -nargs=* -complete=customlist,s:Complete_find    AT :call s:Alternate(<bang>0,"T",<f-args>)
-  command! -buffer -bar -nargs=* -complete=customlist,s:Complete_edit    AN :call s:Related(<bang>0,"" ,<f-args>)
-  command! -buffer -bar -nargs=* -complete=customlist,s:Complete_edit    R  :call s:Related(<bang>0,"" ,<f-args>)
-  command! -buffer -bar -nargs=* -complete=customlist,s:Complete_edit    RE :call s:Related(<bang>0,"E",<f-args>)
-  command! -buffer -bar -nargs=* -complete=customlist,s:Complete_edit    RS :call s:Related(<bang>0,"S",<f-args>)
-  command! -buffer -bar -nargs=* -complete=customlist,s:Complete_edit    RV :call s:Related(<bang>0,"V",<f-args>)
-  command! -buffer -bar -nargs=* -complete=customlist,s:Complete_edit    RT :call s:Related(<bang>0,"T",<f-args>)
+  command!   -buffer -bar -nargs=* -bang    -complete=customlist,s:Complete_edit Redit       :call s:Edit(<count>,'<bang>' ,<f-args>)
+  command!   -buffer -bar -nargs=* -bang    -complete=customlist,s:Complete_edit REedit      :call s:Edit(<count>,'E<bang>',<f-args>)
+  command!   -buffer -bar -nargs=* -bang    -complete=customlist,s:Complete_edit RSedit      :call s:Edit(<count>,'S<bang>',<f-args>)
+  command!   -buffer -bar -nargs=* -bang    -complete=customlist,s:Complete_edit RVedit      :call s:Edit(<count>,'V<bang>',<f-args>)
+  command!   -buffer -bar -nargs=* -bang    -complete=customlist,s:Complete_edit RTedit      :call s:Edit(<count>,'T<bang>',<f-args>)
+  command! -buffer -bar -nargs=* -complete=customlist,s:Complete_find    A  :call s:Alternate('<bang>', <f-args>)
+  command! -buffer -bar -nargs=* -complete=customlist,s:Complete_find    AE :call s:Alternate('E<bang>',<f-args>)
+  command! -buffer -bar -nargs=* -complete=customlist,s:Complete_find    AS :call s:Alternate('S<bang>',<f-args>)
+  command! -buffer -bar -nargs=* -complete=customlist,s:Complete_find    AV :call s:Alternate('V<bang>',<f-args>)
+  command! -buffer -bar -nargs=* -complete=customlist,s:Complete_find    AT :call s:Alternate('T<bang>',<f-args>)
+  command! -buffer -bar -nargs=* -complete=customlist,s:Complete_edit    AN :call s:Related('<bang>' ,<f-args>)
+  command! -buffer -bar -nargs=* -complete=customlist,s:Complete_edit    R  :call s:Related('<bang>' ,<f-args>)
+  command! -buffer -bar -nargs=* -complete=customlist,s:Complete_edit    RE :call s:Related('E<bang>',<f-args>)
+  command! -buffer -bar -nargs=* -complete=customlist,s:Complete_edit    RS :call s:Related('S<bang>',<f-args>)
+  command! -buffer -bar -nargs=* -complete=customlist,s:Complete_edit    RV :call s:Related('V<bang>',<f-args>)
+  command! -buffer -bar -nargs=* -complete=customlist,s:Complete_edit    RT :call s:Related('T<bang>',<f-args>)
 endfunction
 
 function! s:djump(def)
@@ -1522,8 +1522,7 @@ function! s:djump(def)
   endif
 endfunction
 
-function! s:Find(bang,count,arg,...)
-  let cmd = a:arg . (a:bang ? '!' : '')
+function! s:Find(count,cmd,...)
   let str = ""
   if a:0
     let i = 1
@@ -1543,11 +1542,10 @@ function! s:Find(bang,count,arg,...)
     let file = s:RailsFind()
     let tail = ""
   endif
-  call s:findedit((a:count==1?'' : a:count).cmd,file.tail,str)
+  call s:findedit((a:count==1?'' : a:count).a:cmd,file.tail,str)
 endfunction
 
-function! s:Edit(bang,count,arg,...)
-  let cmd = a:arg . (a:bang ? '!' : '')
+function! s:Edit(count,cmd,...)
   if a:0
     let str = ""
     let i = 1
@@ -1556,9 +1554,9 @@ function! s:Edit(bang,count,arg,...)
       let i += 1
     endwhile
     let file = a:{i}
-    call s:findedit(s:editcmdfor(cmd),file,str)
+    call s:findedit(s:editcmdfor(a:cmd),file,str)
   else
-    exe s:editcmdfor(cmd)
+    exe s:editcmdfor(a:cmd)
   endif
 endfunction
 
@@ -1857,7 +1855,7 @@ function! s:addfilecmds(type)
   let cmd = ''
   while cmds != ''
     let cplt = " -complete=customlist,".s:sid.l."List"
-    exe "command! -buffer -bar -nargs=*".cplt." R".cmd.l." :call s:".l.'Edit(<bang>0,"'.cmd.'",<f-args>)'
+    exe "command! -buffer -bar -nargs=*".cplt." R".cmd.l." :call s:".l.'Edit("'.cmd.'<bang>",<f-args>)'
     let cmd = strpart(cmds,0,1)
     let cmds = strpart(cmds,1)
   endwhile
@@ -2110,7 +2108,7 @@ function! s:Navcommand(bang,...)
   let cmds = 'ESVT '
   let cmd = ''
   while cmds != ''
-    exe 'command! -buffer -bar -bang -nargs=* -complete=customlist,'.s:sid.'CommandList R'.cmd.name." :call s:CommandEdit(<bang>0,'".cmd."','".name."',\"".prefix."\",".string(suffix).",".string(filter).",".string(default).",<f-args>)"
+    exe 'command! -buffer -bar -bang -nargs=* -complete=customlist,'.s:sid.'CommandList R'.cmd.name." :call s:CommandEdit('".cmd."<bang>','".name."',\"".prefix."\",".string(suffix).",".string(filter).",".string(default).",<f-args>)"
     let cmd = strpart(cmds,0,1)
     let cmds = strpart(cmds,1)
   endwhile
@@ -2133,7 +2131,7 @@ function! s:CommandList(A,L,P)
   endif
 endfunction
 
-function! s:CommandEdit(bang,cmd,name,prefix,suffix,filter,default,...)
+function! s:CommandEdit(cmd,name,prefix,suffix,filter,default,...)
   if a:0 && a:1 == "&"
     let s:last_prefix = a:prefix
     let s:last_suffix = a:suffix
@@ -2153,12 +2151,12 @@ function! s:CommandEdit(bang,cmd,name,prefix,suffix,filter,default,...)
     else
       let default = a:default
     endif
-    call s:EditSimpleRb(a:bang,a:cmd,a:name,a:0 ? a:1 : default,a:prefix,a:suffix)
+    call s:EditSimpleRb(a:cmd,a:name,a:0 ? a:1 : default,a:prefix,a:suffix)
   endif
 endfunction
 
-function! s:EditSimpleRb(bang,cmd,name,target,prefix,suffix,...)
-  let cmd = s:findcmdfor(a:cmd.(a:bang?'!':''))
+function! s:EditSimpleRb(cmd,name,target,prefix,suffix,...)
+  let cmd = s:findcmdfor(a:cmd)
   if a:target == ""
     " Good idea to emulate error numbers like this?
     return s:error("E471: Argument required")
@@ -2209,8 +2207,8 @@ endfunction
 
 call s:add_methods('app', ['migration'])
 
-function! s:migrationEdit(bang,cmd,...)
-  let cmd = s:findcmdfor(a:cmd.(a:bang?'!':''))
+function! s:migrationEdit(cmd,...)
+  let cmd = s:findcmdfor(a:cmd)
   let arg = a:0 ? a:1 : ''
   let migr = arg == "." ? "db/migrate" : rails#app().migration(arg)
   if migr != ''
@@ -2220,7 +2218,7 @@ function! s:migrationEdit(bang,cmd,...)
   endif
 endfunction
 
-function! s:fixturesEdit(bang,cmd,...)
+function! s:fixturesEdit(cmd,...)
   if a:0
     let c = rails#underscore(a:1)
   else
@@ -2234,29 +2232,29 @@ function! s:fixturesEdit(bang,cmd,...)
   let c = fnamemodify(c,':r')
   let file = get(rails#app().test_suites(),0,'test').'/fixtures/'.c.e
   if file =~ '\.\w\+$' && rails#app().find_file(c.e,["test/fixtures","spec/fixtures"]) ==# ''
-    call s:edit(a:cmd.(a:bang?'!':''),file)
+    call s:edit(a:cmd,file)
   else
-    call s:findedit(a:cmd.(a:bang?'!':''),rails#app().find_file(c.e,["test/fixtures","spec/fixtures"],[".yml",".csv"],file))
+    call s:findedit(a:cmd,rails#app().find_file(c.e,["test/fixtures","spec/fixtures"],[".yml",".csv"],file))
   endif
 endfunction
 
-function! s:metalEdit(bang,cmd,...)
+function! s:metalEdit(cmd,...)
   if a:0
-    call s:EditSimpleRb(a:bang,a:cmd,"metal",a:1,"app/metal/",".rb")
+    call s:EditSimpleRb(a:cmd,"metal",a:1,"app/metal/",".rb")
   else
-    call s:EditSimpleRb(a:bang,a:cmd,"metal",'config/boot',"",".rb")
+    call s:EditSimpleRb(a:cmd,"metal",'config/boot',"",".rb")
   endif
 endfunction
 
-function! s:modelEdit(bang,cmd,...)
-  call s:EditSimpleRb(a:bang,a:cmd,"model",a:0? a:1 : s:model(1),"app/models/",".rb")
+function! s:modelEdit(cmd,...)
+  call s:EditSimpleRb(a:cmd,"model",a:0? a:1 : s:model(1),"app/models/",".rb")
 endfunction
 
-function! s:observerEdit(bang,cmd,...)
-  call s:EditSimpleRb(a:bang,a:cmd,"observer",a:0? a:1 : s:model(1),"app/models/","_observer.rb")
+function! s:observerEdit(cmd,...)
+  call s:EditSimpleRb(a:cmd,"observer",a:0? a:1 : s:model(1),"app/models/","_observer.rb")
 endfunction
 
-function! s:viewEdit(bang,cmd,...)
+function! s:viewEdit(cmd,...)
   if a:0 && a:1 =~ '^[^!#:]'
     let view = matchstr(a:1,'[^!#:]*')
   elseif RailsFileType() == 'controller'
@@ -2267,7 +2265,7 @@ function! s:viewEdit(bang,cmd,...)
   if view == ''
     return s:error("No view name given")
   elseif view == '.'
-    return s:edit(a:cmd.(a:bang?'!':''),'app/views')
+    return s:edit(a:cmd,'app/views')
   elseif view !~ '/' && s:controller(1) != ''
     let view = s:controller(1) . '/' . view
   endif
@@ -2285,15 +2283,15 @@ function! s:viewEdit(bang,cmd,...)
         return s:error('No such directory')
       endif
     endif
-    call s:edit(a:cmd.(a:bang?'!':''),found)
+    call s:edit(a:cmd,found)
   elseif file =~ '\.\w\+$'
-    call s:findedit(a:cmd.(a:bang?'!':''),file)
+    call s:findedit(a:cmd,file)
   else
     let format = s:format('html')
     if glob(rails#app().path(file.'.'.format).'.*[^~]') != ''
       let file .= '.' . format
     endif
-    call s:findedit(a:cmd.(a:bang?'!':''),file)
+    call s:findedit(a:cmd,file)
   endif
 endfunction
 
@@ -2340,9 +2338,9 @@ function! s:findlayout(name)
   return s:findview("layouts/".(a:name == '' ? 'application' : a:name))
 endfunction
 
-function! s:layoutEdit(bang,cmd,...)
+function! s:layoutEdit(cmd,...)
   if a:0
-    return s:viewEdit(a:bang,a:cmd,"layouts/".a:1)
+    return s:viewEdit(a:cmd,"layouts/".a:1)
   endif
   let file = s:findlayout(s:controller(1))
   if file == ""
@@ -2351,10 +2349,10 @@ function! s:layoutEdit(bang,cmd,...)
   if file == ""
     let file = "app/views/layouts/application.html.erb"
   endif
-  call s:edit(a:cmd.(a:bang?'!':''),s:sub(file,'^/',''))
+  call s:edit(a:cmd,s:sub(file,'^/',''))
 endfunction
 
-function! s:controllerEdit(bang,cmd,...)
+function! s:controllerEdit(cmd,...)
   let suffix = '.rb'
   if a:0 == 0
     let controller = s:controller(1)
@@ -2367,33 +2365,33 @@ function! s:controllerEdit(bang,cmd,...)
   if rails#app().has_file("app/controllers/".controller."_controller.rb") || !rails#app().has_file("app/controllers/".controller.".rb")
     let suffix = "_controller".suffix
   endif
-  return s:EditSimpleRb(a:bang,a:cmd,"controller",controller,"app/controllers/",suffix)
+  return s:EditSimpleRb(a:cmd,"controller",controller,"app/controllers/",suffix)
 endfunction
 
-function! s:helperEdit(bang,cmd,...)
-  return s:EditSimpleRb(a:bang,a:cmd,"helper",a:0? a:1 : s:controller(1),"app/helpers/","_helper.rb")
+function! s:helperEdit(cmd,...)
+  return s:EditSimpleRb(a:cmd,"helper",a:0? a:1 : s:controller(1),"app/helpers/","_helper.rb")
 endfunction
 
-function! s:stylesheetEdit(bang,cmd,...)
+function! s:stylesheetEdit(cmd,...)
   let name = a:0 ? a:1 : s:controller(1)
   if rails#app().has('sass') && rails#app().has_file('public/stylesheets/sass/'.name.'.sass')
-    return s:EditSimpleRb(a:bang,a:cmd,"stylesheet",name,"public/stylesheets/sass/",".sass",1)
+    return s:EditSimpleRb(a:cmd,"stylesheet",name,"public/stylesheets/sass/",".sass",1)
   else
-    return s:EditSimpleRb(a:bang,a:cmd,"stylesheet",name,"public/stylesheets/",".css",1)
+    return s:EditSimpleRb(a:cmd,"stylesheet",name,"public/stylesheets/",".css",1)
   endif
 endfunction
 
-function! s:javascriptEdit(bang,cmd,...)
-  return s:EditSimpleRb(a:bang,a:cmd,"javascript",a:0? a:1 : "application","public/javascripts/",".js",1)
+function! s:javascriptEdit(cmd,...)
+  return s:EditSimpleRb(a:cmd,"javascript",a:0? a:1 : "application","public/javascripts/",".js",1)
 endfunction
 
-function! s:unittestEdit(bang,cmd,...)
+function! s:unittestEdit(cmd,...)
   let f = rails#underscore(a:0 ? matchstr(a:1,'[^!#:]*') : s:model(1))
   let jump = a:0 ? matchstr(a:1,'[!#:].*') : ''
   if jump =~ '!'
-    let cmd = s:editcmdfor(a:cmd.(a:bang?'!':''))
+    let cmd = s:editcmdfor(a:cmd)
   else
-    let cmd = s:findcmdfor(a:cmd.(a:bang?'!':''))
+    let cmd = s:findcmdfor(a:cmd)
   endif
   let mapping = {'test': ['test/unit/','_test.rb'], 'spec': ['spec/models/','_spec.rb']}
   let tests = map(filter(rails#app().test_suites(),'has_key(mapping,v:val)'),'get(mapping,v:val)')
@@ -2412,16 +2410,16 @@ function! s:unittestEdit(bang,cmd,...)
       return s:findedit(cmd,prefix.f.suffix.jump)
     endif
   endfor
-  return s:EditSimpleRb(a:bang,a:cmd,"unittest",f.jump,tests[0][0],tests[0][1],1)
+  return s:EditSimpleRb(a:cmd,"unittest",f.jump,tests[0][0],tests[0][1],1)
 endfunction
 
-function! s:functionaltestEdit(bang,cmd,...)
+function! s:functionaltestEdit(cmd,...)
   let f = rails#underscore(a:0 ? matchstr(a:1,'[^!#:]*') : s:controller(1))
   let jump = a:0 ? matchstr(a:1,'[!#:].*') : ''
   if jump =~ '!'
-    let cmd = s:editcmdfor(a:cmd.(a:bang?'!':''))
+    let cmd = s:editcmdfor(a:cmd)
   else
-    let cmd = s:findcmdfor(a:cmd.(a:bang?'!':''))
+    let cmd = s:findcmdfor(a:cmd)
   endif
   let mapping = {'test': ['test/functional/','_test.rb'], 'spec': ['spec/controllers/','_spec.rb']}
   let tests = map(filter(rails#app().test_suites(),'has_key(mapping,v:val)'),'get(mapping,v:val)')
@@ -2437,23 +2435,23 @@ function! s:functionaltestEdit(bang,cmd,...)
       return s:findedit(cmd,prefix.f.'_api'.suffix.jump)
     endif
   endfor
-  return s:EditSimpleRb(a:bang,a:cmd,"functionaltest",f.jump,tests[0][0],tests[0][1],1)
+  return s:EditSimpleRb(a:cmd,"functionaltest",f.jump,tests[0][0],tests[0][1],1)
 endfunction
 
-function! s:integrationtestEdit(bang,cmd,...)
+function! s:integrationtestEdit(cmd,...)
   if !a:0
     if rails#app().has('cucumber') && !rails#app().has('test')
-      return s:EditSimpleRb(a:bang,a:cmd,"integrationtest","support/env","features/",".rb")
+      return s:EditSimpleRb(a:cmd,"integrationtest","support/env","features/",".rb")
     else
-      return s:EditSimpleRb(a:bang,a:cmd,"integrationtest","test_helper","test/",".rb")
+      return s:EditSimpleRb(a:cmd,"integrationtest","test_helper","test/",".rb")
     endif
   endif
   let f = rails#underscore(matchstr(a:1,'[^!#:]*'))
   let jump = matchstr(a:1,'[!#:].*')
   if jump =~ '!'
-    let cmd = s:editcmdfor(a:cmd.(a:bang?'!':''))
+    let cmd = s:editcmdfor(a:cmd)
   else
-    let cmd = s:findcmdfor(a:cmd.(a:bang?'!':''))
+    let cmd = s:findcmdfor(a:cmd)
   endif
   let mapping = {'test': ['test/integration/','_test.rb'], 'cucumber': ['features/','.feature']}
   let tests = map(filter(rails#app().test_suites(),'has_key(mapping,v:val)'),'get(mapping,v:val)')
@@ -2467,19 +2465,19 @@ function! s:integrationtestEdit(bang,cmd,...)
       return s:findedit(cmd,prefix.rails#underscore(f).suffix.jump)
     endif
   endfor
-  return s:EditSimpleRb(a:bang,a:cmd,"integrationtest",f.jump,tests[0][0],tests[0][1],1)
+  return s:EditSimpleRb(a:cmd,"integrationtest",f.jump,tests[0][0],tests[0][1],1)
 endfunction
 
-function! s:specEdit(bang,cmd,...)
+function! s:specEdit(cmd,...)
   if a:0
-    return s:EditSimpleRb(a:bang,a:cmd,"spec",a:1,"spec/","_spec.rb")
+    return s:EditSimpleRb(a:cmd,"spec",a:1,"spec/","_spec.rb")
   else
-    call s:EditSimpleRb(a:bang,a:cmd,"spec","spec_helper","spec/",".rb")
+    call s:EditSimpleRb(a:cmd,"spec","spec_helper","spec/",".rb")
   endif
 endfunction
 
-function! s:pluginEdit(bang,cmd,...)
-  let cmd = s:findcmdfor(a:cmd.(a:bang?'!':''))
+function! s:pluginEdit(cmd,...)
+  let cmd = s:findcmdfor(a:cmd)
   let plugin = ""
   let extra = ""
   if RailsFilePath() =~ '\<vendor/plugins/.'
@@ -2488,7 +2486,7 @@ function! s:pluginEdit(bang,cmd,...)
   endif
   if a:0
     if a:1 =~ '^[^/.]*/\=$' && rails#app().has_file("vendor/plugins/".a:1."/init.rb")
-      return s:EditSimpleRb(a:bang,a:cmd,"plugin",s:sub(a:1,'/$',''),"vendor/plugins/","/init.rb")
+      return s:EditSimpleRb(a:cmd,"plugin",s:sub(a:1,'/$',''),"vendor/plugins/","/init.rb")
     elseif plugin == ""
       call s:edit(cmd,"vendor/plugins/".s:sub(a:1,'\.$',''))
     elseif a:1 == "."
@@ -2499,11 +2497,11 @@ function! s:pluginEdit(bang,cmd,...)
       call s:findedit(cmd,"vendor/plugins/".a:1."\nvendor/plugins/".plugin."/".a:1)
     endif
   else
-    return s:EditSimpleRb(a:bang,a:cmd,"plugin",plugin,"vendor/plugins/","/init.rb")
+    return s:EditSimpleRb(a:cmd,"plugin",plugin,"vendor/plugins/","/init.rb")
   endif
 endfunction
 
-function! s:taskEdit(bang,cmd,...)
+function! s:taskEdit(cmd,...)
   let plugin = ""
   let extra = ""
   if RailsFilePath() =~ '\<vendor/plugins/.'
@@ -2511,30 +2509,30 @@ function! s:taskEdit(bang,cmd,...)
     let extra = plugin."/tasks/\n".plugin."/lib/tasks/\n"
   endif
   if a:0
-    call s:EditSimpleRb(a:bang,a:cmd,"task",a:1,extra."lib/tasks/",".rake")
+    call s:EditSimpleRb(a:cmd,"task",a:1,extra."lib/tasks/",".rake")
   else
-    call s:findedit((a:bang ? "!" : ""),(plugin != "" ? plugin."/Rakefile\n" : "")."Rakefile")
+    call s:findedit(a:cmd,(plugin != "" ? plugin."/Rakefile\n" : "")."Rakefile")
   endif
 endfunction
 
-function! s:libEdit(bang,cmd,...)
+function! s:libEdit(cmd,...)
   let extra = ""
   if RailsFilePath() =~ '\<vendor/plugins/.'
     let extra = s:sub(RailsFilePath(),'<vendor/plugins/[^/]*/\zs.*','lib/')."\n"
   endif
   if a:0
-    call s:EditSimpleRb(a:bang,a:cmd,"lib",a:0? a:1 : "",extra."lib/",".rb")
+    call s:EditSimpleRb(a:cmd,"lib",a:0? a:1 : "",extra."lib/",".rb")
   else
-    call s:EditSimpleRb(a:bang,a:cmd,"lib","routes","config/",".rb")
+    call s:EditSimpleRb(a:cmd,"lib","routes","config/",".rb")
   endif
 endfunction
 
-function! s:environmentEdit(bang,cmd,...)
-  return s:EditSimpleRb(a:bang,a:cmd,"environment",a:0? a:1 : "../environment","config/environments/",".rb")
+function! s:environmentEdit(cmd,...)
+  return s:EditSimpleRb(a:cmd,"environment",a:0? a:1 : "../environment","config/environments/",".rb")
 endfunction
 
-function! s:initializerEdit(bang,cmd,...)
-  return s:EditSimpleRb(a:bang,a:cmd,"initializer",a:0? a:1 : "../routes","config/initializers/",".rb")
+function! s:initializerEdit(cmd,...)
+  return s:EditSimpleRb(a:cmd,"initializer",a:0? a:1 : "../routes","config/initializers/",".rb")
 endfunction
 
 " }}}1
@@ -2634,14 +2632,13 @@ function! s:edit(cmd,file,...)
   endif
 endfunction
 
-function! s:Alternate(bang,cmd,...)
+function! s:Alternate(cmd,...)
   if a:0
-    return call('s:Find',[a:bang,1,a:cmd]+a:000)
+    return call('s:Find',[1,a:cmd]+a:000)
   else
-    let cmd = a:cmd.(a:bang?"!":"")
     let file = s:AlternateFile()
     if file != ""
-      call s:findedit(cmd,file)
+      call s:findedit(a:cmd,file)
     else
       call s:warn("No alternate file is defined")
     endif
@@ -2762,14 +2759,13 @@ function! s:AlternateFile()
   endif
 endfunction
 
-function! s:Related(bang,cmd,...)
+function! s:Related(cmd,...)
   if a:0
-    return call('s:Edit',[a:bang,1,a:cmd]+a:000)
+    return call('s:Edit',[1,a:cmd]+a:000)
   else
-    let cmd = a:cmd.(a:bang?"!":"")
     let file = s:RelatedFile()
     if file != ""
-      call s:findedit(cmd,file)
+      call s:findedit(a:cmd,file)
     else
       call s:warn("No related file is defined")
     endif
