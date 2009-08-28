@@ -300,19 +300,21 @@ Alternate and Related Files ~
 Two commands, :A and :R, are used quickly jump to an "alternate" and a
 "related" file, defined below.
 
-		*rails-:A* *rails-:AE* *rails-:AS* *rails-:AV* *rails-:AT*
+	*rails-:A* *rails-:AE* *rails-:AS* *rails-:AV* *rails-:AT* *rails-:AD*
 :A			These commands were picked to mimic Michael Sharpe's
 :AE			a.vim.  Briefly, they edit the "alternate" file, in
 :AS			either the same window (:A and :AE), a new split
-:AV			window (:AS), a new vertically split window (:AV), or
-:AT			a new tab (:AT).  A mapping for :A is [f .
+:AV			window (:AS), a new vertically split window (:AV), a
+:AT			new tab (:AT), or read it into the current buffer
+:AD                     (:AD).  A mapping for :A is [f .
 
-		*rails-:R* *rails-:RE* *rails-:RS* *rails-:RV* *rails-:RT*
+	*rails-:R* *rails-:RE* *rails-:RS* *rails-:RV* *rails-:RT* *rails-:RD*
 :R			These are similar |rails-:A| and friends above, only
 :RE			they jump to the "related" file rather than the
 :RS			"alternate."  A mapping for :R is ]f .
 :RV			
 :RT
+:RD
 
 					*rails-alternate* *rails-related*
 The alternate file is most frequently the test file, though there are
@@ -343,12 +345,12 @@ can override the mapping from model related files to controller related files
 (Rset controller=hiring) and vice versa (Rset model=employee).  See
 |rails-:Rset|.
 
-Each of the following commands has variants for splitting, vertical splitting
-and opening in a new tab.  For :Rmodel, those variants would be :RSmodel,
-:RVmodel, and :RTmodel.  There is also :REmodel which is a synonym for :Rmodel
-(future versions might allow customization of the behavior of :Rmodel).  They
-also allow for jumping to methods or line numbers using the same syntax as
-|:Redit|.
+Each of the following commands has variants for splitting, vertical splitting,
+opening in a new tab, and reading the file into the current buffer.  For
+:Rmodel, those variants would be :RSmodel, :RVmodel, :RTmodel, and :RDmodel.
+There is also :REmodel which is a synonym for :Rmodel (future versions might
+allow customization of the behavior of :Rmodel).  They also allow for jumping
+to methods or line numbers using the same syntax as |:Redit|.
 
 
 Model Navigation Commands ~

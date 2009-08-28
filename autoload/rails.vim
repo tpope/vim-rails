@@ -1467,31 +1467,34 @@ endfunction
 " Navigation {{{1
 
 function! s:BufNavCommands()
-  command!   -buffer -bar -nargs=? -complete=customlist,s:Complete_cd Rcd   :cd `=rails#app().path(<q-args>)`
-  command!   -buffer -bar -nargs=? -complete=customlist,s:Complete_cd Rlcd :lcd `=rails#app().path(<q-args>)`
-  command!   -buffer -bar -nargs=* -count=1 -complete=customlist,s:Complete_find Rfind       :call s:Find(<count>,'<bang>' ,<f-args>)
-  command!   -buffer -bar -nargs=* -count=1 -complete=customlist,s:Complete_find REfind      :call s:Find(<count>,'E<bang>',<f-args>)
-  command!   -buffer -bar -nargs=* -count=1 -complete=customlist,s:Complete_find RSfind      :call s:Find(<count>,'S<bang>',<f-args>)
-  command!   -buffer -bar -nargs=* -count=1 -complete=customlist,s:Complete_find RVfind      :call s:Find(<count>,'V<bang>',<f-args>)
-  command!   -buffer -bar -nargs=* -count=1 -complete=customlist,s:Complete_find RTfind      :call s:Find(<count>,'T<bang>',<f-args>)
-  command!   -buffer -bar -nargs=* -count=1 -complete=customlist,s:Complete_find Rsfind      :<count>RSfind<bang> <args>
-  command!   -buffer -bar -nargs=* -count=1 -complete=customlist,s:Complete_find Rtabfind    :<count>RTfind<bang> <args>
-  command!   -buffer -bar -nargs=* -bang    -complete=customlist,s:Complete_edit Redit       :call s:Edit(<count>,'<bang>' ,<f-args>)
-  command!   -buffer -bar -nargs=* -bang    -complete=customlist,s:Complete_edit REedit      :call s:Edit(<count>,'E<bang>',<f-args>)
-  command!   -buffer -bar -nargs=* -bang    -complete=customlist,s:Complete_edit RSedit      :call s:Edit(<count>,'S<bang>',<f-args>)
-  command!   -buffer -bar -nargs=* -bang    -complete=customlist,s:Complete_edit RVedit      :call s:Edit(<count>,'V<bang>',<f-args>)
-  command!   -buffer -bar -nargs=* -bang    -complete=customlist,s:Complete_edit RTedit      :call s:Edit(<count>,'T<bang>',<f-args>)
-  command! -buffer -bar -nargs=* -complete=customlist,s:Complete_find    A  :call s:Alternate('<bang>', <f-args>)
-  command! -buffer -bar -nargs=* -complete=customlist,s:Complete_find    AE :call s:Alternate('E<bang>',<f-args>)
-  command! -buffer -bar -nargs=* -complete=customlist,s:Complete_find    AS :call s:Alternate('S<bang>',<f-args>)
-  command! -buffer -bar -nargs=* -complete=customlist,s:Complete_find    AV :call s:Alternate('V<bang>',<f-args>)
-  command! -buffer -bar -nargs=* -complete=customlist,s:Complete_find    AT :call s:Alternate('T<bang>',<f-args>)
-  command! -buffer -bar -nargs=* -complete=customlist,s:Complete_edit    AN :call s:Related('<bang>' ,<f-args>)
-  command! -buffer -bar -nargs=* -complete=customlist,s:Complete_edit    R  :call s:Related('<bang>' ,<f-args>)
-  command! -buffer -bar -nargs=* -complete=customlist,s:Complete_edit    RE :call s:Related('E<bang>',<f-args>)
-  command! -buffer -bar -nargs=* -complete=customlist,s:Complete_edit    RS :call s:Related('S<bang>',<f-args>)
-  command! -buffer -bar -nargs=* -complete=customlist,s:Complete_edit    RV :call s:Related('V<bang>',<f-args>)
-  command! -buffer -bar -nargs=* -complete=customlist,s:Complete_edit    RT :call s:Related('T<bang>',<f-args>)
+  command! -buffer -bar -nargs=? -complete=customlist,s:Complete_cd Rcd   :cd `=rails#app().path(<q-args>)`
+  command! -buffer -bar -nargs=? -complete=customlist,s:Complete_cd Rlcd :lcd `=rails#app().path(<q-args>)`
+  command! -buffer -bar -nargs=* -count=1 -complete=customlist,s:Complete_find Rfind    :call s:Find(<count>,'<bang>' ,<f-args>)
+  command! -buffer -bar -nargs=* -count=1 -complete=customlist,s:Complete_find REfind   :call s:Find(<count>,'E<bang>',<f-args>)
+  command! -buffer -bar -nargs=* -count=1 -complete=customlist,s:Complete_find RSfind   :call s:Find(<count>,'S<bang>',<f-args>)
+  command! -buffer -bar -nargs=* -count=1 -complete=customlist,s:Complete_find RVfind   :call s:Find(<count>,'V<bang>',<f-args>)
+  command! -buffer -bar -nargs=* -count=1 -complete=customlist,s:Complete_find RTfind   :call s:Find(<count>,'T<bang>',<f-args>)
+  command! -buffer -bar -nargs=* -count=1 -complete=customlist,s:Complete_find Rsfind   :<count>RSfind<bang> <args>
+  command! -buffer -bar -nargs=* -count=1 -complete=customlist,s:Complete_find Rtabfind :<count>RTfind<bang> <args>
+  command! -buffer -bar -nargs=* -bang    -complete=customlist,s:Complete_edit Redit    :call s:Edit(<count>,'<bang>' ,<f-args>)
+  command! -buffer -bar -nargs=* -bang    -complete=customlist,s:Complete_edit REedit   :call s:Edit(<count>,'E<bang>',<f-args>)
+  command! -buffer -bar -nargs=* -bang    -complete=customlist,s:Complete_edit RSedit   :call s:Edit(<count>,'S<bang>',<f-args>)
+  command! -buffer -bar -nargs=* -bang    -complete=customlist,s:Complete_edit RVedit   :call s:Edit(<count>,'V<bang>',<f-args>)
+  command! -buffer -bar -nargs=* -bang    -complete=customlist,s:Complete_edit RTedit   :call s:Edit(<count>,'T<bang>',<f-args>)
+  command! -buffer -bar -nargs=* -range=0 -complete=customlist,s:Complete_edit RDedit   :call s:Edit(<count>,'<line1>D<bang>',<f-args>)
+  command! -buffer -bar -nargs=*          -complete=customlist,s:Complete_find A        :call s:Alternate('<bang>', <f-args>)
+  command! -buffer -bar -nargs=*          -complete=customlist,s:Complete_find AE       :call s:Alternate('E<bang>',<f-args>)
+  command! -buffer -bar -nargs=*          -complete=customlist,s:Complete_find AS       :call s:Alternate('S<bang>',<f-args>)
+  command! -buffer -bar -nargs=*          -complete=customlist,s:Complete_find AV       :call s:Alternate('V<bang>',<f-args>)
+  command! -buffer -bar -nargs=*          -complete=customlist,s:Complete_find AT       :call s:Alternate('T<bang>',<f-args>)
+  command! -buffer -bar -nargs=* -range=0 -complete=customlist,s:Complete_find AD       :call s:Alternate('<line1>D<bang>',<f-args>)
+  command! -buffer -bar -nargs=*          -complete=customlist,s:Complete_edit AN       :call s:Related('<bang>' ,<f-args>)
+  command! -buffer -bar -nargs=*          -complete=customlist,s:Complete_edit R        :call s:Related('<bang>' ,<f-args>)
+  command! -buffer -bar -nargs=*          -complete=customlist,s:Complete_edit RE       :call s:Related('E<bang>',<f-args>)
+  command! -buffer -bar -nargs=*          -complete=customlist,s:Complete_edit RS       :call s:Related('S<bang>',<f-args>)
+  command! -buffer -bar -nargs=*          -complete=customlist,s:Complete_edit RV       :call s:Related('V<bang>',<f-args>)
+  command! -buffer -bar -nargs=*          -complete=customlist,s:Complete_edit RT       :call s:Related('T<bang>',<f-args>)
+  command! -buffer -bar -nargs=* -range=0 -complete=customlist,s:Complete_edit RD       :call s:Related('<line1>D<bang>',<f-args>)
 endfunction
 
 function! s:djump(def)
@@ -1851,11 +1854,11 @@ endfunction
 
 function! s:addfilecmds(type)
   let l = s:sub(a:type,'^.','\l&')
-  let cmds = 'ESVT '
+  let cmds = 'ESVTD '
   let cmd = ''
   while cmds != ''
     let cplt = " -complete=customlist,".s:sid.l."List"
-    exe "command! -buffer -bar -nargs=*".cplt." R".cmd.l." :call s:".l.'Edit("'.cmd.'<bang>",<f-args>)'
+    exe "command! -buffer -bar ".(cmd == 'D' ? '-range=0 ' : '')."-nargs=*".cplt." R".cmd.l." :call s:".l.'Edit("'.(cmd == 'D' ? '<line1>' : '').cmd.'<bang>",<f-args>)'
     let cmd = strpart(cmds,0,1)
     let cmds = strpart(cmds,1)
   endwhile
@@ -2560,6 +2563,8 @@ function! s:findcmdfor(cmd)
     return 'vert '.num.'sfind'.bang
   elseif cmd == 'T'
     return num.'tabfind'.bang
+  elseif cmd == 'D'
+    return num.'read'.bang
   else
     return num.cmd.bang
   endif
