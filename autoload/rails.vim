@@ -1095,12 +1095,12 @@ function! s:default_rake_task(lnum)
     endif
   elseif t =~ '^cucumber-feature\>'
     if lnum > 0
-      return 'features FEATURE="%:p":'.lnum
+      return 'cucumber FEATURE="%:p":'.lnum
     else
-      return 'features FEATURE="%:p"'
+      return 'cucumber FEATURE="%:p"'
     endif
   elseif t =~ '^cucumber\>'
-    return 'features'
+    return 'cucumber'
   else
     return ''
   endif
@@ -2446,7 +2446,7 @@ endfunction
 
 function! s:integrationtestEdit(bang,cmd,...)
   if !a:0
-    if rails#app().has('cucumber')
+    if rails#app().has('cucumber') && !rails#app().has('test')
       return s:EditSimpleRb(a:bang,a:cmd,"integrationtest","support/env","features/",".rb")
     else
       return s:EditSimpleRb(a:bang,a:cmd,"integrationtest","test_helper","test/",".rb")
