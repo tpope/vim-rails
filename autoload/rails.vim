@@ -598,6 +598,14 @@ function! s:app_environments() dict
   return copy(self.cache.get('environments'))
 endfunction
 
+function! s:app_default_locale() dict abort
+  if self.cache.needs('default_locale')
+    let candidates = map(filter(s:readfile(self.path('config/environment.rb')),'v:val =~ "^ *config.i18n.default_locale = :[\"'']\\=[A-Za-z-]\\+[\"'']\\= *$"'),'matchstr(v:val,"[A-Za-z-]\\+[\"'']\\= *$")')
+    call self.cache.set('default_locale',get(candidates,0,'en'))
+  endif
+  return self.cache.get('default_locale')
+endfunction
+
 function! s:app_has(feature) dict
   let map = {
         \'test': 'test/',
@@ -620,7 +628,7 @@ function! s:app_test_suites() dict
   return filter(['test','spec','cucumber'],'self.has(v:val)')
 endfunction
 
-call s:add_methods('app',['calculate_file_type','environments','has','test_suites'])
+call s:add_methods('app',['calculate_file_type','environments','default_locale','has','test_suites'])
 
 " }}}1
 " Ruby Execution {{{1
@@ -4445,6 +4453,7 @@ augroup railsPluginAuto
   autocmd BufWritePost */config/database.yml      call rails#cache_clear("dbext_settings")
   autocmd BufWritePost */test/test_helper.rb      call rails#cache_clear("user_assertions")
   autocmd BufWritePost */config/routes.rb         call rails#cache_clear("named_routes")
+  autocmd BufWritePost */config/environment.rb    call rails#cache_clear("default_locale")
   autocmd BufWritePost */config/environments/*.rb call rails#cache_clear("environments")
   autocmd BufWritePost */tasks/**.rake            call rails#cache_clear("rake_tasks")
   autocmd BufWritePost */generators/**            call rails#cache_clear("generators")
