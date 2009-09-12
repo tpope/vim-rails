@@ -139,7 +139,7 @@ function! s:app_find_file(name, ...) dict abort
         let found = findfile(a:name,path,i)
       endwhile
     endif
-    return found == "" ? found : s:gsub(strpart(fnamemodify(found,':p'),trim),'\\','/')
+    return found == "" ? default : s:gsub(strpart(fnamemodify(found,':p'),trim),'\\','/')
   finally
     let &l:suffixesadd = oldsuffixesadd
   endtry
@@ -2240,8 +2240,8 @@ function! s:fixturesEdit(bang,cmd,...)
   let e = fnamemodify(c,':e')
   let e = e == '' ? e : '.'.e
   let c = fnamemodify(c,':r')
-  let file = 'test/fixtures/'.c.e
-  if file =~ '\.\w\+$' && !rails#app().has_file("spec/fixtures/".c.e)
+  let file = get(rails#app().test_suites(),0,'test').'/fixtures/'.c.e
+  if file =~ '\.\w\+$' && rails#app().find_file(c.e,["test/fixtures","spec/fixtures"]) ==# ''
     call s:edit(a:cmd.(a:bang?'!':''),file)
   else
     call s:findedit(a:cmd.(a:bang?'!':''),rails#app().find_file(c.e,["test/fixtures","spec/fixtures"],[".yml",".csv"],file))
