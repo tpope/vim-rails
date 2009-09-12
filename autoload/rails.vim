@@ -1875,6 +1875,7 @@ function! s:BufFinderCommands()
   call s:addfilecmds("helper")
   call s:addfilecmds("layout")
   call s:addfilecmds("fixtures")
+  call s:addfilecmds("locale")
   if rails#app().has('test') || rails#app().has('spec')
     call s:addfilecmds("unittest")
     call s:addfilecmds("functionaltest")
@@ -1994,6 +1995,10 @@ endfunction
 
 function! s:fixturesList(A,L,P)
   return s:completion_filter(rails#app().relglob("test/fixtures/","**/*")+rails#app().relglob("spec/fixtures/","**/*"),a:A)
+endfunction
+
+function! s:localeList(A,L,P)
+  return s:completion_filter(rails#app().relglob("config/locales/","**/*"),a:A)
 endfunction
 
 function! s:migrationList(A,L,P)
@@ -2238,6 +2243,15 @@ function! s:fixturesEdit(cmd,...)
     call s:edit(a:cmd,file)
   else
     call s:findedit(a:cmd,rails#app().find_file(c.e,["test/fixtures","spec/fixtures"],[".yml",".csv"],file))
+  endif
+endfunction
+
+function! s:localeEdit(cmd,...)
+  let c = a:0 ? a:1 : rails#app().default_locale()
+  if c =~# '\.'
+    call s:findedit(a:cmd,rails#app().find_file(c.e,'config/locales',['.yml','.rb'],'config/locales/'.c))
+  else
+    call s:edit(a:cmd,rails#app().find_file(c.e,'config/locales',[],'config/locales/'.c))
   endif
 endfunction
 

@@ -456,6 +456,7 @@ The following commands are not clearly associated with models or controllers.
 :Rmetal						|rails-:Rmetal|
 :Renvironment					|rails-:Renvironment|
 :Rinitializer					|rails-:Rinitializer|
+:Rlocale					|rails-:Rlocale|
 :Rintegrationtest				|rails-:Rintegrationtest|
 :Rspec						|rails-:Rspec|
 
@@ -497,6 +498,12 @@ The following commands are not clearly associated with models or controllers.
 						*rails-:Rinitializer*
 :Rinitializer [{name}]  Edit the config/initializers file specified.  With no
 			argument, defaults to editing config/routes.rb.
+
+						*rails-:Rlocale*
+:Rlocale [{name}]	Edit the config/locale file specified, optionally
+			adding a yml or rb extension if none is given.  With
+			no argument, checks config/environment.rb for the
+			default locale.
 
 						*rails-:Rintegrationtest*
 :Rintegrationtest [{name}]
