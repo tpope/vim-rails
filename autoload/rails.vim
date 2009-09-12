@@ -745,11 +745,12 @@ function! s:BufCommands()
         \   exe RailsHelpCommand(<q-args>) |
         \ else | call s:Doc(<bang>0,<q-args>) | endif
   command! -buffer -bar -nargs=0 -bang Rrefresh :if <bang>0|unlet! g:autoloaded_rails|source `=s:file`|endif|call s:Refresh(<bang>0)
-  if exists(":Project")
-    command! -buffer -bar -nargs=? Rproject :call s:Project(<bang>0,<q-args>)
-  elseif exists(":NERDTree")
-    command! -buffer -bar -nargs=? Rproject :NERDTree `=rails#app().path()`
+  if exists(":NERDTree")
+    command! -buffer -bar -nargs=? -complete=customlist,s:Complete_cd Rtree :NERDTree `=rails#app().path(<f-args>)`
+  elseif exists(":Project")
+    command! -buffer -bar -nargs=? Rtree :call s:Project(<bang>0,<q-args>)
   endif
+  command! -buffer -bar -nargs=? Rproject :call s:warn("Warning: :Rproject has been deprecated in favor of :Rtree") | Rtree<bang> <args>
   if exists("g:loaded_dbext")
     command! -buffer -bar -nargs=? -bang  -complete=customlist,s:Complete_environments Rdbext  :call s:BufDatabase(2,<q-args>,<bang>0)|let b:dbext_buffer_defaulted = 1
   endif
