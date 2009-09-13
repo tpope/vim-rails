@@ -50,36 +50,31 @@ Rails application development.
    out of your way if you're not using its features.  (If you find a situation
    where this is not a case, contact the |rails-plugin-author|.)
 
-3. Provides reasonable settings for working with Rails applications.  Rake is
-   the 'makeprg' (and it always knows where your Rakefile is), 'shiftwidth'
-   is 2, and 'path' includes an appropriate collection of directories from
-   your application. |rails-options|
-
-4. Easy navigation of the Rails directory structure.  |gf| considers context
+3. Easy navigation of the Rails directory structure.  |gf| considers context
    and knows about partials, fixtures, and much more.  There are two commands,
    :A (alternate) and :R (related) for easy jumping between files, including
    favorites like model to migration, template to helper, and controller to
    functional test.  For more advanced usage, :Rmodel, :Rview, :Rcontroller,
    and several other commands are provided.  |rails-navigation|
 
-5. Enhanced syntax highlighting.  From has_and_belongs_to_many to
+4. Enhanced syntax highlighting.  From has_and_belongs_to_many to
    distance_of_time_in_words, it's here.  For easy completion of these long
    method names, 'completefunc' is set to enable syntax based completion on
    |i_CTRL-X_CTRL-U|. |rails-syntax|
 
-6. Interface to script/*.  Generally, use ":Rscript about" to call
+5. Interface to script/*.  Generally, use ":Rscript about" to call
    "script/about".  Most commands have wrappers with additional features:
    ":Rgenerate controller Blog" generates a blog controller and edits
    app/controllers/blog_controller.rb.  |rails-scripts|
 
-7. Partial extraction and migration inversion.  |:Rextract| {file} replaces
+6. Partial extraction and migration inversion.  |:Rextract| {file} replaces
    the desired range (ideally selected in visual line mode) with "render
    :partial => '{file}'", which is automatically created with your content.
    The @{file} instance variable is replaced with the {file} local variable.
    |:Rinvert| takes a self.up migration and writes a self.down.
    |rails-refactoring|
 
-8. Integration with other plugins.  |:Rtree| spawns NERDTree.vim or creates a
+7. Integration with other plugins.  |:Rtree| spawns NERDTree.vim or creates a
    new project.vim project.  If dbext.vim is installed, it will be
    transparently configured to reflect database.yml.  Cream users get some
    additional mappings, and all GUI users get a menu. |rails-integration|
@@ -915,11 +910,6 @@ The 'includeexpr' option is set to enable the magic described in |rails-gf|.
 					*rails-'statusline'*	*rails-'stl'*
 Useful information is added to the 'statusline', when |g:rails_statusline| is
 enabled.
-
-					*rails-'makeprg'*	*rails-'mp'*
-					*rails-'errorformat'*	*rails-'efm'*
-Rake is used as the 'makeprg', so |:make| will work as expected.  Also, 
-'errorformat' is set appropriately to handle your tests.
 
 					*rails-'filetype'*	*rails-'ft'*
 The 'filetype' is sometimes adjusted for Rails files.  Most notably, *.rxml

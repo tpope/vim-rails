@@ -4365,8 +4365,6 @@ function! s:BufSettings()
   endif
   call s:SetBasePath()
   let rp = s:gsub(rails#app().path(),'[ ,]','\\&')
-  let &l:errorformat = s:efm_backtrace
-  setlocal makeprg=rake
   if stridx(&tags,rp) == -1
     let &l:tags = rp . "/tmp/tags," . &tags . "," . rp . "/tags"
   endif
