@@ -754,7 +754,7 @@ function! s:BufCommands()
   endif
   command! -buffer -bar -nargs=? Rproject :call s:warn("Warning: :Rproject has been deprecated in favor of :Rtree") | Rtree<bang> <args>
   if exists("g:loaded_dbext")
-    command! -buffer -bar -nargs=? -bang  -complete=customlist,s:Complete_environments Rdbext  :call s:BufDatabase(2,<q-args>,<bang>0)|let b:dbext_buffer_defaulted = 1
+    command! -buffer -bar -nargs=? -complete=customlist,s:Complete_environments Rdbext  :call s:BufDatabase(2,<q-args>)|let b:dbext_buffer_defaulted = 1
   endif
   let ext = expand("%:e")
   if ext =~ s:viewspattern()
@@ -3819,21 +3819,6 @@ function! s:BufDatabase(...)
     let $PGPASSWORD = b:dbext_passwd
   elseif exists('$PGPASSWORD')
     let $PGPASSWORD = ''
-  endif
-  if a:0 >= 3 && a:3 && exists(":Create")
-    if exists("b:dbext_dbname") && exists("b:dbext_type") && b:dbext_type !~? 'sqlite'
-      let db = b:dbext_dbname
-      if b:dbext_type == 'PGSQL'
-        " I don't always have a default database for a user so using the
-        " default user's database is a better choice for my setup.  It
-        " probably won't work for everyone but nothing will.
-        let b:dbext_dbname = 'postgres'
-      else
-        let b:dbext_dbname = ''
-      endif
-      exe "Create database ".db
-      let b:dbext_dbname = db
-    endif
   endif
   unlet! s:lock_database
 endfunction

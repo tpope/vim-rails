@@ -697,13 +697,6 @@ place) are also covered in this section.
 			rails.vim loads if |g:rails_dbext| is set (which it is
 			by default).
 
-						*rails-:Rdbext!*
-:Rdbext! [{environment}]
-			Load the database configuration as above, and then
-			attempt a CREATE DATABASE for it.  This is primarily
-			useful for demonstrations, and has been largely
-			superseded by |:Rake| db:create.
-
 						*rails-surround*
 The |surround| plugin available from vim.org enables adding and removing
 "surroundings" like parentheses, quotes, and HTML tags.  Even by itself, it is
