@@ -2252,9 +2252,9 @@ endfunction
 function! s:localeEdit(cmd,...)
   let c = a:0 ? a:1 : rails#app().default_locale()
   if c =~# '\.'
-    call s:findedit(a:cmd,rails#app().find_file(c.e,'config/locales',['.yml','.rb'],'config/locales/'.c))
+    call s:edit(a:cmd,rails#app().find_file(c,'config/locales',[],'config/locales/'.c))
   else
-    call s:edit(a:cmd,rails#app().find_file(c.e,'config/locales',[],'config/locales/'.c))
+    call s:findedit(a:cmd,rails#app().find_file(c,'config/locales',['.yml','.rb'],'config/locales/'.c))
   endif
 endfunction
 
