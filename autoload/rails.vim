@@ -3521,10 +3521,10 @@ endfunction
 
 function! s:addtostatus(letter,status)
   let status = a:status
-  if status !~ 'Rails' && g:rails_statusline
-    let   status=substitute(status,'\C%'.tolower(a:letter),'%'.tolower(a:letter).'%{RailsStatusline()}','')
-    if status !~ 'Rails'
-      let status=substitute(status,'\C%'.toupper(a:letter),'%'.toupper(a:letter).'%{RailsSTATUSLINE()}','')
+  if status !~ 'rails' && g:rails_statusline
+    let   status=substitute(status,'\C%'.tolower(a:letter),'%'.tolower(a:letter).'%{rails#statusline()}','')
+    if status !~ 'rails'
+      let status=substitute(status,'\C%'.toupper(a:letter),'%'.toupper(a:letter).'%{rails#STATUSLINE()}','')
     endif
   endif
   return status
@@ -3559,26 +3559,26 @@ endfunction
 
 function! s:InjectIntoStatusline(status)
   let status = a:status
-  if status !~ 'Rails'
+  if status !~ 'rails'
     let status = s:addtostatus('y',status)
     let status = s:addtostatus('r',status)
     let status = s:addtostatus('m',status)
     let status = s:addtostatus('w',status)
     let status = s:addtostatus('h',status)
-    if status !~ 'Rails'
-      let status=substitute(status,'%=','%{RailsStatusline()}%=','')
+    if status !~ 'rails'
+      let status=substitute(status,'%=','%{rails#statusline()}%=','')
     endif
     if status !~ 'Rails' && status != ''
-      let status .= '%{RailsStatusline()}'
+      let status .= '%{rails#statusline()}'
     endif
   endif
   return status
 endfunction
 
-function! RailsStatusline()
+function! rails#statusline(...)
   if exists("b:rails_root")
     let t = RailsFileType()
-    if t != ""
+    if t != "" && a:0 && a:1
       return "[Rails-".t."]"
     else
       return "[Rails]"
@@ -3588,10 +3588,10 @@ function! RailsStatusline()
   endif
 endfunction
 
-function! RailsSTATUSLINE()
+function! rails#STATUSLINE(...)
   if exists("b:rails_root")
     let t = RailsFileType()
-    if t != ""
+    if t != "" && a:0 && a:1
       return ",RAILS-".toupper(t)
     else
       return ",RAILS"
