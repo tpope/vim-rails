@@ -583,7 +583,11 @@ function! s:app_calculate_file_type(path) dict
     let r = "task"
   elseif f =~ '\<log/.*\.log$'
     let r = "log"
-  elseif e == "css" || e == "js" || e == "html"
+  elseif e == "css" || e == "sass"
+    let r = "stylesheet-".e
+  elseif e == "js"
+    let r = "javascript"
+  elseif e == "html"
     let r = e
   elseif f =~ '\<config/routes\>.*\.rb$'
     let r = "config-routes"
