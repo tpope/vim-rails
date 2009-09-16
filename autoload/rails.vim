@@ -817,8 +817,13 @@ endfunction
 
 function! rails#new_app_command(bang,...)
   if a:0 == 0
-    if a:bang
-      echo "rails.vim version ".g:autoloaded_rails
+    let msg = "rails.vim ".g:autoloaded_rails
+    if a:bang && exists('b:rails_root') && RailsFileType() == ''
+      echo msg." (Rails)"
+    elseif a:bang && exists('b:rails_root')
+      echo msg." (Rails-".RailsFileType().")"
+    elseif a:bang
+      echo msg
     else
       !rails
     endif

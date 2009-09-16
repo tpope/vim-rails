@@ -129,6 +129,10 @@ actually edit a file from a Rails application.
 :Rails {directory}	The only global command.  Creates a new Rails
 			application in {directory}, and loads the README.
 
+:Rails!			Show the version of rails.vim installed.  If rails.vim
+			is active for the current buffer, also show the type
+			of Rails file detected.
+
 						*rails-:Rake*
 :[range]Rake {targets}	Like calling |:make| {targets} (with 'makeprg' being
 			rake).  However, in some contexts, if {targets} are
@@ -926,13 +930,14 @@ loaded, you can use an autocommand like the following in your vimrc: >
 	autocmd User Rails		silent! Rlcd
 	autocmd User Rails		map <buffer> <F9> :Rake<CR>
 You can also have autocommands that only apply to certain types of files.
-These are based off the information shown in the 'statusline' (see
-|rails-'statusline'|), with hyphens changed to periods. A few examples: >
+These are based off the information shown when running the |:Rails!|
+command, with hyphens changed to periods. A few examples: >
 	autocmd User Rails.controller*	iabbr <buffer> wsn wsdl_service_name
 	autocmd User Rails.model.arb*	iabbr <buffer> vfo validates_format_of
 	autocmd User Rails.view.erb*    imap  <buffer> <C-Z> <%=  %><C-O>3h
 End all such Rails autocommands with asterisks, even if you have an exact
-specification.  There is also a filename matching syntax: >
+specification, to allow for more specific subtypes to be added in the future.
+There is also a filename matching syntax: >
 	autocmd User Rails/db/schema.rb  Rset task=db:schema:dump
 	autocmd User Rails/**/foo_bar.rb Rabbrev FB:: FooBar
 Use the filetype based syntax whenever possible, reserving the filename based
