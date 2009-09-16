@@ -1100,6 +1100,8 @@ function! s:default_rake_task(lnum)
     else
       return 'db:migrate'
     endif
+  elseif RailsFilePath() =~# '\<db/seeds\.rb$'
+    return 'db:seed'
   elseif self.has('spec') && RailsFilePath() =~# '^app/.*\.rb' && self.has_file(s:sub(RailsFilePath(),'^app/(.*)\.rb$','spec/\1_spec.rb'))
     return 'spec SPEC="%:p:r:s?[\/]app[\/]?/spec/?_spec.rb" SPEC_OPTS='
   elseif t=~ '^model\>'
