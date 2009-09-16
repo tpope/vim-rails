@@ -3568,7 +3568,7 @@ function! s:InjectIntoStatusline(status)
     if status !~ 'rails'
       let status=substitute(status,'%=','%{rails#statusline()}%=','')
     endif
-    if status !~ 'Rails' && status != ''
+    if status !~ 'rails' && status != ''
       let status .= '%{rails#statusline()}'
     endif
   endif
