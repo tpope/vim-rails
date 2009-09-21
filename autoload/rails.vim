@@ -2701,14 +2701,9 @@ function! s:AlternateFile()
   elseif f =~ '\<db/schema\.rb$'
     return rails#app().migration('')
   elseif t =~ '^view\>'
-    if t =~ '\<layout\>'
-      let dest = fnamemodify(f,':r:s?/layouts\>??').'/layout.'.fnamemodify(f,':e')
-    else
-      let dest = f
-    endif
-    let spec1 = fnamemodify(dest,':s?\<app/?spec/?')."_spec.rb"
-    let spec2 = fnamemodify(dest,':r:s?\<app/?spec/?')."_spec.rb"
-    let spec3 = fnamemodify(dest,':r:r:s?\<app/?spec/?')."_spec.rb"
+    let spec1 = fnamemodify(f,':s?\<app/?spec/?')."_spec.rb"
+    let spec2 = fnamemodify(f,':r:s?\<app/?spec/?')."_spec.rb"
+    let spec3 = fnamemodify(f,':r:r:s?\<app/?spec/?')."_spec.rb"
     if rails#app().has_file(spec1)
       return spec1
     elseif rails#app().has_file(spec2)
@@ -2718,7 +2713,12 @@ function! s:AlternateFile()
     elseif rails#app().has('spec')
       return spec2
     else
-      return s:sub(s:sub(f,'<app/views/','test/functional/'),'/[^/]*$','_controller_test.rb')
+      if t =~ '\<layout\>'
+        let dest = fnamemodify(f,':r:s?/layouts\>??').'/layout.'.fnamemodify(f,':e')
+      else
+        let dest = f
+      endif
+      return s:sub(s:sub(dest,'<app/views/','test/functional/'),'/[^/]*$','_controller_test.rb')
     endif
   elseif t =~ '^controller-api\>'
     let api = s:sub(s:sub(f,'/controllers/','/apis/'),'_controller\.rb$','_api.rb')
