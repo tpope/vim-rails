@@ -21,6 +21,9 @@ set cpo&vim
 " Utility Functions {{{1
 
 let s:app_prototype = {}
+let s:file_prototype = {}
+let s:buffer_prototype = {}
+let s:readable_prototype = {}
 
 function! s:add_methods(namespace, method_names)
   for name in a:method_names
@@ -178,42 +181,46 @@ function! s:pathjoin(...) abort
   return substitute(path,'^,','','')
 endfunction
 
-function! s:endof(lnum)
+function! s:readable_end_of(lnum) dict abort
   if a:lnum == 0
     return 0
   endif
-  if &ft == "yaml" || expand("%:e") == "yml"
+  if self.name() =~# '\.yml$'
     return -1
   endif
-  let cline = getline(a:lnum)
+  let cline = self.getline(a:lnum)
   let spc = matchstr(cline,'^\s*')
   let endpat = '\<end\>'
-  if matchstr(getline(a:lnum+1),'^'.spc) && !matchstr(getline(a:lnum+1),'^'.spc.endpat) && matchstr(cline,endpat)
+  if matchstr(self.getline(a:lnum+1),'^'.spc) && !matchstr(self.getline(a:lnum+1),'^'.spc.endpat) && matchstr(cline,endpat)
     return a:lnum
   endif
   let endl = a:lnum
-  while endl <= line('$')
+  while endl <= self.line_count()
     let endl += 1
-    if getline(endl) =~ '^'.spc.endpat
+    if self.getline(endl) =~ '^'.spc.endpat
       return endl
-    elseif getline(endl) =~ '^=begin\>'
-      while getline(endl) !~ '^=end\>' && endl <= line('$')
+    elseif self.getline(endl) =~ '^=begin\>'
+      while self.getline(endl) !~ '^=end\>' && endl <= self.line_count()
         let endl += 1
       endwhile
       let endl += 1
-    elseif getline(endl) !~ '^'.spc && getline(endl) !~ '^\s*\%(#.*\)\=$'
+    elseif self.getline(endl) !~ '^'.spc && self.getline(endl) !~ '^\s*\%(#.*\)\=$'
       return 0
     endif
   endwhile
   return 0
 endfunction
 
-function! s:lastopeningline(pattern,limit,start)
+function! s:endof(lnum)
+  return rails#buffer().end_of(a:lnum)
+endfunction
+
+function! s:readable_last_opening_line(start,pattern,limit) dict abort
   let line = a:start
-  while line > a:limit && getline(line) !~ a:pattern
+  while line > a:limit && self.getline(line) !~ a:pattern
     let line -= 1
   endwhile
-  let lend = s:endof(line)
+  let lend = self.end_of(line)
   if line > a:limit && (lend < 0 || lend >= a:start)
     return line
   else
@@ -221,30 +228,52 @@ function! s:lastopeningline(pattern,limit,start)
   endif
 endfunction
 
-function! s:lastmethodline(start)
-  return s:lastopeningline(&l:define,0,a:start)
+function! s:lastopeningline(pattern,limit,start)
+  return rails#buffer().last_opening_line(a:start,a:pattern,a:limit)
 endfunction
 
-function! s:lastmethod(...)
-  let line = s:lastmethodline(a:0 ? a:1 : line("."))
+function! s:readable_define_pattern() dict abort
+  if self.name() =~ '\.yml$'
+    return '^\%(\h\k*:\)\@='
+  endif
+  let define = '^\s*def\s\+\(self\.\)\='
+  if self.name() =~# '\.rake$'
+    let define .= "\\\|^\\s*\\%(task\\\|file\\)\\s\\+[:'\"]"
+  endif
+  if self.name() =~# '/schema\.rb$'
+    let define .= "\\\|^\\s*create_table\\s\\+[:'\"]"
+  endif
+  return define
+endfunction
+
+function! s:readable_last_method_line(start) dict abort
+  return self.last_opening_line(a:start,self.define_pattern(),0)
+endfunction
+
+function! s:lastmethodline(start)
+  return rails#buffer().last_method_line(a:start)
+endfunction
+
+function! s:readable_last_method(start) dict abort
+  let line = self.last_method_line(a:start)
   if line
-    return s:sub(matchstr(getline(line),'\%('.&define.'\)\zs\h\%(\k\|[:.]\)*[?!=]\='),':$','')
+    return s:sub(matchstr(self.getline(line),'\%('.self.define_pattern().'\)\zs\h\%(\k\|[:.]\)*[?!=]\='),':$','')
   else
     return ""
   endif
 endfunction
 
-function! s:lastrespondtoline(start)
-  return s:lastopeningline('\C^\s*respond_to\s*\%(\<do\)\s*|\zs\h\k*\ze|',s:lastmethodline(a:start),a:start)
+function! s:lastmethod(...)
+  return rails#buffer().last_method(a:0 ? a:1 : line("."))
 endfunction
 
-function! s:lastformat(start)
-  let rline = s:lastrespondtoline(a:start)
+function! s:readable_last_format(start) dict abort
+  let rline = self.last_opening_line('\C^\s*respond_to\s*\%(\<do\)\s*|\zs\h\k*\ze|',self.last_method_line(a:start),a:start)
   if rline
-    let variable = matchstr(getline(rline),'\C^\s*respond_to\s*\%(\<do\|{\)\s*|\zs\h\k*\ze|')
+    let variable = matchstr(self.getline(rline),'\C^\s*respond_to\s*\%(\<do\|{\)\s*|\zs\h\k*\ze|')
     let line = a:start
     while line > rline
-      let match = matchstr(getline(line),'\C^\s*'.variable.'\s*\.\s*\zs\h\k*')
+      let match = matchstr(self.getline(line),'\C^\s*'.variable.'\s*\.\s*\zs\h\k*')
       if match != ''
         return match
       endif
@@ -254,17 +283,23 @@ function! s:lastformat(start)
   return ""
 endfunction
 
+function! s:lastformat(start)
+  return rails#buffer().last_format(a:start)
+endfunction
+
 function! s:format(...)
   if RailsFileType() =~ '^view\>'
     let format = fnamemodify(RailsFilePath(),':r:e')
   else
-    let format = s:lastformat(a:0 > 1 ? a:2 : line("."))
+    let format = rails#buffer().last_format(a:0 > 1 ? a:2 : line("."))
   endif
   if format == ''
     return get({'rhtml': 'html', 'rxml': 'xml', 'rjs': 'js'},fnamemodify(RailsFilePath(),':e'),a:0 ? a:1 : '')
   endif
   return format
 endfunction
+
+call s:add_methods('readable',['end_of','last_opening_line','last_method_line','last_method','last_format','define_pattern'])
 
 let s:view_types = 'rhtml,erb,rxml,builder,rjs,mab,liquid,haml,dryml,mn'
 
@@ -355,6 +390,39 @@ function! s:readfile(path,...)
   endif
 endfunction
 
+function! s:file_lines() dict abort
+  let ftime = getftime(self.path)
+  if ftime > get(self,last_lines_ftime,0)
+    let self.last_lines = readfile(self.path())
+    let self.last_lines_ftime = ftime
+  endif
+  return get(self,'last_lines',[])
+endfunction
+
+function! s:file_getline(lnum,...) dict abort
+  if a:0
+    return self.lines[lnum-1 : a:1-1]
+  else
+    return self.lines[lnum-1]
+  endif
+endfunction
+
+function! s:buffer_lines() dict abort
+  return self.getline(1,'$')
+endfunction
+
+function! s:buffer_getline(...) dict abort
+  if a:0 == 1
+    return get(call('getbufline',[self._number]+a:000),0,'')
+  else
+    return call('getbufline',[self._number]+a:000)
+  endif
+endfunction
+
+function! s:readable_line_count() dict abort
+  return len(self.lines())
+endfunction
+
 function! s:environment()
   if exists('$RAILS_ENV')
     return $RAILS_ENV
@@ -390,6 +458,16 @@ function! s:debug(str)
     echohl None
   endif
 endfunction
+
+function! s:buffer_getvar(varname) dict abort
+  return getbufvar(self._number,a:varname)
+endfunction
+
+function! s:buffer_setvar(varname, val) dict abort
+  return setbufvar(self._number,a:varname,a:val)
+endfunction
+
+call s:add_methods('buffer',['getvar','setvar'])
 
 " }}}1
 " "Public" Interface {{{1
@@ -449,6 +527,23 @@ function! rails#app(...)
   return get(s:apps,root,0)
 endfunction
 
+function! rails#buffer(...)
+  return extend(extend({'_number': bufnr(a:0 ? a:1 : '%')},s:buffer_prototype,'keep'),s:readable_prototype,'keep')
+  endif
+endfunction
+
+function! s:buffer_app() dict abort
+  if self.getvar('rails_root') != ''
+    return rails#app(self.getvar('rails_root'))
+  else
+    return 0
+  endif
+endfunction
+
+function! s:readable_app() dict abort
+  return self._app
+endfunction
+
 function! RailsRevision()
   return 1000*matchstr(g:autoloaded_rails,'^\d\+')+matchstr(g:autoloaded_rails,'[1-9]\d*$')
 endfunction
@@ -461,26 +556,49 @@ function! RailsRoot()
   endif
 endfunction
 
-function! RailsFilePath()
-  if !exists("b:rails_root")
-    return ""
-  elseif exists("b:rails_file_path")
-    return b:rails_file_path
+function! s:app_file(name)
+  return extend(extend({'_app': self, '_name': a:name}, s:file_prototype,'keep'),s:readable_prototype,'keep')
+endfunction
+
+function! s:file_path() dict abort
+  return self.app().path(self._name)
+endfunction
+
+function! s:file_name() dict abort
+  return self._name
+endfunction
+
+function! s:buffer_path() dict abort
+  return s:gsub(fnamemodify(bufname(self._number),':p'),'\\ @!','/')
+endfunction
+
+function! s:buffer_name() dict abort
+  let app = self.app()
+  if getbufvar(self._number,'rails_file_type') != ''
+    return getbufvar(self.number,'rails_file_type')
   endif
-  let f = s:gsub(expand('%:p'),'\\ @!','/')
+  let f = s:gsub(fnamemodify(bufname(self._number),':p'),'\\ @!','/')
   let f = s:sub(f,'/$','')
   let sep = matchstr(f,'^[^\\/]\{3,\}\zs[\\/]')
   if sep != ""
     let f = getcwd().sep.f
   endif
-  if s:startswith(f,s:gsub(b:rails_root,'\\ @!','/')) || f == ""
-    return strpart(f,strlen(b:rails_root)+1)
+  if s:startswith(f,s:gsub(app.path(),'\\ @!','/')) || f == ""
+    return strpart(f,strlen(app.path())+1)
   else
     if !exists("s:path_warn")
       let s:path_warn = 1
-      call s:warn("File ".f." does not appear to be under the Rails root ".b:rails_root.". Please report to the rails.vim author!")
+      call s:warn("File ".f." does not appear to be under the Rails root ".self.app().path().". Please report to the rails.vim author!")
     endif
     return f
+  endif
+endfunction
+
+function! RailsFilePath()
+  if !exists("b:rails_root")
+    return ""
+  else
+    return rails#buffer().name()
   endif
 endfunction
 
@@ -491,18 +609,16 @@ endfunction
 function! RailsFileType()
   if !exists("b:rails_root")
     return ""
-  elseif exists("b:rails_cached_file_type")
-    return b:rails_cached_file_type
   else
-    return rails#app().calculate_file_type(RailsFilePath())
-  endif
+    return rails#buffer().type_name()
+  end
 endfunction
 
-function! s:app_calculate_file_type(path) dict
-  let f = a:path
+function! s:readable_calculate_file_type() dict abort
+  let f = self.name()
   let e = fnamemodify(f,':e')
-  let r = ""
-  let full_path = self.path(f)
+  let r = "-"
+  let full_path = self.path()
   let nr = bufnr('^'.full_path.'$')
   if nr < 0 && exists('+shellslash') && ! &shellslash
     let nr = bufnr('^'.s:gsub(full_path,'/','\\').'$')
@@ -597,6 +713,23 @@ function! s:app_calculate_file_type(path) dict
   return r
 endfunction
 
+function! s:buffer_type_name() dict abort
+  let var = getbufvar(self._number,'rails_cached_file_type')
+  if var == '-'
+    return ''
+  elseif var != ''
+    return var
+  else
+    let type = self.calculate_file_type()
+    return type == '-' ? '' : type
+  endif
+endfunction
+
+function! s:readable_type_name() dict abort
+  let type = self.calculate_file_type()
+  return type == '-' ? '' : type
+endfunction
+
 function! s:app_environments() dict
   if self.cache.needs('environments')
     call self.cache.set('environments',self.relglob('config/environments/','**/*','.rb'))
@@ -634,7 +767,10 @@ function! s:app_test_suites() dict
   return filter(['test','spec','cucumber'],'self.has(v:val)')
 endfunction
 
-call s:add_methods('app',['calculate_file_type','environments','default_locale','has','test_suites'])
+call s:add_methods('app',['default_locale','environments','file','has','test_suites'])
+call s:add_methods('file',['path','name','lines','getline'])
+call s:add_methods('buffer',['app','path','name','lines','getline','type_name'])
+call s:add_methods('readable',['app','calculate_file_type','type_name','line_count'])
 
 " }}}1
 " Ruby Execution {{{1
@@ -987,7 +1123,7 @@ function! s:Rake(bang,lnum,arg)
       if opt != ''
         let arg = opt
       else
-        let arg = s:default_rake_task(lnum)
+        let arg = rails#buffer().default_rake_task(lnum)
       endif
     endif
     let withrubyargs = '-r ./config/boot -r '.s:rquote(self.path('config/environment')).' -e "puts \%((in \#{Dir.getwd}))" '
@@ -1043,27 +1179,27 @@ function! s:Rake(bang,lnum,arg)
   endtry
 endfunction
 
-function! s:default_rake_task(lnum)
-  let self = rails#app()
-  let t = RailsFileType()
+function! s:readable_default_rake_task(lnum) dict abort
+  let app = self.app()
+  let t = self.type_name()
   let lnum = a:lnum < 0 ? 0 : a:lnum
   if t =~ '^config-routes\>'
     return 'routes'
   elseif t =~ '^fixtures-yaml\>' && lnum
-    return "db:fixtures:identify LABEL=".s:lastmethod(lnum)
+    return "db:fixtures:identify LABEL=".self.last_method(lnum)
   elseif t =~ '^fixtures\>' && lnum == 0
-    return "db:fixtures:load FIXTURES=".s:sub(fnamemodify(RailsFilePath(),':r'),'^.{-}/fixtures/','')
+    return "db:fixtures:load FIXTURES=".s:sub(fnamemodify(self.name(),':r'),'^.{-}/fixtures/','')
   elseif t =~ '^task\>'
-    let mnum = s:lastmethodline(lnum)
+    let mnum = self.last_method_line(lnum)
     let line = getline(mnum)
     " We can't grab the namespace so only run tasks at the start of the line
     if line =~# '^\%(task\|file\)\>'
-      return s:lastmethod(a:lnum)
+      return self.last_method(a:lnum)
     else
       return ''
     endif
   elseif t =~ '^spec\>'
-    if RailsFilePath() =~# '\<spec/spec_helper\.rb$'
+    if self.name() =~# '\<spec/spec_helper\.rb$'
       return 'spec SPEC_OPTS='
     elseif lnum > 0
       return 'spec SPEC="%:p" SPEC_OPTS=--line='.lnum
@@ -1071,7 +1207,7 @@ function! s:default_rake_task(lnum)
       return 'spec SPEC="%:p" SPEC_OPTS='
     endif
   elseif t =~ '^test\>'
-    let meth = s:lastmethod(lnum)
+    let meth = self.last_method(lnum)
     if meth =~ '^test_'
       let call = " -n".meth.""
     else
@@ -1079,15 +1215,15 @@ function! s:default_rake_task(lnum)
     endif
     if t =~ '^test-\%(unit\|functional\|integration\)$'
       return s:sub(s:gsub(t,'-',':'),'unit$|functional$','&s')." TEST=\"%:p\"".s:sub(call,'^ ',' TESTOPTS=')
-    elseif RailsFilePath() =~# '\<test/test_helper\.rb$'
+    elseif self.name() =~# '\<test/test_helper\.rb$'
       return 'test'
     else
       return "test:recent TEST=\"%:p\"".s:sub(call,'^ ',' TESTOPTS=')
     endif
-  elseif t=~ '^\%(db-\)\=migration\>' && RailsFilePath() !~# '\<db/schema\.rb$'
-    let ver = matchstr(RailsFilePath(),'\<db/migrate/0*\zs\d*\ze_')
+  elseif t=~ '^\%(db-\)\=migration\>' && self.name() !~# '\<db/schema\.rb$'
+    let ver = matchstr(self.name(),'\<db/migrate/0*\zs\d*\ze_')
     if ver != ""
-      let method = s:lastmethod(lnum)
+      let method = self.last_method(lnum)
       if method == "down"
         return "db:migrate:down VERSION=".ver
       elseif method == "up"
@@ -1100,17 +1236,17 @@ function! s:default_rake_task(lnum)
     else
       return 'db:migrate'
     endif
-  elseif RailsFilePath() =~# '\<db/seeds\.rb$'
+  elseif self.name() =~# '\<db/seeds\.rb$'
     return 'db:seed'
-  elseif self.has('spec') && RailsFilePath() =~# '^app/.*\.rb' && self.has_file(s:sub(RailsFilePath(),'^app/(.*)\.rb$','spec/\1_spec.rb'))
+  elseif app.has('spec') && self.name() =~# '^app/.*\.rb' && app.has_file(s:sub(self.name(),'^app/(.*)\.rb$','spec/\1_spec.rb'))
     return 'spec SPEC="%:p:r:s?[\/]app[\/]?/spec/?_spec.rb" SPEC_OPTS='
   elseif t=~ '^model\>'
     return 'test:units TEST="%:p:r:s?[\/]app[\/]models[\/]?/test/unit/?_test.rb"'
   elseif t=~ '^api\>'
     return 'test:units TEST="%:p:r:s?[\/]app[\/]apis[\/]?/test/functional/?_test.rb"'
   elseif t=~ '^\<\%(controller\|helper\|view\)\>'
-    if RailsFilePath() =~ '\<app/' && s:controller() !~# '^\%(application\)\=$'
-      return 'test:functionals TEST="'.s:escarg(self.path('test/functional/'.s:controller().'_controller_test.rb')).'"'
+    if self.name() =~ '\<app/' && s:controller() !~# '^\%(application\)\=$'
+      return 'test:functionals TEST="'.s:escarg(app.path('test/functional/'.s:controller().'_controller_test.rb')).'"'
     else
       return 'test:functionals'
     endif
@@ -1130,6 +1266,8 @@ endfunction
 function! s:Complete_rake(A,L,P)
   return s:completion_filter(rails#app().rake_tasks(),a:A)
 endfunction
+
+call s:add_methods('readable',['default_rake_task'])
 
 " }}}1
 " Preview {{{1
@@ -2818,7 +2956,8 @@ function! s:RelatedFile(line)
     return s:getopt("related","l")
   elseif t =~ '^\%(controller\|model-mailer\)\>' && lastmethod != ""
     let root = s:sub(s:sub(s:sub(f,'/application\.rb$','/shared_controller.rb'),'/%(controllers|models)/','/views/'),'%(_controller)=\.rb$','/'.lastmethod)
-    let format = s:format('html',a:line)
+    let format = rails#buffer().last_format(a:line)
+    if format == '' | let format = 'html' | endif
     if glob(rails#app().path().'/'.root.'.'.format.'.*[^~]') != ''
       return root . '.' . format
     else
@@ -4247,11 +4386,12 @@ function! RailsBufInit(path)
     let s:apps[a:path].root = a:path
   endif
   let app = s:apps[a:path]
+  let buffer = rails#buffer()
   " Apparently RailsFileType() can be slow if the underlying file system is
   " slow (even though it doesn't really do anything IO related).  This caching
   " is a temporary hack; if it doesn't cause problems it should probably be
   " refactored.
-  let b:rails_cached_file_type = app.calculate_file_type(RailsFilePath())
+  let b:rails_cached_file_type = buffer.calculate_file_type()
   if g:rails_history_size > 0
     if !exists("g:RAILS_HISTORY")
       let g:RAILS_HISTORY = ""
@@ -4337,34 +4477,36 @@ function! RailsBufInit(path)
 endfunction
 
 function! s:SetBasePath()
-  if rails#app().path() =~ '://'
+  let self = rails#buffer()
+  if self.app().path() =~ '://'
     return
   endif
-  let transformed_path = s:pathsplit(s:pathjoin([rails#app().path()]))[0]
-  let old_path = s:pathsplit(s:sub(&l:path,'^\.,=',''))
+  let transformed_path = s:pathsplit(s:pathjoin([self.app().path()]))[0]
+  let old_path = s:pathsplit(s:sub(self.getvar('&path'),'^\.,=',''))
   call filter(old_path,'!s:startswith(v:val,transformed_path)')
 
   let path = ['app', 'app/models', 'app/controllers', 'app/helpers', 'config', 'lib', 'app/views']
   if s:controller() != ''
     let path += ['app/views/'.s:controller(), 'public']
   endif
-  if rails#app().has('test')
+  if self.app().has('test')
     let path += ['test', 'test/unit', 'test/functional', 'test/integration']
   endif
-  if rails#app().has('spec')
+  if self.app().has('spec')
     let path += ['spec', 'spec/models', 'spec/controllers', 'spec/helpers', 'spec/views', 'spec/lib']
   endif
   let path += ['app/*', 'vendor', 'vendor/plugins/*/lib', 'vendor/plugins/*/test', 'vendor/rails/*/lib', 'vendor/rails/*/test']
-  call map(path,'rails#app().path(v:val)')
-  let &l:path = s:pathjoin('.',[rails#app().path()],path,old_path)
+  call map(path,'self.app().path(v:val)')
+  call self.setvar('&path',s:pathjoin('.',[self.app().path()],path,old_path))
 endfunction
 
 function! s:BufSettings()
   if !exists('b:rails_root')
     return ''
   endif
+  let self = rails#buffer()
   call s:SetBasePath()
-  let rp = s:gsub(rails#app().path(),'[ ,]','\\&')
+  let rp = s:gsub(self.app().path(),'[ ,]','\\&')
   if stridx(&tags,rp) == -1
     let &l:tags = rp . "/tmp/tags," . &tags . "," . rp . "/tags"
   endif
@@ -4393,13 +4535,7 @@ function! s:BufSettings()
   endif
   if &filetype == "ruby"
     let &l:suffixesadd=".rb,.".s:gsub(s:view_types,',',',.').",.yml,.csv,.rake,s.rb"
-    if expand('%:e') == 'rake'
-      setlocal define=^\\s*def\\s\\+\\(self\\.\\)\\=\\\|^\\s*\\%(task\\\|file\\)\\s\\+[:'\"]
-    elseif expand('%:t') == 'schema.rb'
-      setlocal define=^\\s*def\\s\\+\\(self\\.\\)\\=\\\|^\\s*create_table\\s\\+[:'\"]
-    else
-      setlocal define=^\\s*def\\s\\+\\(self\\.\\)\\=
-    endif
+    call self.setvar('&define',self.define_pattern())
     " This really belongs in after/ftplugin/ruby.vim but we'll be nice
     if exists("g:loaded_surround") && !exists("b:surround_101")
       let b:surround_5   = "\r\nend"
@@ -4407,7 +4543,7 @@ function! s:BufSettings()
       let b:surround_101 = "\r\nend"
     endif
   elseif &filetype == 'yaml' || expand('%:e') == 'yml'
-    setlocal define=^\\%(\\h\\k*:\\)\\@=
+    call self.setvar('&define',self.define_pattern())
     let &l:suffixesadd=".yml,.csv,.rb,.".s:gsub(s:view_types,',',',.').",.rake,s.rb"
   elseif &filetype == "eruby"
     let &l:suffixesadd=".".s:gsub(s:view_types,',',',.').",.rb,.css,.js,.html,.yml,.csv"
