@@ -208,21 +208,21 @@ function! s:endof(lnum)
   return 0
 endfunction
 
-function! s:lastopeningline(pattern,limit,...)
-  let line = a:0 ? a:1 : line(".")
+function! s:lastopeningline(pattern,limit,start)
+  let line = a:start
   while line > a:limit && getline(line) !~ a:pattern
     let line -= 1
   endwhile
   let lend = s:endof(line)
-  if line > a:limit && (lend < 0 || lend >= (a:0 ? a:1 : line(".")))
+  if line > a:limit && (lend < 0 || lend >= a:start)
     return line
   else
     return -1
   endif
 endfunction
 
-function! s:lastmethodline(...)
-  return s:lastopeningline(&l:define,0,a:0 ? a:1 : line("."))
+function! s:lastmethodline(start)
+  return s:lastopeningline(&l:define,0,a:start)
 endfunction
 
 function! s:lastmethod(...)
@@ -234,15 +234,15 @@ function! s:lastmethod(...)
   endif
 endfunction
 
-function! s:lastrespondtoline(...)
-  return s:lastopeningline('\C^\s*respond_to\s*\%(\<do\)\s*|\zs\h\k*\ze|',s:lastmethodline(), a:0 ? a:1 : line("."))
+function! s:lastrespondtoline(start)
+  return s:lastopeningline('\C^\s*respond_to\s*\%(\<do\)\s*|\zs\h\k*\ze|',s:lastmethodline(a:start),a:start)
 endfunction
 
-function! s:lastformat()
-  let rline = s:lastrespondtoline()
+function! s:lastformat(start)
+  let rline = s:lastrespondtoline(a:start)
   if rline
     let variable = matchstr(getline(rline),'\C^\s*respond_to\s*\%(\<do\|{\)\s*|\zs\h\k*\ze|')
-    let line = line('.')
+    let line = a:start
     while line > rline
       let match = matchstr(getline(line),'\C^\s*'.variable.'\s*\.\s*\zs\h\k*')
       if match != ''
@@ -258,7 +258,7 @@ function! s:format(...)
   if RailsFileType() =~ '^view\>'
     let format = fnamemodify(RailsFilePath(),':r:e')
   else
-    let format = s:lastformat()
+    let format = s:lastformat(a:0 > 1 ? a:2 : line("."))
   endif
   if format == ''
     return get({'rhtml': 'html', 'rxml': 'xml', 'rjs': 'js'},fnamemodify(RailsFilePath(),':e'),a:0 ? a:1 : '')
@@ -1502,13 +1502,13 @@ function! s:BufNavCommands()
   command! -buffer -bar -nargs=*          -complete=customlist,s:Complete_find AV       :call s:Alternate('V<bang>',<f-args>)
   command! -buffer -bar -nargs=*          -complete=customlist,s:Complete_find AT       :call s:Alternate('T<bang>',<f-args>)
   command! -buffer -bar -nargs=* -range=0 -complete=customlist,s:Complete_find AD       :call s:Alternate('<line1>D<bang>',<f-args>)
-  command! -buffer -bar -nargs=*          -complete=customlist,s:Complete_edit AN       :call s:Related('<bang>' ,<f-args>)
-  command! -buffer -bar -nargs=*          -complete=customlist,s:Complete_edit R        :call s:Related('<bang>' ,<f-args>)
-  command! -buffer -bar -nargs=*          -complete=customlist,s:Complete_edit RE       :call s:Related('E<bang>',<f-args>)
-  command! -buffer -bar -nargs=*          -complete=customlist,s:Complete_edit RS       :call s:Related('S<bang>',<f-args>)
-  command! -buffer -bar -nargs=*          -complete=customlist,s:Complete_edit RV       :call s:Related('V<bang>',<f-args>)
-  command! -buffer -bar -nargs=*          -complete=customlist,s:Complete_edit RT       :call s:Related('T<bang>',<f-args>)
-  command! -buffer -bar -nargs=* -range=0 -complete=customlist,s:Complete_edit RD       :call s:Related('<line1>D<bang>',<f-args>)
+  command! -buffer -bar -nargs=* -range=0 -complete=customlist,s:Complete_related AN    :call s:Related('<bang>' ,<line1>,<line2>,<count>,<f-args>)
+  command! -buffer -bar -nargs=* -range=0 -complete=customlist,s:Complete_related R     :call s:Related('<bang>' ,<line1>,<line2>,<count>,<f-args>)
+  command! -buffer -bar -nargs=* -range=0 -complete=customlist,s:Complete_related RE    :call s:Related('E<bang>',<line1>,<line2>,<count>,<f-args>)
+  command! -buffer -bar -nargs=* -range=0 -complete=customlist,s:Complete_related RS    :call s:Related('S<bang>',<line1>,<line2>,<count>,<f-args>)
+  command! -buffer -bar -nargs=* -range=0 -complete=customlist,s:Complete_related RV    :call s:Related('V<bang>',<line1>,<line2>,<count>,<f-args>)
+  command! -buffer -bar -nargs=* -range=0 -complete=customlist,s:Complete_related RT    :call s:Related('T<bang>',<line1>,<line2>,<count>,<f-args>)
+  command! -buffer -bar -nargs=* -range=0 -complete=customlist,s:Complete_related RD    :call s:Related('D<bang>',<line1>,<line2>,<count>,<f-args>)
 endfunction
 
 function! s:djump(def)
@@ -2289,7 +2289,7 @@ function! s:viewEdit(cmd,...)
   if a:0 && a:1 =~ '^[^!#:]'
     let view = matchstr(a:1,'[^!#:]*')
   elseif RailsFileType() == 'controller'
-    let view = s:lastmethod()
+    let view = s:lastmethod(line('.'))
   else
     let view = ''
   endif
@@ -2783,11 +2783,25 @@ function! s:AlternateFile()
   endif
 endfunction
 
-function! s:Related(cmd,...)
-  if a:0
-    return call('s:Edit',[1,a:cmd]+a:000)
+function! s:Complete_related(A,L,P)
+  if a:L =~# '^[[:alpha:]]'
+    return s:Complete_edit(a:A,a:L,a:P)
   else
-    let file = s:RelatedFile()
+    return s:Complete_find(a:A,a:L,a:P)
+  endif
+endfunction
+
+function! s:Related(cmd,line1,line2,count,...)
+  if a:0
+    if a:count && a:cmd !~# 'D'
+      return call('s:Find',[1,a:line1.a:cmd]+a:000)
+    elseif a:count
+      return call('s:Edit',[1,a:line1.a:cmd]+a:000)
+    else
+      return call('s:Edit',[1,a:cmd]+a:000)
+    endif
+  else
+    let file = s:RelatedFile(a:line1)
     if file != ""
       call s:findedit(a:cmd,file)
     else
@@ -2796,15 +2810,15 @@ function! s:Related(cmd,...)
   endif
 endfunction
 
-function! s:RelatedFile()
+function! s:RelatedFile(line)
   let f = RailsFilePath()
   let t = RailsFileType()
-  let lastmethod = s:lastmethod()
+  let lastmethod = a:line ? s:lastmethod(a:line) : ''
   if s:getopt("related","l") != ""
     return s:getopt("related","l")
   elseif t =~ '^\%(controller\|model-mailer\)\>' && lastmethod != ""
     let root = s:sub(s:sub(s:sub(f,'/application\.rb$','/shared_controller.rb'),'/%(controllers|models)/','/views/'),'%(_controller)=\.rb$','/'.lastmethod)
-    let format = s:format('html')
+    let format = s:format('html',a:line)
     if glob(rails#app().path().'/'.root.'.'.format.'.*[^~]') != ''
       return root . '.' . format
     else
@@ -2817,9 +2831,8 @@ function! s:RelatedFile()
   elseif f == 'README'
     return "config/database.yml"
   elseif f =~ '\<config/database\.yml$'
-    let lm = s:lastmethod()
-    if lm != ""
-      return "config/environments/".lm.".rb\nconfig/environment.rb"
+    if lastmethod != ""
+      return "config/environments/".lastmethod.".rb"
     else
       return "config/environment.rb"
     endif
