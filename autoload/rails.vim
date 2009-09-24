@@ -1634,12 +1634,12 @@ function! s:BufNavCommands()
   command! -buffer -bar -nargs=* -bang    -complete=customlist,s:Complete_edit RVedit   :call s:Edit(<count>,'V<bang>',<f-args>)
   command! -buffer -bar -nargs=* -bang    -complete=customlist,s:Complete_edit RTedit   :call s:Edit(<count>,'T<bang>',<f-args>)
   command! -buffer -bar -nargs=* -range=0 -complete=customlist,s:Complete_edit RDedit   :call s:Edit(<count>,'<line1>D<bang>',<f-args>)
-  command! -buffer -bar -nargs=*          -complete=customlist,s:Complete_find A        :call s:Alternate('<bang>', <f-args>)
-  command! -buffer -bar -nargs=*          -complete=customlist,s:Complete_find AE       :call s:Alternate('E<bang>',<f-args>)
-  command! -buffer -bar -nargs=*          -complete=customlist,s:Complete_find AS       :call s:Alternate('S<bang>',<f-args>)
-  command! -buffer -bar -nargs=*          -complete=customlist,s:Complete_find AV       :call s:Alternate('V<bang>',<f-args>)
-  command! -buffer -bar -nargs=*          -complete=customlist,s:Complete_find AT       :call s:Alternate('T<bang>',<f-args>)
-  command! -buffer -bar -nargs=* -range=0 -complete=customlist,s:Complete_find AD       :call s:Alternate('<line1>D<bang>',<f-args>)
+  command! -buffer -bar -nargs=* -range=0 -complete=customlist,s:Complete_related A     :call s:Alternate('<bang>', <line1>,<line2>,<count>,<f-args>)
+  command! -buffer -bar -nargs=* -range=0 -complete=customlist,s:Complete_related AE    :call s:Alternate('E<bang>',<line1>,<line2>,<count>,<f-args>)
+  command! -buffer -bar -nargs=* -range=0 -complete=customlist,s:Complete_related AS    :call s:Alternate('S<bang>',<line1>,<line2>,<count>,<f-args>)
+  command! -buffer -bar -nargs=* -range=0 -complete=customlist,s:Complete_related AV    :call s:Alternate('V<bang>',<line1>,<line2>,<count>,<f-args>)
+  command! -buffer -bar -nargs=* -range=0 -complete=customlist,s:Complete_related AT    :call s:Alternate('T<bang>',<line1>,<line2>,<count>,<f-args>)
+  command! -buffer -bar -nargs=* -range=0 -complete=customlist,s:Complete_related AD    :call s:Alternate('D<bang>',<line1>,<line2>,<count>,<f-args>)
   command! -buffer -bar -nargs=* -range=0 -complete=customlist,s:Complete_related AN    :call s:Related('<bang>' ,<line1>,<line2>,<count>,<f-args>)
   command! -buffer -bar -nargs=* -range=0 -complete=customlist,s:Complete_related R     :call s:Related('<bang>' ,<line1>,<line2>,<count>,<f-args>)
   command! -buffer -bar -nargs=* -range=0 -complete=customlist,s:Complete_related RE    :call s:Related('E<bang>',<line1>,<line2>,<count>,<f-args>)
@@ -2803,12 +2803,21 @@ function! s:edit(cmd,file,...)
   endif
 endfunction
 
-function! s:Alternate(cmd,...)
+function! s:Alternate(cmd,line1,line2,count,...)
   if a:0
-    return call('s:Find',[1,a:cmd]+a:000)
+    if a:count && a:cmd !~# 'D'
+      return call('s:Find',[1,a:line1.a:cmd]+a:000)
+    elseif a:count
+      return call('s:Edit',[1,a:line1.a:cmd]+a:000)
+    else
+      return call('s:Edit',[1,a:cmd]+a:000)
+    endif
   else
-    let file = s:AlternateFile()
-    if file != ""
+    let file = s:getopt(a:count ? 'related' : 'alternate', 'bl')
+    if file == ''
+      let file = rails#buffer().related(a:count)
+    endif
+    if file != ''
       call s:findedit(a:cmd,file)
     else
       call s:warn("No alternate file is defined")
@@ -2816,13 +2825,82 @@ function! s:Alternate(cmd,...)
   endif
 endfunction
 
-function! s:AlternateFile()
-  let f = RailsFilePath()
-  let t = RailsFileType()
-  let altopt = s:getopt("alternate","bl")
-  if altopt != ""
-    return altopt
-  elseif f =~ '\<config/environments/'
+function! s:Related(cmd,line1,line2,count,...)
+  if a:count == 0 && a:0 == 0
+    return s:Alternate(a:cmd,a:line1,a:line1,a:line1)
+  else
+    return call('s:Alternate',[a:cmd,a:line1,a:line2,a:count]+a:000)
+  endif
+endfunction
+
+function! s:Complete_related(A,L,P)
+  if a:L =~# '^[[:alpha:]]'
+    return s:Complete_edit(a:A,a:L,a:P)
+  else
+    return s:Complete_find(a:A,a:L,a:P)
+  endif
+endfunction
+
+function! s:readable_related(...) dict abort
+  let f = self.name()
+  let t = self.type_name()
+  if a:0 && a:1
+    let lastmethod = self.last_method(a:1)
+    if t =~ '^\%(controller\|model-mailer\)\>' && lastmethod != ""
+      let root = s:sub(s:sub(s:sub(f,'/application\.rb$','/shared_controller.rb'),'/%(controllers|models)/','/views/'),'%(_controller)=\.rb$','/'.lastmethod)
+      let format = self.last_format(a:1)
+      if format == '' | let format = 'html' | endif
+      if glob(self.app().path().'/'.root.'.'.format.'.*[^~]') != ''
+        return root . '.' . format
+      else
+        return root
+      endif
+    elseif f =~ '\<config/environments/'
+      return "config/database.yml#". fnamemodify(f,':t:r')
+    elseif f =~ '\<config/database\.yml$'
+      if lastmethod != ""
+        return "config/environments/".lastmethod.".rb"
+      else
+        return "config/environment.rb"
+      endif
+    elseif f =~ '\<config/routes\.rb$'      | return "config/database.yml"
+    elseif f =~ '\<config/environment\.rb$' | return "config/routes.rb"
+    elseif f =~ '\<db/migrate/\d\d\d_'
+      let num = matchstr(f,'\<db/migrate/0*\zs\d\+\ze_')+1
+      let migr = self.app().migration(num)
+      return migr == '' ? "db/schema.rb" : migr
+    elseif t =~ '^view-layout\>'
+      return s:sub(s:sub(s:sub(f,'/views/','/controllers/'),'/layouts/(\k+)\..*$','/\1_controller.rb'),'<application_controller\.rb$','application.rb')
+    elseif t =~ '^view\>'
+      let controller  = s:sub(s:sub(f,'/views/','/controllers/'),'/(\k+%(\.\k+)=)\..*$','_controller.rb#\1')
+      let controller2 = s:sub(s:sub(f,'/views/','/controllers/'),'/(\k+%(\.\k+)=)\..*$','.rb#\1')
+      let model       = s:sub(s:sub(f,'/views/','/models/'),'/(\k+)\..*$','.rb#\1')
+      if self.app().has_file(s:sub(controller,'#.{-}$',''))
+        return controller
+      elseif self.app().has_file(s:sub(controller2,'#.{-}$',''))
+        return controller2
+      elseif self.app().has_file(s:sub(model,'#.{-}$','')) || model =~ '_mailer\.rb#'
+        return model
+      else
+        return controller
+      endif
+    elseif t =~ '^controller\>'
+      return s:sub(s:sub(f,'/controllers/','/helpers/'),'%(_controller)=\.rb$','_helper.rb')
+    " elseif t=~ '^helper\>'
+      " return s:findlayout(s:controller())
+    elseif t =~ '^model-arb\>'
+      let table_name = matchstr(join(self.getline(1,50),"\n"),'\n\s*set_table_name\s*[:"'']\zs\w\+')
+      if table_name == ''
+        let table_name = rails#pluralize(s:gsub(s:sub(fnamemodify(f,':r'),'.{-}<app/models/',''),'/','_'))
+      endif
+      return self.app().migration('0#'.table_name)
+    elseif t =~ '^model-aro\>'
+      return s:sub(f,'_observer\.rb$','.rb')
+    elseif f =~ '\<db/schema\.rb$'
+      return self.app().migration(1)
+    endif
+  endif
+  if f =~ '\<config/environments/'
     return "config/environment.rb"
   elseif f == 'README'
     return "config/database.yml"
@@ -2831,24 +2909,24 @@ function! s:AlternateFile()
   elseif f =~ '\<config/environment\.rb$' | return "config/database.yml"
   elseif f =~ '\<db/migrate/\d\d\d_'
     let num = matchstr(f,'\<db/migrate/0*\zs\d\+\ze_')-1
-    return rails#app().migration(num)
+    return self.app().migration(num)
   elseif f =~ '\<application\.js$'
     return "app/helpers/application_helper.rb"
-  elseif t =~ '^js\>'
+  elseif t =~ '^javascript\>'
     return "public/javascripts/application.js"
   elseif f =~ '\<db/schema\.rb$'
-    return rails#app().migration('')
+    return self.app().migration('')
   elseif t =~ '^view\>'
     let spec1 = fnamemodify(f,':s?\<app/?spec/?')."_spec.rb"
     let spec2 = fnamemodify(f,':r:s?\<app/?spec/?')."_spec.rb"
     let spec3 = fnamemodify(f,':r:r:s?\<app/?spec/?')."_spec.rb"
-    if rails#app().has_file(spec1)
+    if self.app().has_file(spec1)
       return spec1
-    elseif rails#app().has_file(spec2)
+    elseif self.app().has_file(spec2)
       return spec2
-    elseif rails#app().has_file(spec3)
+    elseif self.app().has_file(spec3)
       return spec3
-    elseif rails#app().has('spec')
+    elseif self.app().has('spec')
       return spec2
     else
       if t =~ '\<layout\>'
@@ -2861,20 +2939,22 @@ function! s:AlternateFile()
   elseif t =~ '^controller-api\>'
     let api = s:sub(s:sub(f,'/controllers/','/apis/'),'_controller\.rb$','_api.rb')
     return api
+  elseif t =~ '^api\>'
+    return s:sub(s:sub(f,'/apis/','/controllers/'),'_api\.rb$','_controller.rb')
   elseif t =~ '^helper\>'
     let controller = s:sub(s:sub(f,'/helpers/','/controllers/'),'_helper\.rb$','_controller.rb')
     let controller = s:sub(controller,'application_controller','application')
     let spec = s:sub(s:sub(f,'<app/','spec/'),'\.rb$','_spec.rb')
-    if rails#app().has_file(spec)
+    if self.app().has_file(spec)
       return spec
     else
       return controller
     endif
   elseif t =~ '\<fixtures\>' && f =~ '\<spec/'
-    let file = rails#singularize(expand("%:t:r")).'_spec.rb'
+    let file = rails#singularize(fnamemodify(f,":t:r")).'_spec.rb'
     return file
   elseif t =~ '\<fixtures\>'
-    let file = rails#singularize(expand("%:t:r")).'_test.rb' " .expand('%:e')
+    let file = rails#singularize(fnamemodify(f,":t:r")).'_test.rb'
     return file
   elseif f == ''
     call s:warn("No filename present")
@@ -2906,7 +2986,7 @@ function! s:AlternateFile()
     elseif t == 'spec-lib'
       return s:sub(file,'<spec/','')
     elseif t == 'lib'
-      return s:sub(f, '<lib/(.*)\.rb$', 'test/unit/\1_test\.rb')."\n".s:sub(f, '<lib/(.*)\.rb$', 'spec/lib/\1_spec\.rb')
+      return s:sub(f, '<lib/(.*)\.rb$', 'test/unit/\1_test.rb')."\n".s:sub(f, '<lib/(.*)\.rb$', 'spec/lib/\1_spec.rb')
     elseif t =~ '^spec\>'
       return s:sub(file,'<spec/','app/')
     elseif file =~ '\<vendor/.*/lib/'
@@ -2921,107 +3001,7 @@ function! s:AlternateFile()
   endif
 endfunction
 
-function! s:Complete_related(A,L,P)
-  if a:L =~# '^[[:alpha:]]'
-    return s:Complete_edit(a:A,a:L,a:P)
-  else
-    return s:Complete_find(a:A,a:L,a:P)
-  endif
-endfunction
-
-function! s:Related(cmd,line1,line2,count,...)
-  if a:0
-    if a:count && a:cmd !~# 'D'
-      return call('s:Find',[1,a:line1.a:cmd]+a:000)
-    elseif a:count
-      return call('s:Edit',[1,a:line1.a:cmd]+a:000)
-    else
-      return call('s:Edit',[1,a:cmd]+a:000)
-    endif
-  else
-    let file = s:RelatedFile(a:line1)
-    if file != ""
-      call s:findedit(a:cmd,file)
-    else
-      call s:warn("No related file is defined")
-    endif
-  endif
-endfunction
-
-function! s:RelatedFile(line)
-  let f = RailsFilePath()
-  let t = RailsFileType()
-  let lastmethod = a:line ? s:lastmethod(a:line) : ''
-  if s:getopt("related","l") != ""
-    return s:getopt("related","l")
-  elseif t =~ '^\%(controller\|model-mailer\)\>' && lastmethod != ""
-    let root = s:sub(s:sub(s:sub(f,'/application\.rb$','/shared_controller.rb'),'/%(controllers|models)/','/views/'),'%(_controller)=\.rb$','/'.lastmethod)
-    let format = rails#buffer().last_format(a:line)
-    if format == '' | let format = 'html' | endif
-    if glob(rails#app().path().'/'.root.'.'.format.'.*[^~]') != ''
-      return root . '.' . format
-    else
-      return root
-    endif
-  elseif s:getopt("related","b") != ""
-    return s:getopt("related","b")
-  elseif f =~ '\<config/environments/'
-    return "config/database.yml#". expand("%:t:r")
-  elseif f == 'README'
-    return "config/database.yml"
-  elseif f =~ '\<config/database\.yml$'
-    if lastmethod != ""
-      return "config/environments/".lastmethod.".rb"
-    else
-      return "config/environment.rb"
-    endif
-  elseif f =~ '\<config/routes\.rb$'      | return "config/database.yml"
-  elseif f =~ '\<config/environment\.rb$' | return "config/routes.rb"
-  elseif f =~ '\<db/migrate/\d\d\d_'
-    let num = matchstr(f,'\<db/migrate/0*\zs\d\+\ze_')+1
-    let migr = rails#app().migration(num)
-    return migr == '' ? "db/schema.rb" : migr
-  elseif t =~ '^test\>' && f =~ '\<test/\w\+/'
-    let target = s:sub(f,'.*<test/\w+/','test/mocks/test/')
-    let target = s:sub(target,'_test\.rb$','.rb')
-    return target
-  elseif f =~ '\<application\.js$'
-    return "app/helpers/application_helper.rb"
-  elseif t =~ '^js\>'
-    return "public/javascripts/application.js"
-  elseif t =~ '^view-layout\>'
-    return s:sub(s:sub(s:sub(f,'/views/','/controllers/'),'/layouts/(\k+)\..*$','/\1_controller.rb'),'<application_controller\.rb$','application.rb')
-  elseif t =~ '^view\>'
-    let controller  = s:sub(s:sub(f,'/views/','/controllers/'),'/(\k+%(\.\k+)=)\..*$','_controller.rb#\1')
-    let controller2 = s:sub(s:sub(f,'/views/','/controllers/'),'/(\k+%(\.\k+)=)\..*$','.rb#\1')
-    let model       = s:sub(s:sub(f,'/views/','/models/'),'/(\k+)\..*$','.rb#\1')
-    if filereadable(s:sub(controller,'#.{-}$',''))
-      return controller
-    elseif filereadable(s:sub(controller2,'#.{-}$',''))
-      return controller2
-    elseif filereadable(s:sub(model,'#.{-}$','')) || model =~ '_mailer\.rb#'
-      return model
-    else
-      return controller
-    endif
-  elseif t =~ '^controller-api\>'
-    return s:sub(s:sub(f,'/controllers/','/apis/'),'_controller\.rb$','_api.rb')
-  elseif t =~ '^controller\>'
-    return s:sub(s:sub(f,'/controllers/','/helpers/'),'%(_controller)=\.rb$','_helper.rb')
-  elseif t=~ '^helper\>'
-    return s:findlayout(s:controller())
-  elseif t =~ '^model-arb\>'
-    return rails#app().migration('0#'.rails#pluralize(s:gsub(s:model(),'/','_')))
-  elseif t =~ '^model-aro\>'
-    return s:sub(f,'_observer\.rb$','.rb')
-  elseif t =~ '^api\>'
-    return s:sub(s:sub(f,'/apis/','/controllers/'),'_api\.rb$','_controller.rb')
-  elseif f =~ '\<db/schema\.rb$'
-    return rails#app().migration(1)
-  else
-    return ""
-  endif
-endfunction
+call s:add_methods('readable',['related'])
 
 " }}}1
 " Partial Extraction {{{1
