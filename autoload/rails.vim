@@ -2865,10 +2865,6 @@ function! s:readable_related(...) dict abort
       endif
     elseif f =~ '\<config/routes\.rb$'      | return "config/database.yml"
     elseif f =~ '\<config/environment\.rb$' | return "config/routes.rb"
-    elseif f =~ '\<db/migrate/\d\d\d_'
-      let num = matchstr(f,'\<db/migrate/0*\zs\d\+\ze_')+1
-      let migr = self.app().migration(num)
-      return migr == '' ? "db/schema.rb" : migr
     elseif t =~ '^view-layout\>'
       return s:sub(s:sub(s:sub(f,'/views/','/controllers/'),'/layouts/(\k+)\..*$','/\1_controller.rb'),'<application_controller\.rb$','application.rb')
     elseif t =~ '^view\>'
@@ -2907,9 +2903,17 @@ function! s:readable_related(...) dict abort
   elseif f =~ '\<config/database\.yml$'   | return "config/routes.rb"
   elseif f =~ '\<config/routes\.rb$'      | return "config/environment.rb"
   elseif f =~ '\<config/environment\.rb$' | return "config/database.yml"
-  elseif f =~ '\<db/migrate/\d\d\d_'
-    let num = matchstr(f,'\<db/migrate/0*\zs\d\+\ze_')-1
-    return self.app().migration(num)
+  elseif f =~ '\<db/migrate/'
+    let migrations = sort(self.app().relglob('db/migrate/','*','.rb'))
+    let me = matchstr(f,'\<db/migrate/\zs.*\ze\.rb$')
+    if !exists('l:lastmethod') || lastmethod == 'down'
+      let candidates = reverse(filter(copy(migrations),'v:val < me'))
+      let migration = "db/migrate/".get(candidates,0,migrations[-1]).".rb"
+    else
+      let candidates = filter(copy(migrations),'v:val > me')
+      let migration = "db/migrate/".get(candidates,0,migrations[0]).".rb"
+    endif
+    return migration . (exists('l:lastmethod') && lastmethod != '' ? '#'.lastmethod : '')
   elseif f =~ '\<application\.js$'
     return "app/helpers/application_helper.rb"
   elseif t =~ '^javascript\>'
