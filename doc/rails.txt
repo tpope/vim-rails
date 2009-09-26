@@ -143,7 +143,10 @@ actually edit a file from a Rails application.
 			to run the test method at the cursor position.  Use
 			:.Rake inside a self.up or self.down method in a
 			migration to run the db:migrate:up or db:migrate:down
-			task for that particular migration.
+			task for that particular migration.  You can override
+			the default task with a comment like "# rake ..."
+			before the method pointed to by [range] or at the top
+			of the file.
 
 						*rails-:Rake!*
 :[range]Rake! {targets}	Called with a bang, :Rake will use an alternate
@@ -942,8 +945,8 @@ command, with hyphens changed to periods. A few examples: >
 End all such Rails autocommands with asterisks, even if you have an exact
 specification, to allow for more specific subtypes to be added in the future.
 There is also a filename matching syntax: >
-	autocmd User Rails/db/schema.rb  Rset task=db:schema:dump
-	autocmd User Rails/**/foo_bar.rb Rabbrev FB:: FooBar
+	autocmd User Rails/config/environment.rb Rabbrev c config
+	autocmd User Rails/**/foo_bar.rb         Rabbrev FB:: FooBar
 Use the filetype based syntax whenever possible, reserving the filename based
 syntax for more advanced cases.
 
@@ -983,7 +986,6 @@ Option		 Meaning ~
 b:alternate	 Custom alternate file for :A, relative to the Rails root
 b:controller	 Default controller for certain commands (e.g., :Rhelper)
 b:model		 Default model for certain commands (e.g., :Rfixtures)
-b:task		 Default task used with :Rake
 l:related	 Custom related file for :R, relative to the Rails root
 a:root_url	 Root URL for commands like :Rpreview
 

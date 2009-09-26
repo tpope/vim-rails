@@ -1195,7 +1195,15 @@ function! s:readable_default_rake_task(lnum) dict abort
   let app = self.app()
   let t = self.type_name()
   let lnum = a:lnum < 0 ? 0 : a:lnum
-  if t =~ '^config-routes\>'
+  if self.getline(lnum) =~# '# rake '
+    return matchstr(self.getline(lnum),'\C# rake \zs.*')
+  elseif self.getline(self.last_method_line(lnum)-1) =~# '# rake '
+    return matchstr(self.getline(self.last_method_line(lnum)-1),'\C# rake \zs.*')
+  elseif self.getline(self.last_method_line(lnum)) =~# '# rake '
+    return matchstr(self.getline(self.last_method_line(lnum)),'\C# rake \zs.*')
+  elseif self.getline(1) =~# '# rake ' && !lnum
+    return matchstr(self.getline(1),'\C# rake \zs.*')
+  elseif t =~ '^config-routes\>'
     return 'routes'
   elseif t =~ '^fixtures-yaml\>' && lnum
     return "db:fixtures:identify LABEL=".self.last_method(lnum)
@@ -1208,7 +1216,7 @@ function! s:readable_default_rake_task(lnum) dict abort
     if line =~# '^\%(task\|file\)\>'
       return self.last_method(a:lnum)
     else
-      return ''
+      return matchstr(self.getline(1),'\C# rake \zs.*')
     endif
   elseif t =~ '^spec\>'
     if self.name() =~# '\<spec/spec_helper\.rb$'
