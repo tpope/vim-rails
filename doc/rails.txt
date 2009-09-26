@@ -188,15 +188,19 @@ actually edit a file from a Rails application.
 
 						*rails-:Rpreview*
 :Rpreview [{path}]	Creates a URL from http://localhost:3000/ and the
-			{path} given.  If {path} is omitted, a sensible
-			default is used (considers the current
-			controller/template, but does not take routing into
-			account).  The not too useful default is to then edit
-			this URL using Vim itself, allowing |netrw| to
+			{path} given.  The not too useful default is to then
+			edit this URL using Vim itself, allowing |netrw| to
 			download it.  More useful is to define a :OpenURL
 			command, which will be used instead (see
-			|rails-:OpenURL|).
-			
+			|rails-:OpenURL|).  If {path} is omitted, a sensible
+			default is used (considers the current
+			controller/template, but does not take routing into
+			account).  The default is overridden by comments like
+			the following that are either before the current
+			method call or at the top of the file: >
+		# GET /users
+		# PUT /users/1
+<
 						*rails-:Rpreview!*
 :Rpreview! [{path}]	As with :Rpreview, except :OpenURL is never used.
 
@@ -979,7 +983,6 @@ Option		 Meaning ~
 b:alternate	 Custom alternate file for :A, relative to the Rails root
 b:controller	 Default controller for certain commands (e.g., :Rhelper)
 b:model		 Default model for certain commands (e.g., :Rfixtures)
-l:preview	 URL stub for :Rpreview (e.g., blog/show/1)
 b:task		 Default task used with :Rake
 l:related	 Custom related file for :R, relative to the Rails root
 a:root_url	 Root URL for commands like :Rpreview

@@ -1296,10 +1296,8 @@ function! s:initOpenURL()
   endif
 endfunction
 
-" This returns the URI with a trailing newline if it is found
-function! s:scanlineforuri(lnum)
-  let line = getline(a:lnum)
-  let url = matchstr(line,"\\v\\C%(%(GET|PUT|POST|DELETE)\\s+|\w+:/)/[^ \n\r\t<>\"]*[^] .,;\n\r\t<>\":]")
+function! s:scanlineforuris(line)
+  let url = matchstr(a:line,"\\v\\C%(%(GET|PUT|POST|DELETE)\\s+|\w+:/)/[^ \n\r\t<>\"]*[^] .,;\n\r\t<>\":]")
   if url =~ '\C^\u\+\s\+'
     let method = matchstr(url,'^\u\+')
     let url = matchstr(url,'\s\+\zs.*')
@@ -1308,42 +1306,44 @@ function! s:scanlineforuri(lnum)
     endif
   endif
   if url != ""
-    return s:sub(url,'^/','') . "\n"
+    return [s:sub(url,'^/','')]
   else
-    return ""
+    return []
   endif
 endfunction
 
-function! s:defaultpreview(lnum)
-  let ret = ''
-  if s:getopt('preview','l',a:lnum) != ''
-    let uri = s:getopt('preview','l',a:lnum)
-  elseif s:controller() != '' && s:controller() != 'application' && RailsFilePath() !~ '^public/'
-    if RailsFileType() =~ '^controller\>'
-      let start = s:lastmethodline(a:lnum) - 1
-      if start + 1
-        while getline(start) =~ '^\s*\%(#.*\)\=$'
-          let ret = s:scanlineforuri(start).ret
-          let start -= 1
-        endwhile
-        let ret .= s:controller().'/'.s:lastmethod(a:lnum).'/'
-      else
-        let ret .= s:controller().'/'
-      endif
-    elseif s:getopt('preview','b') != ''
-      let ret = s:getopt('preview','b')
-    elseif RailsFileType() =~ '^view\%(-partial\|-layout\)\@!'
-      let ret .= s:controller().'/'.expand('%:t:r:r').'/'
+function! s:readable_preview_urls(lnum) dict abort
+  let urls = []
+  let start = self.last_method_line(a:lnum) - 1
+  while start > 0 && self.getline(start) =~ '^\s*\%(\%(-\|<%\)#.*\)\=$'
+    let urls = s:scanlineforuris(self.getline(start)) + urls
+    let start -= 1
+  endwhile
+  let start = 1
+  while start < self.line_count() && self.getline(start) =~ '^\s*\%(#.*\)\=$'
+    let urls += s:scanlineforuris(self.getline(start))
+    let start += 1
+  endwhile
+  if has_key(self,'getvar') && self.getvar('rails_preview') != ''
+    let url += [self.getvar('rails_preview')]
+  end
+  if self.name() =~ '^public/stylesheets/sass/'
+    let urls = urls + [s:sub(s:sub(self.name(),'^public/stylesheets/sass/','stylesheets/'),'\.sass$','.css')]
+  elseif self.name() =~ '^public/'
+    let urls = urls + [s:sub(self.name(),'^public/','')]
+  elseif self.controller_name() != '' && self.controller_name() != 'application'
+    if self.type_name('controller') && self.last_method(a:lnum) != ''
+      let urls += [self.controller_name().'/'.self.last_method(a:lnum).'/']
+    elseif self.type_name('controller','view-layout','view-partial')
+      let urls += [self.controller_name().'/']
+    elseif self.type_name('view')
+      let urls += [s:controller().'/'.fnamemodify(self.name(),':t:r:r').'/']
     endif
-  elseif s:getopt('preview','b') != ''
-    let uri = s:getopt('preview','b')
-  elseif RailsFilePath() =~ '^public/'
-    let ret = s:sub(RailsFilePath(),'^public/','')
-  elseif s:getopt('preview','ag') != ''
-    let ret = s:getopt('preview','ag')
   endif
-  return ret
+  return urls
 endfunction
+
+call s:add_methods('readable',['preview_urls'])
 
 function! s:Preview(bang,lnum,arg)
   let root = s:getopt("root_url")
@@ -1356,7 +1356,7 @@ function! s:Preview(bang,lnum,arg)
   elseif a:arg != ''
     let uri = root.'/'.s:sub(a:arg,'^/','')
   else
-    let uri = matchstr(s:defaultpreview(a:lnum),'.\{-\}\%(\n\@=\|$\)')
+    let uri = get(rails#buffer().preview_urls(a:lnum),0,'')
     let uri = root.'/'.s:sub(s:sub(uri,'^/',''),'/$','')
   endif
   call s:initOpenURL()
@@ -1386,7 +1386,7 @@ function! s:Preview(bang,lnum,arg)
 endfunction
 
 function! s:Complete_preview(A,L,P)
-  return split(s:defaultpreview(a:L =~ '^\d' ? matchstr(a:L,'^\d\+') : line('.')),"\n")
+  return rails#buffer().preview_urls(a:L =~ '^\d' ? matchstr(a:L,'^\d\+') : line('.'))
 endfunction
 
 " }}}1
