@@ -713,21 +713,25 @@ function! s:readable_calculate_file_type() dict abort
   return r
 endfunction
 
-function! s:buffer_type_name() dict abort
-  let var = getbufvar(self._number,'rails_cached_file_type')
-  if var == '-'
-    return ''
-  elseif var != ''
-    return var
-  else
+function! s:buffer_type_name(...) dict abort
+  let type = getbufvar(self._number,'rails_cached_file_type')
+  if type == ''
     let type = self.calculate_file_type()
-    return type == '-' ? '' : type
   endif
+  return call('s:match_type',[type == '-' ? '' : type] + a:000)
 endfunction
 
 function! s:readable_type_name() dict abort
   let type = self.calculate_file_type()
-  return type == '-' ? '' : type
+  return call('s:match_type',[type == '-' ? '' : type] + a:000)
+endfunction
+
+function! s:match_type(type,...)
+  if a:0
+    return !empty(filter(copy(a:000),'a:type =~# "^".v:val."\\>"'))
+  else
+    return a:type
+  endif
 endfunction
 
 function! s:app_environments() dict
