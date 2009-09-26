@@ -308,11 +308,13 @@ function! s:viewspattern()
 endfunction
 
 function! s:controller(...)
-  let t = RailsFileType()
-  let f = RailsFilePath()
-  let o = s:getopt("controller","lb")
-  if o != ""
-    return o
+  return rails#buffer().controller_name(a:0 ? a:1 : 0)
+endfunction
+
+function! s:readable_controller_name(...) dict abort
+  let f = self.name()
+  if has_key(self,'getvar') && self.getvar('rails_controller') != ''
+    return self.getvar('rails_controller')
   elseif f =~ '\<app/views/layouts/'
     return s:sub(f,'.*<app/views/layouts/(.{-})\..*','\1')
   elseif f =~ '\<app/views/'
@@ -335,21 +337,24 @@ function! s:controller(...)
     return s:sub(f,'.*<components/(.{-})_controller\.rb$','\1')
   elseif f =~ '\<components/.*\.'.s:viewspattern().'$'
     return s:sub(f,'.*<components/(.{-})/\k+\.\k+$','\1')
-  elseif f =~ '\<app/models/.*\.rb$' && t =~ '^model-mailer\>'
+  elseif f =~ '\<app/models/.*\.rb$' && self.type_name('model-mailer')
     return s:sub(f,'.*<app/models/(.{-})\.rb$','\1')
   elseif f =~ '\<public/stylesheets/.*\.css$'
     return s:sub(f,'.*<public/stylesheets/(.{-})\.css$','\1')
   elseif a:0 && a:1
-    return rails#pluralize(s:model())
+    return rails#pluralize(self.model_name())
   endif
   return ""
 endfunction
 
 function! s:model(...)
-  let f = RailsFilePath()
-  let o = s:getopt("model","lb")
-  if o != ""
-    return o
+  return rails#buffer().model_name(a:0 ? a:1 : 0)
+endfunction
+
+function! s:readable_model_name(...) dict abort
+  let f = self.name()
+  if has_key(self,'getvar') && self.getvar('rails_model') != ''
+    return self.getvar('rails_model')
   elseif f =~ '\<app/models/.*_observer.rb$'
     return s:sub(f,'.*<app/models/(.*)_observer\.rb$','\1')
   elseif f =~ '\<app/models/.*\.rb$'
@@ -369,10 +374,12 @@ function! s:model(...)
   elseif f =~ '\<\%(test/\|spec/\)\=factories/.*\.rb$'
     return s:sub(f,'.*<%(test/|spec/)=factories/(.{-})%(_factory)=\.rb$','\1')
   elseif a:0 && a:1
-    return rails#singularize(s:controller())
+    return rails#singularize(self.controller_name())
   endif
   return ""
 endfunction
+
+call s:add_methods('readable',['controller_name','model_name'])
 
 function! s:readfile(path,...)
   let nr = bufnr('^'.a:path.'$')
@@ -4477,8 +4484,8 @@ function! s:SetBasePath()
   call filter(old_path,'!s:startswith(v:val,transformed_path)')
 
   let path = ['app', 'app/models', 'app/controllers', 'app/helpers', 'config', 'lib', 'app/views']
-  if s:controller() != ''
-    let path += ['app/views/'.s:controller(), 'public']
+  if self.controller_name() != ''
+    let path += ['app/views/'.self.controller_name(), 'public']
   endif
   if self.app().has('test')
     let path += ['test', 'test/unit', 'test/functional', 'test/integration']
