@@ -1557,7 +1557,7 @@ function! s:Complete_script(ArgLead,CmdLine,P)
       return s:modelList(a:ArgLead,"","")
     elseif target ==# 'migration' || target ==# 'session_migration'
       return s:migrationList(a:ArgLead,"","")
-    elseif target ==# 'integration_test' || target ==# 'feature'
+    elseif target ==# 'integration_test' || target ==# 'integration_spec' || target ==# 'feature'
       return s:integrationtestList(a:ArgLead,"","")
     elseif target ==# 'observer'
       let observers = s:observerList("","","")
@@ -2032,7 +2032,7 @@ function! s:BufFinderCommands()
     call s:addfilecmds("unittest")
     call s:addfilecmds("functionaltest")
   endif
-  if rails#app().has('test') || rails#app().has('cucumber')
+  if rails#app().has('test') || rails#app().has('spec') || rails#app().has('cucumber')
     call s:addfilecmds("integrationtest")
   endif
   if rails#app().has('spec')
@@ -2187,14 +2187,20 @@ function! s:functionaltestList(A,L,P)
 endfunction
 
 function! s:integrationtestList(A,L,P)
+  if a:A =~# '^\u'
+    return s:autocamelize(rails#app().relglob("test/integration/","**/*","_test.rb"),a:A)
+  endif
   let found = []
   if rails#app().has('test')
-    let found += s:autocamelize(rails#app().relglob("test/integration/","**/*","_test.rb"),a:A)
+    let found += rails#app().relglob("test/integration/","**/*","_test.rb")
+  endif
+  if rails#app().has('spec')
+    let found += rails#app().relglob("spec/integration/","**/*","_spec.rb")
   endif
   if rails#app().has('cucumber')
-    let found += s:completion_filter(rails#app().relglob("features/","**/*",".feature"),a:A)
+    let found += rails#app().relglob("features/","**/*",".feature")
   endif
-  return found
+  return s:completion_filter(found,a:A)
 endfunction
 
 function! s:specList(A,L,P)
@@ -2609,11 +2615,7 @@ endfunction
 
 function! s:integrationtestEdit(cmd,...)
   if !a:0
-    if rails#app().has('cucumber') && !rails#app().has('test')
-      return s:EditSimpleRb(a:cmd,"integrationtest","support/env","features/",".rb")
-    else
-      return s:EditSimpleRb(a:cmd,"integrationtest","test_helper","test/",".rb")
-    endif
+    return s:EditSimpleRb(a:cmd,"integrationtest","test/test_helper\nfeatures/support/env\nspec/spec_helper","",".rb")
   endif
   let f = rails#underscore(matchstr(a:1,'[^!#:]*'))
   let jump = matchstr(a:1,'[!#:].*')
@@ -2622,7 +2624,7 @@ function! s:integrationtestEdit(cmd,...)
   else
     let cmd = s:findcmdfor(a:cmd)
   endif
-  let mapping = {'test': ['test/integration/','_test.rb'], 'cucumber': ['features/','.feature']}
+  let mapping = {'test': ['test/integration/','_test.rb'], 'spec': ['spec/integration/','_spec.rb'], 'cucumber': ['features/','.feature']}
   let tests = map(filter(rails#app().test_suites(),'has_key(mapping,v:val)'),'get(mapping,v:val)')
   if empty(tests)
     let tests = [mapping['test']]

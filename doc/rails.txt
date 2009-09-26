@@ -506,9 +506,9 @@ The following commands are not clearly associated with models or controllers.
 
 						*rails-:Rintegrationtest*
 :Rintegrationtest [{name}]
-			Edit the integration test or cucumber feature
-			specified.  With no argument, defaults to editing
-			test/test_helper.rb.
+			Edit the integration test, integration spec, or
+			cucumber feature specified.  With no argument,
+			defaults to editing test/test_helper.rb.
 
 						*rails-:Rspec*
 :Rspec [{name}]		Edit the given spec.  With no argument, defaults to
