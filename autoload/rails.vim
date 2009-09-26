@@ -4521,38 +4521,39 @@ function! s:BufSettings()
           \."Static Files (*.html, *.css, *.js)\t".statics."\n"
           \."All Files (*.*)\t*.*\n"
   endif
-  setlocal includeexpr=RailsIncludeexpr()
-  let &l:suffixesadd=".rb,.".s:gsub(s:view_types,',',',.').",.css,.js,.yml,.csv,.rake,.sql,.html,.xml"
-  if &ft =~ '^\%(e\=ruby\|[yh]aml\|javascript\|css\|sass\)$'
-    setlocal sw=2 sts=2 et
-    if exists('+completefunc')
-      if &completefunc == ''
-        set completefunc=syntaxcomplete#Complete
-      endif
+  call self.setvar('&includeexpr','RailsIncludeexpr()')
+  call self.setvar('&suffixesadd', ".rb,.".s:gsub(s:view_types,',',',.').",.css,.js,.yml,.csv,.rake,.sql,.html,.xml")
+  let ft = self.getvar('&filetype')
+  if ft =~ '^\%(e\=ruby\|[yh]aml\|javascript\|css\|sass\)$'
+    call self.setvar('&shiftwidth',2)
+    call self.setvar('&softtabstop',2)
+    call self.setvar('&expandtab',1)
+    if exists('+completefunc') && self.getvar('&completefunc') == ''
+      call self.setvar('&completefunc','syntaxcomplete#Complete')
     endif
   endif
-  if &filetype == "ruby"
-    let &l:suffixesadd=".rb,.".s:gsub(s:view_types,',',',.').",.yml,.csv,.rake,s.rb"
+  if ft == 'ruby'
+    call self.setvar('&suffixesadd',".rb,.".s:gsub(s:view_types,',',',.').",.yml,.csv,.rake,s.rb")
     call self.setvar('&define',self.define_pattern())
     " This really belongs in after/ftplugin/ruby.vim but we'll be nice
-    if exists("g:loaded_surround") && !exists("b:surround_101")
-      let b:surround_5   = "\r\nend"
-      let b:surround_69  = "\1expr: \1\rend"
-      let b:surround_101 = "\r\nend"
+    if exists('g:loaded_surround') && self.getvar('surround_101') == ''
+      call self.setvar('surround_5',   "\r\nend")
+      call self.setvar('surround_69',  "\1expr: \1\rend")
+      call self.setvar('surround_101', "\r\nend")
     endif
-  elseif &filetype == 'yaml' || expand('%:e') == 'yml'
+  elseif ft == 'yaml' || fnamemodify(self.name(),':e') == 'yml'
     call self.setvar('&define',self.define_pattern())
-    let &l:suffixesadd=".yml,.csv,.rb,.".s:gsub(s:view_types,',',',.').",.rake,s.rb"
-  elseif &filetype == "eruby"
-    let &l:suffixesadd=".".s:gsub(s:view_types,',',',.').",.rb,.css,.js,.html,.yml,.csv"
+    call self.setvar('&suffixesadd',".yml,.csv,.rb,.".s:gsub(s:view_types,',',',.').",.rake,s.rb")
+  elseif ft == 'eruby'
+    call self.setvar('&suffixesadd',".".s:gsub(s:view_types,',',',.').",.rb,.css,.js,.html,.yml,.csv")
     if exists("g:loaded_allml")
       " allml is available on vim.org.
-      let b:allml_stylesheet_link_tag = "<%= stylesheet_link_tag '\r' %>"
-      let b:allml_javascript_include_tag = "<%= javascript_include_tag '\r' %>"
-      let b:allml_doctype_index = 10
+      call self.setvar('allml_stylesheet_link_tag', "<%= stylesheet_link_tag '\r' %>")
+      call self.setvar('allml_javascript_include_tag', "<%= javascript_include_tag '\r' %>")
+      call self.setvar('allml_doctype_index', 10)
     endif
   endif
-  if &filetype == "eruby" || &filetype == "yaml"
+  if ft == 'eruby' || ft == 'yaml'
     " surround.vim
     if exists("g:loaded_surround")
       " The idea behind the || part here is that one can normally define the
@@ -4561,19 +4562,19 @@ function! s:BufSettings()
       " difficult if you really don't want a hyphen in Rails ERuby files.  If
       " this is your desire, you will need to accomplish it via a rails.vim
       " autocommand.
-      if !exists("b:surround_45") || b:surround_45 == "<% \r %>" " -
-        let b:surround_45 = "<% \r -%>"
+      if self.getvar('surround_45') == '' || self.getvar('surround_45') == "<% \r %>" " -
+        call self.setvar('surround_45', "<% \r -%>")
       endif
-      if !exists("b:surround_61") " =
-        let b:surround_61 = "<%= \r %>"
+      if self.getvar('surround_61') == '' " =
+        call self.setvar('surround_61', "<%= \r %>")
       endif
-      if !exists("b:surround_35") " #
-        let b:surround_35 = "<%# \r %>"
+      if self.getvar("surround_35") == '' " #
+        call self.setvar('surround_35', "<%# \r %>")
       endif
-      if !exists("b:surround_101") || b:surround_101 == "<% \r %>\n<% end %>" "e
-        let b:surround_5   = "<% \r -%>\n<% end -%>"
-        let b:surround_69  = "<% \1expr: \1 -%>\r<% end -%>"
-        let b:surround_101 = "<% \r -%>\n<% end -%>"
+      if self.getvar('surround_101') == '' || self.getvar('surround_101')== "<% \r %>\n<% end %>" "e
+        call self.setvar('surround_5',   "<% \r -%>\n<% end -%>")
+        call self.setvar('surround_69',  "<% \1expr: \1 -%>\r<% end -%>")
+        call self.setvar('surround_101', "<% \r -%>\n<% end -%>")
       endif
     endif
   endif
