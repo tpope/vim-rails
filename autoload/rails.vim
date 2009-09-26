@@ -413,9 +413,9 @@ endfunction
 
 function! s:buffer_getline(...) dict abort
   if a:0 == 1
-    return get(call('getbufline',[self._number]+a:000),0,'')
+    return get(call('getbufline',[self.number()]+a:000),0,'')
   else
-    return call('getbufline',[self._number]+a:000)
+    return call('getbufline',[self.number()]+a:000)
   endif
 endfunction
 
@@ -460,11 +460,11 @@ function! s:debug(str)
 endfunction
 
 function! s:buffer_getvar(varname) dict abort
-  return getbufvar(self._number,a:varname)
+  return getbufvar(self.number(),a:varname)
 endfunction
 
 function! s:buffer_setvar(varname, val) dict abort
-  return setbufvar(self._number,a:varname,a:val)
+  return setbufvar(self.number(),a:varname,a:val)
 endfunction
 
 call s:add_methods('buffer',['getvar','setvar'])
@@ -528,7 +528,7 @@ function! rails#app(...)
 endfunction
 
 function! rails#buffer(...)
-  return extend(extend({'_number': bufnr(a:0 ? a:1 : '%')},s:buffer_prototype,'keep'),s:readable_prototype,'keep')
+  return extend(extend({'#': bufnr(a:0 ? a:1 : '%')},s:buffer_prototype,'keep'),s:readable_prototype,'keep')
   endif
 endfunction
 
@@ -568,16 +568,17 @@ function! s:file_name() dict abort
   return self._name
 endfunction
 
+function! s:buffer_number() dict abort
+  return self['#']
+endfunction
+
 function! s:buffer_path() dict abort
-  return s:gsub(fnamemodify(bufname(self._number),':p'),'\\ @!','/')
+  return s:gsub(fnamemodify(bufname(self.number()),':p'),'\\ @!','/')
 endfunction
 
 function! s:buffer_name() dict abort
   let app = self.app()
-  if getbufvar(self._number,'rails_file_type') != ''
-    return getbufvar(self.number,'rails_file_type')
-  endif
-  let f = s:gsub(fnamemodify(bufname(self._number),':p'),'\\ @!','/')
+  let f = s:gsub(fnamemodify(bufname(self.number()),':p'),'\\ @!','/')
   let f = s:sub(f,'/$','')
   let sep = matchstr(f,'^[^\\/]\{3,\}\zs[\\/]')
   if sep != ""
@@ -714,7 +715,7 @@ function! s:readable_calculate_file_type() dict abort
 endfunction
 
 function! s:buffer_type_name(...) dict abort
-  let type = getbufvar(self._number,'rails_cached_file_type')
+  let type = getbufvar(self.number(),'rails_cached_file_type')
   if type == ''
     let type = self.calculate_file_type()
   endif
@@ -773,7 +774,7 @@ endfunction
 
 call s:add_methods('app',['default_locale','environments','file','has','test_suites'])
 call s:add_methods('file',['path','name','lines','getline'])
-call s:add_methods('buffer',['app','path','name','lines','getline','type_name'])
+call s:add_methods('buffer',['app','number','path','name','lines','getline','type_name'])
 call s:add_methods('readable',['app','calculate_file_type','type_name','line_count'])
 
 " }}}1
