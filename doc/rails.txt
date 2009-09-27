@@ -14,6 +14,7 @@ Author: Tim Pope <vimNOSPAM@tpope.info>		|rails-plugin-author|
 |rails-controller-navigation|	    Controller Navigation Commands
 |rails-misc-navigation|		    Miscellaneous Navigation Commands
 |rails-custom-navigation|	    Custom Navigation Commands
+|rails-rake|			Rake
 |rails-scripts|			Script Wrappers
 |rails-refactoring|		Refactoring Helpers
 |rails-partials|		    Partial Extraction
@@ -62,19 +63,24 @@ Rails application development.
    method names, 'completefunc' is set to enable syntax based completion on
    |i_CTRL-X_CTRL-U|. |rails-syntax|
 
-5. Interface to script/*.  Generally, use ":Rscript about" to call
+5. Interface to rake.  Use :Rake to run the current test, spec, or feature.
+   Use :.Rake to do a focused run of just the method, example, or scenario on
+   the current line.  :Rake can also run arbitrary migrations, load individual
+   fixtures, and more. |rails-rake|
+
+6. Interface to script/*.  Generally, use ":Rscript about" to call
    "script/about".  Most commands have wrappers with additional features:
    ":Rgenerate controller Blog" generates a blog controller and edits
    app/controllers/blog_controller.rb.  |rails-scripts|
 
-6. Partial extraction and migration inversion.  |:Rextract| {file} replaces
+7. Partial extraction and migration inversion.  |:Rextract| {file} replaces
    the desired range (ideally selected in visual line mode) with "render
    :partial => '{file}'", which is automatically created with your content.
    The @{file} instance variable is replaced with the {file} local variable.
    |:Rinvert| takes a self.up migration and writes a self.down.
    |rails-refactoring|
 
-7. Integration with other plugins.  |:Rtree| spawns NERDTree.vim or creates a
+8. Integration with other plugins.  |:Rtree| spawns NERDTree.vim or creates a
    new project.vim project.  If dbext.vim is installed, it will be
    transparently configured to reflect database.yml.  Cream users get some
    additional mappings, and all GUI users get a menu. |rails-integration|
@@ -132,28 +138,6 @@ actually edit a file from a Rails application.
 :Rails!			Show the version of rails.vim installed.  If rails.vim
 			is active for the current buffer, also show the type
 			of Rails file detected.
-
-						*rails-:Rake*
-:[range]Rake {targets}	Like calling |:make| {targets} (with 'makeprg' being
-			rake).  However, in some contexts, if {targets} are
-			omitted, :Rake defaults to something sensible (like
-			db:migrate in a migration, or your current test).
-			In tests (and specs), giving a line argument runs only
-			the test method (or example) at that line.  Use :.Rake
-			to run the test method at the cursor position.  Use
-			:.Rake inside a self.up or self.down method in a
-			migration to run the db:migrate:up or db:migrate:down
-			task for that particular migration.  You can override
-			the default task with a comment like "# rake ..."
-			before the method pointed to by [range] or at the top
-			of the file.
-
-						*rails-:Rake!*
-:[range]Rake! {targets}	Called with a bang, :Rake will use an alternate
-			'errorformat' which attempts to parse the full stack
-			backtrace.  For purely informative rake tasks (stats,
-			routes, notes, etc), the preview pane is opened with
-			the full output of the command.
 
 						*rails-:Rcd*
 :Rcd [{directory}]	|:cd| to /path/to/railsapp/{directory}.
@@ -559,6 +543,63 @@ Examples: >
 Finally, one Vim feature that proves helpful in conjunction with all of the
 above is |CTRL-^|.  This keystroke edits the previous file, and is helpful to
 back out of any of the above commands.
+
+==============================================================================
+RAKE						*rails-rake*
+
+Rake integration happens through the :Rake command.
+
+						*rails-:Rake*
+:[range]Rake {targets}	Calls |:make!| {targets} (with 'makeprg' being rake)
+			and opens the quickfix window if there were any
+			errors.  If {targets} are omitted, :Rake defaults to
+			something sensible as described below.  Giving a line
+			number argument may affect that default.
+
+						*rails-:Rake!*
+:[range]Rake! {targets}	Called with a bang, :Rake will forgo opening the
+			quickfix window.
+
+						*rails-rake-defaults*
+
+Generally, the default task is one that runs the test you'd expect.  For
+example, if you're in a view in an RSpec application, the view spec is run,
+but if it's a Test::Unit application, the functional test for the
+corresponding controller is run.  The following table lists the most
+interesting mappings:
+
+File			Task ~
+unit test		test:units TEST=...
+functional test		test:functionals TEST=...
+integration test	test:integration TEST=...
+spec			spec SPEC=...
+feature			cucumber FEATURE=...
+model			test:units TEST=...		spec SPEC=...
+controller		test:functionals TEST=...	spec SPEC=...
+helper			test:functionals TEST=...	spec SPEC=...
+view			test:functionals TEST=...	spec SPEC=...
+fixtures		db:fixtures:load FIXTURES=...
+migration		db:migrate VERSION=...
+config/routes.rb	routes
+db/seeds.rb		db:seed
+
+Additionally, when :Rake is given a line number (e.g., :.Rake), the following
+additional tasks can be invoked:
+
+File			Task ~
+unit test		test:units TEST=... TESTOPTS=-n...
+functional test		test:functionals TEST=... TESTOPTS=-n...
+integration test	test:integration TEST=... TESTOPTS=-n...
+spec			spec SPEC=... SPEC_OPTS=--line=...
+feature			cucumber FEATURE=...:...
+fixtures		db:fixtures:identify LABEL=...
+migration in self.up	db:migrate:up VERSION=...
+migration in self.down	db:migrate:down VERSION=...
+migration elsewhere	db:migrate:redo VERSION=...
+task			... (try to guess currently edited declaration)
+
+Finally, you can override the default task with a comment like "# rake ..."
+before the method pointed to by [range] or at the top of the file.
 
 ==============================================================================
 SCRIPT WRAPPERS					*rails-scripts*
