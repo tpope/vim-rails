@@ -1306,7 +1306,7 @@ function! s:scanlineforuris(line)
     endif
   endif
   if url != ""
-    return [s:sub(url,'^/','')]
+    return [url]
   else
     return []
   endif
@@ -1328,16 +1328,16 @@ function! s:readable_preview_urls(lnum) dict abort
     let url += [self.getvar('rails_preview')]
   end
   if self.name() =~ '^public/stylesheets/sass/'
-    let urls = urls + [s:sub(s:sub(self.name(),'^public/stylesheets/sass/','stylesheets/'),'\.sass$','.css')]
+    let urls = urls + [s:sub(s:sub(self.name(),'^public/stylesheets/sass/','/stylesheets/'),'\.sass$','.css')]
   elseif self.name() =~ '^public/'
-    let urls = urls + [s:sub(self.name(),'^public/','')]
+    let urls = urls + [s:sub(self.name(),'^public','')]
   elseif self.controller_name() != '' && self.controller_name() != 'application'
     if self.type_name('controller') && self.last_method(a:lnum) != ''
-      let urls += [self.controller_name().'/'.self.last_method(a:lnum).'/']
+      let urls += ['/'.self.controller_name().'/'.self.last_method(a:lnum).'/']
     elseif self.type_name('controller','view-layout','view-partial')
-      let urls += [self.controller_name().'/']
+      let urls += ['/'.self.controller_name().'/']
     elseif self.type_name('view')
-      let urls += [s:controller().'/'.fnamemodify(self.name(),':t:r:r').'/']
+      let urls += ['/'.s:controller().'/'.fnamemodify(self.name(),':t:r:r').'/']
     endif
   endif
   return urls
