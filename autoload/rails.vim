@@ -1148,7 +1148,7 @@ function! s:Rake(bang,lnum,arg)
       if !a:bang
         cwindow
       endif
-    elseif arg =~# '^\%(stats\|routes\|secret\|time:zones\|db:\%(charset\|collation\|fixtures:identify\>.*\|version\)\)\%(:\|$\)'
+    elseif arg =~# '^\%(stats\|routes\|secret\|time:zones\|db:\%(charset\|collation\|fixtures:identify\>.*\|version\)\)\%([: ]\|$\)'
       let &l:errorformat = '%D(in\ %f),%+G%.%#'
       exe 'make! '.arg
       if !a:bang
@@ -1258,6 +1258,14 @@ function! s:readable_default_rake_task(lnum) dict abort
     endif
   elseif self.name() =~# '\<db/seeds\.rb$'
     return 'db:seed'
+  elseif self.type_name('controller') && lnum
+    let lm = self.last_method(lnum)
+    if lm != ''
+      " rake routes doesn't support ACTION... yet...
+      return 'routes CONTROLLER='.self.controller_name().' ACTION='.lm
+    else
+      return 'routes CONTROLLER='.self.controller_name()
+    endif
   elseif app.has('spec') && self.name() =~# '^app/.*\.rb' && app.has_file(s:sub(self.name(),'^app/(.*)\.rb$','spec/\1_spec.rb'))
     return 'spec SPEC="%:p:r:s?[\/]app[\/]?/spec/?_spec.rb" SPEC_OPTS='
   elseif t=~ '^model\>'
