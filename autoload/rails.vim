@@ -3405,10 +3405,7 @@ call s:add_methods('app', ['user_classes','user_assertions'])
 function! s:BufSyntax()
   if (!exists("g:rails_syntax") || g:rails_syntax)
     let t = RailsFileType()
-    let s:prototype_functions = "$ $$ $A $F $H $R $w"
-    " From the Prototype bundle for TextMate
-    let s:prototype_classes = "Prototype Class Abstract Try PeriodicalExecuter Enumerable Hash ObjectRange Element Ajax Responders Base Request Updater PeriodicalUpdater Toggle Insertion Before Top Bottom After ClassNames Form Serializers TimedObserver Observer EventObserver Event Position Effect Effect2 Transitions ScopedQueue Queues DefaultOptions Parallel Opacity Move MoveBy Scale Highlight ScrollTo Fade Appear Puff BlindUp BlindDown SwitchOff DropOut Shake SlideDown SlideUp Squish Grow Shrink Pulsate Fold"
-
+    let s:javascript_functions = "$ $$ $A $F $H $R $w jQuery"
     let rails_helper_methods = '+\.\@<!\<\('.s:gsub(s:helpermethods(),'\s+','\\|').'\)\>+'
     let classes = s:gsub(join(rails#app().user_classes(),' '),'::',' ')
     if &syntax == 'ruby'
@@ -3548,9 +3545,8 @@ function! s:BufSyntax()
       syn match rubyRailsError '\<\%(render_partial\|puts\)\>' contained containedin=@erubyRailsRegions
       syn case match
       set isk+=$
-      exe "syn keyword javascriptRailsClass contained ".s:prototype_classes
-      exe "syn keyword javascriptRailsFunction contained ".s:prototype_functions
-      syn cluster htmlJavaScript add=javascriptRailsClass,javascriptRailsFunction
+      exe "syn keyword javascriptRailsFunction contained ".s:javascript_functions
+      syn cluster htmlJavaScript add=javascriptRailsFunction
     elseif &syntax == "yaml"
       syn case match
       " Modeled after syntax/eruby.vim
@@ -3571,15 +3567,13 @@ function! s:BufSyntax()
     elseif &syntax == "html"
       syn case match
       set isk+=$
-      exe "syn keyword javascriptRailsClass contained ".s:prototype_classes
-      exe "syn keyword javascriptRailsFunction contained ".s:prototype_functions
-      syn cluster htmlJavaScript add=javascriptRailsClass,javascriptRailsFunction
+      exe "syn keyword javascriptRailsFunction contained ".s:javascript_functions
+      syn cluster htmlJavaScript add=javascriptRailsFunction
     elseif &syntax == "javascript"
       " The syntax file included with Vim incorrectly sets syn case ignore.
       syn case match
       set isk+=$
-      exe "syn keyword javascriptRailsClass ".s:prototype_classes
-      exe "syn keyword javascriptRailsFunction ".s:prototype_functions
+      exe "syn keyword javascriptRailsFunction ".s:javascript_functions
 
     endif
   endif
@@ -3621,7 +3615,6 @@ function! s:HiDefaults()
   hi def link yamlRailsUserClass              railsUserClass
   hi def link yamlRailsUserMethod             railsUserMethod
   hi def link javascriptRailsFunction         railsMethod
-  hi def link javascriptRailsClass            railsClass
   hi def link railsUserClass                  railsClass
   hi def link railsMethod                     Function
   hi def link railsClass                      Type
