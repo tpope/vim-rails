@@ -1331,12 +1331,12 @@ endfunction
 function! s:readable_preview_urls(lnum) dict abort
   let urls = []
   let start = self.last_method_line(a:lnum) - 1
-  while start > 0 && self.getline(start) =~ '^\s*\%(\%(-\|<%\)#.*\)\=$'
+  while start > 0 && self.getline(start) =~ '^\s*\%(\%(-\=\|<%\)#.*\)\=$'
     let urls = s:scanlineforuris(self.getline(start)) + urls
     let start -= 1
   endwhile
   let start = 1
-  while start < self.line_count() && self.getline(start) =~ '^\s*\%(#.*\)\=$'
+  while start < self.line_count() && self.getline(start) =~ '^\s*\%(\%(-\=\|<%\)#.*\)\=$'
     let urls += s:scanlineforuris(self.getline(start))
     let start += 1
   endwhile
