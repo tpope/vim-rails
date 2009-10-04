@@ -2723,6 +2723,7 @@ function! s:libEdit(cmd,...)
     call s:EditSimpleRb(a:cmd,"lib",a:0? a:1 : "",extra."lib/",".rb")
   else
     call s:EditSimpleRb(a:cmd,"lib","routes","config/",".rb")
+    call s:warn('Warning: :Rlib with no argument has been deprecated in favor of :Rinitializer')
   endif
 endfunction
 
