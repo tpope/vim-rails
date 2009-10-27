@@ -1810,6 +1810,7 @@ function! s:findasymbol(sym,repl)
 endfunction
 
 function! s:findfromview(func,repl)
+  "                     (   )            (           )                      ( \1  )                   (      )
   return s:findit('\s*\%(<%\)\==\=\s*\<\%('.a:func.'\)\s*(\=\s*[@:'."'".'"]\(\f\+\)\>['."'".'"]\=\s*\%(%>\s*\)\=',a:repl)
 endfunction
 
@@ -1817,65 +1818,92 @@ function! s:RailsFind()
   if filereadable(expand("<cfile>"))
     return expand("<cfile>")
   endif
+
   " UGH
   let format = s:format('html')
+
   let res = s:findit('\v\s*<require\s*\(=\s*File.dirname\(__FILE__\)\s*\+\s*[:'."'".'"](\f+)>.=',expand('%:h').'/\1')
   if res != ""|return res.(fnamemodify(res,':e') == '' ? '.rb' : '')|endif
+
   let res = s:findit('\v<File.dirname\(__FILE__\)\s*\+\s*[:'."'".'"](\f+)>['."'".'"]=',expand('%:h').'\1')
   if res != ""|return res|endif
+
   let res = rails#underscore(s:findit('\v\s*<%(include|extend)\(=\s*<(\f+)>','\1'))
   if res != ""|return res.".rb"|endif
+
   let res = s:findamethod('require','\1')
   if res != ""|return res.(fnamemodify(res,':e') == '' ? '.rb' : '')|endif
+
   let res = s:findamethod('belongs_to\|has_one\|composed_of\|validates_associated\|scaffold','app/models/\1.rb')
   if res != ""|return res|endif
+
   let res = rails#singularize(s:findamethod('has_many\|has_and_belongs_to_many','app/models/\1'))
   if res != ""|return res.".rb"|endif
+
   let res = rails#singularize(s:findamethod('create_table\|change_table\|drop_table\|add_column\|rename_column\|remove_column\|add_index','app/models/\1'))
   if res != ""|return res.".rb"|endif
+
   let res = rails#singularize(s:findasymbol('through','app/models/\1'))
   if res != ""|return res.".rb"|endif
+
   let res = s:findamethod('fixtures','fixtures/\1')
   if res != ""
     return RailsFilePath() =~ '\<spec/' ? 'spec/'.res : res
   endif
+
   let res = s:findamethod('map\.resources','app/controllers/\1_controller.rb')
   if res != ""|return res|endif
+
   let res = s:findamethod('map\.resource','app/controllers/\1')
   if res != ""|return rails#pluralize(res)."_controller.rb"|endif
+
   let res = s:findamethod('layout','\=s:findlayout(submatch(1))')
   if res != ""|return res|endif
+
   let res = s:findasymbol('layout','\=s:findlayout(submatch(1))')
   if res != ""|return res|endif
+
   let res = s:findamethod('helper','app/helpers/\1_helper.rb')
   if res != ""|return res|endif
+
   let res = s:findasymbol('controller','app/controllers/\1_controller.rb')
   if res != ""|return res|endif
+
   let res = s:findasymbol('action','\1')
   if res != ""|return res|endif
+
   let res = s:findasymbol('template','app/views/\1')
   if res != ""|return res|endif
+
   let res = s:sub(s:sub(s:findasymbol('partial','\1'),'^/',''),'\k+$','_&')
   if res != ""|return res."\n".s:findview(res)|endif
+
   let res = s:sub(s:sub(s:findfromview('render\s*(\=\s*:partial\s\+=>\s*','\1'),'^/',''),'\k+$','_&')
   if res != ""|return res."\n".s:findview(res)|endif
+
   let res = s:findamethod('render\s*:\%(template\|action\)\s\+=>\s*','\1.'.format.'\n\1')
   if res != ""|return res|endif
+
   let res = s:sub(s:findfromview('render','\1'),'^/','')
   if RailsFileType() =~ '^view\>' | let res = s:sub(res,'[^/]+$','_&') | endif
   if res != ""|return res."\n".s:findview(res)|endif
+
   let res = s:findamethod('redirect_to\s*(\=\s*:action\s\+=>\s*','\1')
   if res != ""|return res|endif
+
   let res = s:findfromview('stylesheet_link_tag','public/stylesheets/\1.css')
   if res != ""|return res|endif
+
   let res = s:sub(s:findfromview('javascript_include_tag','public/javascripts/\1.js'),'/defaults>','/application')
   if res != ""|return res|endif
+
   if RailsFileType() =~ '^controller\>'
     let contr = s:controller()
     let view = s:findit('\s*\<def\s\+\(\k\+\)\>(\=','/\1')
     let res = s:findview(contr.'/'.view)
     if res != ""|return res|endif
   endif
+
   let old_isfname = &isfname
   try
     set isfname=@,48-57,/,-,_,: ",\",'
