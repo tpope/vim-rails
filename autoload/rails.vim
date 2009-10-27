@@ -1891,10 +1891,16 @@ function! s:RailsFind()
   let res = s:findamethod('redirect_to\s*(\=\s*:action\s\+=>\s*','\1')
   if res != ""|return res|endif
 
-  let res = s:findfromview('stylesheet_link_tag','public/stylesheets/\1.css')
+  let res = s:findfromview('stylesheet_link_tag','public/stylesheets/\1')
+  if res != '' && fnamemodify(res, ':e') == '' " Append the default extension iff the filename doesn't already contains an extension
+    let res .= '.css'
+  end
   if res != ""|return res|endif
 
-  let res = s:sub(s:findfromview('javascript_include_tag','public/javascripts/\1.js'),'/defaults>','/application')
+  let res = s:sub(s:findfromview('javascript_include_tag','public/javascripts/\1'),'/defaults>','/application')
+  if res != '' && fnamemodify(res, ':e') == '' " Append the default extension iff the filename doesn't already contains an extension
+    let res .= '.js'
+  end
   if res != ""|return res|endif
 
   if RailsFileType() =~ '^controller\>'
@@ -1991,13 +1997,17 @@ function! s:RailsIncludefind(str,...)
     endif
   elseif line =~# '\<stylesheet_\(link_tag\|path\)\s*(\='.fpat
     let str = s:sub(str,'^/@!','/stylesheets/')
-    let str = 'public'.s:sub(str,'^[^.]*$','&.css')
+    if str != '' && fnamemodify(str, ':e') == '' " Append the default extension iff the filename doesn't already contains an extension
+      let str .= '.css'
+    endif
   elseif line =~# '\<javascript_\(include_tag\|path\)\s*(\='.fpat
     if str ==# "defaults"
       let str = "application"
     endif
     let str = s:sub(str,'^/@!','/javascripts/')
-    let str = 'public'.s:sub(str,'^[^.]*$','&.js')
+    if str != '' && fnamemodify(str, ':e') == '' " Append the default extension iff the filename doesn't already contains an extension
+      let str .= '.js'
+    endif
   elseif line =~# '\<\(has_one\|belongs_to\)\s*(\=\s*'
     let str = 'app/models/'.str.'.rb'
   elseif line =~# '\<has_\(and_belongs_to_\)\=many\s*(\=\s*'
