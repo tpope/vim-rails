@@ -5,3 +5,6 @@ doc/rails.txt to the appropriate directories in ~/.vim.  Alternatively,
 `rake install` may be used.
 
 See doc/rails.txt for documentation.
+
+Copyright Tim Pope. This plugin is licensed under the same terms as Vim
+itself.  No warranties, expressed or implied.
