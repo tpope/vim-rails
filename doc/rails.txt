@@ -1181,6 +1181,16 @@ The very latest development versions can be retrieved from Git:
     http://github.com/tpope/vim-rails
     git clone git://github.com/tpope/vim-rails.git
 
+The Github repository has Pledgie donations enabled.  All donations made will
+proxied along to ICCF, which goes to help needy children in |Uganda|.
+Donations will be made in through the plugin author's vim.org account through
+http://www.vim.org/sponsor/ .  The voting privileges associated with the
+donation will be used to vote for features that will enable better plugins in
+the future.  If you would rather keep those voting privileges for yourself, or
+you want your donation to be tax deductible, donate directly through vim.org
+instead.  Donations made on or before December 24, 2009 will be matched in a
+Christmas donation.
+
 Feedback is highly desired on this plugin.  Please send all comments,
 complaints, and compliments to the author.  No bug is too small to report.
 
