@@ -1734,7 +1734,7 @@ function! s:Edit(count,cmd,...)
 endfunction
 
 function! s:fuzzyglob(arg)
-  return '*'.s:gsub(s:gsub(a:arg,'[^/]','[&]*'),'/','/*')
+  return s:gsub(s:gsub(a:arg,'[^/.]','[&]*'),'%(/|^)\.@!|\.','&*')
 endfunction
 
 function! s:Complete_find(ArgLead, CmdLine, CursorPos)
