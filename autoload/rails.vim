@@ -1210,11 +1210,11 @@ function! s:readable_default_rake_task(lnum) dict abort
     endif
   elseif t =~ '^spec\>'
     if self.name() =~# '\<spec/spec_helper\.rb$'
-      return 'spec SPEC_OPTS='
+      return 'spec'
     elseif lnum > 0
-      return 'spec SPEC="%:p" SPEC_OPTS=--line='.lnum
+      return 'spec SPEC="%:p":'.lnum
     else
-      return 'spec SPEC="%:p" SPEC_OPTS='
+      return 'spec SPEC="%:p"'
     endif
   elseif t =~ '^test\>'
     let meth = self.last_method(lnum)
