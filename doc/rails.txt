@@ -1,6 +1,6 @@
 *rails.txt*	Plugin for working with Ruby on Rails applications
 
-Author: Tim Pope <vimNOSPAM@tpope.info>		|rails-plugin-author|
+Author: Tim Pope <vimNOSPAM@tpope.org>		|rails-plugin-author|
 
 |rails-introduction|		Introduction and Feature Summary
 |rails-installation|		Installation and Usage
@@ -1167,7 +1167,7 @@ This is highly discouraged: don't fight Rails.
 ==============================================================================
 ABOUT					*rails-about* *rails-plugin-author*
 
-This plugin was written by Tim Pope.  Email him at <vimNOSPAM@tpope.info>.  He
+This plugin was written by Tim Pope.  Email him at <vimNOSPAM@tpope.org>.  He
 can also be found on Freenode's IRC network, hanging out in #rubyonrails and
 #vim as tpope.
 
