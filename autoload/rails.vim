@@ -2029,14 +2029,7 @@ function! s:RailsIncludefind(str,...)
   elseif line =~# '\<has_\(and_belongs_to_\)\=many\s*(\=\s*'
     let str = 'app/models/'.rails#singularize(str).'.rb'
   elseif line =~# '\<def\s\+' && expand("%:t") =~# '_controller\.rb'
-    let str = s:sub(s:sub(RailsFilePath(),'/controllers/','/views/'),'_controller\.rb$','/'.str)
-    " FIXME: support nested extensions
-    for t in split(s:view_types,',')
-      if filereadable(str.format.'.'.t)
-        let str .= '.'.t
-        break
-      endif
-    endfor
+    let str = s:findview(str)
   elseif str =~# '_\%(path\|url\)$' || (line =~# ':as\s*=>\s*$' && RailsFileType() =~# '^config-routes\>')
     if line !~# ':as\s*=>\s*$'
       let str = s:sub(str,'_%(path|url)$','')
