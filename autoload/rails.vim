@@ -2013,7 +2013,7 @@ function! s:RailsIncludefind(str,...)
     endif
   elseif line =~# '\<stylesheet_\(link_tag\|path\)\s*(\='.fpat
     let str = s:sub(str,'^/@!','/stylesheets/')
-    if str != '' && fnamemodify(str, ':e') == '' " Append the default extension iff the filename doesn't already contains an extension
+    if str != '' && fnamemodify(str, ':e') == ''
       let str .= '.css'
     endif
   elseif line =~# '\<javascript_\(include_tag\|path\)\s*(\='.fpat
@@ -2021,7 +2021,7 @@ function! s:RailsIncludefind(str,...)
       let str = "application"
     endif
     let str = s:sub(str,'^/@!','/javascripts/')
-    if str != '' && fnamemodify(str, ':e') == '' " Append the default extension iff the filename doesn't already contains an extension
+    if str != '' && fnamemodify(str, ':e') == ''
       let str .= '.js'
     endif
   elseif line =~# '\<\(has_one\|belongs_to\)\s*(\=\s*'
