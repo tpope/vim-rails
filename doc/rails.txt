@@ -34,7 +34,6 @@ This plugin is only available if 'compatible' is not set.
 
 {Vi does not have any of this}
 
-==============================================================================
 INTRODUCTION					*rails-introduction* *rails*
 
 TextMate may be the latest craze for developing Ruby on Rails applications,
@@ -85,7 +84,6 @@ Rails application development.
    transparently configured to reflect database.yml.  Cream users get some
    additional mappings, and all GUI users get a menu. |rails-integration|
 
-==============================================================================
 INSTALLATION AND USAGE				*rails-installation*
 
 If you are familiar Vim and have the latest version installed, you may skip
@@ -125,7 +123,6 @@ are encouraged to at least skim through the headings and command names in this
 file, to get a better idea of what is offered.  If you only read one thing,
 make sure it is the navigation section: |rails-navigation|.
 
-==============================================================================
 GENERAL COMMANDS				*rails-commands*
 
 All commands are buffer local, unless otherwise stated.  This means you must
@@ -223,7 +220,6 @@ actually edit a file from a Rails application.
 			defined.  Otherwise, you must provide your own (which
 			is recommended, regardless).
 
-==============================================================================
 NAVIGATION					*rails-navigation*
 
 Navigation is where the real power of this plugin lies.  Efficient use of the
@@ -544,7 +540,6 @@ Finally, one Vim feature that proves helpful in conjunction with all of the
 above is |CTRL-^|.  This keystroke edits the previous file, and is helpful to
 back out of any of the above commands.
 
-==============================================================================
 RAKE						*rails-rake*
 
 Rake integration happens through the :Rake command.
@@ -602,7 +597,6 @@ task			... (try to guess currently edited declaration)
 Finally, you can override the default task with a comment like "# rake ..."
 before the method pointed to by [range] or at the top of the file.
 
-==============================================================================
 SCRIPT WRAPPERS					*rails-scripts*
 
 The following commands are wrappers around the scripts in the script directory
@@ -651,7 +645,6 @@ A limited amount of completion with <Tab> is supported.
 			other server using the same port.  On non-Windows
 			systems, lsof must be installed for this to work.
 
-==============================================================================
 REFACTORING HELPERS				*rails-refactoring*
 
 A few features are dedicated to helping you refactor your code.
@@ -716,7 +709,6 @@ Migration Inversion ~
 			instructions, but works reasonably well for simple
 			calls to create_table, add_column, and the like.
 
-==============================================================================
 INTEGRATION					*rails-integration*
 
 Having one foot in Rails and one in Vim, rails.vim has two worlds with which
@@ -823,7 +815,6 @@ config/environment.rb in your Merb application, rails.vim will activate.
 Send feedback on what's missing to the |rails-plugin-author| and perhaps one
 day Merb can be officially supported.
 
-==============================================================================
 ABBREVIATIONS				*rails-abbreviations* *rails-snippets*
 
 Abbreviations are "snippets lite".  They may later be extracted into a
@@ -871,7 +862,6 @@ controllers).  There is one "smart" abbreviation, :c, which expands to
 ":controller => ", ":collection => ", or ":conditions => " depending on
 context.
 
-==============================================================================
 SYNTAX HIGHLIGHTING				*rails-syntax*
 
 Syntax highlighting is by and large a transparent process.  For the full
@@ -928,7 +918,6 @@ highlighted as HTML.  This is sometimes useful when writing helpers. >
 YAML syntax highlighting has been extended to highlight eRuby, which can be
 used in most Rails YAML files (including database.yml and fixtures).
 
-==============================================================================
 MANAGED VIM OPTIONS			*rails-options*
 
 The following options are set local to buffers where the plugin is active.
@@ -967,7 +956,6 @@ they are part of a Rails application).
 A 'completefunc' is provided (if not already set).  It is very simple, as it
 uses syntax highlighting to make its guess.  See |i_CTRL-X_CTRL-U|.
 
-==============================================================================
 CONFIGURATION					*rails-configuration*
 
 Very little configuration is actually required; this plugin automatically
@@ -1052,7 +1040,6 @@ These two forms differ only in case.
 
 Modelines are deprecated.
 
-==============================================================================
 GLOBAL SETTINGS					*rails-global-settings*
 
 A few global variables control the behavior of this plugin.  In general, they
@@ -1164,7 +1151,6 @@ custom 'shiftwidth', adjust things manually in an autocommand: >
 	autocmd User Rails set sw=4 sts=4 noet
 This is highly discouraged: don't fight Rails.
 
-==============================================================================
 ABOUT					*rails-about* *rails-plugin-author*
 
 This plugin was written by Tim Pope.  Email him at <vimNOSPAM@tpope.org>.  He
@@ -1198,5 +1184,4 @@ complaints, and compliments to the author.  No bug is too small to report.
 This plugin is distributable under the same terms as Vim itself.  See
 |license|.  No warranties, expressed or implied.
 
-==============================================================================
-vim:tw=78:ts=8:ft=help:norl:
+ vim:tw=78:ts=8:ft=help:norl:

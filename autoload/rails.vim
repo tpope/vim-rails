@@ -5,8 +5,6 @@
 " plugin/rails.vim.  It is in autoload directory to allow for future usage of
 " Vim 7's autoload feature.
 
-" ============================================================================
-
 " Exit quickly when:
 " - this plugin was already loaded (or disabled)
 " - when 'compatible' is set

@@ -8,8 +8,6 @@
 " :help add-local-help (hint: :helptags ~/.vim/doc) Afterwards, you should be
 " able to do :help rails
 
-" ============================================================================
-
 " Exit quickly when:
 " - this plugin was already loaded (or disabled)
 " - when 'compatible' is set
