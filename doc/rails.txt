@@ -479,7 +479,8 @@ The following commands are not clearly associated with models or controllers.
 
 						*rails-:Renvironment*
 :Renvironment [{name}]  Edit the config/environments file specified.  With no
-			argument, defaults to editing config/environment.rb.
+			argument, defaults to editing config/application.rb
+			or config/environment.rb.
 
 						*rails-:Rinitializer*
 :Rinitializer [{name}]  Edit the config/initializers file specified.  With no
