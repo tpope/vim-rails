@@ -2756,7 +2756,11 @@ function! s:libEdit(cmd,...)
 endfunction
 
 function! s:environmentEdit(cmd,...)
-  return s:EditSimpleRb(a:cmd,"environment",a:0? a:1 : "../environment","config/environments/",".rb")
+  if a:0 || rails#app().has_file('config/application.rb')
+    return s:EditSimpleRb(a:cmd,"environment",a:0? a:1 : "../application","config/environments/",".rb")
+  else
+    return s:EditSimpleRb(a:cmd,"environment","environment","config/",".rb")
+  endif
 endfunction
 
 function! s:initializerEdit(cmd,...)
