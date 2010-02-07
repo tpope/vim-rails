@@ -1853,11 +1853,20 @@ function! s:RailsFind()
     return RailsFilePath() =~ '\<spec/' ? 'spec/'.res : res
   endif
 
-  let res = s:findamethod('map\.resources','app/controllers/\1_controller.rb')
+  let res = s:findamethod('\%(\w\+\.\)\=resources','app/controllers/\1_controller.rb')
   if res != ""|return res|endif
 
-  let res = s:findamethod('map\.resource','app/controllers/\1')
+  let res = s:findamethod('\%(\w\+\.\)\=resource','app/controllers/\1')
   if res != ""|return rails#pluralize(res)."_controller.rb"|endif
+
+  let res = s:findasymbol('to','app/controllers/\1')
+  if res =~ '#'|return s:sub(res,'#','_controller.rb#')|endif
+
+  let res = s:findamethod('root\s*:to\s*=>\s*','app/controllers/\1')
+  if res =~ '#'|return s:sub(res,'#','_controller.rb#')|endif
+
+  let res = s:findamethod('\%(match\|get\|put\|post\|delete\|redirect\)\s*(\=\s*[:''"][^''"]*[''"]\=\s*\%(,\s*:to\s*\)\==>\s*','app/controllers/\1')
+  if res =~ '#'|return s:sub(res,'#','_controller.rb#')|endif
 
   let res = s:findamethod('layout','\=s:findlayout(submatch(1))')
   if res != ""|return res|endif
@@ -1914,7 +1923,7 @@ function! s:RailsFind()
 
   let old_isfname = &isfname
   try
-    set isfname=@,48-57,/,-,_,: ",\",'
+    set isfname=@,48-57,/,-,_,:,#
     " TODO: grab visual selection in visual mode
     let cfile = expand("<cfile>")
   finally
@@ -1976,6 +1985,8 @@ function! s:RailsIncludefind(str,...)
   let str = s:gsub(str,"[\"']",'')
   if line =~# '\<\(require\|load\)\s*(\s*$'
     return str
+  elseif str =~# '\l\w*#\w\+'
+    return 'app/controllers/'.s:sub(str,'#','_controller.rb#')
   endif
   let str = rails#underscore(str)
   let fpat = '\(\s*\%("\f*"\|:\f*\|'."'\\f*'".'\)\s*,\s*\)*'
@@ -2026,9 +2037,11 @@ function! s:RailsIncludefind(str,...)
         break
       endif
     endwhile
-  elseif str =~# '_\%(path\|url\)$'
-    let str = s:sub(str,'_%(path|url)$','')
-    let str = s:sub(str,'^hash_for_','')
+  elseif str =~# '_\%(path\|url\)$' || (line =~# ':as\s*=>\s*$' && RailsFileType() =~# '^config-routes\>')
+    if line !~# ':as\s*=>\s*$'
+      let str = s:sub(str,'_%(path|url)$','')
+      let str = s:sub(str,'^hash_for_','')
+    endif
     let file = rails#app().named_route_file(str)
     if file == ""
       let str = s:sub(str,'^formatted_','')
