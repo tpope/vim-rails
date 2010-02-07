@@ -266,9 +266,9 @@ function! s:lastmethod(...)
 endfunction
 
 function! s:readable_last_format(start) dict abort
-  let rline = self.last_opening_line('\C^\s*respond_to\s*\%(\<do\)\s*|\zs\h\k*\ze|',self.last_method_line(a:start),a:start)
+  let rline = self.last_opening_line(a:start,'\C^\s*\%(mail\>.*\|respond_to\)\s*\%(\<do\|{\)\s*|\zs\h\k*\ze|',self.last_method_line(a:start))
   if rline
-    let variable = matchstr(self.getline(rline),'\C^\s*respond_to\s*\%(\<do\|{\)\s*|\zs\h\k*\ze|')
+    let variable = matchstr(self.getline(rline),'\C^\s*\%(mail\>.*\|respond_to\)\s*\%(\<do\|{\)\s*|\zs\h\k*\ze|')
     let line = a:start
     while line > rline
       let match = matchstr(self.getline(line),'\C^\s*'.variable.'\s*\.\s*\zs\h\k*')
@@ -321,6 +321,8 @@ function! s:readable_controller_name(...) dict abort
     return s:sub(f,'.*<app/helpers/(.{-})_helper\.rb$','\1')
   elseif f =~ '\<app/controllers/.*\.rb$'
     return s:sub(f,'.*<app/controllers/(.{-})%(_controller)=\.rb$','\1')
+  elseif f =~ '\<app/mailers/.*\.rb$'
+    return s:sub(f,'.*<app/mailers/(.{-})\.rb$','\1')
   elseif f =~ '\<app/apis/.*_api\.rb$'
     return s:sub(f,'.*<app/apis/(.{-})_api\.rb$','\1')
   elseif f =~ '\<test/functional/.*_test\.rb$'
@@ -335,7 +337,7 @@ function! s:readable_controller_name(...) dict abort
     return s:sub(f,'.*<components/(.{-})_controller\.rb$','\1')
   elseif f =~ '\<components/.*\.'.s:viewspattern().'$'
     return s:sub(f,'.*<components/(.{-})/\k+\.\k+$','\1')
-  elseif f =~ '\<app/models/.*\.rb$' && self.type_name('model-mailer')
+  elseif f =~ '\<app/models/.*\.rb$' && self.type_name('mailer')
     return s:sub(f,'.*<app/models/(.{-})\.rb$','\1')
   elseif f =~ '\<public/stylesheets/.*\.css$'
     return s:sub(f,'.*<public/stylesheets/(.{-})\.css$','\1')
@@ -649,17 +651,21 @@ function! s:readable_calculate_file_type() dict abort
     let r = "helper"
   elseif f =~ '\<app/metal/.*\.rb$'
     let r = "metal"
-  elseif f =~ '\<app/models\>'
+  elseif f =~ '\<app/mailers/.*\.rb'
+    let r = "mailer"
+  elseif f =~ '\<app/models/'
     let top = join(s:readfile(full_path,50),"\n")
     let class = matchstr(top,'\<Acti\w\w\u\w\+\%(::\h\w*\)\+\>')
     if class == "ActiveResource::Base"
       let class = "ares"
       let r = "model-ares"
+    elseif class == 'ActionMailer::Base'
+      let r = "mailer"
     elseif class != ''
       let class = tolower(s:gsub(class,'[^A-Z]',''))
-      let r = "model-".s:sub(class,'^amb>','mailer')
+      let r = "model-".class
     elseif f =~ '_mailer\.rb$'
-      let r = "model-mailer"
+      let r = "mailer"
     elseif top =~ '\<\%(validates_\w\+_of\|set_\%(table_name\|primary_key\)\|has_one\|has_many\|belongs_to\)\>'
       let r = "model-arb"
     else
@@ -1683,7 +1689,7 @@ function! s:djump(def)
     let v:errmsg = ''
     silent! exe "djump ".def
     if ext != '' && (v:errmsg == '' || v:errmsg =~ '^E387')
-      let rpat = '\C^\s*respond_to\s*\%(\<do\|{\)\s*|\zs\h\k*\ze|'
+      let rpat = '\C^\s*\%(mail\>.*\|respond_to\)\s*\%(\<do\|{\)\s*|\zs\h\k*\ze|'
       let end = s:endof(line('.'))
       let rline = search(rpat,'',end)
       if rline > 0
@@ -2924,8 +2930,8 @@ function! s:readable_related(...) dict abort
   let t = self.type_name()
   if a:0 && a:1
     let lastmethod = self.last_method(a:1)
-    if t =~ '^\%(controller\|model-mailer\)\>' && lastmethod != ""
-      let root = s:sub(s:sub(s:sub(f,'/application\.rb$','/shared_controller.rb'),'/%(controllers|models)/','/views/'),'%(_controller)=\.rb$','/'.lastmethod)
+    if t =~ '^\%(controller\|mailer\)\>' && lastmethod != ""
+      let root = s:sub(s:sub(s:sub(f,'/application%(_controller)=\.rb$','/shared_controller.rb'),'/%(controllers|models|mailers)/','/views/'),'%(_controller)=\.rb$','/'.lastmethod)
       let format = self.last_format(a:1)
       if format == '' | let format = 'html' | endif
       if glob(self.app().path().'/'.root.'.'.format.'.*[^~]') != ''
@@ -2948,11 +2954,14 @@ function! s:readable_related(...) dict abort
     elseif t =~ '^view\>'
       let controller  = s:sub(s:sub(f,'/views/','/controllers/'),'/(\k+%(\.\k+)=)\..*$','_controller.rb#\1')
       let controller2 = s:sub(s:sub(f,'/views/','/controllers/'),'/(\k+%(\.\k+)=)\..*$','.rb#\1')
+      let mailer      = s:sub(s:sub(f,'/views/','/mailers/'),'/(\k+%(\.\k+)=)\..*$','.rb#\1')
       let model       = s:sub(s:sub(f,'/views/','/models/'),'/(\k+)\..*$','.rb#\1')
       if self.app().has_file(s:sub(controller,'#.{-}$',''))
         return controller
       elseif self.app().has_file(s:sub(controller2,'#.{-}$',''))
         return controller2
+      elseif self.app().has_file(s:sub(mailer,'#.{-}$',''))
+        return mailer
       elseif self.app().has_file(s:sub(model,'#.{-}$','')) || model =~ '_mailer\.rb#'
         return model
       else
@@ -3486,9 +3495,10 @@ function! s:BufSyntax()
       if t =~ '^model-aro\>'
         syn keyword rubyRailsARMethod observe
       endif
-      if t =~ '^model-mailer\>'
-        syn keyword rubyRailsMethod logger
-        syn keyword rubyRailsControllerMethod helper helper_attr helper_method
+      if t =~ '^mailer\>'
+        syn keyword rubyRailsMethod logger attachments
+        syn keyword rubyRailsRenderMethod mail render
+        syn keyword rubyRailsControllerMethod default helper helper_attr helper_method
       endif
       if t =~ '^controller\>' || t =~ '^view\>' || t=~ '^helper\>'
         syn keyword rubyRailsMethod params request response session headers cookies flash
