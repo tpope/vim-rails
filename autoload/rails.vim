@@ -793,8 +793,17 @@ function! s:app_ruby_shell_command(cmd) dict abort
   endif
 endfunction
 
-function! s:app_background_ruby_command(cmd) dict abort
-  let cmd = s:esccmd(self.ruby_shell_command(a:cmd))
+function! s:app_script_shell_command(cmd) dict abort
+  if self.has_file('script/rails') && a:cmd !~# '^rails\>'
+    let cmd = 'script/rails '.a:cmd
+  else
+    let cmd = 'script/'.a:cmd
+  endif
+  return self.ruby_shell_command(cmd)
+endfunction
+
+function! s:app_background_script_command(cmd) dict abort
+  let cmd = s:esccmd(self.script_shell_command(a:cmd))
   if has_key(self,'options') && has_key(self.options,'gnu_screen')
     let screen = self.options.gnu_screen
   else
@@ -814,8 +823,8 @@ function! s:app_background_ruby_command(cmd) dict abort
   return v:shell_error
 endfunction
 
-function! s:app_execute_ruby_command(cmd) dict abort
-  exe "!".s:esccmd(self.ruby_shell_command(a:cmd))
+function! s:app_execute_script_command(cmd) dict abort
+  exe '!'.s:esccmd(self.script_shell_command(a:cmd))
   return v:shell_error
 endfunction
 
@@ -843,7 +852,7 @@ function! s:app_eval(ruby,...) dict abort
   return v:shell_error == 0 ? results : def
 endfunction
 
-call s:add_methods('app', ['ruby_shell_command','execute_ruby_command','background_ruby_command','lightweight_ruby_eval','eval'])
+call s:add_methods('app', ['ruby_shell_command','script_shell_command','execute_script_command','background_script_command','lightweight_ruby_eval','eval'])
 
 " }}}1
 " Commands {{{1
@@ -1432,9 +1441,9 @@ function! s:app_script_command(bang,...) dict
     call self.cache.clear('generators')
   endif
   if a:bang || cmd =~# 'console'
-    return self.background_ruby_command(s:rquote("script/".cmd).str)
+    return self.background_script_command(cmd.str)
   else
-    return self.execute_ruby_command(s:rquote("script/".cmd).str)
+    return self.execute_script_command(cmd.str)
   endif
 endfunction
 
@@ -1493,19 +1502,19 @@ function! s:app_server_command(bang,arg) dict
     let screen = g:rails_gnu_screen
   endif
   if has("win32") || has("win64") || (exists("$STY") && !has("gui_running") && screen && executable("screen"))
-    call self.background_ruby_command(s:rquote("script/server")." ".a:arg)
+    call self.background_script_command('server '.a:arg)
   else
-    "--daemon would be more descriptive but lighttpd does not support it
-    call self.execute_ruby_command(s:rquote("script/server")." ".a:arg." -d")
+    " --daemon would be more descriptive but lighttpd does not support it
+    call self.execute_script_command('server '.a:arg." -d")
   endif
   call s:setopt('a:root_url','http://'.(bind=='0.0.0.0'?'localhost': bind).':'.port.'/')
 endfunction
 
 function! s:app_destroy_command(bang,...) dict
   if a:0 == 0
-    return self.execute_ruby_command("script/destroy")
+    return self.execute_script_command('destroy')
   elseif a:0 == 1
-    return self.execute_ruby_command("script/destroy ".s:rquote(a:1))
+    return self.execute_script_command('destroy '.s:rquote(a:1))
   endif
   let str = ""
   let c = 1
@@ -1513,34 +1522,30 @@ function! s:app_destroy_command(bang,...) dict
     let str .= " " . s:rquote(a:{c})
     let c += 1
   endwhile
-  call self.execute_ruby_command(s:rquote("script/destroy").str)
+  call self.execute_script_command('destroy'.str)
   call self.cache.clear('user_classes')
 endfunction
 
 function! s:app_generate_command(bang,...) dict
   if a:0 == 0
-    return self.execute_ruby_command("script/generate")
+    return self.execute_script_command('generate')
   elseif a:0 == 1
-    return self.execute_ruby_command("script/generate ".s:rquote(a:1))
+    return self.execute_script_command('generate '.s:rquote(a:1))
   endif
-  let target = s:rquote(a:1)
-  let str = ""
-  let c = 2
-  while c <= a:0
-    let str .= " " . s:rquote(a:{c})
-    let c += 1
-  endwhile
-  if str !~ '-p\>' && str !~ '--pretend\>'
-    let execstr = self.ruby_shell_command('-r./config/boot -e "require '."'commands/generate'".'" -- '.target." -p -f".str)
+  let cmd = join(map(copy(a:000),'s:rquote(v:val)'),' ')
+  if cmd !~ '-p\>' && cmd !~ '--pretend\>'
+    let execstr = self.script_shell_command('generate '.cmd.' -p -f')
     let res = system(execstr)
-    let file = matchstr(res,'\s\+\%(create\|force\)\s\+\zs\f\+\.rb\ze\n')
+    let g:res = res
+    let junk = '\%(\e\[[0-9;]*m\)\='
+    let file = matchstr(res,junk.'\s\+\%(create\|force\)'.junk.'\s\+\zs\f\+\.rb\ze\n')
     if file == ""
-      let file = matchstr(res,'\s\+\%(exists\)\s\+\zs\f\+\.rb\ze\n')
+      let file = matchstr(res,junk.'\s\+\%(identical\)'.junk.'\s\+\zs\f\+\.rb\ze\n')
     endif
   else
     let file = ""
   endif
-  if !self.execute_ruby_command("script/generate ".target.str) && file != ""
+  if !self.execute_script_command('generate '.cmd) && file != ''
     call self.cache.clear('user_classes')
     call self.cache.clear('features')
     if file =~ '^db/migrate/\d\d\d\d'
@@ -1554,7 +1559,6 @@ call s:add_methods('app', ['generators','script_command','runner_command','serve
 
 function! s:Complete_script(ArgLead,CmdLine,P)
   let cmd = s:sub(a:CmdLine,'^\u\w*\s+','')
-  "let P = a:P - strlen(a:CmdLine)+strlen(cmd)
   if cmd !~ '^[ A-Za-z0-9_=:-]*$'
     return []
   elseif cmd =~# '^\w*$'
