@@ -2745,7 +2745,7 @@ function! s:pluginEdit(cmd,...)
       call s:findedit(cmd,"vendor/plugins/".a:1."\nvendor/plugins/".plugin."/".a:1)
     endif
   else
-    return s:EditSimpleRb(a:cmd,"plugin",plugin,"vendor/plugins/","/init.rb")
+    call s:findedit(a:cmd,"Gemfile")
   endif
 endfunction
 

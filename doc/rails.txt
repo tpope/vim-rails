@@ -455,9 +455,10 @@ The following commands are not clearly associated with models or controllers.
 			to the current controller's name.
 
 						*rails-:Rplugin*
-:Rplugin {plugin}[/{path}]
+:Rplugin [{plugin}[/{path}]]
 			Edits a file within a plugin.  If the path to the file
-			is omitted, it defaults to init.rb.
+			is omitted, it defaults to init.rb.  If no argument is
+			given, it defaults to editing the application Gemfile.
 
 						*rails-:Rlib*
 :Rlib [{name}]		Edit the library from the lib directory for the
