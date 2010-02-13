@@ -3415,9 +3415,9 @@ endfunction
 
 function! s:helpermethods()
   return ""
-        \."atom_feed auto_discovery_link_tag auto_link "
+        \."atom_feed audio_path audio_tag auto_discovery_link_tag auto_link "
         \."benchmark button_to button_to_function button_to_remote "
-        \."cache capture cdata_section check_box check_box_tag collection_select concat content_for content_tag content_tag_for current_cycle cycle "
+        \."cache capture cdata_section check_box check_box_tag collection_select concat content_for content_tag content_tag_for csrf_meta_tag current_cycle cycle "
         \."date_select datetime_select debug distance_of_time_in_words distance_of_time_in_words_to_now div_for dom_class dom_id draggable_element draggable_element_js drop_receiving_element drop_receiving_element_js "
         \."error_message_on error_messages_for escape_javascript escape_once evaluate_remote_response excerpt "
         \."field_set_tag fields_for file_field file_field_tag form form_for form_remote_for form_remote_tag form_tag "
@@ -3429,12 +3429,12 @@ function! s:helpermethods()
         \."mail_to markdown "
         \."number_to_currency number_to_human_size number_to_percentage number_to_phone number_with_delimiter number_with_precision "
         \."observe_field observe_form option_groups_from_collection_for_select options_for_select options_from_collection_for_select "
-        \."partial_path password_field password_field_tag path_to_image path_to_javascript path_to_stylesheet periodically_call_remote pluralize "
+        \."partial_path password_field password_field_tag path_to_audio path_to_image path_to_javascript path_to_stylesheet path_to_video periodically_call_remote pluralize "
         \."radio_button radio_button_tag raw remote_form_for remote_function reset_cycle "
-        \."sanitize sanitize_css select select_date select_datetime select_day select_hour select_minute select_month select_second select_tag select_time select_year simple_format sortable_element sortable_element_js strip_links strip_tags stylesheet_link_tag stylesheet_path submit_tag submit_to_remote "
+        \."safe_concat sanitize sanitize_css select select_date select_datetime select_day select_hour select_minute select_month select_second select_tag select_time select_year simple_format sortable_element sortable_element_js strip_links strip_tags stylesheet_link_tag stylesheet_path submit_tag submit_to_remote "
         \."t tag text_area text_area_tag text_field text_field_tag textilize textilize_without_paragraph time_ago_in_words time_select time_zone_options_for_select time_zone_select translate truncate "
         \."update_page update_page_tag url_for "
-        \."visual_effect "
+        \."video_path video_tag visual_effect "
         \."word_wrap"
 endfunction
 
@@ -3471,7 +3471,6 @@ function! s:BufSyntax()
   if (!exists("g:rails_syntax") || g:rails_syntax)
     let t = RailsFileType()
     let s:javascript_functions = "$ $$ $A $F $H $R $w jQuery"
-    let rails_helper_methods = '+\.\@<!\<\('.s:gsub(s:helpermethods(),'\s+','\\|').'\)\>+'
     let classes = s:gsub(join(rails#app().user_classes(),' '),'::',' ')
     if &syntax == 'ruby'
       if classes != ''
@@ -3506,8 +3505,9 @@ function! s:BufSyntax()
         syn keyword rubyRailsMethod logger
       endif
       if t =~ '^helper\>' || t=~ '^view\>'
-        exe "syn keyword rubyRailsHelperMethod ".s:sub(s:helpermethods(),'<select\s+','')
+        exe "syn keyword rubyRailsHelperMethod ".s:gsub(s:helpermethods(),'<%(content_for|select)\s+','')
         syn match rubyRailsHelperMethod '\<select\>\%(\s*{\|\s*do\>\|\s*(\=\s*&\)\@!'
+        syn match rubyRailsHelperMethod '\<\%(content_for?\=\|current_page?\)'
         syn match rubyRailsViewMethod '\.\@<!\<\(h\|html_escape\|u\|url_encode\|controller\)\>'
         if t =~ '\<partial\>'
           syn keyword rubyRailsMethod local_assigns
@@ -3596,8 +3596,9 @@ function! s:BufSyntax()
       else
         syn cluster erubyRailsRegions contains=erubyOneLiner,erubyBlock,erubyExpression,rubyInterpolation
       endif
-      exe "syn keyword erubyRailsHelperMethod ".s:sub(s:helpermethods(),'<select\s+','')." contained containedin=@erubyRailsRegions"
+      exe "syn keyword erubyRailsHelperMethod ".s:gsub(s:helpermethods(),'<%(content_for|select)\s+','')." contained containedin=@erubyRailsRegions"
       syn match erubyRailsHelperMethod '\<select\>\%(\s*{\|\s*do\>\|\s*(\=\s*&\)\@!' contained containedin=@erubyRailsRegions
+      syn match erubyRailsHelperMethod '\<\%(content_for?\=\|current_page?\)' contained containedin=@erubyRailsRegions
       syn keyword erubyRailsMethod debugger logger contained containedin=@erubyRailsRegions
       syn keyword erubyRailsMethod params request response session headers cookies flash contained containedin=@erubyRailsRegions
       syn match erubyRailsViewMethod '\.\@<!\<\(h\|html_escape\|u\|url_encode\|controller\)\>' contained containedin=@erubyRailsRegions
