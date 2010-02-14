@@ -730,12 +730,13 @@ place) are also covered in this section.
 			(defaults to $RAILS_ENV or development) from
 			config/database.yml and uses it to configure dbext.
 			The configuration is cached on a per application
-			basis.  With dbext versions 8.00 and newer, this
-			command is called automatically when needed.  For
-			older versions, it is called automatically when
-			rails.vim loads if |g:rails_dbext| is set (which it is
-			by default).
-
+			basis.  With dbext version 8.00 and newer, this
+			command is called automatically when needed.  When
+			dbext is configured, you can execute SQL directly from
+			Vim: >
+				:Select * from posts order by id desc
+				:Update comments set author_id = 1
+<
 						*rails-surround*
 The |surround| plugin available from vim.org enables adding and removing
 "surroundings" like parentheses, quotes, and HTML tags.  Even by itself, it is
@@ -1044,17 +1045,6 @@ Set this include guard to prevent the plugin from being loaded.
 
 						*g:rails_abbreviations*
 Enable Rails abbreviations.  See |rails-abbreviations|.  Enabled by default.
-
-						*g:rails_dbext*  >
-	let g:rails_dbext=1
-Enable integration with the dbext plugin, if it is installed.  Defaults to
-enabled.  When this option is set, dbext settings are automagically extracted
-from config/database.yml.  Then, you can use features like table name
-completion and commands like >
-	:Create database brablog_development
-	:Select * from posts where title like '%Denmark%'
-Note that dbext is a complicated plugin, and may require additional
-configuration.  See |dbext| (if installed) and |sql-completion-dynamic|.
 
 						*g:rails_ctags_arguments*  >
 	let g:rails_ctags_arguments='--exclude="*.js"'
