@@ -2945,10 +2945,11 @@ function! s:readable_related(...) dict abort
       if lastmethod != ""
         return "config/environments/".lastmethod.".rb"
       else
-        return "config/environment.rb"
+        return "config/application.rb\nconfig/environment.rb"
       endif
     elseif f =~ '\<config/routes\.rb$'      | return "config/database.yml"
-    elseif f =~ '\<config/environment\.rb$' | return "config/routes.rb"
+    elseif f =~ '\<config/\%(application\|environment\)\.rb$'
+      return "config/routes.rb"
     elseif t =~ '^view-layout\>'
       return s:sub(s:sub(s:sub(f,'/views/','/controllers/'),'/layouts/(\k+)\..*$','/\1_controller.rb'),'<application_controller\.rb$','application.rb')
     elseif t =~ '^view\>'
@@ -2984,12 +2985,14 @@ function! s:readable_related(...) dict abort
     endif
   endif
   if f =~ '\<config/environments/'
-    return "config/environment.rb"
+    return "config/application.rb\nconfig/environment.rb"
   elseif f == 'README'
     return "config/database.yml"
   elseif f =~ '\<config/database\.yml$'   | return "config/routes.rb"
-  elseif f =~ '\<config/routes\.rb$'      | return "config/environment.rb"
-  elseif f =~ '\<config/environment\.rb$' | return "config/database.yml"
+  elseif f =~ '\<config/routes\.rb$'
+    return "config/application.rb\nconfig/environment.rb"
+  elseif f =~ '\<config/\%(application\|environment\)\.rb$'
+    return "config/database.yml"
   elseif f =~ '\<db/migrate/'
     let migrations = sort(self.app().relglob('db/migrate/','*','.rb'))
     let me = matchstr(f,'\<db/migrate/\zs.*\ze\.rb$')
