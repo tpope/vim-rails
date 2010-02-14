@@ -144,6 +144,42 @@ augroup END
 command! -bar -bang -nargs=* -complete=dir Rails :if s:autoload()|call rails#new_app_command(<bang>0,<f-args>)|endif
 
 " }}}1
+" abolish.vim support {{{1
+
+function! s:function(name)
+    return function(substitute(a:name,'^s:',matchstr(expand('<sfile>'), '<SNR>\d\+_'),''))
+endfunction
+
+augroup railsPluginAbolish
+  autocmd!
+  autocmd VimEnter * call s:abolish_setup()
+augroup END
+
+function! s:abolish_setup()
+  if exists('g:Abolish') && has_key(g:Abolish,'Coercions')
+    if !has_key(g:Abolish.Coercions,'l')
+      let g:Abolish.Coercions.l = s:function('s:abolish_l')
+    endif
+    if !has_key(g:Abolish.Coercions,'t')
+      let g:Abolish.Coercions.t = s:function('s:abolish_t')
+    endif
+  endif
+endfunction
+
+function! s:abolish_l(word)
+  let singular = rails#singularize(a:word)
+  return a:word ==? singular ? rails#pluralize(a:word) : singular
+endfunction
+
+function! s:abolish_t(word)
+  if a:word =~# '\u'
+    return rails#pluralize(rails#underscore(a:word))
+  else
+    return rails#singularize(rails#camelize(a:word))
+  endif
+endfunction
+
+" }}}1
 " Menus {{{1
 
 if !(g:rails_menu && has("menu"))

@@ -768,6 +768,14 @@ most terminals send <M-o> as <Esc>o anyways.
 One can also use the <C-E> surrounding in a plain Ruby file to append a bare
 "end" on the following line.
 
+						*rails-abolish*
+Among the many features of |abolish| on vim.org is the ability to change the
+inflection of the word under the cursor.  For example, one can hit crs to
+change from MixedCase to snake_case.  This plugin adds two additional
+inflections: crl for alternating between the singular and plural, and crt for
+altering between tableize and classify.  The latter is useful in changing
+constructs like BlogPost.all to current_user.blog_posts.all and vice versa.
+
 						*rails-cream*
 This plugin provides a few additional key bindings if it is running under
 Cream, the user friendly editor which uses Vim as a back-end.  Ctrl+Enter
