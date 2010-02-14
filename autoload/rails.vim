@@ -4187,8 +4187,10 @@ function! s:BufAbbreviations()
     Rabbrev AR::  ActiveRecord
     Rabbrev AV::  ActionView
     Rabbrev AC::  ActionController
+    Rabbrev AD::  ActionDispatch
     Rabbrev AS::  ActiveSupport
     Rabbrev AM::  ActionMailer
+    Rabbrev AO::  ActiveModel
     Rabbrev AE::  ActiveResource
     Rabbrev AWS:: ActionWebService
   endif
