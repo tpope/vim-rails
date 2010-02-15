@@ -261,6 +261,14 @@ function! s:lastmethod(...)
 endfunction
 
 function! s:readable_last_format(start) dict abort
+  if self.type_name('view')
+    let format = fnamemodify(self.path(),':r:e')
+    if format == ''
+      return get({'rhtml': 'html', 'rxml': 'xml', 'rjs': 'js', 'haml': 'html'},fnamemodify(self.path(),':e'),'')
+    else
+      return format
+    endif
+  endif
   let rline = self.last_opening_line(a:start,'\C^\s*\%(mail\>.*\|respond_to\)\s*\%(\<do\|{\)\s*|\zs\h\k*\ze|',self.last_method_line(a:start))
   if rline
     let variable = matchstr(self.getline(rline),'\C^\s*\%(mail\>.*\|respond_to\)\s*\%(\<do\|{\)\s*|\zs\h\k*\ze|')
@@ -281,15 +289,8 @@ function! s:lastformat(start)
 endfunction
 
 function! s:format(...)
-  if RailsFileType() =~ '^view\>'
-    let format = fnamemodify(RailsFilePath(),':r:e')
-  else
-    let format = rails#buffer().last_format(a:0 > 1 ? a:2 : line("."))
-  endif
-  if format == ''
-    return get({'rhtml': 'html', 'rxml': 'xml', 'rjs': 'js'},fnamemodify(RailsFilePath(),':e'),a:0 ? a:1 : '')
-  endif
-  return format
+  let format = rails#buffer().last_format(a:0 > 1 ? a:2 : line("."))
+  return format ==# '' && a:0 ? a:1 : format
 endfunction
 
 call s:add_methods('readable',['end_of','last_opening_line','last_method_line','last_method','last_format','define_pattern'])
