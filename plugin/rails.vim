@@ -8,10 +8,7 @@
 " :help add-local-help (hint: :helptags ~/.vim/doc) Afterwards, you should be
 " able to do :help rails
 
-" Exit quickly when:
-" - this plugin was already loaded (or disabled)
-" - when 'compatible' is set
-if &cp || (exists("g:loaded_rails") && g:loaded_rails) && !(exists("g:rails_debug") && g:rails_debug)
+if exists('g:loaded_rails') || &cp || v:version < 700
   finish
 endif
 let g:loaded_rails = 1
