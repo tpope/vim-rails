@@ -2511,7 +2511,7 @@ endfunction
 function! s:viewEdit(cmd,...)
   if a:0 && a:1 =~ '^[^!#:]'
     let view = matchstr(a:1,'[^!#:]*')
-  elseif RailsFileType() == 'controller'
+  elseif rails#buffer().type_name('controller','mailer')
     let view = s:lastmethod(line('.'))
   else
     let view = ''
@@ -2541,7 +2541,7 @@ function! s:viewEdit(cmd,...)
   elseif file =~ '\.\w\+$'
     call s:findedit(a:cmd,file)
   else
-    let format = s:format('html')
+    let format = s:format(rails#buffer().type_name('mailer') ? 'text' : 'html')
     if glob(rails#app().path(file.'.'.format).'.*[^~]') != ''
       let file .= '.' . format
     endif
@@ -2939,7 +2939,9 @@ function! s:readable_related(...) dict abort
     if t =~ '^\%(controller\|mailer\)\>' && lastmethod != ""
       let root = s:sub(s:sub(s:sub(f,'/application%(_controller)=\.rb$','/shared_controller.rb'),'/%(controllers|models|mailers)/','/views/'),'%(_controller)=\.rb$','/'.lastmethod)
       let format = self.last_format(a:1)
-      if format == '' | let format = 'html' | endif
+      if format == ''
+        let format = t =~# '^mailer\>' ? 'text' : 'html'
+      endif
       if glob(self.app().path().'/'.root.'.'.format.'.*[^~]') != ''
         return root . '.' . format
       else
