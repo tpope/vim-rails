@@ -10,9 +10,7 @@ Author: Tim Pope <vimNOSPAM@tpope.org>		|rails-plugin-author|
 |rails-navigation|		Navigation
 |rails-gf|			    File Under Cursor - gf
 |rails-alternate-related|	    Alternate and Related Files
-|rails-model-navigation|	    Model Navigation Commands
-|rails-controller-navigation|	    Controller Navigation Commands
-|rails-misc-navigation|		    Miscellaneous Navigation Commands
+|rails-type-navigation|		    File Type Commands
 |rails-custom-navigation|	    Custom Navigation Commands
 |rails-rake|			Rake
 |rails-scripts|			Script Wrappers
@@ -316,35 +314,111 @@ Suggestions for further contexts to consider for the alternate file, related
 file, and file under the cursor are welcome.  They are subtly tweaked from
 release to release.
 
+
+File Type Navigation Commands ~
+						*rails-type-navigation*
 For the less common cases, a more deliberate set of commands are provided.
-Each of the following takes an optional argument (with tab completion) but
-defaults to a reasonable guess that follows Rails conventions.  For example,
-when editing app/models/employee.rb, :Rcontroller will default to
-app/controllers/employees_controller.rb.
+Each of the upcoming commands takes an optional argument (with tab completion)
+but defaults to a reasonable guess.  Commands that default to the current
+model or controller generally behave like you'd expect in other file types.
+For example, in app/helpers/posts_helper.rb, the current controller is
+"posts", and in test/fixtures/comments.yml, the current model is "comment".
+In model related files, the current controller is the pluralized model name,
+and in controller related files, the current model is the singularized
+controller name.
 
 Each of the following commands has variants for splitting, vertical splitting,
 opening in a new tab, and reading the file into the current buffer.  For
 :Rmodel, those variants would be :RSmodel, :RVmodel, :RTmodel, and :RDmodel.
 There is also :REmodel which is a synonym for :Rmodel (future versions might
 allow customization of the behavior of :Rmodel).  They also allow for jumping
-to methods or line numbers using the same syntax as |:Redit|.
+to methods or line numbers using the same syntax as |:Redit|, and file
+creation can be forced by adding a ! after the filename (not after the command
+itself!).
 
-
-Model Navigation Commands ~
-						*rails-model-navigation*
-The default for model navigation commands is the current model, if it can be
-determined.  For example, test/unit/post_test.rb would have a current model
-of post.  Otherwise, if a controller name can be determined, said controller
-name will be singularized and used.
-
-:Rmodel						|rails-:Rmodel|
-:Rmigration					|rails-:Rmigration|
-:Robserver					|rails-:Robserver|
+:Rcontroller					|rails-:Rcontroller|
+:Renvironment					|rails-:Renvironment|
 :Rfixtures					|rails-:Rfixtures|
+:Rfunctionaltest				|rails-:Rfunctionaltest|
+:Rhelper					|rails-:Rhelper|
+:Rinitializer					|rails-:Rinitializer|
+:Rintegrationtest				|rails-:Rintegrationtest|
+:Rjavascript					|rails-:Rjavascript|
+:Rlayout					|rails-:Rlayout|
+:Rlib						|rails-:Rlib|
+:Rlocale					|rails-:Rlocale|
+:Rmetal						|rails-:Rmetal|
+:Rmigration					|rails-:Rmigration|
+:Rmodel						|rails-:Rmodel|
+:Robserver					|rails-:Robserver|
+:Rplugin					|rails-:Rplugin|
+:Rspec						|rails-:Rspec|
+:Rstylesheet					|rails-:Rstylesheet|
+:Rtask						|rails-:Rtask|
 :Runittest					|rails-:Runittest|
+:Rview						|rails-:Rview|
 
-						*rails-:Rmodel*
-:Rmodel [{name}]	Edit the specified model.
+						*rails-:Rcontroller*
+:Rcontroller [{name}]	Edit the specified or current controller.
+
+						*rails-:Renvironment*
+:Renvironment [{name}]  Edit the config/environments file specified.  With no
+			argument, defaults to editing config/application.rb
+			or config/environment.rb.
+
+						*rails-:Rfixtures*
+:Rfixtures [{name}]	Edit the fixtures for the given or current model.  If
+			an argument is given, it must be pluralized, like the
+			final filename (this may change in the future).  If
+			omitted, the current model is pluralized.  An optional
+			extension can be given, to distinguish between YAML
+			and CSV fixtures.
+
+						*rails-:Rfunctionaltest*
+:Rfunctionaltest [{name}]
+			Edit the functional test or controller spec for the
+			specified or current controller.
+
+						*rails-:Rhelper*
+:Rhelper [{name}]	Edit the helper for the specified name or current
+			controller.
+
+						*rails-:Rinitializer*
+:Rinitializer [{name}]  Edit the config/initializers file specified.  With no
+			argument, defaults to editing config/routes.rb.
+
+						*rails-:Rintegrationtest*
+:Rintegrationtest [{name}]
+			Edit the integration test, integration spec, or
+			cucumber feature specified.  With no argument,
+			defaults to editing test/test_helper.rb.
+
+						*rails-:Rjavascript*
+:Rjavascript [{name}]	Edit the javascript for the specified name or current
+			controller.
+
+						*rails-:Rlayout*
+:Rlayout [{name}]	Edit the specified layout.  Defaults to the layout for
+			the current controller, or the application layout if
+			that cannot be found.  A new layout will be created if
+			an extension is given.
+
+						*rails-:Rlib*
+:Rlib [{name}]		Edit the library from the lib directory for the
+			specified name.  If the current file is part of a
+			plugin, the libraries from that plugin can be
+			specified as well.  With no argument, defaults to
+			editing config/routes.rb.
+
+						*rails-:Rlocale*
+:Rlocale [{name}]	Edit the config/locale file specified, optionally
+			adding a yml or rb extension if none is given.  With
+			no argument, checks config/environment.rb for the
+			default locale.
+
+						*rails-:Rmetal*
+:Rmetal [{name}]	Edit the app/metal file specified.  With no argument,
+			defaults to editing config/boot.rb.
 
 						*rails-:Rmigration*
 :Rmigration [{pattern}]	If {pattern} is a number, find the migration for that
@@ -353,6 +427,9 @@ name will be singularized and used.
 			given pattern.  Omitting the pattern selects the
 			latest migration.  Give a numeric argument of 0 to edit
 			db/schema.rb.
+
+						*rails-:Rmodel*
+:Rmodel [{name}]	Edit the specified or current model.
 
 						*rails-:Robserver*
 :Robserver [{name}]	Find the observer with a name like
@@ -363,97 +440,22 @@ name will be singularized and used.
 			:Runittest, a file of the form
 			{model}_observer_test.rb will be found.
 
-						*rails-:Rfixtures*
-:Rfixtures [{name}]	Edit the fixtures for the given model.  If an argument
-			is given, it must be pluralized, like the final
-			filename (this may change in the future).  If omitted,
-			the current model is pluralized automatically.  An
-			optional extension can be given, to distinguish
-			between YAML and CSV fixtures.
-
-						*rails-:Runittest*
-:Runittest [{name}]	Edit the unit test or model spec for the specified
-			model.
-
-Controller Navigation Commands  ~
-						*rails-controller-navigation*
-The default for controller navigation commands is the current controller, if
-it can be determined.  For example, test/functional/blog_test.rb would have a
-current controller of blog.  Otherwise, if a model name can be determined,
-said model name will be pluralized and used.
-
-:Rcontroller					|rails-:Rcontroller|
-:Rhelper					|rails-:Rhelper|
-:Rview						|rails-:Rview|
-:Rlayout					|rails-:Rlayout|
-:Rfunctionaltest				|rails-:Rfunctionaltest|
-
-						*rails-:Rcontroller*
-:Rcontroller [{name}]	Edit the specified controller.
-
-						*rails-:Rhelper*
-:Rhelper [{name}]	Edit the helper for the specified controller.
-
-						*rails-:Rview*
-:Rview [[{controller}/]{view}]
-			Edit the specified view.  The controller will default
-			sensibly, and the view name can be omitted when
-			editing a method of a controller.  If a view name is
-			given with an extension, a new file will be created.
-			This is a quick way to create a new view.
-
-						*rails-:Rlayout*
-:Rlayout [{name}]	Edit the specified layout.  Defaults to the layout for
-			the current controller, or the application layout if
-			that cannot be found.  A new layout will be created if
-			an extension is given.
-
-						*rails-:Rfunctionaltest*
-:Rfunctionaltest [{name}]
-			Edit the functional test or controller spec for the
-			specified controller.
-
-						*rails-:Rapi*
-:Rapi [{name}]		This command is obsolete; add it yourself with
-			|:Rnavcommand| if you still desire it.
-
-Miscellaneous Navigation Commands  ~
-						*rails-misc-navigation*
-
-The following commands are not clearly associated with models or controllers.
-
-:Rstylesheet					|rails-:Rstylesheet|
-:Rjavascript					|rails-:Rjavascript|
-:Rplugin					|rails-:Rplugin|
-:Rlib						|rails-:Rlib|
-:Rtask						|rails-:Rtask|
-:Rmetal						|rails-:Rmetal|
-:Renvironment					|rails-:Renvironment|
-:Rinitializer					|rails-:Rinitializer|
-:Rlocale					|rails-:Rlocale|
-:Rintegrationtest				|rails-:Rintegrationtest|
-:Rspec						|rails-:Rspec|
-
-						*rails-:Rstylesheet*
-:Rstylesheet [{name}]	Edit the stylesheet for the specified name, defaulting
-			to the current controller's name.
-
-						*rails-:Rjavascript*
-:Rjavascript [{name}]	Edit the javascript for the specified name, defaulting
-			to the current controller's name.
-
 						*rails-:Rplugin*
 :Rplugin [{plugin}[/{path}]]
 			Edits a file within a plugin.  If the path to the file
 			is omitted, it defaults to init.rb.  If no argument is
 			given, it defaults to editing the application Gemfile.
 
-						*rails-:Rlib*
-:Rlib [{name}]		Edit the library from the lib directory for the
-			specified name.  If the current file is part of a
-			plugin, the libraries from that plugin can be
-			specified as well.  With no argument, defaults to
-			editing config/routes.rb.
+						*rails-:Rspec*
+:Rspec [{name}]		Edit the given spec.  With no argument, defaults to
+			editing spec/spec_helper.rb (If you want to jump to
+			the spec for the given file, use |:A| instead).  This
+			command is only defined if there is a spec folder in
+			the root of the application.
+
+						*rails-:Rstylesheet*
+:Rstylesheet [{name}]	Edit the stylesheet for the specified name or current
+			controller.
 
 						*rails-:Rtask*
 :Rtask [{name}]		Edit the .rake file from lib/tasks for the specified
@@ -462,37 +464,17 @@ The following commands are not clearly associated with models or controllers.
 			argument is given, either the current plugin's
 			Rakefile or the application Rakefile will be edited.
 
-						*rails-:Rmetal*
-:Rmetal [{name}]	Edit the app/metal file specified.  With no argument,
-			defaults to editing config/boot.rb.
+						*rails-:Runittest*
+:Runittest [{name}]	Edit the unit test or model spec for the specified
+			name or current model.
 
-						*rails-:Renvironment*
-:Renvironment [{name}]  Edit the config/environments file specified.  With no
-			argument, defaults to editing config/application.rb
-			or config/environment.rb.
-
-						*rails-:Rinitializer*
-:Rinitializer [{name}]  Edit the config/initializers file specified.  With no
-			argument, defaults to editing config/routes.rb.
-
-						*rails-:Rlocale*
-:Rlocale [{name}]	Edit the config/locale file specified, optionally
-			adding a yml or rb extension if none is given.  With
-			no argument, checks config/environment.rb for the
-			default locale.
-
-						*rails-:Rintegrationtest*
-:Rintegrationtest [{name}]
-			Edit the integration test, integration spec, or
-			cucumber feature specified.  With no argument,
-			defaults to editing test/test_helper.rb.
-
-						*rails-:Rspec*
-:Rspec [{name}]		Edit the given spec.  With no argument, defaults to
-			editing spec/spec_helper.rb (If you want to jump to
-			the spec for the given file, use |:A| instead).  This
-			command is only defined if there is a spec folder in
-			the root of the application.
+						*rails-:Rview*
+:Rview [[{controller}/]{view}]
+			Edit the specified view.  The controller will default
+			sensibly, and the view name can be omitted when
+			editing a method of a controller.  If a view name is
+			given with an extension, a new file will be created.
+			This is a quick way to create a new view.
 
 Custom Navigation Commands  ~
 						*rails-custom-navigation*
