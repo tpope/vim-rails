@@ -996,9 +996,6 @@ function! rails#new_app_command(bang,...)
   endwhile
   let dir = expand(dir)
   let append = ""
-  if g:rails_default_database != "" && str !~ '-d \|--database='
-    let append .= " -d ".g:rails_default_database
-  endif
   if a:bang
     let append .= " --force"
   endif
