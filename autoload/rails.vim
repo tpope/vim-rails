@@ -1987,7 +1987,7 @@ function! s:RailsIncludefind(str,...)
   let str = s:gsub(str,"[\"']",'')
   if line =~# '\<\(require\|load\)\s*(\s*$'
     return str
-  elseif str =~# '\l\w*#\w\+'
+  elseif str =~# '^\l\w*#\w\+$'
     return 'app/controllers/'.s:sub(str,'#','_controller.rb#')
   endif
   let str = rails#underscore(str)
