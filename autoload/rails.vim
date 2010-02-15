@@ -1576,15 +1576,21 @@ function! s:Complete_script(ArgLead,CmdLine,P)
   elseif cmd =~# '^\%(generate\|destroy\)\s\+'.a:ArgLead.'$'
     return s:completion_filter(rails#app().generators(),a:ArgLead)
   elseif cmd =~# '^\%(generate\|destroy\)\s\+\w\+\s\+'.a:ArgLead.'$'
-    let target = matchstr(cmd,'^\w\+\s\+\zs\w\+\ze\s\+')
-    if target =~# '^\%(\w*_\)\=controller$'
+    let target = matchstr(cmd,'^\w\+\s\+\%(\w\+:\)\=\zs\w\+\ze\s\+')
+    if target =~# '^\w*controller$'
       return filter(s:controllerList(a:ArgLead,"",""),'v:val !=# "application"')
-    elseif target =~# '^\%(\w*_\)\=model$' || target =~# '^scaffold\%(_resource\)\=$' || target ==# 'mailer'
-      return s:modelList(a:ArgLead,"","")
-    elseif target ==# 'migration' || target ==# 'session_migration'
-      return s:migrationList(a:ArgLead,"","")
+    elseif target ==# 'generator'
+      return s:completion_filter(map(rails#app().relglob('lib/generators/','*'),'s:sub(v:val,"/$","")'))
+    elseif target ==# 'helper'
+      return s:helperList(a:ArgLead,"","")
     elseif target ==# 'integration_test' || target ==# 'integration_spec' || target ==# 'feature'
       return s:integrationtestList(a:ArgLead,"","")
+    elseif target ==# 'metal'
+      return s:metalList(a:ArgLead,"","")
+    elseif target ==# 'migration' || target ==# 'session_migration'
+      return s:migrationList(a:ArgLead,"","")
+    elseif target =~# '^\w*\%(model\|resource\)$' || target =~# '\w*scaffold\%(_controller\)\=$' || target ==# 'mailer'
+      return s:modelList(a:ArgLead,"","")
     elseif target ==# 'observer'
       let observers = s:observerList("","","")
       let models = s:modelList("","","")
@@ -1593,8 +1599,6 @@ function! s:Complete_script(ArgLead,CmdLine,P)
       endif
       call filter(models,'index(observers,v:val) < 0')
       return s:completion_filter(observers + models,a:ArgLead)
-    elseif target ==# 'web_service'
-      return s:apiList(a:ArgLead,"","")
     else
       return []
     endif

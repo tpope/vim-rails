@@ -67,7 +67,7 @@ call s:SetOptDefault("rails_modelines",0)
 call s:SetOptDefault("rails_menu",1)
 call s:SetOptDefault("rails_gnu_screen",1)
 call s:SetOptDefault("rails_history_size",5)
-call s:SetOptDefault("rails_generators","controller\nintegration_test\nmailer\nmigration\nmodel\nobserver\nplugin\nresource\nscaffold\nsession_migration")
+call s:SetOptDefault("rails_generators","controller\ngenerator\nhelper\nintegration_test\nmailer\nmetal\nmigration\nmodel\nobserver\nperformance_test\nplugin\nresource\nscaffold\nscaffold_controller\nsession_migration\nstylesheets")
 if exists("g:loaded_dbext") && executable("sqlite3") && ! executable("sqlite")
   " Since dbext can't find it by itself
   call s:SetOptDefault("dbext_default_SQLITE_bin","sqlite3")
