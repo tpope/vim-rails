@@ -4,7 +4,7 @@ Author: Tim Pope <vimNOSPAM@tpope.org>		|rails-plugin-author|
 
 |rails-introduction|		Introduction and Feature Summary
 |rails-installation|		Installation and Usage
-|rails-install-vim|		    Installing and Configuring Vim
+|rails-configure-vim|		    Configuring Vim
 |rails-install-plugin|		    Installing and Using the Plugin
 |rails-commands|		General Commands
 |rails-navigation|		Navigation
@@ -89,12 +89,8 @@ INSTALLATION AND USAGE				*rails-installation*
 If you are familiar Vim and have the latest version installed, you may skip
 directly to |rails-install-plugin| below.
 
-Installing and Configuring Vim ~
-						*rails-install-vim*
-Vim 7 or newer is required.  If possible, install a version of Vim with the
-|Ruby| interface compiled in, as a few features will make use of it when
-available.
-
+Configuring Vim ~
+						*rails-configure-vim*
 If you are new to Vim, you need to create a vimrc.  For Windows, this file
 goes in ~\_vimrc (try :e ~\_vimrc if you don't know where this is).  On other
 platforms, use ~/.vimrc.  A very minimal example file is shown below.
