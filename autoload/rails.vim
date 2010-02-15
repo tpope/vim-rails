@@ -2095,6 +2095,7 @@ function! s:BufFinderCommands()
   call s:addfilecmds("model")
   call s:addfilecmds("view")
   call s:addfilecmds("controller")
+  call s:addfilecmds("mailer")
   call s:addfilecmds("migration")
   call s:addfilecmds("observer")
   call s:addfilecmds("helper")
@@ -2179,6 +2180,10 @@ function! s:controllerList(A,L,P)
   let con = rails#app().relglob("app/controllers/","**/*",".rb")
   call map(con,'s:sub(v:val,"_controller$","")')
   return s:autocamelize(con,a:A)
+endfunction
+
+function! s:mailerList(A,L,P)
+  return s:autocamelize(rails#app().relglob("app/mailers/","**/*",".rb"),a:A)
 endfunction
 
 function! s:viewList(A,L,P)
@@ -2614,6 +2619,10 @@ function! s:controllerEdit(cmd,...)
     let suffix = "_controller".suffix
   endif
   return s:EditSimpleRb(a:cmd,"controller",controller,"app/controllers/",suffix)
+endfunction
+
+function! s:mailerEdit(cmd,...)
+  return s:EditSimpleRb(a:cmd,"mailer",a:0? a:1 : s:controller(1),"app/mailers/\napp/models/",".rb")
 endfunction
 
 function! s:helperEdit(cmd,...)

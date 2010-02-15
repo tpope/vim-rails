@@ -347,6 +347,7 @@ itself!).
 :Rlayout					|rails-:Rlayout|
 :Rlib						|rails-:Rlib|
 :Rlocale					|rails-:Rlocale|
+:Rmailer					|rails-:Rmailer|
 :Rmetal						|rails-:Rmetal|
 :Rmigration					|rails-:Rmigration|
 :Rmodel						|rails-:Rmodel|
@@ -415,6 +416,11 @@ itself!).
 			adding a yml or rb extension if none is given.  With
 			no argument, checks config/environment.rb for the
 			default locale.
+
+						*rails-:Rmailer*
+:Rmailer [{name}]	Edit the mailer specified.  This looks in both
+			app/mailers for Rails 3 and app/models for older
+			versions of Rails but only tab completes the former.
 
 						*rails-:Rmetal*
 :Rmetal [{name}]	Edit the app/metal file specified.  With no argument,
