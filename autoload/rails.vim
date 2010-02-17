@@ -2552,7 +2552,7 @@ function! s:findview(name)
   if name =~# '\.\w\+\.\w\+$' || name =~# '\.'.s:viewspattern().'$'
     return pre.name
   else
-    for format in ['.'.self.format('html'), '']
+    for format in ['.'.s:format('html'), '']
       for type in split(s:view_types,',')
         if self.app().has_file(pre.name.format.'.'.type)
           return pre.name.format.'.'.type
