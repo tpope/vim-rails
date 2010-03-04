@@ -819,6 +819,8 @@ function! s:app_background_script_command(cmd) dict abort
     endif
   elseif exists("$STY") && !has("gui_running") && screen && executable("screen")
     silent exe "!screen -ln -fn -t ".s:sub(s:sub(a:cmd,'\s.*',''),'^%(script|-rcommand)/','rails-').' '.cmd
+  elseif exists("$TMUX") && !has("gui_running") && screen && executable("tmux")
+    silent exe '!tmux new-window -d -n "'.s:sub(s:sub(a:cmd,'\s.*',''),'^%(script|-rcommand)/','rails-').'" "'.cmd.'"'
   else
     exe "!".cmd
   endif
@@ -1501,7 +1503,7 @@ function! s:app_server_command(bang,arg) dict
   else
     let screen = g:rails_gnu_screen
   endif
-  if has("win32") || has("win64") || (exists("$STY") && !has("gui_running") && screen && executable("screen"))
+  if has("win32") || has("win64") || (exists("$STY") && !has("gui_running") && screen && executable("screen")) || (exists("$TMUX") && !has("gui_running") && screen && executable("tmux"))
     call self.background_script_command('server '.a:arg)
   else
     " --daemon would be more descriptive but lighttpd does not support it
