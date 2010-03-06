@@ -409,7 +409,7 @@ itself!).
 			specified name.  If the current file is part of a
 			plugin, the libraries from that plugin can be
 			specified as well.  With no argument, defaults to
-			editing config/routes.rb.
+			editing db/seeds.rb.
 
 						*rails-:Rlocale*
 :Rlocale [{name}]	Edit the config/locale file specified, optionally
