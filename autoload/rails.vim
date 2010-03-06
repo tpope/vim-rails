@@ -3048,9 +3048,11 @@ function! s:readable_related(...) dict abort
       let file .= '_test.rb'
     endif
     if t =~ '^model\>'
-      return s:sub(file,'app/models/','test/unit/')."\n".s:sub(s:sub(file,'_test\.rb$','_spec.rb'),'app/models/','spec/models/')
+      return s:sub(file,'<app/models/','test/unit/')."\n".s:sub(s:sub(file,'_test\.rb$','_spec.rb'),'<app/models/','spec/models/')
     elseif t =~ '^controller\>'
       return s:sub(file,'<app/controllers/','test/functional/')."\n".s:sub(s:sub(file,'_test\.rb$','_spec.rb'),'app/controllers/','spec/controllers/')
+    elseif t =~ '^mailer\>'
+      return s:sub(file,'<app/m%(ailer|odel)s/','test/unit/')."\n".s:sub(s:sub(file,'_test\.rb$','_spec.rb'),'<app/','spec/')
     elseif t =~ '^test-unit\>'
       return s:sub(file,'test/unit/','app/models/')."\n".s:sub(file,'test/unit/','lib/')
     elseif t =~ '^test-functional\>'
