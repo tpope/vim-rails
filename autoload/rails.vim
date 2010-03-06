@@ -1089,7 +1089,8 @@ let s:efm_backtrace='%D(in\ %f),'
       \.'%\\s#{RAILS_ROOT}/%f:%l:\ %#%m,'
       \.'%\\s%#[%f:%l:\ %#%m,'
       \.'%\\s%#%f:%l:\ %#%m,'
-      \.'%\\s%#%f:%l:'
+      \.'%\\s%#%f:%l:,'
+      \.'%m\ [%f:%l]:'
 
 function! s:makewithruby(arg,bang,...)
   let old_make = &makeprg
