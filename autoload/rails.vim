@@ -2254,6 +2254,7 @@ function! s:functionaltestList(A,L,P)
   endif
   if rails#app().has('spec')
     let found += rails#app().relglob("spec/controllers/","**/*","_spec.rb")
+    let found += rails#app().relglob("spec/mailers/","**/*","_spec.rb")
   endif
   return s:autocamelize(found,a:A)
 endfunction
@@ -2657,21 +2658,21 @@ function! s:functionaltestEdit(cmd,...)
   else
     let cmd = s:findcmdfor(a:cmd)
   endif
-  let mapping = {'test': ['test/functional/','_test.rb'], 'spec': ['spec/controllers/','_spec.rb']}
+  let mapping = {'test': [['test/functional/'],['_test.rb','_controller_test.rb']], 'spec': [['spec/controllers/','spec/mailers/'],['_spec.rb','_controller_spec.rb']]}
   let tests = map(filter(rails#app().test_suites(),'has_key(mapping,v:val)'),'get(mapping,v:val)')
   if empty(tests)
     let tests = [mapping[tests]]
   endif
-  for [prefix, suffix] in tests
-    if rails#app().has_file(prefix.f.suffix)
-      return s:findedit(cmd,prefix.f.suffix.jump)
-    elseif rails#app().has_file(prefix.f.'_controller'.suffix)
-      return s:findedit(cmd,prefix.f.'_controller'.suffix.jump)
-    elseif rails#app().has_file(prefix.f.'_api'.suffix)
-      return s:findedit(cmd,prefix.f.'_api'.suffix.jump)
-    endif
+  for [prefixes, suffixes] in tests
+    for prefix in prefixes
+      for suffix in suffixes
+        if rails#app().has_file(prefix.f.suffix)
+          return s:findedit(cmd,prefix.f.suffix.jump)
+        endif
+      endfor
+    endfor
   endfor
-  return s:EditSimpleRb(a:cmd,"functionaltest",f.jump,tests[0][0],tests[0][1],1)
+  return s:EditSimpleRb(a:cmd,"functionaltest",f.jump,tests[0][0][0],tests[0][1][0],1)
 endfunction
 
 function! s:integrationtestEdit(cmd,...)
