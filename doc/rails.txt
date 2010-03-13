@@ -1068,7 +1068,8 @@ Modelines are deprecated and disabled by default.
 						*g:rails_menu*  >
 	let g:rails_menu=1
 When 2, a Rails menu is created.  When 1, this menu is a submenu under the
-Plugin menu.  The default is 1.
+Plugin menu.  The default is 1 except on MacVim, where reports of weird
+terminal output have led to it being disabled by default.
 
 						*g:rails_url*  >
 	let g:rails_url='http://localhost:3000/'
