@@ -1312,7 +1312,7 @@ function! s:initOpenURL()
 endfunction
 
 function! s:scanlineforuris(line)
-  let url = matchstr(a:line,"\\v\\C%(%(GET|PUT|POST|DELETE)\\s+|\w+:/)/[^ \n\r\t<>\"]*[^] .,;\n\r\t<>\":]")
+  let url = matchstr(a:line,"\\v\\C%(%(GET|PUT|POST|DELETE)\\s+|\\w+://[^/]*)/[^ \n\r\t<>\"]*[^] .,;\n\r\t<>\":]")
   if url =~ '\C^\u\+\s\+'
     let method = matchstr(url,'^\u\+')
     let url = matchstr(url,'\s\+\zs.*')
