@@ -236,6 +236,9 @@ function! s:readable_define_pattern() dict abort
   if self.name() =~# '/schema\.rb$'
     let define .= "\\\|^\\s*create_table\\s\\+[:'\"]"
   endif
+  if self.type_name('test')
+    let define .= '\|^\s*test\s*[''"]'
+  endif
   return define
 endfunction
 
@@ -248,9 +251,13 @@ function! s:lastmethodline(start)
 endfunction
 
 function! s:readable_last_method(start) dict abort
-  let line = self.last_method_line(a:start)
-  if line
-    return s:sub(matchstr(self.getline(line),'\%('.self.define_pattern().'\)\zs\h\%(\k\|[:.]\)*[?!=]\='),':$','')
+  let lnum = self.last_method_line(a:start)
+  let line = self.getline(lnum)
+  if line =~# '^\s*test\s*\([''"]\).*\1'
+    let string = matchstr(line,'^\s*\w\+\s*\([''"]\)\zs.*\ze\1')
+    return 'test_'.s:gsub(string,' +','_')
+  elseif lnum
+    return s:sub(matchstr(lnum,'\%('.self.define_pattern().'\)\zs\h\%(\k\|[:.]\)*[?!=]\='),':$','')
   else
     return ""
   endif
