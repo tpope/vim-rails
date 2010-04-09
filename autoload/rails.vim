@@ -743,7 +743,7 @@ endfunction
 
 function! s:match_type(type,...)
   if a:0
-    return !empty(filter(copy(a:000),'a:type =~# "^".v:val."\\>"'))
+    return !empty(filter(copy(a:000),'a:type =~# "^".v:val."\\%(-\\|$\\)"'))
   else
     return a:type
   endif
