@@ -708,8 +708,10 @@ function! s:readable_calculate_file_type() dict abort
     let r = "test"
   elseif f =~ '\<spec/.*_spec\.rb'
     let r = "spec"
-  elseif f =~ '\<db/migrate\>' || f=~ '\<db/schema\.rb$'
-    let r = "migration"
+  elseif f =~ '\<db/migrate\>'
+    let r = "db-migration"
+  elseif f=~ '\<db/schema\.rb$'
+    let r = "db-schema"
   elseif f =~ '\<vendor/plugins/.*/recipes/.*\.rb$' || f =~ '\.rake$' || f =~ '\<\%(Rake\|Cap\)file$' || f =~ '\<config/deploy\.rb$'
     let r = "task"
   elseif f =~ '\<log/.*\.log$'
@@ -1247,7 +1249,7 @@ function! s:readable_default_rake_task(lnum) dict abort
     else
       return "test:recent TEST=\"%:p\"".s:sub(call,'^ ',' TESTOPTS=')
     endif
-  elseif t=~ '^\%(db-\)\=migration\>' && self.name() !~# '\<db/schema\.rb$'
+  elseif t=~ '^\%(db-\)\=migration\>'
     let ver = matchstr(self.name(),'\<db/migrate/0*\zs\d*\ze_')
     if ver != ""
       let method = self.last_method(lnum)
