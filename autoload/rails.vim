@@ -594,7 +594,7 @@ function! s:buffer_name() dict abort
   if sep != ""
     let f = getcwd().sep.f
   endif
-  if s:startswith(f,s:gsub(app.path(),'\\ @!','/')) || f == ""
+  if s:startswith(tolower(f),s:gsub(tolower(app.path()),'\\ @!','/')) || f == ""
     return strpart(f,strlen(app.path())+1)
   else
     if !exists("s:path_warn")
