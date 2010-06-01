@@ -2355,7 +2355,7 @@ function! s:Navcommand(bang,...)
   if name !~ '^[A-Za-z]\+$'
     return s:error("E182: Invalid command name")
   endif
-  let cmds = 'ESVT '
+  let cmds = 'ESVTD '
   let cmd = ''
   while cmds != ''
     exe 'command! -buffer -bar -bang -nargs=* -complete=customlist,'.s:sid.'CommandList R'.cmd.name." :call s:CommandEdit('".cmd."<bang>','".name."',\"".prefix."\",".string(suffix).",".string(filter).",".string(default).",<f-args>)"
