@@ -716,7 +716,7 @@ function! s:readable_calculate_file_type() dict abort
     let r = "task"
   elseif f =~ '\<log/.*\.log$'
     let r = "log"
-  elseif e == "css" || e == "sass" || e == "less"
+  elseif e == "css" || e =~ "s[ac]ss" || e == "less"
     let r = "stylesheet-".e
   elseif e == "js"
     let r = "javascript"
@@ -1351,7 +1351,7 @@ function! s:readable_preview_urls(lnum) dict abort
     let url += [self.getvar('rails_preview')]
   end
   if self.name() =~ '^public/stylesheets/sass/'
-    let urls = urls + [s:sub(s:sub(self.name(),'^public/stylesheets/sass/','/stylesheets/'),'\.sass$','.css')]
+    let urls = urls + [s:sub(s:sub(self.name(),'^public/stylesheets/sass/','/stylesheets/'),'\.s[ac]ss$','.css')]
   elseif self.name() =~ '^public/'
     let urls = urls + [s:sub(self.name(),'^public','')]
   elseif self.name() =~ '^app/stylesheets/'
@@ -2624,6 +2624,8 @@ function! s:stylesheetEdit(cmd,...)
   let name = a:0 ? a:1 : s:controller(1)
   if rails#app().has('sass') && rails#app().has_file('public/stylesheets/sass/'.name.'.sass')
     return s:EditSimpleRb(a:cmd,"stylesheet",name,"public/stylesheets/sass/",".sass",1)
+  elseif rails#app().has('sass') && rails#app().has_file('public/stylesheets/sass/'.name.'.scss')
+    return s:EditSimpleRb(a:cmd,"stylesheet",name,"public/stylesheets/sass/",".scss",1)
   elseif rails#app().has('lesscss') && rails#app().has_file('app/stylesheets/'.name.'.less')
     return s:EditSimpleRb(a:cmd,"stylesheet",name,"app/stylesheets/",".less",1)
   else
@@ -4481,6 +4483,8 @@ function! RailsBufInit(path)
     setlocal filetype=haml
   elseif &ft =~ '^\%(sass\|conf\)\=$' && expand("%:e") == "sass"
     setlocal filetype=sass
+  elseif &ft =~ '^\%(scss\|conf\)\=$' && expand("%:e") == "scss"
+    setlocal filetype=scss
   elseif &ft =~ '^\%(lesscss\|conf\)\=$' && expand("%:e") == "less"
     setlocal filetype=lesscss
   elseif &ft =~ '^\%(dryml\)\=$' && expand("%:e") == "dryml"
@@ -4587,7 +4591,7 @@ function! s:BufSettings()
   call self.setvar('&includeexpr','RailsIncludeexpr()')
   call self.setvar('&suffixesadd', ".rb,.".s:gsub(s:view_types,',',',.').",.css,.js,.yml,.csv,.rake,.sql,.html,.xml")
   let ft = self.getvar('&filetype')
-  if ft =~ '^\%(e\=ruby\|[yh]aml\|javascript\|css\|sass\|lesscss\)$'
+  if ft =~ '^\%(e\=ruby\|[yh]aml\|javascript\|css\|s[ac]ss\|lesscss\)$'
     call self.setvar('&shiftwidth',2)
     call self.setvar('&softtabstop',2)
     call self.setvar('&expandtab',1)
