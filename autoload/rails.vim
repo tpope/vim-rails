@@ -2281,6 +2281,7 @@ function! s:integrationtestList(A,L,P)
     let found += rails#app().relglob("test/integration/","**/*","_test.rb")
   endif
   if rails#app().has('spec')
+    let found += rails#app().relglob("spec/requests/","**/*","_spec.rb")
     let found += rails#app().relglob("spec/integration/","**/*","_spec.rb")
   endif
   if rails#app().has('cucumber')
@@ -2703,10 +2704,10 @@ function! s:integrationtestEdit(cmd,...)
   else
     let cmd = s:findcmdfor(a:cmd)
   endif
-  let mapping = {'test': ['test/integration/','_test.rb'], 'spec': ['spec/integration/','_spec.rb'], 'cucumber': ['features/','.feature']}
-  let tests = map(filter(rails#app().test_suites(),'has_key(mapping,v:val)'),'get(mapping,v:val)')
+  let tests = [['test/integration/','_test.rb'], [ 'spec/requests/','_spec.rb'], [ 'spec/integration/','_spec.rb'], [ 'features/','.feature']]
+  call filter(tests, 'isdirectory(rails#app().path(v:val[0]))')
   if empty(tests)
-    let tests = [mapping['test']]
+    let tests = [['test/integration/','_test.rb']]
   endif
   for [prefix, suffix] in tests
     if rails#app().has_file(prefix.f.suffix)
@@ -4561,7 +4562,7 @@ function! s:SetBasePath()
     let path += ['test', 'test/unit', 'test/functional', 'test/integration']
   endif
   if self.app().has('spec')
-    let path += ['spec', 'spec/models', 'spec/controllers', 'spec/helpers', 'spec/views', 'spec/lib', 'spec/integration']
+    let path += ['spec', 'spec/models', 'spec/controllers', 'spec/helpers', 'spec/views', 'spec/lib', 'spec/requests', 'spec/integration']
   endif
   let path += ['app/*', 'vendor', 'vendor/plugins/*/lib', 'vendor/plugins/*/test', 'vendor/rails/*/lib', 'vendor/rails/*/test']
   call map(path,'self.app().path(v:val)')
