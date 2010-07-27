@@ -1148,6 +1148,8 @@ function! s:Rake(bang,lnum,arg)
         let arg = rails#buffer().default_rake_task(lnum)
       endif
     endif
+    if !has_key(self,'options') | let self.options = {} | endif
+    let self.options['last_rake_task'] = arg
     let withrubyargs = '-r ./config/boot -r '.s:rquote(self.path('config/environment')).' -e "puts \%((in \#{Dir.getwd}))" '
     if arg =~# '^notes\>'
       let &l:errorformat = '%-P%f:,\ \ *\ [%*[\ ]%l]\ [%t%*[^]]] %m,\ \ *\ [%*[\ ]%l] %m,%-Q'
@@ -1204,7 +1206,9 @@ endfunction
 function! s:readable_default_rake_task(lnum) dict abort
   let app = self.app()
   let lnum = a:lnum < 0 ? 0 : a:lnum
-  if self.getline(lnum) =~# '# rake '
+  if self.getvar('&buftype') == 'quickfix'
+    return get(get(self.app(),'options',{}),'last_rake_task','')
+  elseif self.getline(lnum) =~# '# rake '
     return matchstr(self.getline(lnum),'\C# rake \zs.*')
   elseif self.getline(self.last_method_line(lnum)-1) =~# '# rake '
     return matchstr(self.getline(self.last_method_line(lnum)-1),'\C# rake \zs.*')
@@ -1231,9 +1235,9 @@ function! s:readable_default_rake_task(lnum) dict abort
     if self.name() =~# '\<spec/spec_helper\.rb$'
       return 'spec'
     elseif lnum > 0
-      return 'spec SPEC="%:p":'.lnum
+      return 'spec SPEC="'.self.path().'":'.lnum
     else
-      return 'spec SPEC="%:p"'
+      return 'spec SPEC="'.self.path().'"'
     endif
   elseif self.type_name('test')
     let meth = self.last_method(lnum)
@@ -1243,11 +1247,11 @@ function! s:readable_default_rake_task(lnum) dict abort
       let call = ""
     endif
     if self.type_name('test-unit','test-functional','test-integration')
-      return s:sub(s:gsub(self.type_name(),'-',':'),'unit$|functional$','&s')." TEST=\"%:p\"".s:sub(call,'^ ',' TESTOPTS=')
+      return s:sub(s:gsub(self.type_name(),'-',':'),'unit$|functional$','&s').' TEST="'.self.path().'"'.s:sub(call,'^ ',' TESTOPTS=')
     elseif self.name() =~# '\<test/test_helper\.rb$'
       return 'test'
     else
-      return "test:recent TEST=\"%:p\"".s:sub(call,'^ ',' TESTOPTS=')
+      return 'test:recent TEST="'.self.path().'"'.s:sub(call,'^ ',' TESTOPTS=')
     endif
   elseif self.type_name('db-migration')
     let ver = matchstr(self.name(),'\<db/migrate/0*\zs\d*\ze_')
@@ -1276,12 +1280,12 @@ function! s:readable_default_rake_task(lnum) dict abort
       return 'routes CONTROLLER='.self.controller_name()
     endif
   elseif app.has('spec') && self.name() =~# '^app/.*\.rb' && app.has_file(s:sub(self.name(),'^app/(.*)\.rb$','spec/\1_spec.rb'))
-    return 'spec SPEC="%:p:r:s?[\/]app[\/]?/spec/?_spec.rb" SPEC_OPTS='
+    return 'spec SPEC="'.fnamemodify(s:sub(self.name(),'<app/','spec/'),':p:r').'_spec.rb"'
   elseif self.type_name('model')
-    return 'test:units TEST="%:p:r:s?[\/]app[\/]models[\/]?/test/unit/?_test.rb"'
-  elseif self.type_name('api')
-    return 'test:units TEST="%:p:r:s?[\/]app[\/]apis[\/]?/test/functional/?_test.rb"'
-  elseif self.type_name('\<\%(controller\|helper\|view\)')
+    return 'test:units TEST="'.fnamemodify(s:sub(self.name(),'<app/models/','test/unit/'),':p:r').'_test.rb"'
+  elseif self.type_name('api','mailer')
+    return 'test:units TEST="'.fnamemodify(s:sub(self.name(),'<app/%(apis|mailers|models)/','test/functional/'),':p:r').'_test.rb"'
+  elseif self.type_name('controller','helper','view')
     if self.name() =~ '\<app/' && s:controller() !~# '^\%(application\)\=$'
       return 'test:functionals TEST="'.s:escarg(app.path('test/functional/'.s:controller().'_controller_test.rb')).'"'
     else
@@ -1289,9 +1293,9 @@ function! s:readable_default_rake_task(lnum) dict abort
     endif
   elseif self.type_name('cucumber-feature')
     if lnum > 0
-      return 'cucumber FEATURE="%:p":'.lnum
+      return 'cucumber FEATURE="'.self.path().'":'.lnum
     else
-      return 'cucumber FEATURE="%:p"'
+      return 'cucumber FEATURE="'.self.path().'"'
     endif
   elseif self.type_name('cucumber')
     return 'cucumber'
