@@ -3694,16 +3694,25 @@ function! s:HiDefaults()
 endfunction
 
 function! rails#log_syntax()
-  syn match   railslogRender      '^\s*\<\%(Processing\|Rendering\|Rendered\|Redirected\|Completed\)\>'
+  if has('conceal')
+    syn match railslogEscape      '\e\[[0-9;]*m' conceal
+    syn match railslogEscapeMN    '\e\[[0-9;]*m' conceal nextgroup=railslogModelNum,railslogEscapeMN skipwhite contained
+    syn match railslogEscapeSQL   '\e\[[0-9;]*m' conceal nextgroup=railslogSQL,railslogEscapeSQL skipwhite contained
+  else
+    syn match railslogEscape      '\e\[[0-9;]*m'
+    syn match railslogEscapeMN    '\e\[[0-9;]*m' nextgroup=railslogModelNum,railslogEscapeMN skipwhite contained
+    syn match railslogEscapeSQL   '\e\[[0-9;]*m' nextgroup=railslogSQL,railslogEscapeSQL skipwhite contained
+  endif
+  syn match   railslogRender      '\%(^\s*\%(\e\[[0-9;]*m\)\=\)\@<=\%(Processing\|Rendering\|Rendered\|Redirected\|Completed\)\>'
   syn match   railslogComment     '^\s*# .*'
-  syn match   railslogModel       '^\s*\u\%(\w\|:\)* \%(Load\%( Including Associations\| IDs For Limited Eager Loading\)\=\|Columns\|Count\|Create\|Update\|Destroy\|Delete all\)\>' skipwhite nextgroup=railslogModelNum
-  syn match   railslogModel       '^\s*SQL\>' skipwhite nextgroup=railslogModelNum
-  syn region  railslogModelNum    start='(' end=')' contains=railslogNumber contained skipwhite nextgroup=railslogSQL
-  syn match   railslogSQL         '\u.*$' contained
+  syn match   railslogModel       '\%(^\s*\%(\e\[[0-9;]*m\)\=\)\@<=\u\%(\w\|:\)* \%(Load\%( Including Associations\| IDs For Limited Eager Loading\)\=\|Columns\|Count\|Create\|Update\|Destroy\|Delete all\)\>' skipwhite nextgroup=railslogModelNum,railslogEscapeMN
+  syn match   railslogModel       '\%(^\s*\%(\e\[[0-9;]*m\)\=\)\@<=SQL\>' skipwhite nextgroup=railslogModelNum,railslogEscapeMN
+  syn region  railslogModelNum    start='(' end=')' contains=railslogNumber contained skipwhite nextgroup=railslogSQL,railslogEscapeSQL
+  syn match   railslogSQL         '\u[^\e]*' contained
   " Destroy generates multiline SQL, ugh
-  syn match   railslogSQL         '^ \%(FROM\|WHERE\|ON\|AND\|OR\|ORDER\) .*$'
+  syn match   railslogSQL         '\%(^ \%(\e\[[0-9;]*m\)\=\)\@<=\%(FROM\|WHERE\|ON\|AND\|OR\|ORDER\) .*$'
   syn match   railslogNumber      '\<\d\+\>%'
-  syn match   railslogNumber      '[ (]\@<=\<\d\+\.\d\+\>'
+  syn match   railslogNumber      '[ (]\@<=\<\d\+\.\d\+\>\.\@!'
   syn region  railslogString      start='"' skip='\\"' end='"' oneline contained
   syn region  railslogHash        start='{' end='}' oneline contains=railslogHash,railslogString
   syn match   railslogIP          '\<\d\{1,3\}\%(\.\d\{1,3}\)\{3\}\>'
@@ -3716,6 +3725,9 @@ function! rails#log_syntax()
   syn match   railslogError       '^DEPRECATION WARNING\>'
   syn keyword railslogHTTP        OPTIONS GET HEAD POST PUT DELETE TRACE CONNECT
   syn region  railslogStackTrace  start=":\d\+:in `\w\+'$" end="^\s*$" keepend fold
+  hi def link railslogEscapeMN    railslogEscape
+  hi def link railslogEscapeSQL   railslogEscape
+  hi def link railslogEscape      Ignore
   hi def link railslogComment     Comment
   hi def link railslogRender      Keyword
   hi def link railslogModel       Type
@@ -4506,13 +4518,17 @@ function! RailsBufInit(path)
   if firsttime
     call s:BufInitStatusline()
   endif
-  if expand("%:e") == "log"
-    setlocal modifiable filetype=railslog
-    silent! %s/\%(\e\[[0-9;]*m\|\r$\)//g
-    setlocal readonly nomodifiable noswapfile autoread foldmethod=syntax
+  if expand('%:e') == 'log'
     nnoremap <buffer> <silent> R :checktime<CR>
     nnoremap <buffer> <silent> G :checktime<Bar>$<CR>
     nnoremap <buffer> <silent> q :bwipe<CR>
+    setlocal modifiable filetype=railslog noswapfile autoread foldmethod=syntax
+    if exists('+concealcursor')
+      setlocal concealcursor=nv conceallevel=2
+    else
+      silent %s/\%(\e\[[0-9;]*m\|\r$\)//ge
+    endif
+    setlocal readonly nomodifiable
     $
   endif
   call s:BufSettings()
