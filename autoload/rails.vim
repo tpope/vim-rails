@@ -4524,7 +4524,7 @@ function! RailsBufInit(path)
     nnoremap <buffer> <silent> q :bwipe<CR>
     setlocal modifiable filetype=railslog noswapfile autoread foldmethod=syntax
     if exists('+concealcursor')
-      setlocal concealcursor=nv conceallevel=2
+      setlocal concealcursor=nc conceallevel=2
     else
       silent %s/\%(\e\[[0-9;]*m\|\r$\)//ge
     endif
