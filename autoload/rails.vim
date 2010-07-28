@@ -1149,6 +1149,9 @@ function! s:Rake(bang,lnum,arg)
       endif
     endif
     if !has_key(self,'options') | let self.options = {} | endif
+    if arg == '-'
+      let arg = get(self.options,'last_rake_task','')
+    endif
     let self.options['last_rake_task'] = arg
     let withrubyargs = '-r ./config/boot -r '.s:rquote(self.path('config/environment')).' -e "puts \%((in \#{Dir.getwd}))" '
     if arg =~# '^notes\>'
@@ -1207,7 +1210,7 @@ function! s:readable_default_rake_task(lnum) dict abort
   let app = self.app()
   let lnum = a:lnum < 0 ? 0 : a:lnum
   if self.getvar('&buftype') == 'quickfix'
-    return get(get(self.app(),'options',{}),'last_rake_task','')
+    return '-'
   elseif self.getline(lnum) =~# '# rake '
     return matchstr(self.getline(lnum),'\C# rake \zs.*')
   elseif self.getline(self.last_method_line(lnum)-1) =~# '# rake '
