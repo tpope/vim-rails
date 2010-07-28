@@ -314,7 +314,6 @@ Suggestions for further contexts to consider for the alternate file, related
 file, and file under the cursor are welcome.  They are subtly tweaked from
 release to release.
 
-
 File Type Navigation Commands ~
 						*rails-type-navigation*
 For the less common cases, a more deliberate set of commands are provided.
