@@ -3100,7 +3100,7 @@ function! s:readable_related(...) dict abort
     elseif file =~ '\<vendor/.*/test/'
       return s:sub(file,'<vendor/.{-}/\zstest/','lib/')
     else
-      return fnamemodify(file,":t")
+      return fnamemodify(file,':t')."\n".s:sub(s:sub(f,'\.rb$','_spec.rb'),'^app/','spec/')
     endif
   else
     return ""
