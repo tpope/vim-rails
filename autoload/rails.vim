@@ -3771,7 +3771,7 @@ function! s:BufInitStatusline()
     if &l:statusline == ''
       let &l:statusline='%<%f %h%m%r%='
       if &ruler
-        let &l:statusline .= '%-16( %l,%c-%v %)%P'
+        let &l:statusline .= '%-14.(%l,%c%V%) %P'
       endif
     endif
     let &l:statusline = s:InjectIntoStatusline(&l:statusline)
