@@ -4599,8 +4599,8 @@ function! s:BufSettings()
   let self = rails#buffer()
   call s:SetBasePath()
   let rp = s:gsub(self.app().path(),'[ ,]','\\&')
-  if stridx(&tags,rp) == -1
-    let &l:tags = rp . "/tmp/tags," . &tags . "," . rp . "/tags"
+  if stridx(&tags,rp.'/tmp/tags') == -1
+    let &l:tags = rp . '/tmp/tags,' . &tags . ',' . rp . '/tags'
   endif
   if has("gui_win32") || has("gui_running")
     let code      = '*.rb;*.rake;Rakefile'
