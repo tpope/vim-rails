@@ -4139,6 +4139,7 @@ function! s:BufAbbreviations()
       Rabbrev se[ session
       Rabbrev hd[ headers
       Rabbrev co[ cookies
+      Rabbrev coo[ cookies
       Rabbrev fl[ flash
       Rabbrev rr( render
       Rabbrev ra( render :action\ =>\ 
