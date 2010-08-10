@@ -1031,10 +1031,9 @@ Set this include guard to prevent the plugin from being loaded.
 Enable Rails abbreviations.  See |rails-abbreviations|.  Enabled by default.
 
 						*g:rails_ctags_arguments*  >
-	let g:rails_ctags_arguments='--exclude="*.js"'
-Additional arguments to pass to ctags from |:Rtags|.  Defaults to
-'--exclude=facebox.js --exclude="*.*.js"', which attempts to ignore jQuery
-plugins that can choke up ctags.
+	let g:rails_ctags_arguments='--languages=-javascript'
+Additional arguments to pass to ctags from |:Rtags|.  Defaults to ignoring
+JavaScript files, since ctags has a tendency to choke on those.
 
 						*g:rails_default_file*  >
 	let g:rails_default_file='config/database.yml'
