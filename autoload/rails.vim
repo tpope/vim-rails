@@ -3606,30 +3606,30 @@ function! s:BufSyntax()
       syn cluster htmlArgCluster add=@rubyStringSpecial
       syn cluster htmlPreProc    add=@rubyStringSpecial
 
-    elseif &syntax == "eruby" || &syntax == "haml"
+    elseif &syntax == 'eruby' || &syntax == 'haml'
       syn case match
       if classes != ''
-        exe "syn keyword erubyRailsUserClass ".classes." contained containedin=@erubyRailsRegions"
+        exe 'syn keyword '.&syntax.'RailsUserClass '.classes.' contained containedin=@'.&syntax.'RailsRegions'
       endif
-      if &syntax == "haml"
-        syn cluster erubyRailsRegions contains=hamlRubyCodeIncluded,hamlRubyCode,hamlRubyHash,@hamlEmbeddedRuby,rubyInterpolation
+      if &syntax == 'haml'
+        exe 'syn cluster hamlRailsRegions contains=hamlRubyCodeIncluded,hamlRubyCode,hamlRubyHash,@hamlEmbeddedRuby,rubyInterpolation'
       else
-        syn cluster erubyRailsRegions contains=erubyOneLiner,erubyBlock,erubyExpression,rubyInterpolation
+        exe 'syn cluster erubyRailsRegions contains=erubyOneLiner,erubyBlock,erubyExpression,rubyInterpolation'
       endif
-      exe "syn keyword erubyRailsHelperMethod ".s:gsub(s:helpermethods(),'<%(content_for|select)\s+','')." contained containedin=@erubyRailsRegions"
-      syn match erubyRailsHelperMethod '\<select\>\%(\s*{\|\s*do\>\|\s*(\=\s*&\)\@!' contained containedin=@erubyRailsRegions
-      syn match erubyRailsHelperMethod '\<\%(content_for?\=\|current_page?\)' contained containedin=@erubyRailsRegions
-      syn keyword erubyRailsMethod debugger logger contained containedin=@erubyRailsRegions
-      syn keyword erubyRailsMethod params request response session headers cookies flash contained containedin=@erubyRailsRegions
-      syn match erubyRailsViewMethod '\.\@<!\<\(h\|html_escape\|u\|url_encode\|controller\)\>' contained containedin=@erubyRailsRegions
+      exe 'syn keyword '.&syntax.'RailsHelperMethod '.s:gsub(s:helpermethods(),'<%(content_for|select)\s+','').' contained containedin=@'.&syntax.'RailsRegions'
+      exe 'syn match '.&syntax.'RailsHelperMethod "\<select\>\%(\s*{\|\s*do\>\|\s*(\=\s*&\)\@!" contained containedin=@'.&syntax.'RailsRegions'
+      exe 'syn match '.&syntax.'RailsHelperMethod "\<\%(content_for?\=\|current_page?\)" contained containedin=@'.&syntax.'RailsRegions'
+      exe 'syn keyword '.&syntax.'RailsMethod debugger logger contained containedin=@'.&syntax.'RailsRegions'
+      exe 'syn keyword '.&syntax.'RailsMethod params request response session headers cookies flash contained containedin=@'.&syntax.'RailsRegions'
+      exe 'syn match '.&syntax.'RailsViewMethod "\.\@<!\<\(h\|html_escape\|u\|url_encode\|controller\)\>" contained containedin=@'.&syntax.'RailsRegions'
       if buffer.type_name('view-partial')
-        syn keyword erubyRailsMethod local_assigns contained containedin=@erubyRailsRegions
+        exe 'syn keyword '.&syntax.'RailsMethod local_assigns contained containedin=@'.&syntax.'RailsRegions'
       endif
-      syn keyword erubyRailsRenderMethod render contained containedin=@erubyRailsRegions
-      syn case match
+      exe 'syn keyword '.&syntax.'RailsRenderMethod render contained containedin=@'.&syntax.'RailsRegions'
+      exe 'syn case match'
       set isk+=$
-      exe "syn keyword javascriptRailsFunction contained ".s:javascript_functions
-      syn cluster htmlJavaScript add=javascriptRailsFunction
+      exe 'syn keyword javascriptRailsFunction contained '.s:javascript_functions
+      exe 'syn cluster htmlJavaScript add=javascriptRailsFunction'
     elseif &syntax == "yaml"
       syn case match
       " Modeled after syntax/eruby.vim
@@ -3688,8 +3688,14 @@ function! s:HiDefaults()
   hi def link erubyRailsRenderMethod          erubyRailsMethod
   hi def link erubyRailsMethod                railsMethod
   hi def link erubyRailsUserMethod            railsUserMethod
-  hi def link railsUserMethod                 railsMethod
   hi def link erubyRailsUserClass             railsUserClass
+  hi def link hamlRailsHelperMethod           hamlRailsMethod
+  hi def link hamlRailsViewMethod             hamlRailsMethod
+  hi def link hamlRailsRenderMethod           hamlRailsMethod
+  hi def link hamlRailsMethod                 railsMethod
+  hi def link hamlRailsUserMethod             railsUserMethod
+  hi def link hamlRailsUserClass              railsUserClass
+  hi def link railsUserMethod                 railsMethod
   hi def link yamlRailsDelimiter              Delimiter
   hi def link yamlRailsMethod                 railsMethod
   hi def link yamlRailsComment                Comment
