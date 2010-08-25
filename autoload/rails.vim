@@ -722,6 +722,8 @@ function! s:readable_calculate_file_type() dict abort
     let r = "stylesheet-".e
   elseif e == "js"
     let r = "javascript"
+  elseif e == "coffee"
+    let r = "javascript-coffee"
   elseif e == "html"
     let r = e
   elseif f =~ '\<config/routes\>.*\.rb$'
@@ -774,7 +776,8 @@ function! s:app_has(feature) dict
         \'spec': 'spec/',
         \'cucumber': 'features/',
         \'sass': 'public/stylesheets/sass/',
-        \'lesscss': 'app/stylesheets/'}
+        \'lesscss': 'app/stylesheets/',
+        \'coffee': 'app/scripts/'}
   if self.cache.needs('features')
     call self.cache.set('features',{})
   endif
@@ -1367,6 +1370,8 @@ function! s:readable_preview_urls(lnum) dict abort
     let urls = urls + [s:sub(self.name(),'^public','')]
   elseif self.name() =~ '^app/stylesheets/'
     let urls = urls + [s:sub(s:sub(self.name(),'^app/stylesheets/','/stylesheets/'),'\.less$','.css')]
+  elseif self.name() =~ '^app/scripts/'
+    let urls = urls + [s:sub(s:sub(self.name(),'^app/scripts/','/javascripts/'),'\.coffee$','.js')]
   elseif self.controller_name() != '' && self.controller_name() != 'application'
     if self.type_name('controller') && self.last_method(a:lnum) != ''
       let urls += ['/'.self.controller_name().'/'.self.last_method(a:lnum).'/']
@@ -2646,7 +2651,14 @@ function! s:stylesheetEdit(cmd,...)
 endfunction
 
 function! s:javascriptEdit(cmd,...)
-  return s:EditSimpleRb(a:cmd,"javascript",a:0? a:1 : "application","public/javascripts/",".js",1)
+  let name = a:0 ? a:1 : s:controller(1)
+  if rails#app().has('coffee') && rails#app().has_file('app/scripts/'.name.'.coffee')
+    return s:EditSimpleRb(a:cmd,'javascript',name,'app/scripts/','.coffee',1)
+  elseif rails#app().has('coffee') && rails#app().has_file('app/scripts/'.name.'.js')
+    return s:EditSimpleRb(a:cmd,'javascript',name,'app/scripts/','.js',1)
+  else
+    return s:EditSimpleRb(a:cmd,'javascript',name,'public/javascripts/','.js',1)
+  endif
 endfunction
 
 function! s:unittestEdit(cmd,...)
