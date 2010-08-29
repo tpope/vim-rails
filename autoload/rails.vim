@@ -927,7 +927,7 @@ function! s:BufCommands()
   let ext = expand("%:e")
   if ext =~ s:viewspattern()
     " TODO: complete controller names with trailing slashes here
-    command! -buffer -bar -nargs=? -range -complete=customlist,s:controllerList Rextract :<line1>,<line2>call s:Extract(<bang>0,<f-args>)
+    command! -buffer -bar -bang -nargs=? -range -complete=customlist,s:controllerList Rextract :<line1>,<line2>call s:Extract(<bang>0,<f-args>)
   endif
   if RailsFilePath() =~ '\<db/migrate/.*\.rb$'
     command! -buffer -bar                 Rinvert  :call s:Invert(<bang>0)
@@ -3174,15 +3174,8 @@ function! s:Extract(bang,...) range abort
   else
     let out = (rails_root)."/app/views/".dir."/_".fname
   endif
-  if filereadable(out)
-    let partial_warn = 1
-  endif
-  if bufnr(out) > 0
-    if bufloaded(out)
-      return s:error("Partial already open in buffer ".bufnr(out))
-    else
-      exe "bwipeout ".bufnr(out)
-    endif
+  if filereadable(out) && !a:bang
+    return s:error('E13: File exists (add ! to override)')
   endif
   " No tabs, they'll just complicate things
   if ext =~? '^\%(rhtml\|erb\|dryml\)$'
@@ -3243,13 +3236,9 @@ function! s:Extract(bang,...) range abort
     norm ^5w
   endif
   let ft = &ft
-  if &hidden
-    enew
-  else
-    new
-  endif
   let shortout = fnamemodify(out,':.')
-  silent file `=shortout`
+  silent split `=shortout`
+  silent %delete
   let &ft = ft
   let @@ = partial
   silent put
@@ -3260,10 +3249,6 @@ function! s:Extract(bang,...) range abort
   endif
   silent! exe '%substitute?\%(\w\|[@:"'."'".'-]\)\@<!'.var.'\>?'.name.'?g'
   1
-  call RailsBufInit(rails_root)
-  if exists("l:partial_warn")
-    call s:warn("Warning: partial exists!")
-  endif
 endfunction
 
 " }}}1
