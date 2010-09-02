@@ -1123,6 +1123,7 @@ function! s:makewithruby(arg,bang,...)
 endfunction
 
 function! s:Rake(bang,lnum,arg)
+  wa
   let self = rails#app()
   let lnum = a:lnum < 0 ? 0 : a:lnum
   let old_makeprg = &l:makeprg
