@@ -998,7 +998,7 @@ function! rails#new_app_command(bang,...)
     return
   endif
   let dir = ""
-  if a:1 !~ '^-'
+  if a:1 !~ '^-' && a:1 !=# 'new'
     let dir = a:1
   elseif a:{a:0} =~ '[\/]'
     let dir = a:{a:0}
