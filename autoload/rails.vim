@@ -330,6 +330,8 @@ function! s:readable_controller_name(...) dict abort
     return s:sub(f,'.*<app/apis/(.{-})_api\.rb$','\1')
   elseif f =~ '\<test/functional/.*_test\.rb$'
     return s:sub(f,'.*<test/functional/(.{-})%(_controller)=_test\.rb$','\1')
+  elseif f =~ '\<test/unit/helpers/.*_helper_test\.rb$'
+    return s:sub(f,'.*<test/unit/helpers/(.{-})_helper_test\.rb$','\1')
   elseif f =~ '\<spec/controllers/.*_spec\.rb$'
     return s:sub(f,'.*<spec/controllers/(.{-})%(_controller)=_spec\.rb$','\1')
   elseif f =~ '\<spec/helpers/.*_helper_spec\.rb$'
@@ -3059,15 +3061,6 @@ function! s:readable_related(...) dict abort
     return api
   elseif self.type_name('api')
     return s:sub(s:sub(f,'/apis/','/controllers/'),'_api\.rb$','_controller.rb')
-  elseif self.type_name('helper')
-    let controller = s:sub(s:sub(f,'/helpers/','/controllers/'),'_helper\.rb$','_controller.rb')
-    let controller = s:sub(controller,'application_controller','application')
-    let spec = s:sub(s:sub(f,'<app/','spec/'),'\.rb$','_spec.rb')
-    if self.app().has_file(spec)
-      return spec
-    else
-      return controller
-    endif
   elseif self.type_name('fixtures') && f =~ '\<spec/'
     let file = rails#singularize(fnamemodify(f,":t:r")).'_spec.rb'
     return file
@@ -3087,14 +3080,16 @@ function! s:readable_related(...) dict abort
     else
       let file .= '_test.rb'
     endif
-    if self.type_name('model')
+    if self.type_name('helper')
+      return s:sub(file,'<app/helpers/','test/unit/helpers/')."\n".s:sub(s:sub(file,'_test\.rb$','_spec.rb'),'<app/helpers/','spec/helpers/')
+    elseif self.type_name('model')
       return s:sub(file,'<app/models/','test/unit/')."\n".s:sub(s:sub(file,'_test\.rb$','_spec.rb'),'<app/models/','spec/models/')
     elseif self.type_name('controller')
       return s:sub(file,'<app/controllers/','test/functional/')."\n".s:sub(s:sub(file,'_test\.rb$','_spec.rb'),'app/controllers/','spec/controllers/')
     elseif self.type_name('mailer')
       return s:sub(file,'<app/m%(ailer|odel)s/','test/unit/')."\n".s:sub(s:sub(file,'_test\.rb$','_spec.rb'),'<app/','spec/')
     elseif self.type_name('test-unit')
-      return s:sub(file,'test/unit/','app/models/')."\n".s:sub(file,'test/unit/','lib/')
+      return s:sub(s:sub(file,'test/unit/helpers/','app/helpers/'),'test/unit/','app/models/')."\n".s:sub(file,'test/unit/','lib/')
     elseif self.type_name('test-functional')
       if file =~ '_api\.rb'
         return s:sub(file,'test/functional/','app/apis/')
