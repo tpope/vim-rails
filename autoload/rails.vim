@@ -1170,7 +1170,7 @@ function! s:Rake(bang,lnum,arg)
       if !a:bang
         cwindow
       endif
-    elseif arg =~# '^\%(stats\|routes\|secret\|time:zones\|db:\%(charset\|collation\|fixtures:identify\>.*\|version\)\)\%([: ]\|$\)'
+    elseif arg =~# '^\%(stats\|routes\|secret\|time:zones\|db:\%(charset\|collation\|fixtures:identify\>.*\|migrate:status\|version\)\)\%([: ]\|$\)'
       let &l:errorformat = '%D(in\ %f),%+G%.%#'
       exe 'make! '.arg
       if !a:bang
