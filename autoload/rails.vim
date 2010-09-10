@@ -3517,9 +3517,9 @@ function! s:BufSyntax()
         syn keyword rubyRailsARMethod observe
       endif
       if buffer.type_name('mailer')
-        syn keyword rubyRailsMethod logger attachments
+        syn keyword rubyRailsMethod logger url_for polymorphic_path polymorphic_url
         syn keyword rubyRailsRenderMethod mail render
-        syn keyword rubyRailsControllerMethod default helper helper_attr helper_method
+        syn keyword rubyRailsControllerMethod attachments default helper helper_attr helper_method
       endif
       if buffer.type_name('controller','view','helper')
         syn keyword rubyRailsMethod params request response session headers cookies flash
