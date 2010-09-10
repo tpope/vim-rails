@@ -3524,7 +3524,7 @@ function! s:BufSyntax()
       if buffer.type_name('controller','view','helper')
         syn keyword rubyRailsMethod params request response session headers cookies flash
         syn keyword rubyRailsRenderMethod render
-        syn keyword rubyRailsMethod logger
+        syn keyword rubyRailsMethod logger polymorphic_path polymorphic_url
       endif
       if buffer.type_name('helper','view')
         exe "syn keyword rubyRailsHelperMethod ".s:gsub(s:helpermethods(),'<%(content_for|select)\s+','')
@@ -3564,6 +3564,7 @@ function! s:BufSyntax()
           syn match   rubyRailsTestControllerMethod  '\.\@<!\<\%(get\|post\|put\|delete\|head\|process\|assigns\)\>'
           syn keyword rubyRailsTestControllerMethod  integrate_views
           syn keyword rubyRailsMethod params request response session flash
+          syn keyword rubyRailsMethod polymorphic_path polymorphic_url
         endif
       endif
       if buffer.type_name('task')
@@ -3622,7 +3623,7 @@ function! s:BufSyntax()
       exe 'syn keyword '.&syntax.'RailsHelperMethod '.s:gsub(s:helpermethods(),'<%(content_for|select)\s+','').' contained containedin=@'.&syntax.'RailsRegions'
       exe 'syn match '.&syntax.'RailsHelperMethod "\<select\>\%(\s*{\|\s*do\>\|\s*(\=\s*&\)\@!" contained containedin=@'.&syntax.'RailsRegions'
       exe 'syn match '.&syntax.'RailsHelperMethod "\<\%(content_for?\=\|current_page?\)" contained containedin=@'.&syntax.'RailsRegions'
-      exe 'syn keyword '.&syntax.'RailsMethod debugger logger contained containedin=@'.&syntax.'RailsRegions'
+      exe 'syn keyword '.&syntax.'RailsMethod debugger logger polymorphic_path polymorphic_url contained containedin=@'.&syntax.'RailsRegions'
       exe 'syn keyword '.&syntax.'RailsMethod params request response session headers cookies flash contained containedin=@'.&syntax.'RailsRegions'
       exe 'syn match '.&syntax.'RailsViewMethod "\.\@<!\<\(h\|html_escape\|u\|url_encode\|controller\)\>" contained containedin=@'.&syntax.'RailsRegions'
       if buffer.type_name('view-partial')
