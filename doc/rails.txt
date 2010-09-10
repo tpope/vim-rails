@@ -66,9 +66,9 @@ Rails application development.
    fixtures, and more. |rails-rake|
 
 6. Interface to script/*.  Generally, use ":Rscript about" to call
-   "script/about".  Most commands have wrappers with additional features:
-   ":Rgenerate controller Blog" generates a blog controller and edits
-   app/controllers/blog_controller.rb.  |rails-scripts|
+   "script/about" or "script/rails about".  Most commands have wrappers with
+   additional features: ":Rgenerate controller Blog" generates a blog
+   controller and edits app/controllers/blog_controller.rb.  |rails-scripts|
 
 7. Partial extraction and migration inversion.  |:Rextract| {file} replaces
    the desired range (ideally selected in visual line mode) with "render
