@@ -394,8 +394,9 @@ itself!).
 			defaults to editing test/test_helper.rb.
 
 						*rails-:Rjavascript*
-:Rjavascript [{name}]	Edit the javascript for the specified name or current
-			controller.
+:Rjavascript [{name}]	Edit the JavaScript for the specified name or current
+			controller.  Also supports CoffeeScript in
+			app/scripts/.
 
 						*rails-:Rlayout*
 :Rlayout [{name}]	Edit the specified layout.  Defaults to the layout for
@@ -460,7 +461,7 @@ itself!).
 
 						*rails-:Rstylesheet*
 :Rstylesheet [{name}]	Edit the stylesheet for the specified name or current
-			controller.
+			controller.  Also supports Sass and SCSS.
 
 						*rails-:Rtask*
 :Rtask [{name}]		Edit the .rake file from lib/tasks for the specified
