@@ -4152,7 +4152,6 @@ function! s:BufAbbreviations()
       Rabbrev rs[ response
       Rabbrev se[ session
       Rabbrev hd[ headers
-      Rabbrev co[ cookies
       Rabbrev coo[ cookies
       Rabbrev fl[ flash
       Rabbrev rr( render
