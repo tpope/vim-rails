@@ -3176,6 +3176,13 @@ function! s:Extract(bang,...) range abort
   if filereadable(out) && !a:bang
     return s:error('E13: File exists (add ! to override)')
   endif
+  if !isdirectory(fnamemodify(out,':h'))
+    if a:bang
+      call mkdir(fnamemodify(out,':h'),'p')
+    else
+      return s:error('No such directory')
+    endif
+  endif
   " No tabs, they'll just complicate things
   if ext =~? '^\%(rhtml\|erb\|dryml\)$'
     let erub1 = '\<\%\s*'
