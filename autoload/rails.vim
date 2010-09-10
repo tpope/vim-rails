@@ -2560,7 +2560,7 @@ function! s:viewEdit(cmd,...)
     let dir = fnamemodify(rails#app().path(found),':h')
     if !isdirectory(dir)
       if a:0 && a:1 =~ '!'
-        call mkdir(dir)
+        call mkdir(dir,'p')
       else
         return s:error('No such directory')
       endif
