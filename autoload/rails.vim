@@ -3542,7 +3542,7 @@ function! s:BufSyntax()
         syn keyword rubyRailsFilterMethod verify
       endif
       if buffer.type_name('db-migration','db-schema')
-        syn keyword rubyRailsMigrationMethod create_table change_table drop_table rename_table add_column rename_column change_column change_column_default remove_column add_index remove_index
+        syn keyword rubyRailsMigrationMethod create_table change_table drop_table rename_table add_column rename_column change_column change_column_default remove_column add_index remove_index execute
       endif
       if buffer.type_name('test')
         if !empty(rails#app().user_assertions())
