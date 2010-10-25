@@ -780,6 +780,7 @@ function! s:app_has(feature) dict
         \'spec': 'spec/',
         \'cucumber': 'features/',
         \'sass': 'public/stylesheets/sass/',
+        \'hassle': 'tmp/hassle/stylesheets/',
         \'lesscss': 'app/stylesheets/',
         \'coffee': 'app/scripts/'}
   if self.cache.needs('features')
@@ -2229,7 +2230,11 @@ function! s:layoutList(A,L,P)
 endfunction
 
 function! s:stylesheetList(A,L,P)
-  return s:completion_filter(rails#app().relglob("public/stylesheets/","**/*",".css"),a:A)
+  let basic_css = rails#app().relglob("public/stylesheets/", "**/*", ".css")
+  if rails#app().has('hassle')
+    call extend(basic_css, rails#app().relglob("tmp/hassle/stylesheets/","**/*",".css"))
+  endif
+  return s:completion_filter(basic_css, a:A)
 endfunction
 
 function! s:javascriptList(A,L,P)
@@ -2651,6 +2656,8 @@ function! s:stylesheetEdit(cmd,...)
     return s:EditSimpleRb(a:cmd,"stylesheet",name,"public/stylesheets/sass/",".scss",1)
   elseif rails#app().has('lesscss') && rails#app().has_file('app/stylesheets/'.name.'.less')
     return s:EditSimpleRb(a:cmd,"stylesheet",name,"app/stylesheets/",".less",1)
+  elseif rails#app().has('hassle') && rails#app().has_file('public/stylesheets/sass/'.name.'.sass')
+    return s:EditSimpleRb(a:cmd,"stylesheet",name,"public/stylesheets/sass/",".sass",1)
   else
     return s:EditSimpleRb(a:cmd,"stylesheet",name,"public/stylesheets/",".css",1)
   endif
