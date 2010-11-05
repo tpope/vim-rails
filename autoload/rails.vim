@@ -510,7 +510,7 @@ function! rails#singularize(word)
     return word
   endif
   let word = s:sub(word,'eople$','ersons')
-  let word = s:sub(word,'[aeio]@<!ies$','ys')
+  let word = s:sub(word,'%([Mm]ov|[aeio])@<!ies$','ys')
   let word = s:sub(word,'xe[ns]$','xs')
   let word = s:sub(word,'ves$','fs')
   let word = s:sub(word,'ss%(es)=$','sss')
