@@ -3787,7 +3787,7 @@ endfunction
 
 function! s:addtostatus(letter,status)
   let status = a:status
-  if status !~ 'rails' && g:rails_statusline
+  if status !~ 'rails' && status !~ '^%!' && g:rails_statusline
     let   status=substitute(status,'\C%'.tolower(a:letter),'%'.tolower(a:letter).'%{rails#statusline()}','')
     if status !~ 'rails'
       let status=substitute(status,'\C%'.toupper(a:letter),'%'.toupper(a:letter).'%{rails#STATUSLINE()}','')
