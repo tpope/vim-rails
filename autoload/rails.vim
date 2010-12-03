@@ -801,37 +801,67 @@ endfunction
 
 " yep, this is quite heuristic
 function! s:app_has_gem(gem) dict
-  return system('grep '.a:gem.' '.self.gemfile_path())!=''
+  return system('grep -P "^[^#]*gem\s+[''\"]'.a:gem.'[''\"]"  '.self.gemfile_path())!=''
 endfunction
 
-function! s:app_sass_path() dict
-  if self.cache.needs('sass_path')
-    call self.cache.set('sass_path', '')
-    if self.has_gem('haml')
-      for guess_dir in ['app/stylesheets/', 'public/stylesheets/sass/', 'public/stylesheets/'] "guess more paths? these seem to be most popular
-        if glob(self.path(guess_dir.'*.s[ac]ss'))!=''
-          call self.cache.set('sass_path', guess_dir)
+function! s:app_module_path(name, gem_name, guess_directories, guess_file_mask, application_query) dict
+  if self.cache.needs(a:name.'_path')
+    call self.cache.set(a:name.'_path', '')
+    if self.has_gem(a:gem_name)
+      for guess_dir in a:guess_directories
+        if glob(self.path(guess_dir.a:guess_file_mask))!=''
+          call self.cache.set(a:name.'_path', guess_dir)
           return guess_dir
         endif
       endfor
+      if self.cache.get(a:name.'_path')=='' && a:application_query!=''
+        " Query the app - it knows the path for sure. This is slow, hence the guesswork above
+        call self.cache.set(a:name.'_path', system(self.path('script/runner').' '''.a:application_query.''''))
+      end
     endif
-    if self.cache.get('sass_path')==''
-      " Query the app - it knows the path for sure. This is slow, hence the guesswork above
-      call self.cache.set('sass_path', system(self.path('script/runner').' ''print defined?(Sass) ? Sass::Plugin.template_location_array[0][0].gsub(/^#{Rails.root}\//,"")+"/" : ""'''))
-    end
   end
-  return self.cache.get('sass_path')
+  return self.cache.get(a:name.'_path')
+endfunction
+
+function! s:app_sass_path() dict
+  return self.module_path(
+  \ 'sass', 
+  \ 'haml', 
+  \ ['app/stylesheets/', 'public/stylesheets/sass/', 'public/stylesheets/'],
+  \ '*.s[ac]ss',
+  \ 'print defined?(Sass) ? Sass::Plugin.template_location_array[0][0].gsub(/^#{Rails.root}\//,"")+"/" : ""'
+  \ )
+endfunction
+
+function! s:app_lesscss_path() dict
+  return self.module_path(
+  \ 'lesscss', 
+  \  'more', 
+  \  ['app/stylesheets/', 'public/stylesheets/'],
+  \  '*.less',
+  \  'print defined?(Less) ? Less::More.source_path.gsub(/^#{Rails.root}\//,"")+"/" : ""'
+  \ )
+endfunction
+
+function! s:app_coffee_path() dict
+  return self.module_path(
+  \ 'coffee', 
+  \ '(barista|bistro_car)', 
+  \ ['app/scripts/', 'app/coffeescripts/', 'public/javascripts/'],
+  \ '*.coffee',
+  \ ''
+  \ )
 endfunction
 
 function! s:app_has(feature) dict
   let map = {
-        \'test': 'test/',
-        \'spec': 'spec/',
+        \'test':     'test/',
+        \'spec':     'spec/',
         \'cucumber': 'features/',
-        \'sass': rails#app().sass_path(),
-        \'lesscss': 'app/stylesheets/',
-        \'coffee': 'app/scripts/'}
-  " let variable_paths = system(rails#app().path('script/runner').'')
+        \'sass':     rails#app().sass_path(),
+        \'lesscss':  rails#app().lesscss_path(),
+        \'coffee':   rails#app().coffee_path()
+  \ }
   if self.cache.needs('features')
     call self.cache.set('features',{})
   endif
@@ -848,7 +878,7 @@ function! s:app_test_suites() dict
   return filter(['test','spec','cucumber'],'self.has(v:val)')
 endfunction
 
-call s:add_methods('app',['default_locale','environments','file','gemfile_path', 'has_gem', 'sass_path','has','test_suites'])
+call s:add_methods('app',['default_locale','environments','file','gemfile_path', 'has_gem', 'module_path', 'sass_path', 'lesscss_path', 'coffee_path', 'has','test_suites'])
 call s:add_methods('file',['path','name','lines','getline'])
 call s:add_methods('buffer',['app','number','path','name','lines','getline','type_name'])
 call s:add_methods('readable',['app','calculate_file_type','type_name','line_count'])
@@ -1420,14 +1450,14 @@ function! s:readable_preview_urls(lnum) dict abort
   if has_key(self,'getvar') && self.getvar('rails_preview') != ''
     let url += [self.getvar('rails_preview')]
   end
-  if self.name() =~ '^'.rails#app().sass_path()
+  if rails#app().has('sass') && self.name() =~ '^'.rails#app().sass_path()
     let urls = urls + [s:sub(s:sub(self.name(),'^'.rails#app().sass_path(),'/stylesheets/'),'\.s[ac]ss$','.css')]
   elseif self.name() =~ '^public/'
     let urls = urls + [s:sub(self.name(),'^public','')]
-  elseif self.name() =~ '^app/stylesheets/'
-    let urls = urls + [s:sub(s:sub(self.name(),'^app/stylesheets/','/stylesheets/'),'\.less$','.css')]
-  elseif self.name() =~ '^app/scripts/'
-    let urls = urls + [s:sub(s:sub(self.name(),'^app/scripts/','/javascripts/'),'\.coffee$','.js')]
+  elseif rails#app().has('lesscss') && self.name() =~ '^'.rails#app().lesscss_path()
+    let urls = urls + [s:sub(s:sub(self.name(),'^'.rails#app().lesscss_path(),'/stylesheets/'),'\.less$','.css')]
+  elseif rails#app().has('coffee') && self.name() =~ '^'.rails#app().coffee_path()
+    let urls = urls + [s:sub(s:sub(self.name(),'^'.rails#app().coffee_path(),'/javascripts/'),'\.coffee$','.js')]
   elseif self.controller_name() != '' && self.controller_name() != 'application'
     if self.type_name('controller') && self.last_method(a:lnum) != ''
       let urls += ['/'.self.controller_name().'/'.self.last_method(a:lnum).'/']
@@ -2704,8 +2734,8 @@ function! s:stylesheetEdit(cmd,...)
     return s:EditSimpleRb(a:cmd,"stylesheet",name,rails#app().sass_path(),".sass",1)
   elseif rails#app().has('sass') && rails#app().has_file(rails#app().sass_path().name.'.scss')
     return s:EditSimpleRb(a:cmd,"stylesheet",name,rails#app().sass_path(),".scss",1)
-  elseif rails#app().has('lesscss') && rails#app().has_file('app/stylesheets/'.name.'.less')
-    return s:EditSimpleRb(a:cmd,"stylesheet",name,"app/stylesheets/",".less",1)
+  elseif rails#app().has('lesscss') && rails#app().has_file(rails#app().lesscss_path().name.'.less')
+    return s:EditSimpleRb(a:cmd,"stylesheet",name,rails#app().lesscss_path(),".less",1)
   else
     return s:EditSimpleRb(a:cmd,"stylesheet",name,"public/stylesheets/",".css",1)
   endif
@@ -2713,10 +2743,10 @@ endfunction
 
 function! s:javascriptEdit(cmd,...)
   let name = a:0 ? a:1 : s:controller(1)
-  if rails#app().has('coffee') && rails#app().has_file('app/scripts/'.name.'.coffee')
-    return s:EditSimpleRb(a:cmd,'javascript',name,'app/scripts/','.coffee',1)
-  elseif rails#app().has('coffee') && rails#app().has_file('app/scripts/'.name.'.js')
-    return s:EditSimpleRb(a:cmd,'javascript',name,'app/scripts/','.js',1)
+  if rails#app().has('coffee') && rails#app().has_file(rails#app().coffee_path().name.'.coffee')
+    return s:EditSimpleRb(a:cmd,'javascript',name,rails#app().coffee_path(),'.coffee',1)
+  elseif rails#app().has('coffee') && rails#app().has_file(rails#app().coffee_path().name.'.js')
+    return s:EditSimpleRb(a:cmd,'javascript',name,rails#app().coffee_path(),'.js',1)
   else
     return s:EditSimpleRb(a:cmd,'javascript',name,'public/javascripts/','.js',1)
   endif
