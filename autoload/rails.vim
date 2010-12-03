@@ -773,22 +773,58 @@ function! s:app_default_locale() dict abort
   endif
   return self.cache.get('default_locale')
 endfunction
+  
+function s:app_gemfile_path() dict
+  if self.cache.needs('gemfile_path')
+    if findfile('Gemfile', self.path())!=''
+      call self.cache.set('gemfile_path', self.path()+'/Gemfile')
+    else
+      call self.cache.set('gemfile_path', self.path()+'/config/environment.rb')
+    endif
+  end
+  return self.cache.get('gemfile_path')
+endfunction
+
+" yep, this is quite heuristic
+function! s:app_has_gem(gem) dict
+  return system('grep '.a:gem.' '.self.gemfile_path())!=''
+endfunction
+
+function! s:app_sass_path() dict
+  if self.cache.needs('sass_path')
+    call self.cache.set('sass_path', '')
+    if self.has_gem('haml')
+      for guess_dir in ['app/stylesheets/', 'public/stylesheets/sass/', 'public/stylesheets/'] "guess more paths? these seem to be most popular
+        if glob(self.path(guess_dir.'*.s[ac]ss'))!=''
+          call self.cache.set('sass_path', guess_dir)
+          return guess_dir
+        endif
+      endfor
+    endif
+    if self.cache.get('sass_path')==''
+      " Query the app - it knows the path for sure. This is slow, hence the guesswork above
+      call self.cache.set('sass_path', system(self.path('script/runner').' ''print defined?(Sass) ? Sass::Plugin.template_location_array[0][0].gsub(/^#{Rails.root}\//,"")+"/" : ""'''))
+    end
+  end
+  return self.cache.get('sass_path')
+endfunction
 
 function! s:app_has(feature) dict
   let map = {
         \'test': 'test/',
         \'spec': 'spec/',
         \'cucumber': 'features/',
-        \'sass': 'public/stylesheets/sass/',
+        \'sass': rails#app().sass_path(),
         \'lesscss': 'app/stylesheets/',
         \'coffee': 'app/scripts/'}
+  " let variable_paths = system(rails#app().path('script/runner').'')
   if self.cache.needs('features')
     call self.cache.set('features',{})
   endif
   let features = self.cache.get('features')
   if !has_key(features,a:feature)
     let path = get(map,a:feature,a:feature.'/')
-    let features[a:feature] = isdirectory(rails#app().path(path))
+    let features[a:feature] = path!='/' && isdirectory(rails#app().path(path))
   endif
   return features[a:feature]
 endfunction
@@ -798,7 +834,7 @@ function! s:app_test_suites() dict
   return filter(['test','spec','cucumber'],'self.has(v:val)')
 endfunction
 
-call s:add_methods('app',['default_locale','environments','file','has','test_suites'])
+call s:add_methods('app',['default_locale','environments','file','gemfile_path', 'has_gem', 'sass_path','has','test_suites'])
 call s:add_methods('file',['path','name','lines','getline'])
 call s:add_methods('buffer',['app','number','path','name','lines','getline','type_name'])
 call s:add_methods('readable',['app','calculate_file_type','type_name','line_count'])
@@ -1370,8 +1406,8 @@ function! s:readable_preview_urls(lnum) dict abort
   if has_key(self,'getvar') && self.getvar('rails_preview') != ''
     let url += [self.getvar('rails_preview')]
   end
-  if self.name() =~ '^public/stylesheets/sass/'
-    let urls = urls + [s:sub(s:sub(self.name(),'^public/stylesheets/sass/','/stylesheets/'),'\.s[ac]ss$','.css')]
+  if self.name() =~ '^'.rails#app().sass_path()
+    let urls = urls + [s:sub(s:sub(self.name(),'^'.rails#app().sass_path(),'/stylesheets/'),'\.s[ac]ss$','.css')]
   elseif self.name() =~ '^public/'
     let urls = urls + [s:sub(self.name(),'^public','')]
   elseif self.name() =~ '^app/stylesheets/'
@@ -2229,7 +2265,11 @@ function! s:layoutList(A,L,P)
 endfunction
 
 function! s:stylesheetList(A,L,P)
-  return s:completion_filter(rails#app().relglob("public/stylesheets/","**/*",".css"),a:A)
+  let files = rails#app().relglob("public/stylesheets/","**/*",".css")
+  if rails#app().has('sass')
+    let files = files + rails#app().relglob(rails#app().sass_path(),"**/_*",".sass") + rails#app().relglob(rails#app().sass_path(),"**/_*",".scss")
+  endif
+  return s:completion_filter(files, a:A)
 endfunction
 
 function! s:javascriptList(A,L,P)
@@ -2645,10 +2685,10 @@ endfunction
 
 function! s:stylesheetEdit(cmd,...)
   let name = a:0 ? a:1 : s:controller(1)
-  if rails#app().has('sass') && rails#app().has_file('public/stylesheets/sass/'.name.'.sass')
-    return s:EditSimpleRb(a:cmd,"stylesheet",name,"public/stylesheets/sass/",".sass",1)
-  elseif rails#app().has('sass') && rails#app().has_file('public/stylesheets/sass/'.name.'.scss')
-    return s:EditSimpleRb(a:cmd,"stylesheet",name,"public/stylesheets/sass/",".scss",1)
+  if rails#app().has('sass') && rails#app().has_file(rails#app().sass_path().name.'.sass')
+    return s:EditSimpleRb(a:cmd,"stylesheet",name,rails#app().sass_path(),".sass",1)
+  elseif rails#app().has('sass') && rails#app().has_file(rails#app().sass_path().name.'.scss')
+    return s:EditSimpleRb(a:cmd,"stylesheet",name,rails#app().sass_path(),".scss",1)
   elseif rails#app().has('lesscss') && rails#app().has_file('app/stylesheets/'.name.'.less')
     return s:EditSimpleRb(a:cmd,"stylesheet",name,"app/stylesheets/",".less",1)
   else
