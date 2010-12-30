@@ -342,6 +342,8 @@ function! s:readable_controller_name(...) dict abort
     return s:sub(f,'.*<app/mailers/(.{-})\.rb$','\1')
   elseif f =~ '\<app/apis/.*_api\.rb$'
     return s:sub(f,'.*<app/apis/(.{-})_api\.rb$','\1')
+  elseif f =~ '\<app/cells/.*\.rb$'
+    return s:sub(f,'.*<app/cells/(.{-})\.rb$','\1')
   elseif f =~ '\<test/functional/.*_test\.rb$'
     return s:sub(f,'.*<test/functional/(.{-})%(_controller)=_test\.rb$','\1')
   elseif f =~ '\<test/unit/helpers/.*_helper_test\.rb$'
@@ -698,6 +700,8 @@ function! s:readable_calculate_file_type() dict abort
     let r = "view-partial-" . e
   elseif f =~ '\<app/views\>.*\.' || f =~ '\<components/.*/.*\.'.s:viewspattern().'$'
     let r = "view-" . e
+  elseif f =~ '\<app/cells/.*\.rb'
+    let r = "cell-" . e
   elseif f =~ '\<test/unit/.*_test\.rb$'
     let r = "test-unit"
   elseif f =~ '\<test/functional/.*_test\.rb$'
@@ -2135,6 +2139,7 @@ function! s:BufFinderCommands()
   call s:addfilecmds("metal")
   call s:addfilecmds("model")
   call s:addfilecmds("view")
+  call s:addfilecmds("cell")
   call s:addfilecmds("controller")
   call s:addfilecmds("mailer")
   call s:addfilecmds("migration")
@@ -2225,6 +2230,10 @@ endfunction
 
 function! s:mailerList(A,L,P)
   return s:autocamelize(rails#app().relglob("app/mailers/","**/*",".rb"),a:A)
+endfunction
+
+function! s:cellList(A,L,P)
+  return s:autocamelize(rails#app().relglob("app/cells/","**/*",".rb"),a:A)
 endfunction
 
 function! s:viewList(A,L,P)
@@ -2553,6 +2562,10 @@ endfunction
 
 function! s:observerEdit(cmd,...)
   call s:EditSimpleRb(a:cmd,"observer",a:0? a:1 : s:model(1),"app/models/","_observer.rb")
+endfunction
+
+function! s:cellEdit(cmd,...)
+  call s:EditSimpleRb(a:cmd,"cell",a:1,"app/cells/",".rb")
 endfunction
 
 function! s:viewEdit(cmd,...)
@@ -3545,6 +3558,11 @@ function! s:BufSyntax()
         syn keyword rubyRailsRenderMethod render
         syn keyword rubyRailsMethod logger polymorphic_path polymorphic_url
       endif
+      if buffer.type_name('cell')
+        syn keyword rubyRailsMethod responds_to_event after_add after_initialize has_widgets param
+        syn keyword rubyRailsRenderMethod render
+        syn keyword rubyRailsMethod replace update render_children render_children_for
+      endif
       if buffer.type_name('helper','view')
         exe "syn keyword rubyRailsHelperMethod ".s:gsub(s:helpermethods(),'<%(content_for|select)\s+','')
         syn match rubyRailsHelperMethod '\<select\>\%(\s*{\|\s*do\>\|\s*(\=\s*&\)\@!'
@@ -3972,7 +3990,7 @@ endfunction
 function! s:NewProjectTemplate(proj,rr)
   let str = a:proj.'="'.a:rr."\" CD=. filter=\"*\" {\n"
   let str .= " app=app {\n"
-  for dir in ['apis','controllers','helpers','models','views']
+  for dir in ['apis','controllers','helpers','models','views','cells']
     let str .= s:addprojectdir(a:rr,'app',dir)
   endfor
   let str .= " }\n"
@@ -3984,7 +4002,7 @@ function! s:NewProjectTemplate(proj,rr)
   let str .= " public=public {\n  images=images {\n  }\n  javascripts=javascripts {\n  }\n  stylesheets=stylesheets {\n  }\n }\n"
   if isdirectory(a:rr.'/spec')
     let str .= " spec=spec {\n"
-    for dir in ['controllers','fixtures','helpers','models','views']
+    for dir in ['controllers','fixtures','helpers','models','views','cells']
       let str .= s:addprojectdir(a:rr,'spec',dir)
     endfor
     let str .= " }\n"
@@ -4165,7 +4183,7 @@ function! s:BufAbbreviations()
   if g:rails_abbreviations
     let buffer = rails#buffer()
     " Limit to the right filetypes.  But error on the liberal side
-    if buffer.type_name('controller','view','helper','test-functional','test-integration')
+    if buffer.type_name('controller','view','cell','helper','test-functional','test-integration')
       Rabbrev pa[ params
       Rabbrev rq[ request
       Rabbrev rs[ response
@@ -4610,7 +4628,7 @@ function! s:SetBasePath()
   let old_path = s:pathsplit(s:sub(self.getvar('&path'),'^\.%(,|$)',''))
   call filter(old_path,'!s:startswith(v:val,transformed_path)')
 
-  let path = ['app', 'app/models', 'app/controllers', 'app/helpers', 'config', 'lib', 'app/views']
+  let path = ['app', 'app/models', 'app/controllers', 'app/helpers', 'config', 'lib', 'app/views', 'app/cells']
   if self.controller_name() != ''
     let path += ['app/views/'.self.controller_name(), 'public']
   endif
@@ -4618,7 +4636,7 @@ function! s:SetBasePath()
     let path += ['test', 'test/unit', 'test/functional', 'test/integration']
   endif
   if self.app().has('spec')
-    let path += ['spec', 'spec/models', 'spec/controllers', 'spec/helpers', 'spec/views', 'spec/lib', 'spec/requests', 'spec/integration']
+    let path += ['spec', 'spec/models', 'spec/controllers', 'spec/helpers', 'spec/views', 'spec/cells', 'spec/lib', 'spec/requests', 'spec/integration']
   endif
   let path += ['app/*', 'vendor', 'vendor/plugins/*/lib', 'vendor/plugins/*/test', 'vendor/rails/*/lib', 'vendor/rails/*/test']
   call map(path,'self.app().path(v:val)')
