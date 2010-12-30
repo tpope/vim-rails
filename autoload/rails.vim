@@ -3561,7 +3561,7 @@ function! s:BufSyntax()
       if buffer.type_name('cell')
         syn keyword rubyRailsMethod responds_to_event after_add after_initialize has_widgets param
         syn keyword rubyRailsRenderMethod render
-        syn keyword rubyRailsMethod replace update render_children render_children_for
+        syn keyword rubyRailsMethod replace update render_children render_children_for trigger
       endif
       if buffer.type_name('helper','view')
         exe "syn keyword rubyRailsHelperMethod ".s:gsub(s:helpermethods(),'<%(content_for|select)\s+','')
