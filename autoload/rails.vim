@@ -935,10 +935,7 @@ function! s:BufCommands()
   command! -buffer -bar -nargs=0 -bang Rrefresh :if <bang>0|unlet! g:autoloaded_rails|source `=s:file`|endif|call s:Refresh(<bang>0)
   if exists(":NERDTree")
     command! -buffer -bar -nargs=? -complete=customlist,s:Complete_cd Rtree :NERDTree `=rails#app().path(<f-args>)`
-  elseif exists(":Project")
-    command! -buffer -bar -nargs=? Rtree :call s:Project(<bang>0,<q-args>)
   endif
-  command! -buffer -bar -nargs=? Rproject :call s:warn("Warning: :Rproject has been deprecated in favor of :Rtree") | Rtree<bang> <args>
   if exists("g:loaded_dbext")
     command! -buffer -bar -nargs=? -complete=customlist,s:Complete_environments Rdbext  :call s:BufDatabase(2,<q-args>)|let b:dbext_buffer_defaulted = 1
   endif
@@ -3901,111 +3898,6 @@ function! s:BufMappings()
   endif
   " SelectBuf you're a dirty hack
   let v:errmsg = ""
-endfunction
-
-" }}}1
-" Project {{{
-
-function! s:Project(bang,arg)
-  let rr = rails#app().path()
-  exe "Project ".a:arg
-  let line = search('^[^ =]*="'.s:gsub(rr,'[\/]','[\\/]').'"')
-  let projname = s:gsub(fnamemodify(rr,':t'),'\=','-') " .'_on_rails'
-  if line && a:bang
-    let projname = matchstr(getline('.'),'^[^=]*')
-    " Most of this would be unnecessary if the project.vim author had just put
-    " the newlines AFTER each project rather than before.  Ugh.
-    norm zR0"_d%
-    if line('.') > 2
-      delete _
-    endif
-    if line('.') != line('$')
-      .-2
-    endif
-    let line = 0
-  elseif !line
-    $
-  endif
-  if !line
-    if line('.') > 1
-      append
-
-.
-    endif
-    let line = line('.')+1
-    call s:NewProject(projname,rr)
-  endif
-  normal! zMzo
-  if search("^ app=app {","W",line+10)
-    normal! zo
-    exe line
-  endif
-  normal! 0zt
-endfunction
-
-function! s:NewProject(proj,rr)
-    let line = line('.')+1
-    let template = s:NewProjectTemplate(a:proj,a:rr)
-    silent put =template
-    exe line
-    " Ugh. how else can I force detecting folds?
-    setlocal foldmethod=manual
-    norm! $%
-    silent exe "doautocmd User ".s:escarg(a:rr)."/Rproject"
-    let newline = line('.')
-    exe line
-    norm! $%
-    if line('.') != newline
-      call s:warn("Warning: Rproject autocommand failed to leave cursor at end of project")
-    endif
-    exe line
-    setlocal foldmethod=marker
-    setlocal nomodified
-    " FIXME: make undo stop here
-    if !exists("g:maplocalleader")
-      silent! normal \R
-    else " Needs to be tested
-      exe 'silent! normal '.g:maplocalleader.'R'
-    endif
-endfunction
-
-function! s:NewProjectTemplate(proj,rr)
-  let str = a:proj.'="'.a:rr."\" CD=. filter=\"*\" {\n"
-  let str .= " app=app {\n"
-  for dir in ['apis','controllers','helpers','models','views']
-    let str .= s:addprojectdir(a:rr,'app',dir)
-  endfor
-  let str .= " }\n"
-  let str .= " config=config {\n  environments=environments {\n  }\n }\n"
-  let str .= " db=db {\n"
-  let str .= s:addprojectdir(a:rr,'db','migrate')
-  let str .= " }\n"
-  let str .= " lib=lib filter=\"* */**/*.rb \" {\n  tasks=tasks filter=\"**/*.rake\" {\n  }\n }\n"
-  let str .= " public=public {\n  images=images {\n  }\n  javascripts=javascripts {\n  }\n  stylesheets=stylesheets {\n  }\n }\n"
-  if isdirectory(a:rr.'/spec')
-    let str .= " spec=spec {\n"
-    for dir in ['controllers','fixtures','helpers','models','views']
-      let str .= s:addprojectdir(a:rr,'spec',dir)
-    endfor
-    let str .= " }\n"
-  endif
-  if isdirectory(a:rr.'/test')
-    let str .= " test=test {\n"
-    for dir in ['fixtures','functional','integration','mocks','unit']
-      let str .= s:addprojectdir(a:rr,'test',dir)
-    endfor
-    let str .= " }\n"
-  end
-  let str .= "}\n"
-  return str
-endfunction
-
-function! s:addprojectdir(rr,parentdir,dir)
-  if isdirectory(a:rr.'/'.a:parentdir.'/'.a:dir)
-    return '  '.a:dir.'='.a:dir." filter=\"**\" {\n  }\n"
-  else
-    return ''
-  endif
 endfunction
 
 " }}}1
