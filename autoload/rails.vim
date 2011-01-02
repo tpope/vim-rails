@@ -1936,10 +1936,10 @@ function! s:RailsFind()
   let res = s:findasymbol('template','app/views/\1')
   if res != ""|return res|endif
 
-  let res = s:sub(s:sub(s:findasymbol('partial','\1'),'^/',''),'\k+$','_&')
+  let res = s:sub(s:sub(s:findasymbol('partial','\1'),'^/',''),'[^/]+$','_&')
   if res != ""|return res."\n".s:findview(res)|endif
 
-  let res = s:sub(s:sub(s:findfromview('render\s*(\=\s*\%(:partial\s\+=>\|partial:\)\s*','\1'),'^/',''),'\k+$','_&')
+  let res = s:sub(s:sub(s:findfromview('render\s*(\=\s*\%(:partial\s\+=>\|partial:\)\s*','\1'),'^/',''),'[^/]+$','_&')
   if res != ""|return res."\n".s:findview(res)|endif
 
   let res = s:findamethod('render\>\s*\%(:\%(template\|action\)\s\+=>\|template:\|action:\)\s*','\1.'.format.'\n\1')
@@ -2044,7 +2044,7 @@ function! s:RailsIncludefind(str,...)
     " Classes should always be in .rb files
     let str .= '.rb'
   elseif line =~# ':partial\s*=>\s*'
-    let str = s:sub(str,'([^/]+)$','_\1')
+    let str = s:sub(str,'[^/]+$','_&')
     let str = s:findview(str)
   elseif line =~# '\<layout\s*(\=\s*' || line =~# ':layout\s*=>\s*'
     let str = s:findview(s:sub(str,'^/=','layouts/'))
