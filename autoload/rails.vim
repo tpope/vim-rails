@@ -2488,11 +2488,15 @@ function! s:app_migration(file) dict
   else
     let glob = '*'.rails#underscore(arg).'*rb'
   endif
-  let migr = s:sub(glob(self.path('db/migrate/').glob),'.*\n','')
-  if s:startswith(migr,self.path())
-    let migr = strpart(migr,1+strlen(self.path()))
+  let files = split(glob(self.path('db/migrate/').glob),"\n")
+  call map(files,'strpart(v:val,1+strlen(self.path()))')
+  let keep = get(files,0,'')
+  if glob =~# '^\*.*\*rb'
+    let pattern = glob[1:-4]
+    call filter(files,'v:val =~# ''db/migrate/\d\+_''.pattern.''\.rb''')
+    let keep = get(files,0,keep)
   endif
-  return migr
+  return keep
 endfunction
 
 call s:add_methods('app', ['migration'])
