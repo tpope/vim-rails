@@ -322,6 +322,29 @@ function! s:viewspattern()
   return '\%('.s:gsub(s:view_types,',','\\|').'\)'
 endfunction
 
+function! s:uploader(...)
+  return rails#buffer().uploader_name(a:0 ? a:1 : 0)
+endfunction
+
+function! s:readable_uploader_name(...) dict abort
+  let f = self.name()
+  if has_key(self,'getvar') && self.getvar('rails_uploader') != ''
+    return self.getvar('rails_uploader')
+  elseif f =~ '\<app/models/'
+    return s:sub(f,'.*<app/models/(.{-})%(_\w+_uploader)?\..*','\1')
+  elseif f =~ '\<app/controllers/'
+		let uploader = rails#singularize(s:sub(f,'.*<app/controllers/(.{-})%(_controller)?\..*','\1'))
+    return s:sub(f,'.*<app/controllers/(.{-})%(_controller)?\..*',uploader)
+  elseif f =~ '\<app/uploaders/.*\.rb$'
+    return s:sub(f,'.*<app/uploaders/(.{-})%(_\w+_uploader)=\.rb$','\1')
+  elseif f =~ '\<test/functional/.*_test\.rb$'
+    return s:sub(f,'.*<test/functional/(.{-})%(_\w+_uploader)=_test\.rb$','\1')
+  elseif f =~ '\<spec/uploaders/.*_spec\.rb$'
+    return s:sub(f,'.*<spec/uploaders/(.{-})%(_\w+_uploader)=_spec\.rb$','\1')
+  endif
+  return ""
+endfunction
+
 function! s:controller(...)
   return rails#buffer().controller_name(a:0 ? a:1 : 0)
 endfunction
@@ -374,6 +397,8 @@ function! s:readable_model_name(...) dict abort
   let f = self.name()
   if has_key(self,'getvar') && self.getvar('rails_model') != ''
     return self.getvar('rails_model')
+  elseif f =~ '\<app/uploaders/'
+    return s:sub(f,'.*<app/uploaders/(.{-})_\f+_\f+\.rb$','\1')
   elseif f =~ '\<app/models/.*_observer.rb$'
     return s:sub(f,'.*<app/models/(.*)_observer\.rb$','\1')
   elseif f =~ '\<app/models/.*\.rb$'
@@ -400,7 +425,7 @@ function! s:readable_model_name(...) dict abort
   return ""
 endfunction
 
-call s:add_methods('readable',['controller_name','model_name'])
+call s:add_methods('readable',['controller_name','model_name', 'uploader_name'])
 
 function! s:readfile(path,...)
   let nr = bufnr('^'.a:path.'$')
@@ -656,6 +681,8 @@ function! s:readable_calculate_file_type() dict abort
     let r = f
   elseif nr > 0 && getbufvar(nr,'rails_file_type') != ''
     return getbufvar(nr,'rails_file_type')
+  elseif f =~ '_uploader\.rb$' || f =~ '\<app/uploaders/.*\.rb$'
+    let r = "uploader"
   elseif f =~ '_controller\.rb$' || f =~ '\<app/controllers/.*\.rb$'
     if join(s:readfile(full_path,50),"\n") =~ '\<wsdl_service_name\>'
       let r = "controller-api"
@@ -1937,6 +1964,10 @@ function! s:RailsFind()
   let res = s:findasymbol('template','app/views/\1')
   if res != ""|return res|endif
 
+  " model carrierwave defs: mount_uploader :sym, ClassUploader
+  let res = rails#underscore(s:findit('\s*\<mount_uploader\s*[^,]\+,\s*\([A-Z]\f\+\)\>','\1'))
+  if res != ""|return res|endif
+
   let res = s:sub(s:sub(s:findasymbol('partial','\1'),'^/',''),'[^/]+$','_&')
   if res != ""|return res."\n".s:findview(res)|endif
 
@@ -2049,6 +2080,9 @@ function! s:RailsIncludefind(str,...)
     let str = s:findview(str)
   elseif line =~# '\<layout\s*(\=\s*' || line =~# ':layout\s*=>\s*'
     let str = s:findview(s:sub(str,'^/=','layouts/'))
+  elseif line =~# 'mount_uploader'
+    let str = rails#underscore(s:sub(str,'.* ([^\s;\)]+)$','\1'))
+    let str = 'app/uploaders/'.str.'.rb'
   elseif line =~# ':controller\s*=>\s*'
     let str = 'app/controllers/'.str.'_controller.rb'
   elseif line =~# '\<helper\s*(\=\s*'
@@ -2134,6 +2168,7 @@ function! s:BufFinderCommands()
   call s:addfilecmds("model")
   call s:addfilecmds("view")
   call s:addfilecmds("controller")
+  call s:addfilecmds("uploader")
   call s:addfilecmds("mailer")
   call s:addfilecmds("migration")
   call s:addfilecmds("observer")
@@ -2218,6 +2253,12 @@ endfunction
 function! s:controllerList(A,L,P)
   let con = rails#app().relglob("app/controllers/","**/*",".rb")
   call map(con,'s:sub(v:val,"_controller$","")')
+  return s:autocamelize(con,a:A)
+endfunction
+
+function! s:uploaderList(A,L,P)
+  let con = rails#app().relglob("app/uploaders/","**/*",".rb")
+  call map(con,'s:sub(v:val,"_uploader$","")')
   return s:autocamelize(con,a:A)
 endfunction
 
@@ -2638,6 +2679,22 @@ function! s:layoutEdit(cmd,...)
     let file = "app/views/layouts/application.html.erb"
   endif
   call s:edit(a:cmd,s:sub(file,'^/',''))
+endfunction
+
+function! s:uploaderEdit(cmd,...)
+  let suffix = '.rb'
+  if a:0 == 0
+    let uploader = s:uploader(1)
+    if rails#buffer().type_name() =~# '^model'
+      let suffix .= '#'.expand('%:t:r')
+    endif
+  else
+    let uploader = a:1
+  endif
+  if rails#app().has_file("app/uploaders/".uploader."_image_uploader.rb") || !rails#app().has_file("app/uploaders/".uploader.".rb")
+    let suffix = "_image_uploader".suffix
+  endif
+  return s:EditSimpleRb(a:cmd,"uploader",uploader,"app/uploaders/",suffix)
 endfunction
 
 function! s:controllerEdit(cmd,...)
@@ -3107,8 +3164,11 @@ function! s:readable_related(...) dict abort
     endif
     if self.type_name('helper')
       return s:sub(file,'<app/helpers/','test/unit/helpers/')."\n".s:sub(s:sub(file,'_test\.rb$','_spec.rb'),'<app/helpers/','spec/helpers/')
+    elseif self.type_name('uploader')
+      let file = s:sub(file, '_\f+_\f+_test.rb', '_test.rb')
+      return s:sub(file,'<app/uploaders/','test/unit/')."\n".s:sub(s:sub(file,'_test\.rb$','_spec.rb'),'<app/uploaders/','spec/models/')
     elseif self.type_name('model')
-      return s:sub(file,'<app/models/','test/unit/')."\n".s:sub(s:sub(file,'_test\.rb$','_spec.rb'),'<app/models/','spec/models/')
+      return s:sub(s:sub(file,'<app/models/','app/uploaders/'),  '_test\.rb$', '_image_uploader.rb')."\n".s:sub(file,'<app/models/','test/unit/')."\n".s:sub(s:sub(file,'_test\.rb$','_spec.rb'),'<app/models/','spec/models/')
     elseif self.type_name('controller')
       return s:sub(file,'<app/controllers/','test/functional/')."\n".s:sub(s:sub(file,'_test\.rb$','_spec.rb'),'app/controllers/','spec/controllers/')
     elseif self.type_name('mailer')
@@ -3564,6 +3624,9 @@ function! s:BufSyntax()
       endif
       if buffer.type_name('db-migration','db-schema')
         syn keyword rubyRailsMigrationMethod create_table change_table drop_table rename_table add_column rename_column change_column change_column_default remove_column add_index remove_index execute
+      endif
+      if buffer.type_name('uploader')
+        syn keyword rubyRailsMethod process storage version
       endif
       if buffer.type_name('test')
         if !empty(rails#app().user_assertions())
@@ -4107,6 +4170,7 @@ function! s:BufAbbreviations()
       Rabbrev vn(    validates_numericality_of
       Rabbrev vp(    validates_presence_of
       Rabbrev vu(    validates_uniqueness_of
+      Rabbrev mu(    mount_uploader
     endif
     if buffer.type_name('db-migration','db-schema')
       Rabbrev mac(  add_column
@@ -4516,6 +4580,9 @@ function! s:SetBasePath()
   endif
   if self.app().has('spec')
     let path += ['spec', 'spec/models', 'spec/controllers', 'spec/helpers', 'spec/views', 'spec/lib', 'spec/requests', 'spec/integration']
+  endif
+  if self.app().has('app/uploaders')
+    let path += ['app/uploaders']
   endif
   let path += ['app/*', 'vendor', 'vendor/plugins/*/lib', 'vendor/plugins/*/test', 'vendor/rails/*/lib', 'vendor/rails/*/test']
   call map(path,'self.app().path(v:val)')
