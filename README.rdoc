@@ -5,13 +5,15 @@ Basic support:
 * {CarrierWave}[https://github.com/jnicklas/carrierwave] Uploaders
 * {Apotomo}[https://github.com/apotonick/apotomo] Cells
 * {FactoryGirl}[https://github.com/thoughtbot/factory_girl] factories
+* {DelayedJob}[https://github.com/collectiveidea/delayed_job]
 
 == Usage
 
-Rloop - search loops definitions at app/loops
+Rloop     - search loops definitions at app/loops
 Ruploader - search loops definitions at app/uploader
-Rcell - search cell definitions at app/cells
-Rfactory - search factory definitions at spec/factories
+Rcell     - search cell definitions at app/cells
+Rfactory  - search factory definitions at spec/factories
+Rjob      - search factory definitions at app/jobs
 
 == Installation
 

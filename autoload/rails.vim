@@ -2162,6 +2162,7 @@ function! s:BufFinderCommands()
   call s:addfilecmds("loop")
   call s:addfilecmds("factory")
   call s:addfilecmds("cell")
+  call s:addfilecmds("job")
 endfunction
 
 function! s:completion_filter(results,A)
@@ -2273,6 +2274,10 @@ endfunction
 
 function! s:cellList(A,L,P)
   return s:autocamelize(rails#app().relglob("app/cells/", "**/*", ".rb"),a:A)
+endfunction
+
+function! s:jobList(A,L,P)
+  return s:autocamelize(rails#app().relglob("app/jobs/", "**/*", ".rb"),a:A)
 endfunction
 
 function! s:loopList(A,L,P)
@@ -2694,6 +2699,10 @@ endfunction
 
 function! s:cellEdit(cmd,...)
   return s:EditSimpleRb(a:cmd,"cell",a:0? a:1 : s:controller(1),"app/cells/",".rb")
+endfunction
+
+function! s:jobEdit(cmd,...)
+  return s:EditSimpleRb(a:cmd,"job",a:0? a:1 : s:controller(1),"app/jobs/",".rb")
 endfunction
 
 function! s:helperEdit(cmd,...)
