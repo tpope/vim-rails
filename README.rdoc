@@ -1,0 +1,25 @@
+= Rails.vim
+
+Basic support:
+* {Loops}[https://github.com/kovyrin/loops]
+* {CarrierWave}[https://github.com/jnicklas/carrierwave] Uploaders
+* {Apotomo}[https://github.com/apotonick/apotomo] Cells
+* {FactoryGirl}[https://github.com/thoughtbot/factory_girl] factories
+
+== Usage
+
+Rloop - search loops definitions at app/loops
+Ruploader - search loops definitions at app/uploader
+Rcell - search cell definitions at app/cells
+Rfactory - search factory definitions at spec/factories
+
+== Installation
+
+To install, simply copy autoload/rails.vim, plugin/rails.vim, and
+doc/rails.txt to the appropriate directories in ~/.vim.  Alternatively,
+`rake install` may be used.
+
+See doc/rails.txt for documentation.
+
+Copyright Tim Pope. This plugin is licensed under the same terms as Vim
+itself.  No warranties, expressed or implied.
