@@ -2158,6 +2158,10 @@ function! s:BufFinderCommands()
   call s:addfilecmds("lib")
   call s:addfilecmds("environment")
   call s:addfilecmds("initializer")
+  call s:addfilecmds("uploader")
+  call s:addfilecmds("loop")
+  call s:addfilecmds("factory")
+  call s:addfilecmds("cell")
 endfunction
 
 function! s:completion_filter(results,A)
@@ -2261,6 +2265,22 @@ function! s:modelList(A,L,P)
   let models = rails#app().relglob("app/models/","**/*",".rb")
   call filter(models,'v:val !~# "_observer$"')
   return s:autocamelize(models,a:A)
+endfunction
+
+function! s:uploaderList(A,L,P)
+  return s:autocamelize(rails#app().relglob("app/uploaders/", "**/*", ".rb"),a:A)
+endfunction
+
+function! s:cellList(A,L,P)
+  return s:autocamelize(rails#app().relglob("app/cells/", "**/*", ".rb"),a:A)
+endfunction
+
+function! s:loopList(A,L,P)
+  return s:autocamelize(rails#app().relglob("app/loops/", "**/*", ".rb"),a:A)
+endfunction
+
+function! s:factoryList(A,L,P)
+  return s:autocamelize(rails#app().relglob("spec/factories/", "**/*", ".rb"),a:A)
 endfunction
 
 function! s:observerList(A,L,P)
@@ -2658,6 +2678,22 @@ endfunction
 
 function! s:mailerEdit(cmd,...)
   return s:EditSimpleRb(a:cmd,"mailer",a:0? a:1 : s:controller(1),"app/mailers/\napp/models/",".rb")
+endfunction
+
+function! s:uploaderEdit(cmd,...)
+  return s:EditSimpleRb(a:cmd,"uploader",a:0? a:1 : s:controller(1),"app/uploaders/",".rb")
+endfunction
+
+function! s:loopEdit(cmd,...)
+  return s:EditSimpleRb(a:cmd,"loop",a:0? a:1 : s:controller(1),"app/loops/",".rb")
+endfunction
+
+function! s:factoryEdit(cmd,...)
+  return s:EditSimpleRb(a:cmd,"factory",a:0? a:1 : s:controller(1),"spec/factories/",".rb")
+endfunction
+
+function! s:cellEdit(cmd,...)
+  return s:EditSimpleRb(a:cmd,"cell",a:0? a:1 : s:controller(1),"app/cells/",".rb")
 endfunction
 
 function! s:helperEdit(cmd,...)
@@ -4071,15 +4107,15 @@ function! s:BufAbbreviations()
       Rabbrev coo[ cookies
       Rabbrev fl[ flash
       Rabbrev rr( render
-      Rabbrev ra( render :action\ =>\ 
-      Rabbrev rc( render :controller\ =>\ 
-      Rabbrev rf( render :file\ =>\ 
-      Rabbrev ri( render :inline\ =>\ 
-      Rabbrev rj( render :json\ =>\ 
-      Rabbrev rl( render :layout\ =>\ 
-      Rabbrev rp( render :partial\ =>\ 
-      Rabbrev rt( render :text\ =>\ 
-      Rabbrev rx( render :xml\ =>\ 
+      Rabbrev ra( render :action\ =>\
+      Rabbrev rc( render :controller\ =>\
+      Rabbrev rf( render :file\ =>\
+      Rabbrev ri( render :inline\ =>\
+      Rabbrev rj( render :json\ =>\
+      Rabbrev rl( render :layout\ =>\
+      Rabbrev rp( render :partial\ =>\
+      Rabbrev rt( render :text\ =>\
+      Rabbrev rx( render :xml\ =>\
     endif
     if buffer.type_name('view','helper')
       Rabbrev dotiw distance_of_time_in_words
@@ -4087,8 +4123,8 @@ function! s:BufAbbreviations()
     endif
     if buffer.type_name('controller')
       Rabbrev re(  redirect_to
-      Rabbrev rea( redirect_to :action\ =>\ 
-      Rabbrev rec( redirect_to :controller\ =>\ 
+      Rabbrev rea( redirect_to :action\ =>\
+      Rabbrev rec( redirect_to :controller\ =>\
       Rabbrev rst( respond_to
     endif
     if buffer.type_name() ==# 'model' || buffer.type_name('model-arb')
@@ -4126,13 +4162,13 @@ function! s:BufAbbreviations()
       Rabbrev asre( assert_response
       Rabbrev art(  assert_redirected_to
     endif
-    Rabbrev :a    :action\ =>\ 
+    Rabbrev :a    :action\ =>\
     " hax
-    Rabbrev :c    :co________\ =>\ 
+    Rabbrev :c    :co________\ =>\
     inoreabbrev <buffer> <silent> :c <C-R>=<SID>TheCWord()<CR>
-    Rabbrev :i    :id\ =>\ 
-    Rabbrev :o    :object\ =>\ 
-    Rabbrev :p    :partial\ =>\ 
+    Rabbrev :i    :id\ =>\
+    Rabbrev :o    :object\ =>\
+    Rabbrev :p    :partial\ =>\
     Rabbrev logd( logger.debug
     Rabbrev logi( logger.info
     Rabbrev logw( logger.warn
