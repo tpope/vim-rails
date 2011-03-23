@@ -17,6 +17,8 @@ Basic support:
 * Rfactory  - search factory definitions at spec/factories
 * Rjob      - search factory definitions at app/jobs
 
+Rspec - without params jump to relative spec definition
+
 == Features
 
 === Support fixture replacements
