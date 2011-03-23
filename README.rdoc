@@ -1,5 +1,7 @@
 = Rails.vim
 
+http://rails.vim.tpope.net/
+
 Basic support:
 * {Loops}[https://github.com/kovyrin/loops]
 * {CarrierWave}[https://github.com/jnicklas/carrierwave] Uploaders
@@ -9,11 +11,20 @@ Basic support:
 
 == Usage
 
-Rloop     - search loops definitions at app/loops
-Ruploader - search loops definitions at app/uploader
-Rcell     - search cell definitions at app/cells
-Rfactory  - search factory definitions at spec/factories
-Rjob      - search factory definitions at app/jobs
+* Rloop     - search loops definitions at app/loops
+* Ruploader - search loops definitions at app/uploader
+* Rcell     - search cell definitions at app/cells
+* Rfactory  - search factory definitions at spec/factories
+* Rjob      - search factory definitions at app/jobs
+
+== Features
+
+=== Support fixture replacements
+
+* https://github.com/thoughtbot/factory_girl
+* https://github.com/notahat/machinist
+* https://github.com/sinsiliux/Blueprints
+* https://github.com/paulelliott/fabrication
 
 == Installation
 
