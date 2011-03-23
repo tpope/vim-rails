@@ -285,7 +285,7 @@ function! s:readable_last_format(start) dict abort
   if self.type_name('view')
     let format = fnamemodify(self.path(),':r:e')
     if format == ''
-      return get({'rhtml': 'html', 'rxml': 'xml', 'rjs': 'js', 'haml': 'html'},fnamemodify(self.path(),':e'),'')
+      return get({'rhtml': 'html', 'rxml': 'xml', 'rjs': 'js', 'haml', 'slim': 'html'},fnamemodify(self.path(),':e'),'')
     else
       return format
     endif
@@ -316,7 +316,7 @@ endfunction
 
 call s:add_methods('readable',['end_of','last_opening_line','last_method_line','last_method','last_format','define_pattern'])
 
-let s:view_types = 'rhtml,erb,rxml,builder,rjs,mab,liquid,haml,dryml,mn'
+let s:view_types = 'rhtml,erb,rxml,builder,rjs,mab,liquid,haml,slim,dryml,mn'
 
 function! s:viewspattern()
   return '\%('.s:gsub(s:view_types,',','\\|').'\)'
@@ -2818,7 +2818,9 @@ function! s:specEdit(cmd,...)
   if a:0
     return s:EditSimpleRb(a:cmd,"spec",a:1,"spec/","_spec.rb")
   else
-    call s:EditSimpleRb(a:cmd,"spec","spec_helper","spec/",".rb")
+    "TODO rails#buffer().related()
+    let l:type = s:gsub(s:sub(rails#buffer().name(),'app/',''), '.rb$', '')
+    return s:EditSimpleRb(a:cmd, "spec", l:type, "spec/", "_spec.rb")
   endif
 endfunction
 
@@ -4481,6 +4483,8 @@ function! RailsBufInit(path)
     setlocal filetype=liquid
   elseif &ft =~ '^\%(haml\|x\=html\)\=$' && expand("%:e") == "haml"
     setlocal filetype=haml
+  elseif &ft =~ '^\%(slim\|x\=html\)\=$' && expand("%:e") == "slim"
+    setlocal filetype=slim
   elseif &ft =~ '^\%(sass\|conf\)\=$' && expand("%:e") == "sass"
     setlocal filetype=sass
   elseif &ft =~ '^\%(scss\|conf\)\=$' && expand("%:e") == "scss"
@@ -4683,7 +4687,7 @@ augroup railsPluginAuto
   autocmd BufWritePost */tasks/**.rake            call rails#cache_clear("rake_tasks")
   autocmd BufWritePost */generators/**            call rails#cache_clear("generators")
   autocmd FileType * if exists("b:rails_root") | call s:BufSettings() | endif
-  autocmd Syntax ruby,eruby,yaml,haml,javascript,coffee,railslog if exists("b:rails_root") | call s:BufSyntax() | endif
+  autocmd Syntax ruby,eruby,yaml,haml,slim,javascript,coffee,railslog if exists("b:rails_root") | call s:BufSyntax() | endif
   autocmd QuickFixCmdPre  make* call s:push_chdir()
   autocmd QuickFixCmdPost make* call s:pop_command()
 augroup END
