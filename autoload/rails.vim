@@ -376,6 +376,8 @@ function! s:readable_model_name(...) dict abort
     return self.getvar('rails_model')
   elseif f =~ '\<app/models/.*_observer.rb$'
     return s:sub(f,'.*<app/models/(.*)_observer\.rb$','\1')
+  elseif f =~ '\<app/uploaders/.*_uploader.rb$'
+    return s:sub(f,'.*<app/uploaders/(.*)_uploader\.rb$','\1')
   elseif f =~ '\<app/models/.*\.rb$'
     return s:sub(f,'.*<app/models/(.*)\.rb$','\1')
   elseif f =~ '\<test/unit/.*_observer_test\.rb$'
@@ -2686,23 +2688,23 @@ function! s:mailerEdit(cmd,...)
 endfunction
 
 function! s:uploaderEdit(cmd,...)
-  return s:EditSimpleRb(a:cmd,"uploader",a:0? a:1 : s:controller(1),"app/uploaders/",".rb")
+  return s:EditSimpleRb(a:cmd,"uploader",a:0? a:1 : s:model(1),"app/uploaders/","_uploader.rb")
 endfunction
 
 function! s:loopEdit(cmd,...)
-  return s:EditSimpleRb(a:cmd,"loop",a:0? a:1 : s:controller(1),"app/loops/",".rb")
+  return s:EditSimpleRb(a:cmd,"loop","","app/loops/",".rb")
 endfunction
 
 function! s:factoryEdit(cmd,...)
-  return s:EditSimpleRb(a:cmd,"factory",a:0? a:1 : s:controller(1),"spec/factories/",".rb")
+  return s:EditSimpleRb(a:cmd,"factory",a:0? a:1 : s:model(1),"spec/factories/",".rb")
 endfunction
 
 function! s:cellEdit(cmd,...)
-  return s:EditSimpleRb(a:cmd,"cell",a:0? a:1 : s:controller(1),"app/cells/",".rb")
+  return s:EditSimpleRb(a:cmd,"cell","","app/cells/",".rb")
 endfunction
 
 function! s:jobEdit(cmd,...)
-  return s:EditSimpleRb(a:cmd,"job",a:0? a:1 : s:controller(1),"app/jobs/",".rb")
+  return s:EditSimpleRb(a:cmd,"job","","app/jobs/",".rb")
 endfunction
 
 function! s:helperEdit(cmd,...)
