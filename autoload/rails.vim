@@ -4479,6 +4479,8 @@ function! RailsBufInit(path)
     setlocal filetype=ruby
   elseif &ft =~ '^\%(conf\|ruby\)\=$' && expand("%:t") =~ '^\%(\%(Rake\|Gem\|Cap\)file\|Isolate\)$'
     setlocal filetype=ruby
+  elseif &ft =~ '^\%(conf\|ruby\)\=$' && expand("%:t") =~ '[watchr|autotest]'
+    setlocal filetype=ruby
   elseif &ft =~ '^\%(liquid\)\=$' && expand("%:e") == "liquid"
     setlocal filetype=liquid
   elseif &ft =~ '^\%(haml\|x\=html\)\=$' && expand("%:e") == "haml"
