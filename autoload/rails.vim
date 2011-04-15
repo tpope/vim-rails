@@ -1386,6 +1386,10 @@ function! s:readable_preview_urls(lnum) dict abort
     let urls = urls + [s:sub(s:sub(self.name(),'^public/stylesheets/sass/','/stylesheets/'),'\.s[ac]ss$','.css')]
   elseif self.name() =~ '^public/'
     let urls = urls + [s:sub(self.name(),'^public','')]
+  elseif self.name() =~ '^app/assets/stylesheets/'
+    let urls = urls + ['/assets/application.css']
+  elseif self.name() =~ '^app/assets/javascripts/'
+    let urls = urls + ['/assets/application.js']
   elseif self.name() =~ '^app/stylesheets/'
     let urls = urls + [s:sub(s:sub(self.name(),'^app/stylesheets/','/stylesheets/'),'\.less$','.css')]
   elseif self.name() =~ '^app/scripts/'
@@ -2241,7 +2245,9 @@ function! s:layoutList(A,L,P)
 endfunction
 
 function! s:stylesheetList(A,L,P)
-  let list = rails#app().relglob('public/stylesheets/','**/*','.css')
+  let list = rails#app().relglob('app/assets/stylesheets/','**/*.css*','')
+  call map(list,'s:sub(v:val,"\\.css\%(\\.\\w+\)\=$","")')
+  let list += rails#app().relglob('public/stylesheets/','**/*','.css')
   if rails#app().has('sass')
     call extend(list,rails#app().relglob('public/stylesheets/sass/','**/*','.s?ss'))
     call s:uniq(list)
@@ -2250,7 +2256,10 @@ function! s:stylesheetList(A,L,P)
 endfunction
 
 function! s:javascriptList(A,L,P)
-  return s:completion_filter(rails#app().relglob("public/javascripts/","**/*",".js"),a:A)
+  let list = rails#app().relglob('app/assets/javascripts/','**/*.js*','')
+  call map(list,'s:sub(v:val,"\\.js\%(\\.\\w+\)\=$","")')
+  let list += rails#app().relglob("public/javascripts/","**/*",".js")
+  return s:completion_filter(list,a:A)
 endfunction
 
 function! s:metalList(A,L,P)
@@ -2676,7 +2685,12 @@ function! s:stylesheetEdit(cmd,...)
   elseif rails#app().has('lesscss') && rails#app().has_file('app/stylesheets/'.name.'.less')
     return s:EditSimpleRb(a:cmd,"stylesheet",name,"app/stylesheets/",".less",1)
   else
-    return s:EditSimpleRb(a:cmd,"stylesheet",name,"public/stylesheets/",".css",1)
+    let types = rails#app().relglob('app/assets/stylesheets/'.name,'.css*','')
+    if !empty(types)
+      return s:EditSimpleRb(a:cmd,'stylesheet',name,'app/assets/stylesheets/',types[0],1)
+    else
+      return s:EditSimpleRb(a:cmd,'stylesheet',name,'public/stylesheets/','.css',1)
+    endif
   endif
 endfunction
 
@@ -2687,7 +2701,12 @@ function! s:javascriptEdit(cmd,...)
   elseif rails#app().has('coffee') && rails#app().has_file('app/scripts/'.name.'.js')
     return s:EditSimpleRb(a:cmd,'javascript',name,'app/scripts/','.js',1)
   else
-    return s:EditSimpleRb(a:cmd,'javascript',name,'public/javascripts/','.js',1)
+    let types = rails#app().relglob('app/assets/javascripts/'.name,'.js*','')
+    if !empty(types)
+      return s:EditSimpleRb(a:cmd,'javascript',name,'app/assets/javascripts/',types[0],1)
+    else
+      return s:EditSimpleRb(a:cmd,'javascript',name,'public/javascripts/','.css',1)
+    endif
   endif
 endfunction
 
