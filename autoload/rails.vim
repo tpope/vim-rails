@@ -3353,8 +3353,8 @@ function! s:invertrange(beg,end)
       let add .= s:mkeep(line)
     elseif line =~ '\<remove_index\>'
       let add = s:sub(s:sub(line,'<remove_index','add_index'),':column\s*=>\s*','')
-    elseif line =~ '\<rename_\%(table\|column\)\>'
-      let add = s:sub(line,'<rename_%(table\s*\(=\s*|column\s*\(=\s*[^,]*,\s*)\zs([^,]*)(,\s*)([^,]*)','\3\2\1')
+    elseif line =~ '\<rename_\%(table\|column\|index\)\>'
+      let add = s:sub(line,'<rename_%(table\s*\(=\s*|%(column|index)\s*\(=\s*[^,]*,\s*)\zs([^,]*)(,\s*)([^,]*)','\3\2\1')
     elseif line =~ '\<change_column\>'
       let add = s:migspc(line).'change_column'.s:mextargs(line,2).s:mkeep(line)
     elseif line =~ '\<change_column_default\>'
@@ -3585,7 +3585,7 @@ function! s:BufSyntax()
         syn keyword rubyRailsFilterMethod verify
       endif
       if buffer.type_name('db-migration','db-schema')
-        syn keyword rubyRailsMigrationMethod create_table change_table drop_table rename_table add_column rename_column change_column change_column_default remove_column add_index remove_index execute
+        syn keyword rubyRailsMigrationMethod create_table change_table drop_table rename_table add_column rename_column change_column change_column_default remove_column add_index remove_index rename_index execute
       endif
       if buffer.type_name('test')
         if !empty(rails#app().user_assertions())
