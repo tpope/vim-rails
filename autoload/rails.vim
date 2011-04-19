@@ -2707,7 +2707,7 @@ function! s:javascriptEdit(cmd,...)
     if !empty(types)
       return s:EditSimpleRb(a:cmd,'javascript',name,'app/assets/javascripts/',types[0],1)
     else
-      return s:EditSimpleRb(a:cmd,'javascript',name,'public/javascripts/','.css',1)
+      return s:EditSimpleRb(a:cmd,'javascript',name,'public/javascripts/','.js',1)
     endif
   endif
 endfunction
