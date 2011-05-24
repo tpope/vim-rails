@@ -4171,7 +4171,6 @@ function! s:BufAbbreviations()
     Rabbrev AM::  ActionMailer
     Rabbrev AO::  ActiveModel
     Rabbrev AE::  ActiveResource
-    Rabbrev AWS:: ActionWebService
   endif
 endfunction
 
