@@ -2259,7 +2259,7 @@ endfunction
 
 function! s:javascriptList(A,L,P)
   let list = rails#app().relglob('app/assets/javascripts/','**/*.js*','')
-  call map(list,'s:sub(v:val,"\\.js\%(\\.\\w+\)\=$","")')
+  call map(list,'s:sub(v:val,"\\.js\%(\\.\\w+\)*$","")')
   let list += rails#app().relglob("public/javascripts/","**/*",".js")
   return s:completion_filter(list,a:A)
 endfunction
