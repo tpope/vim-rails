@@ -3068,6 +3068,10 @@ function! s:readable_related(...) dict abort
     return "config/application.rb\nconfig/environment.rb"
   elseif f =~ '\<config/\%(application\|environment\)\.rb$'
     return "config/database.yml"
+  elseif f ==# 'Gemfile'
+    return 'Gemfile.lock'
+  elseif f ==# 'Gemfile.lock'
+    return 'Gemfile'
   elseif f =~ '\<db/migrate/'
     let migrations = sort(self.app().relglob('db/migrate/','*','.rb'))
     let me = matchstr(f,'\<db/migrate/\zs.*\ze\.rb$')
