@@ -123,7 +123,7 @@ All commands are buffer local, unless otherwise stated.  This means you must
 actually edit a file from a Rails application.
 
 						*rails-:Rails*
-:Rails {directory}	The only global command.  Creates a new Rails
+:Rails new {directory}	The only global command.  Creates a new Rails
 			application in {directory}, and loads the README.
 
 :Rails!			Show the version of rails.vim installed.  If rails.vim
