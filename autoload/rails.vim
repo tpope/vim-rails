@@ -3941,7 +3941,7 @@ function! s:app_dbext_settings(environment) dict
       let cmde = '}]; i=0; e=y[e] while e.respond_to?(:to_str) && (i+=1)<16; e.each{|k,v|puts k.to_s+%{=}+v.to_s}}'
       let out = self.lightweight_ruby_eval(cmdb.a:environment.cmde)
       let adapter = s:extractdbvar(out,'adapter')
-      let adapter = get({'mysql2': 'mysql', 'postgresql': 'pgsql', 'sqlite3': 'sqlite', 'sqlserver': 'sqlsrv', 'sybase': 'asa', 'oci': 'ora'},adapter,adapter)
+      let adapter = get({'mysql2': 'mysql', 'postgresql': 'pgsql', 'sqlite3': 'sqlite', 'sqlserver': 'sqlsrv', 'sybase': 'asa', 'oracle': 'ora'},adapter,adapter)
       let dict['type'] = toupper(adapter)
       let dict['user'] = s:extractdbvar(out,'username')
       let dict['passwd'] = s:extractdbvar(out,'password')
@@ -3959,7 +3959,11 @@ function! s:app_dbext_settings(environment) dict
         let dict['dbname'] = self.path(dict['dbname'])
       endif
       let dict['profile'] = ''
-      let dict['srvname'] = s:extractdbvar(out,'host')
+      if adapter == 'ora'
+        let dict['srvname'] = s:extractdbvar(out,'database')
+      else
+        let dict['srvname'] = s:extractdbvar(out,'host')
+      endif
       let dict['host'] = s:extractdbvar(out,'host')
       let dict['port'] = s:extractdbvar(out,'port')
       let dict['dsnname'] = s:extractdbvar(out,'dsn')
