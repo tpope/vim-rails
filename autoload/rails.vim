@@ -3558,7 +3558,7 @@ function! s:BufSyntax()
         syn keyword rubyRailsARCallbackMethod after_create after_destroy after_save after_update after_validation after_validation_on_create after_validation_on_update
         syn keyword rubyRailsARCallbackMethod around_create around_destroy around_save around_update
         syn keyword rubyRailsARCallbackMethod after_commit after_find after_initialize after_rollback after_touch
-        syn keyword rubyRailsARClassMethod attr_accessible attr_protected establish_connection set_inheritance_column set_locking_column set_primary_key set_sequence_name set_table_name
+        syn keyword rubyRailsARClassMethod attr_accessible attr_protected attr_readonly establish_connection set_inheritance_column set_locking_column set_primary_key set_sequence_name set_table_name
         syn keyword rubyRailsARValidationMethod validate validates validate_on_create validate_on_update validates_acceptance_of validates_associated validates_confirmation_of validates_each validates_exclusion_of validates_format_of validates_inclusion_of validates_length_of validates_numericality_of validates_presence_of validates_size_of validates_uniqueness_of
         syn keyword rubyRailsMethod logger
       endif
@@ -4099,15 +4099,15 @@ function! s:BufAbbreviations()
       Rabbrev coo[ cookies
       Rabbrev fl[ flash
       Rabbrev rr( render
-      Rabbrev ra( render :action\ =>\ 
-      Rabbrev rc( render :controller\ =>\ 
-      Rabbrev rf( render :file\ =>\ 
-      Rabbrev ri( render :inline\ =>\ 
-      Rabbrev rj( render :json\ =>\ 
-      Rabbrev rl( render :layout\ =>\ 
-      Rabbrev rp( render :partial\ =>\ 
-      Rabbrev rt( render :text\ =>\ 
-      Rabbrev rx( render :xml\ =>\ 
+      Rabbrev ra( render :action\ =>\
+      Rabbrev rc( render :controller\ =>\
+      Rabbrev rf( render :file\ =>\
+      Rabbrev ri( render :inline\ =>\
+      Rabbrev rj( render :json\ =>\
+      Rabbrev rl( render :layout\ =>\
+      Rabbrev rp( render :partial\ =>\
+      Rabbrev rt( render :text\ =>\
+      Rabbrev rx( render :xml\ =>\
     endif
     if buffer.type_name('view','helper')
       Rabbrev dotiw distance_of_time_in_words
@@ -4115,8 +4115,8 @@ function! s:BufAbbreviations()
     endif
     if buffer.type_name('controller')
       Rabbrev re(  redirect_to
-      Rabbrev rea( redirect_to :action\ =>\ 
-      Rabbrev rec( redirect_to :controller\ =>\ 
+      Rabbrev rea( redirect_to :action\ =>\
+      Rabbrev rec( redirect_to :controller\ =>\
       Rabbrev rst( respond_to
     endif
     if buffer.type_name() ==# 'model' || buffer.type_name('model-arb')
@@ -4154,13 +4154,13 @@ function! s:BufAbbreviations()
       Rabbrev asre( assert_response
       Rabbrev art(  assert_redirected_to
     endif
-    Rabbrev :a    :action\ =>\ 
+    Rabbrev :a    :action\ =>\
     " hax
-    Rabbrev :c    :co________\ =>\ 
+    Rabbrev :c    :co________\ =>\
     inoreabbrev <buffer> <silent> :c <C-R>=<SID>TheCWord()<CR>
-    Rabbrev :i    :id\ =>\ 
-    Rabbrev :o    :object\ =>\ 
-    Rabbrev :p    :partial\ =>\ 
+    Rabbrev :i    :id\ =>\
+    Rabbrev :o    :object\ =>\
+    Rabbrev :p    :partial\ =>\
     Rabbrev logd( logger.debug
     Rabbrev logi( logger.info
     Rabbrev logw( logger.warn
