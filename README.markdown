@@ -19,7 +19,7 @@ features:
   long method names, `'completefunc'` is set to enable syntax based
   completion on CTRL-X CTRL-U.
 
-* Interface to rake.  Use :Rake to run the current test, spec, or
+* Interface to rake.  Use `:Rake` to run the current test, spec, or
   feature.  Use `:.Rake` to do a focused run of just the method,
   example, or scenario on the current line.  `:Rake` can also run
   arbitrary migrations, load individual fixtures, and more.
@@ -28,15 +28,15 @@ features:
 * Interface to `script/*`.  Generally, use `:Rscript about` to call
   `script/about` or `script/rails about`.  Most commands have wrappers
   with additional features: `:Rgenerate controller Blog` generates a
-  blog controller and edits `app/controllers/blog_controller.rb.`
+  blog controller and edits `app/controllers/blog_controller.rb`.
   `:help rails-scripts`
 
 * Partial extraction and migration inversion.  `:Rextract {file}`
   replaces the desired range (ideally selected in visual line mode) with
   `render :partial => '{file}'`, which is automatically created with
   your content.  The `@{file}` instance variable is replaced with the
-  `{file}` local variable.  `:Rinvert` takes a self.up migration and
-  writes a self.down.  `:help rails-refactoring`
+  `{file}` local variable.  `:Rinvert` takes a `self.up` migration and
+  writes a `self.down`.  `:help rails-refactoring`
 
 * Integration with other plugins.  `:Rtree` spawns
   [NERDTree.vim](https://github.com/scrooloose/nerdtree).  If
@@ -76,7 +76,7 @@ family of commands to open a new tab and edit a file at the same time.
 > Can I use rails.vim to edit other Ruby projects?
 
 I wrote [rake.vim](https://github.com/tpope/vim-rake) for exactly that
-purpose.  It activates for any project with a Rakefile that's not a
+purpose.  It activates for any project with a `Rakefile` that's not a
 Rails application.
 
 > Is Rails 3 supported yet?
