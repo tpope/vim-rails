@@ -1,6 +1,7 @@
 *rails.txt*	Plugin for working with Ruby on Rails applications
 
-Author: Tim Pope <vimNOSPAM@tpope.org>		|rails-plugin-author|
+Author:  Tim Pope <http://tpo.pe/>
+License: Same terms as Vim itself (see |license|)
 
 |rails-introduction|		Introduction and Feature Summary
 |rails-commands|		General Commands
@@ -1019,25 +1020,14 @@ This is highly discouraged: don't fight Rails.
 
 ABOUT					*rails-about* *rails-plugin-author*
 
-This plugin was written by Tim Pope.  Email him at <vimNOSPAM@tpope.org>.  He
-can also be found on Freenode's IRC network, hanging out in #rubyonrails and
-#vim as tpope.
+This plugin was written by Tim Pope.  Email all comments, complaints, and compliments to him at vim at tpope. org.
 
-The official homepage is
-    http://rails.vim.tpope.net
 The latest stable version can be found at
     http://www.vim.org/scripts/script.php?script_id=1567
-You can keep up to date with |GetLatestVimScripts|.
 
-The very latest development versions can be retrieved from Git:
-    http://github.com/tpope/vim-rails
+Bugs can be reported and the very latest development version can be retrieved
+from GitHub:
+    https://github.com/tpope/vim-rails
     git clone git://github.com/tpope/vim-rails.git
-
-Feedback is highly desired on this plugin.  Please send all comments,
-complaints, and compliments to the author.  No bug is too small to report.
-
-						*rails-license*
-This plugin is distributable under the same terms as Vim itself.  See
-|license|.  No warranties, expressed or implied.
 
  vim:tw=78:ts=8:ft=help:norl:
