@@ -1,5 +1,5 @@
 " autoload/rails.vim
-" Author:       Tim Pope <vimNOSPAM@tpope.org>
+" Author:       Tim Pope <http://tpo.pe/>
 
 " Install this file as autoload/rails.vim.
 
