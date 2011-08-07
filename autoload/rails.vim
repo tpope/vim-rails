@@ -1010,29 +1010,17 @@ function! rails#new_app_command(bang,...)
     endif
     return
   endif
-  let dir = ""
-  if a:1 !~ '^-' && a:1 !=# 'new'
-    let dir = a:1
-  elseif a:{a:0} =~ '[\/]'
-    let dir = a:{a:0}
-  else
-    let dir = a:1
-  endif
-  let str = ""
-  let c = 1
-  while c <= a:0
-    let str .= " " . s:rquote(expand(a:{c}))
-    let c += 1
-  endwhile
-  let dir = expand(dir)
-  let append = ""
+  let args = map(copy(a:000),'expand(v:val)')
   if a:bang
-    let append .= " --force"
+    let args = ['--force'] + args
   endif
-  exe "!rails".append.str
-  if filereadable(dir."/".g:rails_default_file)
-    edit `=dir.'/'.g:rails_default_file`
-  endif
+  exe '!rails '.join(map(copy(args),'s:rquote(v:val)'),' ')
+  for dir in args
+    if dir !~# '^-' && filereadable(dir.'/'.g:rails_default_file)
+      edit `=dir.'/'.g:rails_default_file`
+      return
+    endif
+  endfor
 endfunction
 
 function! s:app_tags_command() dict
