@@ -991,7 +991,7 @@ function! s:Log(bang,arg)
     if exists(":Tail")
       Tail  `=rails#app().path(lf)`
     else
-      pedit `=rails#app().path(lf)`
+      top pedit `=rails#app().path(lf)`
     endif
   endif
 endfunction
