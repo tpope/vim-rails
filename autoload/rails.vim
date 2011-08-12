@@ -2272,7 +2272,7 @@ function! s:modelList(A,L,P)
 endfunction
 
 function! s:uploaderList(A,L,P)
-  return s:autocamelize(rails#app().relglob("app/uploaders/", "**/*", ".rb"),a:A)
+  return s:autocamelize(rails#app().relglob("app/uploaders/", "**/*", "_uploader.rb"),a:A)
 endfunction
 
 function! s:cellList(A,L,P)
@@ -2284,7 +2284,7 @@ function! s:widgetList(A,L,P)
 endfunction
 
 function! s:jobList(A,L,P)
-  return s:autocamelize(rails#app().relglob("app/jobs/", "**/*", ".rb"),a:A)
+  return s:autocamelize(rails#app().relglob("app/jobs/", "**/*", "_job.rb"),a:A)
 endfunction
 
 function! s:loopList(A,L,P)
@@ -2693,15 +2693,15 @@ function! s:mailerEdit(cmd,...)
 endfunction
 
 function! s:uploaderEdit(cmd,...)
-  return s:EditSimpleRb(a:cmd,"uploader",a:0? a:1 : s:model(1),"app/uploaders/","_uploader.rb")
+  return s:EditSimpleRb(a:cmd, "uploader", a:0 ? a:1 : s:model(1), "app/uploaders/", "_uploader.rb")
 endfunction
 
 function! s:loopEdit(cmd,...)
-  return s:EditSimpleRb(a:cmd,"loop","","app/loops/",".rb")
+  return s:EditSimpleRb(a:cmd, "loop", "", "app/loops/", "_loop.rb")
 endfunction
 
 function! s:factoryEdit(cmd,...)
-  return s:EditSimpleRb(a:cmd,"factory",a:0? a:1 : s:model(1),"spec/factories/",".rb")
+  return s:EditSimpleRb(a:cmd, "factory", a:0 ? a:1 : s:model(1), "spec/factories/", ".rb")
 endfunction
 
 function! s:cellEdit(cmd,...)
@@ -2713,11 +2713,11 @@ function! s:widgetEdit(cmd,...)
 endfunction
 
 function! s:jobEdit(cmd,...)
-  return s:EditSimpleRb(a:cmd,"job","","app/jobs/",".rb")
+  return s:EditSimpleRb(a:cmd, "job", a:0 ? a:1 : "", "app/jobs/", "_job.rb")
 endfunction
 
 function! s:helperEdit(cmd,...)
-  return s:EditSimpleRb(a:cmd,"helper",a:0? a:1 : s:controller(1),"app/helpers/","_helper.rb")
+  return s:EditSimpleRb(a:cmd, "helper", a:0 ? a:1 : s:controller(1), "app/helpers/", "_helper.rb")
 endfunction
 
 function! s:stylesheetEdit(cmd,...)
