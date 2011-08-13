@@ -4444,29 +4444,7 @@ function! RailsBufInit(path)
     let g:RAILS_HISTORY = s:sub(g:RAILS_HISTORY,'%(.{-}\n){,'.g:rails_history_size.'}\zs.*','')
   endif
   call app.source_callback("config/syntax.vim")
-  if &ft == "mason"
-    setlocal filetype=eruby
-  elseif &ft =~ '^\%(conf\|ruby\)\=$' && expand("%:e") =~ '^\%(rjs\|rxml\|builder\|rake\|mab\)$'
-    setlocal filetype=ruby
-  elseif &ft =~ '^\%(conf\|ruby\)\=$' && expand("%:t") =~ '^\%(\%(Rake\|Gem\|Cap\)file\|Isolate\)$'
-    setlocal filetype=ruby
-  elseif &ft =~ '^\%(liquid\)\=$' && expand("%:e") == "liquid"
-    setlocal filetype=liquid
-  elseif &ft =~ '^\%(haml\|x\=html\)\=$' && expand("%:e") == "haml"
-    setlocal filetype=haml
-  elseif &ft =~ '^\%(sass\|conf\)\=$' && expand("%:e") == "sass"
-    setlocal filetype=sass
-  elseif &ft =~ '^\%(scss\|conf\)\=$' && expand("%:e") == "scss"
-    setlocal filetype=scss
-  elseif &ft =~ '^\%(lesscss\|conf\)\=$' && expand("%:e") == "less"
-    setlocal filetype=lesscss
-  elseif &ft =~ '^\%(dryml\)\=$' && expand("%:e") == "dryml"
-    setlocal filetype=dryml
-  elseif (&ft == "" || v:version < 701) && expand("%:e") =~ '^\%(rhtml\|erb\)$'
-    setlocal filetype=eruby
-  elseif (&ft == "" || v:version < 700) && expand("%:e") == 'yml'
-    setlocal filetype=yaml
-  elseif &ft =~ '^\%(conf\|yaml\)\=$' && expand("%:t") =~ '\.yml\.example$'
+  if expand('%:t') =~ '\.yml\.example$'
     setlocal filetype=yaml
   elseif firsttime
     " Activate custom syntax
