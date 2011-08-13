@@ -316,10 +316,10 @@ endfunction
 
 call s:add_methods('readable',['end_of','last_opening_line','last_method_line','last_method','last_format','define_pattern'])
 
-let s:view_types = 'rhtml,erb,rxml,builder,rjs,mab,liquid,haml,dryml,mn,slim'
+let s:view_types = split('rhtml,erb,rxml,builder,rjs,mab,liquid,haml,dryml,mn,slim',',')
 
 function! s:viewspattern()
-  return '\%('.s:gsub(s:view_types,',','\\|').'\)'
+  return '\%('.join(s:view_types,'\|').'\)'
 endfunction
 
 function! s:controller(...)
@@ -2615,7 +2615,7 @@ function! s:findview(name)
     return pre.name
   else
     for format in ['.'.s:format('html'), '']
-      for type in split(s:view_types,',')
+      for type in s:view_types
         if self.app().has_file(pre.name.format.'.'.type)
           return pre.name.format.'.'.type
         endif
@@ -4554,7 +4554,7 @@ function! s:BufSettings()
   endif
   if has("gui_win32") || has("gui_running")
     let code      = '*.rb;*.rake;Rakefile'
-    let templates = '*.'.s:gsub(s:view_types,',',';*.')
+    let templates = '*.'.join(s:view_types,';*.')
     let fixtures  = '*.yml;*.csv'
     let statics   = '*.html;*.css;*.js;*.xml;*.xsd;*.sql;.htaccess;README;README_FOR_APP'
     let b:browsefilter = ""
@@ -4566,7 +4566,7 @@ function! s:BufSettings()
           \."All Files (*.*)\t*.*\n"
   endif
   call self.setvar('&includeexpr','RailsIncludeexpr()')
-  call self.setvar('&suffixesadd', ".rb,.".s:gsub(s:view_types,',',',.').",.css,.js,.yml,.csv,.rake,.sql,.html,.xml")
+  call self.setvar('&suffixesadd', ".rb,.".join(s:view_types,',.').",.css,.js,.yml,.csv,.rake,.sql,.html,.xml")
   let ft = self.getvar('&filetype')
   if ft =~ '^\%(e\=ruby\|[yh]aml\|javascript\|css\|s[ac]ss\|lesscss\)$'
     call self.setvar('&shiftwidth',2)
@@ -4577,7 +4577,7 @@ function! s:BufSettings()
     endif
   endif
   if ft == 'ruby'
-    call self.setvar('&suffixesadd',".rb,.".s:gsub(s:view_types,',',',.').",.yml,.csv,.rake,s.rb")
+    call self.setvar('&suffixesadd',".rb,.".join(s:view_types,',.').",.yml,.csv,.rake,s.rb")
     call self.setvar('&define',self.define_pattern())
     " This really belongs in after/ftplugin/ruby.vim but we'll be nice
     if exists('g:loaded_surround') && self.getvar('surround_101') == ''
@@ -4587,9 +4587,9 @@ function! s:BufSettings()
     endif
   elseif ft == 'yaml' || fnamemodify(self.name(),':e') == 'yml'
     call self.setvar('&define',self.define_pattern())
-    call self.setvar('&suffixesadd',".yml,.csv,.rb,.".s:gsub(s:view_types,',',',.').",.rake,s.rb")
+    call self.setvar('&suffixesadd',".yml,.csv,.rb,.".join(s:view_types,',.').",.rake,s.rb")
   elseif ft =~# '^eruby\>'
-    call self.setvar('&suffixesadd',".".s:gsub(s:view_types,',',',.').",.rb,.css,.js,.html,.yml,.csv")
+    call self.setvar('&suffixesadd',".".join(s:view_types,',.').",.rb,.css,.js,.html,.yml,.csv")
     if exists("g:loaded_allml")
       call self.setvar('allml_stylesheet_link_tag', "<%= stylesheet_link_tag '\r' %>")
       call self.setvar('allml_javascript_include_tag', "<%= javascript_include_tag '\r' %>")
