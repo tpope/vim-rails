@@ -42,8 +42,11 @@ features:
   [NERDTree.vim](https://github.com/scrooloose/nerdtree).  If
   [dbext.vim](http://www.vim.org/scripts/script.php?script_id=356) is
   installed, it will be transparently configured to reflect
-  `database.yml`.  Cream users get some additional mappings, and all GUI
-  users get a menu.  `:help rails-integration`
+  `database.yml`.  Users of
+  [abolish.vim](https://github.com/tpope/vim-abolish) get pluralize and
+  tableize coercions, and users of
+  [bundler.vim](https://github.com/tpope/vim-bundler) get `bundle exec
+  rake`.  `:help rails-integration`
 
 Installation
 ------------

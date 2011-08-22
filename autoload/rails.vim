@@ -1135,7 +1135,9 @@ function! s:Rake(bang,lnum,arg)
   let old_makeprg = &l:makeprg
   let old_errorformat = &l:errorformat
   try
-    if &l:makeprg !~# 'rake'
+    if exists('b:bundler_root') && b:bundler_root ==# rails#app().path()
+      let &l:makeprg = 'bundle exec rake'
+    else
       let &l:makeprg = 'rake'
     endif
     let &l:errorformat = s:efm_backtrace
