@@ -4634,8 +4634,8 @@ augroup railsPluginAuto
   autocmd BufWritePost */generators/**            call rails#cache_clear("generators")
   autocmd FileType * if exists("b:rails_root") | call s:BufSettings() | endif
   autocmd Syntax ruby,eruby,yaml,haml,javascript,coffee,railslog if exists("b:rails_root") | call s:BufSyntax() | endif
-  autocmd QuickFixCmdPre  make* call s:push_chdir()
-  autocmd QuickFixCmdPost make* call s:pop_command()
+  autocmd QuickFixCmdPre  *make* call s:push_chdir()
+  autocmd QuickFixCmdPost *make* call s:pop_command()
 augroup END
 
 " }}}1
