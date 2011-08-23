@@ -2238,8 +2238,8 @@ function! s:layoutList(A,L,P)
 endfunction
 
 function! s:stylesheetList(A,L,P)
-  let list = rails#app().relglob('app/assets/stylesheets/','**/*.css*','')
-  call map(list,'s:sub(v:val,"\\.css\%(\\.\\w+\)\=$","")')
+  let list = rails#app().relglob('app/assets/stylesheets/','**/*.*','')
+  call map(list,'s:sub(v:val,"\\..*$","")')
   let list += rails#app().relglob('public/stylesheets/','**/*','.css')
   if rails#app().has('sass')
     call extend(list,rails#app().relglob('public/stylesheets/sass/','**/*','.s?ss'))
@@ -2249,8 +2249,8 @@ function! s:stylesheetList(A,L,P)
 endfunction
 
 function! s:javascriptList(A,L,P)
-  let list = rails#app().relglob('app/assets/javascripts/','**/*.js*','')
-  call map(list,'s:sub(v:val,"\\.js\%(\\.\\w+\)*$","")')
+  let list = rails#app().relglob('app/assets/javascripts/','**/*.*','')
+  call map(list,'s:sub(v:val,"\\..*$","")')
   let list += rails#app().relglob("public/javascripts/","**/*",".js")
   return s:completion_filter(list,a:A)
 endfunction
@@ -2678,7 +2678,7 @@ function! s:stylesheetEdit(cmd,...)
   elseif rails#app().has('lesscss') && rails#app().has_file('app/stylesheets/'.name.'.less')
     return s:EditSimpleRb(a:cmd,"stylesheet",name,"app/stylesheets/",".less",1)
   else
-    let types = rails#app().relglob('app/assets/stylesheets/'.name,'.css*','')
+    let types = rails#app().relglob('app/assets/stylesheets/'.name,'.*','')
     if !empty(types)
       return s:EditSimpleRb(a:cmd,'stylesheet',name,'app/assets/stylesheets/',types[0],1)
     else
@@ -2694,7 +2694,7 @@ function! s:javascriptEdit(cmd,...)
   elseif rails#app().has('coffee') && rails#app().has_file('app/scripts/'.name.'.js')
     return s:EditSimpleRb(a:cmd,'javascript',name,'app/scripts/','.js',1)
   else
-    let types = rails#app().relglob('app/assets/javascripts/'.name,'.js*','')
+    let types = rails#app().relglob('app/assets/javascripts/'.name,'.*','')
     if !empty(types)
       return s:EditSimpleRb(a:cmd,'javascript',name,'app/assets/javascripts/',types[0],1)
     else
