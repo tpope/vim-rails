@@ -4367,9 +4367,6 @@ function! RailsBufInit(path)
     " Activate custom syntax
     let &syntax = &syntax
   endif
-  if firsttime
-    call s:BufInitStatusline()
-  endif
   if expand('%:e') == 'log'
     nnoremap <buffer> <silent> R :checktime<CR>
     nnoremap <buffer> <silent> G :checktime<Bar>$<CR>
