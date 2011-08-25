@@ -839,10 +839,6 @@ others.  This allows shortening the above example: >
 					*rails-'includeexpr'*	*rails-'inex'*
 The 'includeexpr' option is set to enable the magic described in |rails-gf|.
 
-					*rails-'statusline'*	*rails-'stl'*
-Useful information is added to the 'statusline', when |g:rails_statusline| is
-enabled.
-
 					*rails-'filetype'*	*rails-'ft'*
 The 'filetype' is sometimes adjusted for Rails files.  Most notably, *.rxml
 and *.rjs are treated as Ruby files, and files that have been falsely
@@ -995,14 +991,6 @@ terminal output have led to it being disabled by default.
 	let g:rails_url='http://localhost:3000/'
 Used for the |:Rpreview| command.  Default is as shown above.  Overridden by
 b:rails_url.
-
-						*g:rails_statusline*  >
-	let g:rails_statusline=1
-Give a clue in the statusline when this plugin is enabled.  Enabled by
-default.  This used to be a far more verbose indicator which included the
-type of Rails file.  If you actually liked this, you can add either
-%{rails#statusline(1)} or %{rails#STATUSLINE(1)} to 'statusline' explicitly
-(and let the author know, because this fallback is likely getting the boot).
 
 						*g:rails_syntax*  >
 	let g:rails_syntax=1
