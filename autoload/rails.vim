@@ -4362,6 +4362,8 @@ function! RailsBufInit(path)
   call app.source_callback("config/syntax.vim")
   if expand('%:t') =~ '\.yml\.example$'
     setlocal filetype=yaml
+  elseif expand('%:e') =~ '^\%(rjs\|rxml\|builder\)$'
+    setlocal filetype=ruby
   elseif firsttime
     " Activate custom syntax
     let &syntax = &syntax
