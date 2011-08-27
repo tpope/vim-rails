@@ -3806,8 +3806,6 @@ endfunction
 " Mappings {{{1
 
 function! s:BufMappings()
-  nnoremap <buffer> <silent> <Plug>RailsAlternate  :<C-U>A<CR>
-  nnoremap <buffer> <silent> <Plug>RailsRelated    :<C-U>R<CR>
   nnoremap <buffer> <silent> <Plug>RailsFind       :<C-U>REfind<CR>
   nnoremap <buffer> <silent> <Plug>RailsSplitFind  :<C-U>RSfind<CR>
   nnoremap <buffer> <silent> <Plug>RailsVSplitFind :<C-U>RVfind<CR>
@@ -3821,12 +3819,6 @@ function! s:BufMappings()
     endif
     if !hasmapto("<Plug>RailsTabFind")
       nmap <buffer> <C-W>gf         <Plug>RailsTabFind
-    endif
-    if !hasmapto("<Plug>RailsAlternate")
-      nmap <buffer> [f              <Plug>RailsAlternate
-    endif
-    if !hasmapto("<Plug>RailsRelated")
-      nmap <buffer> ]f              <Plug>RailsRelated
     endif
     if exists("$CREAM")
       imap <buffer> <C-CR> <C-O><Plug>RailsFind
