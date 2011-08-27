@@ -1797,8 +1797,7 @@ function! s:Complete_find(ArgLead, CmdLine, CursorPos)
       endfor
     endif
   endfor
-  let results = sort(map(keys(seen),'s:sub(v:val,"[.]rb$","")'))
-  return s:autocamelize(results,a:ArgLead)
+  return s:autocamelize(sort(keys(seen)),a:ArgLead)
 endfunction
 
 function! s:Complete_edit(ArgLead, CmdLine, CursorPos)
