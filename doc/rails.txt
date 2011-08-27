@@ -71,10 +71,10 @@ actually edit a file from a Rails application.
 			|:help| rails.
 
 						*rails-:Redit*
-:Redit {file}		Edit {file}, relative to the application root.  Append
-			:line or #method to jump within the file, as in
-			:Redit app/controllers/users_controller.rb:12 or
-			:Redit app/models/user.rb#activate .
+:Redit {file}		Deprecated in favor of |:R|.
+
+						*rails-:Rfind*
+:Rfind [{file}]		Deprecated in favor of |:R| or |:find|.
 
 						*rails-:Rlog*
 :Rlog [{logfile}]	Split window and open {logfile} ($RAILS_ENV or
@@ -145,19 +145,13 @@ following features will greatly ease navigating the Rails file structure.
 
 The 'path' has been modified to include all the best places to be.
 >
-	:find blog_controller
-	:find book_test
+	:find application_controller.rb
 <
-						*rails-:Rfind*
-:Rfind [{file}]		Find {file}.  Very similar to :find, but things like
-			BlogController are properly handled, and tab complete
-			works.
-
 File Under Cursor - gf ~
 						*rails-gf*
 The |gf| command, which normally edits the current file under the cursor, has
-been remapped to take context into account. |CTRL-W_f|(open in new window) and
-|CTRL-W_gf| (open in new tab) are also remapped.
+been remapped to take context into account. |CTRL-W_f| (open in new window)
+and |CTRL-W_gf| (open in new tab) are also remapped.
 
 Example uses of |gf|, and where they might lead.
 (* indicates cursor position)
@@ -208,15 +202,17 @@ Two commands, :A and :R, are used quickly jump to an "alternate" and a
 :AS			either the same window (:A and :AE), a new split
 :AV			window (:AS), a new vertically split window (:AV), a
 :AT			new tab (:AT), or read it into the current buffer
-:AD                     (:AD).
+:AD			(:AD).
 
 	*rails-:R* *rails-:RE* *rails-:RS* *rails-:RV* *rails-:RT* *rails-:RD*
 :R			These are similar |rails-:A| and friends above, only
 :RE			they jump to the "related" file rather than the
-:RS			"alternate."
-:RV			
-:RT
-:RD
+:RS			"alternate."  With a file name argument, they edit
+:RV			a file relative to the application root (:R Rakefile),
+:RT			and with a count and a file name argument, they find a
+:RD			file in 'path' (e.g., :1R PostsController.)  You can
+			also append a line number (post.rb:42) or a method
+			(PostsController#32) to both forms.
 
 					*rails-alternate* *rails-related*
 The alternate file is most frequently the test file, though there are
@@ -255,8 +251,8 @@ opening in a new tab, and reading the file into the current buffer.  For
 :Rmodel, those variants would be :RSmodel, :RVmodel, :RTmodel, and :RDmodel.
 There is also :REmodel which is a synonym for :Rmodel (future versions might
 allow customization of the behavior of :Rmodel).  They also allow for jumping
-to methods or line numbers using the same syntax as |:Redit|, and file
-creation can be forced by adding a ! after the filename (not after the command
+to methods or line numbers using the same syntax as |:R|, and file creation
+can be forced by adding a ! after the filename (not after the command
 itself!).
 
 :Rcontroller					|rails-:Rcontroller|
