@@ -91,6 +91,25 @@ Of course.
 Baby, you can go all the way back to Rails 1 if you like (give or take
 some syntax highlighting).
 
+> Rake is slow.  How about making `:Rake` run
+> `testrb`/`rspec`/`cucumber` directly instead of `rake`?
+
+Well then it wouldn't make sense to call it `:Rake`, now, would it?
+Maybe one day I'll add a separate `:Run` command or something.  In the
+meantime, here's how you can set up `:make` to run the current test:
+
+    autocmd FileType cucumber compiler cucumber | setl makeprg=cucumber\ \"%:p\"
+    autocmd FileType ruby
+          \ if expand('%') =~# '_test\.rb$' |
+          \   compiler rubyunit | setl makeprg=testrb\ \"%:p\" |
+          \ elseif expand('%') =~# '_spec\.rb$' |
+          \   compiler rspec | setl makeprg=rspec\ \"%:p\" |
+          \ else |
+          \   compiler ruby | setl makeprg=ruby\ -wc\ \"%:p\" |
+          \ endif
+    autocmd User Bundler
+          \ if &makeprg !~ 'bundle' | setl makeprg^=bundle\ exec\  | endif
+
 Contributing
 ------------
 
