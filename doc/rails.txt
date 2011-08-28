@@ -950,8 +950,7 @@ JavaScript files, since ctags has a tendency to choke on those.
 
 						*g:rails_default_file*  >
 	let g:rails_default_file='config/database.yml'
-File to load when a new Rails application is created, or when loading an
-existing project from the menu.  Defaults to the README.
+File to load when a new Rails application is created.  Defaults to the README.
 
 					*rails-screen* *g:rails_gnu_screen*  >
 	let g:rails_gnu_screen=1
@@ -980,8 +979,8 @@ Modelines are deprecated and disabled by default.
 						*g:rails_menu*  >
 	let g:rails_menu=1
 When 2, a Rails menu is created.  When 1, this menu is a submenu under the
-Plugin menu.  The default is 1 except on MacVim, where reports of weird
-terminal output have led to it being disabled by default.
+Plugin menu.  The default is 0, as the menu is slated for removal from future
+versions of rails.vim.
 
 						*g:rails_url*  >
 	let g:rails_url='http://localhost:3000/'
