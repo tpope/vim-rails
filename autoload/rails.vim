@@ -3474,26 +3474,26 @@ endfunction
 
 function! s:helpermethods()
   return ""
-        \."atom_feed audio_path audio_tag auto_discovery_link_tag auto_link "
-        \."button_to button_to_function "
-        \."cache capture cdata_section check_box check_box_tag collection_select concat content_for content_tag content_tag_for csrf_meta_tag current_cycle cycle "
-        \."date_select datetime_select debug distance_of_time_in_words distance_of_time_in_words_to_now div_for dom_class dom_id draggable_element draggable_element_js drop_receiving_element drop_receiving_element_js "
-        \."email_field email_field_tag error_message_on error_messages_for escape_javascript escape_once excerpt "
-        \."favicon_link_tag field_set_tag fields_for file_field file_field_tag form form_for form_tag "
+        \."action_name atom_feed audio_path audio_tag auto_discovery_link_tag "
+        \."button_tag button_to button_to_function "
+        \."cache capture cdata_section check_box check_box_tag collection_select concat content_for content_tag content_tag_for controller controller_name controller_path convert_to_model csrf_meta_tag csrf_meta_tags current_cycle cycle "
+        \."date_select datetime_select debug distance_of_time_in_words distance_of_time_in_words_to_now div_for dom_class dom_id "
+        \."email_field email_field_tag escape_javascript escape_once excerpt "
+        \."favicon_link_tag field_set_tag fields_for file_field file_field_tag form_for form_tag "
         \."grouped_collection_select grouped_options_for_select "
         \."hidden_field hidden_field_tag highlight "
-        \."image_path image_submit_tag image_tag input "
-        \."javascript_cdata_section javascript_include_tag javascript_path javascript_tag "
+        \."image_alt image_path image_submit_tag image_tag "
+        \."j javascript_cdata_section javascript_include_tag javascript_path javascript_tag "
         \."l label label_tag link_to link_to_function link_to_if link_to_unless link_to_unless_current localize "
         \."mail_to "
         \."number_field number_field_tag number_to_currency number_to_human number_to_human_size number_to_percentage number_to_phone number_with_delimiter number_with_precision "
         \."option_groups_from_collection_for_select options_for_select options_from_collection_for_select "
-        \."password_field password_field_tag path_to_audio path_to_image path_to_javascript path_to_stylesheet path_to_video phone_field phone_field_tag pluralize "
-        \."radio_button radio_button_tag range_field range_field_tag raw remote_function reset_cycle "
-        \."safe_concat sanitize sanitize_css search_field search_field_tag select select_date select_datetime select_day select_hour select_minute select_month select_second select_tag select_time select_year simple_format sortable_element sortable_element_js strip_links strip_tags stylesheet_link_tag stylesheet_path submit_tag "
-        \."t tag telephone_field telephone_field_tag text_area text_area_tag text_field text_field_tag time_ago_in_words time_select time_zone_options_for_select time_zone_select translate truncate "
-        \."update_page update_page_tag url_field url_field_tag url_for url_options "
-        \."video_path video_tag visual_effect "
+        \."password_field password_field_tag path_to_audio path_to_image path_to_javascript path_to_stylesheet path_to_video phone_field phone_field_tag pluralize provide "
+        \."radio_button radio_button_tag range_field range_field_tag raw request_forgery_protection_token reset_cycle "
+        \."safe_concat safe_join sanitize sanitize_css search_field search_field_tag select select_date select_datetime select_day select_hour select_minute select_month select_second select_tag select_time select_year simple_format strip_links strip_tags stylesheet_link_tag stylesheet_path submit_tag "
+        \."t tag telephone_field telephone_field_tag text_area text_area_tag text_field text_field_tag time_ago_in_words time_select time_tag time_zone_options_for_select time_zone_select translate truncate "
+        \."url_field url_field_tag url_for url_options "
+        \."video_path video_tag "
         \."word_wrap"
 endfunction
 
@@ -3560,20 +3560,19 @@ function! s:BufSyntax()
         syn keyword rubyRailsRenderMethod mail render
         syn keyword rubyRailsControllerMethod attachments default helper helper_attr helper_method
       endif
-      if buffer.type_name('controller','view','helper')
-        syn keyword rubyRailsMethod params request response session headers cookies flash
-        syn keyword rubyRailsRenderMethod render
-        syn keyword rubyRailsMethod logger polymorphic_path polymorphic_url
-      endif
       if buffer.type_name('helper','view')
+        syn keyword rubyRailsViewMethod polymorphic_path polymorphic_url
         exe "syn keyword rubyRailsHelperMethod ".s:gsub(s:helpermethods(),'<%(content_for|select)\s+','')
         syn match rubyRailsHelperMethod '\<select\>\%(\s*{\|\s*do\>\|\s*(\=\s*&\)\@!'
         syn match rubyRailsHelperMethod '\<\%(content_for?\=\|current_page?\)'
-        syn match rubyRailsViewMethod '\.\@<!\<\(h\|html_escape\|u\|url_encode\|controller\)\>'
+        syn match rubyRailsViewMethod '\.\@<!\<\(h\|html_escape\|u\|url_encode\)\>'
         if buffer.type_name('view-partial')
           syn keyword rubyRailsMethod local_assigns
         endif
       elseif buffer.type_name('controller')
+        syn keyword rubyRailsMethod params request response session headers cookies flash
+        syn keyword rubyRailsRenderMethod render
+        syn keyword rubyRailsMethod logger polymorphic_path polymorphic_url
         syn keyword rubyRailsControllerMethod helper helper_attr helper_method filter layout url_for serialize exempt_from_layout filter_parameter_logging hide_action cache_sweeper protect_from_forgery caches_page cache_page caches_action expire_page expire_action rescue_from
         syn keyword rubyRailsRenderMethod head redirect_to render_to_string respond_with
         syn match   rubyRailsRenderMethod '\<respond_to\>?\@!'
@@ -3662,9 +3661,8 @@ function! s:BufSyntax()
       exe 'syn keyword '.&syntax.'RailsHelperMethod '.s:gsub(s:helpermethods(),'<%(content_for|select)\s+','').' contained containedin=@'.&syntax.'RailsRegions'
       exe 'syn match '.&syntax.'RailsHelperMethod "\<select\>\%(\s*{\|\s*do\>\|\s*(\=\s*&\)\@!" contained containedin=@'.&syntax.'RailsRegions'
       exe 'syn match '.&syntax.'RailsHelperMethod "\<\%(content_for?\=\|current_page?\)" contained containedin=@'.&syntax.'RailsRegions'
-      exe 'syn keyword '.&syntax.'RailsMethod debugger logger polymorphic_path polymorphic_url contained containedin=@'.&syntax.'RailsRegions'
-      exe 'syn keyword '.&syntax.'RailsMethod params request response session headers cookies flash contained containedin=@'.&syntax.'RailsRegions'
-      exe 'syn match '.&syntax.'RailsViewMethod "\.\@<!\<\(h\|html_escape\|u\|url_encode\|controller\)\>" contained containedin=@'.&syntax.'RailsRegions'
+      exe 'syn keyword '.&syntax.'RailsMethod debugger polymorphic_path polymorphic_url contained containedin=@'.&syntax.'RailsRegions'
+      exe 'syn match '.&syntax.'RailsViewMethod "\.\@<!\<\(h\|html_escape\|u\|url_encode\)\>" contained containedin=@'.&syntax.'RailsRegions'
       if buffer.type_name('view-partial')
         exe 'syn keyword '.&syntax.'RailsMethod local_assigns contained containedin=@'.&syntax.'RailsRegions'
       endif
