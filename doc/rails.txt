@@ -1,7 +1,6 @@
 *rails.txt*	Plugin for working with Ruby on Rails applications
 
 Author:  Tim Pope <http://tpo.pe/>
-License: Same terms as Vim itself (see |license|)
 
 |rails-introduction|		Introduction and Feature Summary
 |rails-commands|		General Commands
@@ -1013,5 +1012,9 @@ Bugs can be reported and the very latest development version can be retrieved
 from GitHub:
     https://github.com/tpope/vim-rails
     git clone git://github.com/tpope/vim-rails.git
+
+						*rails-license*
+Copyright (c) Tim Pope.  Distributed under the same terms as Vim itself.
+See |license|.
 
  vim:tw=78:ts=8:ft=help:norl:
