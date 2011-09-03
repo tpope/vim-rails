@@ -1272,9 +1272,9 @@ function! s:readable_default_rake_task(lnum) dict abort
     let ver = matchstr(self.name(),'\<db/migrate/0*\zs\d*\ze_')
     if ver != ""
       let method = self.last_method(lnum)
-      if method == "down"
+      if method == "down" || lnum == 1
         return "db:migrate:down VERSION=".ver
-      elseif method == "up"
+      elseif method == "up" || lnum == line('$')
         return "db:migrate:up VERSION=".ver
       elseif lnum > 0
         return "db:migrate:down db:migrate:up VERSION=".ver
