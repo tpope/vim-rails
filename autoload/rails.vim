@@ -3679,10 +3679,10 @@ function! s:BufSyntax()
       syn include @rubyTop syntax/ruby.vim
       unlet g:main_syntax
       syn cluster yamlRailsRegions contains=yamlRailsOneLiner,yamlRailsBlock,yamlRailsExpression
-      syn region  yamlRailsOneLiner   matchgroup=yamlRailsDelimiter start="^%%\@!" end="$"  contains=@rubyRailsTop	containedin=ALLBUT,@yamlRailsRegions,yamlRailsComment keepend oneline
-      syn region  yamlRailsBlock      matchgroup=yamlRailsDelimiter start="<%%\@!" end="%>" contains=@rubyTop		containedin=ALLBUT,@yamlRailsRegions,yamlRailsComment
-      syn region  yamlRailsExpression matchgroup=yamlRailsDelimiter start="<%="    end="%>" contains=@rubyTop		containedin=ALLBUT,@yamlRailsRegions,yamlRailsComment
-      syn region  yamlRailsComment    matchgroup=yamlRailsDelimiter start="<%#"    end="%>" contains=rubyTodo,@Spell	containedin=ALLBUT,@yamlRailsRegions,yamlRailsComment keepend
+      syn region  yamlRailsOneLiner   matchgroup=yamlRailsDelimiter start="^%%\@!" end="$"  contains=@rubyRailsTop      containedin=ALLBUT,@yamlRailsRegions,yamlRailsComment keepend oneline
+      syn region  yamlRailsBlock      matchgroup=yamlRailsDelimiter start="<%%\@!" end="%>" contains=@rubyTop           containedin=ALLBUT,@yamlRailsRegions,yamlRailsComment
+      syn region  yamlRailsExpression matchgroup=yamlRailsDelimiter start="<%="    end="%>" contains=@rubyTop           containedin=ALLBUT,@yamlRailsRegions,yamlRailsComment
+      syn region  yamlRailsComment    matchgroup=yamlRailsDelimiter start="<%#"    end="%>" contains=rubyTodo,@Spell    containedin=ALLBUT,@yamlRailsRegions,yamlRailsComment keepend
       syn match yamlRailsMethod '\.\@<!\<\(h\|html_escape\|u\|url_encode\)\>' contained containedin=@yamlRailsRegions
       if classes != ''
         exe "syn keyword yamlRailsUserClass ".classes." contained containedin=@yamlRailsRegions"
