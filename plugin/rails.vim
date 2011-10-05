@@ -79,6 +79,9 @@ function! s:escvar(r)
 endfunction
 
 function! s:Detect(filename)
+  if exists('b:rails_root')
+    return s:BufInit(b:rails_root)
+  endif
   let fn = substitute(fnamemodify(a:filename,":p"),'\c^file://','','')
   let sep = matchstr(fn,'^[^\\/]\{3,\}\zs[\\/]')
   if sep != ""
