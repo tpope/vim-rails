@@ -2288,7 +2288,7 @@ function! s:jobList(A,L,P)
 endfunction
 
 function! s:loopList(A,L,P)
-  return s:autocamelize(rails#app().relglob("app/loops/", "**/*", ".rb"),a:A)
+  return s:autocamelize(rails#app().relglob("app/loops/", "**/*", "_loop.rb"),a:A)
 endfunction
 
 function! s:factoryList(A,L,P)
@@ -2697,7 +2697,7 @@ function! s:uploaderEdit(cmd,...)
 endfunction
 
 function! s:loopEdit(cmd,...)
-  return s:EditSimpleRb(a:cmd, "loop", "", "app/loops/", "_loop.rb")
+  return s:EditSimpleRb(a:cmd, "loop", a:0 ? a:1 : "", "app/loops/", "_loop.rb")
 endfunction
 
 function! s:factoryEdit(cmd,...)
