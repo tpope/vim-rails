@@ -2293,9 +2293,14 @@ function! s:migrationList(A,L,P)
 endfunction
 
 function! s:schemaList(A,L,P)
-  let models = rails#app().relglob("app/models/","**/*",".rb")
-  call filter(models,'v:val !~# "_observer$"')
-  return s:completion_filter(map(copy(models),'rails#tableize(v:val)'),a:A)
+  let tables = []
+  let table_re =  '^\s\+create_table\s"\([a-zA-Z0-9_]*\)".*$' 
+  for line in readfile('db/schema.rb')
+    if line =~ table_re
+      let tables += [substitute(line, table_re, '\1', '')]
+    endif
+  endfor
+  return s:autocamelize(tables, a:A)
 endfunction
 
 function! s:unittestList(A,L,P)
@@ -2528,7 +2533,7 @@ function! s:migrationEdit(cmd,...)
 endfunction
 
 function! s:app_schema(model) dict
-  return 'db/schema.rb#'.a:model
+  return 'db/schema.rb#'.rails#underscore(a:model)
 endfunction
 
 call s:add_methods('app', ['schema'])
