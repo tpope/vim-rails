@@ -271,6 +271,7 @@ itself!).
 :Rmodel						|rails-:Rmodel|
 :Robserver					|rails-:Robserver|
 :Rplugin					|rails-:Rplugin|
+:Rschema					|rails-:Rschema|
 :Rspec						|rails-:Rspec|
 :Rstylesheet					|rails-:Rstylesheet|
 :Rtask						|rails-:Rtask|
@@ -377,6 +378,10 @@ itself!).
 			the spec for the given file, use |:A| instead).  This
 			command is only defined if there is a spec folder in
 			the root of the application.
+
+						*rails-:Rschema*
+:Rschema [{table}]	Edit the schema and optionally jump to the specified
+			table.
 
 						*rails-:Rstylesheet*
 :Rstylesheet [{name}]	Edit the stylesheet for the specified name or current
