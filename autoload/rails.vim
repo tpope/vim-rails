@@ -1030,6 +1030,8 @@ function! s:app_tags_command() dict
     let cmd = "exuberant-ctags"
   elseif executable("ctags-exuberant")
     let cmd = "ctags-exuberant"
+  elseif executable("exctags")
+    let cmd = "exctags"
   elseif executable("ctags")
     let cmd = "ctags"
   elseif executable("ctags.exe")
