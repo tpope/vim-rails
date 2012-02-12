@@ -792,6 +792,7 @@ endfunction
 
 function! s:app_has(feature) dict
   let map = {
+        \'assets': 'app/assets/',
         \'test': 'test/',
         \'spec': 'spec/',
         \'cucumber': 'features/',
@@ -2249,16 +2250,24 @@ function! s:layoutList(A,L,P)
 endfunction
 
 function! s:stylesheetList(A,L,P)
-  let list = rails#app().relglob('public/stylesheets/','**/*','.css')
-  if rails#app().has('sass')
-    call extend(list,rails#app().relglob('public/stylesheets/sass/','**/*','.s?ss'))
-    call s:uniq(list)
+  if rails#app().has('assets')
+    let list = rails#app().relglob('app/assets/stylesheets/','**/*','.css')
+  else
+    let list = rails#app().relglob('public/stylesheets/','**/*','.css')
+    if rails#app().has('sass')
+      call extend(list,rails#app().relglob('public/stylesheets/sass/','**/*','.s?ss'))
+    endif
   endif
+  call s:uniq(list)
   return s:completion_filter(list,a:A)
 endfunction
 
 function! s:javascriptList(A,L,P)
-  return s:completion_filter(rails#app().relglob("public/javascripts/","**/*",".js"),a:A)
+  if rails#app().has('assets')
+    return s:completion_filter(rails#app().relglob("app/assets/javascripts/", "**/*", ".js"), a:A)
+  else
+    return s:completion_filter(rails#app().relglob("public/javascripts/", "**/*", ".js"), a:A)
+  endif
 endfunction
 
 function! s:metalList(A,L,P)
@@ -2722,25 +2731,29 @@ endfunction
 
 function! s:stylesheetEdit(cmd,...)
   let name = a:0 ? a:1 : s:controller(1)
-  if rails#app().has('sass') && rails#app().has_file('public/stylesheets/sass/'.name.'.sass')
-    return s:EditSimpleRb(a:cmd,"stylesheet",name,"public/stylesheets/sass/",".sass",1)
+  if rails#app().has('assets') && rails#app().has_file('app/assets/stylesheets/'.name.'.css')
+    return s:EditSimpleRb(a:cmd, "stylesheet", name, "app/assets/stylesheets/", ".css")
+  elseif rails#app().has('sass') && rails#app().has_file('public/stylesheets/sass/'.name.'.sass')
+    return s:EditSimpleRb(a:cmd, "stylesheet", name, "public/stylesheets/sass/", ".sass", 1)
   elseif rails#app().has('sass') && rails#app().has_file('public/stylesheets/sass/'.name.'.scss')
-    return s:EditSimpleRb(a:cmd,"stylesheet",name,"public/stylesheets/sass/",".scss",1)
+    return s:EditSimpleRb(a:cmd, "stylesheet", name, "public/stylesheets/sass/", ".scss", 1)
   elseif rails#app().has('lesscss') && rails#app().has_file('app/stylesheets/'.name.'.less')
-    return s:EditSimpleRb(a:cmd,"stylesheet",name,"app/stylesheets/",".less",1)
+    return s:EditSimpleRb(a:cmd, "stylesheet", name, "app/stylesheets/", ".less", 1)
   else
-    return s:EditSimpleRb(a:cmd,"stylesheet",name,"public/stylesheets/",".css",1)
+    return s:EditSimpleRb(a:cmd, "stylesheet", name, "public/stylesheets/", ".css", 1)
   endif
 endfunction
 
 function! s:javascriptEdit(cmd,...)
   let name = a:0 ? a:1 : s:controller(1)
-  if rails#app().has('coffee') && rails#app().has_file('app/scripts/'.name.'.coffee')
-    return s:EditSimpleRb(a:cmd,'javascript',name,'app/scripts/','.coffee',1)
+  if rails#app().has("assets") && rails#app().has_file('app/assets/javascripts/'.name.'.js')
+    return s:EditSimpleRb(a:cmd, 'javascript', name, 'app/assets/javascripts/', '.js')
+  elseif rails#app().has('coffee') && rails#app().has_file('app/scripts/'.name.'.coffee')
+    return s:EditSimpleRb(a:cmd, 'javascript', name, 'app/scripts/', '.coffee', 1)
   elseif rails#app().has('coffee') && rails#app().has_file('app/scripts/'.name.'.js')
-    return s:EditSimpleRb(a:cmd,'javascript',name,'app/scripts/','.js',1)
+    return s:EditSimpleRb(a:cmd,'javascript', name, 'app/scripts/', '.js', 1)
   else
-    return s:EditSimpleRb(a:cmd,'javascript',name,'public/javascripts/','.js',1)
+    return s:EditSimpleRb(a:cmd, 'javascript', name, 'public/javascripts/', '.js', 1)
   endif
 endfunction
 
@@ -2886,14 +2899,14 @@ endfunction
 
 function! s:environmentEdit(cmd,...)
   if a:0 || rails#app().has_file('config/application.rb')
-    return s:EditSimpleRb(a:cmd,"environment",a:0? a:1 : "../application","config/environments/",".rb")
+    return s:EditSimpleRb(a:cmd, "environment", a:0? a:1 : "../application","config/environments/", ".rb")
   else
-    return s:EditSimpleRb(a:cmd,"environment","environment","config/",".rb")
+    return s:EditSimpleRb(a:cmd, "environment", "environment", "config/", ".rb")
   endif
 endfunction
 
 function! s:initializerEdit(cmd,...)
-  return s:EditSimpleRb(a:cmd,"initializer",a:0? a:1 : "../routes","config/initializers/",".rb")
+  return s:EditSimpleRb(a:cmd, "initializer", a:0? a:1 : "../routes", "config/initializers/", ".rb")
 endfunction
 
 " }}}1
