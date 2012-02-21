@@ -223,7 +223,7 @@ The easiest way to learn these commands is to experiment.  A few examples of
 alternate and related files for a Test::Unit application follow:
 
 Current file		Alternate file		Related file ~
-model			unit test		schema definition
+model			uploader,unit test	schema definition
 controller (in method)	functional test		template (view)
 template (view)		functional test  	controller (jump to method)
 migration		previous migration	next migration
@@ -275,6 +275,7 @@ itself!).
 :Rspec						|rails-:Rspec|
 :Rstylesheet					|rails-:Rstylesheet|
 :Rtask						|rails-:Rtask|
+:Ruploader					|rails-:Ruploader|
 :Runittest					|rails-:Runittest|
 :Rview						|rails-:Rview|
 
@@ -393,6 +394,9 @@ itself!).
 			tasks for that plugin can be specified as well.  If no
 			argument is given, either the current plugin's
 			Rakefile or the application Rakefile will be edited.
+
+						*rails-:Ruploader*
+:Ruploader [{name}]	Edit the uploader for the specified name or current model.
 
 						*rails-:Runittest*
 :Runittest [{name}]	Edit the unit test or model spec for the specified
