@@ -689,7 +689,7 @@ function! s:readable_calculate_file_type() dict abort
       let r = "model-".class
     elseif f =~ '_mailer\.rb$'
       let r = "mailer"
-    elseif top =~ '\<\%(validates_\w\+_of\|self\.\%(table_name\|primary_key\)\|has_one\|has_many\|belongs_to\)\>'
+    elseif top =~ '\<\%(self\.\%(table_name\|primary_key\)\|has_one\|has_many\|belongs_to\)\>'
       let r = "model-arb"
     else
       let r = "model"
@@ -2552,7 +2552,7 @@ function! s:fixturesEdit(cmd,...)
   if file =~ '\.\w\+$' && rails#app().find_file(c.e,["test/fixtures","spec/fixtures"]) ==# ''
     call s:edit(a:cmd,file)
   else
-    call s:findedit(a:cmd,rails#app().find_file(c.e,["test/fixtures","spec/fixtures"],[".yml",".csv"],file))
+    call s:findedit(a:cmd,rails#app().find_file(c.e,["test/fixtures","spec/fixtures","test/factories","spec/factories"],[".yml",".csv",".rb"],file))
   endif
 endfunction
 
