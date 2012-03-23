@@ -223,7 +223,7 @@ function! s:CreateMenus() abort
     exe menucmd.g:rails_installed_menu.'.&Other\ files.Application\ &README :R doc/README_FOR_APP<CR>'
     exe menucmd.g:rails_installed_menu.'.&Other\ files.&Environment :Renvironment<CR>'
     exe menucmd.g:rails_installed_menu.'.&Other\ files.&Database\ Configuration :R config/database.yml<CR>'
-    exe menucmd.g:rails_installed_menu.'.&Other\ files.Database\ &Schema :Rmigration 0<CR>'
+    exe menucmd.g:rails_installed_menu.'.&Other\ files.Database\ &Schema :Rschema<CR>'
     exe menucmd.g:rails_installed_menu.'.&Other\ files.R&outes :Rinitializer<CR>'
     exe menucmd.g:rails_installed_menu.'.&Other\ files.&Test\ Helper :Rintegrationtest<CR>'
     exe menucmd.g:rails_installed_menu.'.-FSep- :'

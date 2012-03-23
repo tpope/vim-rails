@@ -352,7 +352,7 @@ itself!).
 			Otherwise, find the newest migration containing the
 			given pattern.  Omitting the pattern selects the
 			latest migration.  Give a numeric argument of 0 to edit
-			db/schema.rb.
+			db/seeds.rb.
 
 						*rails-:Rmodel*
 :Rmodel [{name}]	Edit the specified or current model.

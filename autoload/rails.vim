@@ -2482,10 +2482,14 @@ function! s:app_migration(file) dict
   let arg = a:file
   if arg =~ '^0$\|^0\=[#:]'
     let suffix = s:sub(arg,'^0*','')
-    if self.has_file('db/schema.rb')
+    if self.has_file('db/seeds.rb') && suffix ==# ''
+      return 'db/seeds.rb'
+    elseif self.has_file('db/schema.rb')
       return 'db/schema.rb'.suffix
     elseif self.has_file('db/'.s:environment().'_structure.sql')
       return 'db/'.s:environment().'_structure.sql'.suffix
+    elseif suffix ==# ''
+      return 'db/seeds.rb'
     else
       return 'db/schema.rb'.suffix
     endif
