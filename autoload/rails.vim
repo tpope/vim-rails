@@ -1941,7 +1941,7 @@ function! s:RailsFind()
   if res != ""|return res|endif
 
   let res = s:sub(s:findfromview('render','\1'),'^/','')
-  if buffer.type_name('view') | let res = s:sub(res,'[^/]+$','_&') | endif
+  if !buffer.type_name('controller') | let res = s:sub(res,'[^/]+$','_&') | endif
   if res != ""|return res."\n".s:findview(res)|endif
 
   let res = s:findamethod('redirect_to\s*(\=\s*\%\(:action\s\+=>\|\<action:\)\s*','\1')
