@@ -4486,6 +4486,9 @@ function! s:BufSettings()
       call self.setvar('surround_69',  "\1expr: \1\rend")
       call self.setvar('surround_101', "\r\nend")
     endif
+    if exists(':UltiSnipsAddFiletypes')
+      UltiSnipsAddFiletypes rails
+    endif
   elseif ft == 'yaml' || fnamemodify(self.name(),':e') == 'yml'
     call self.setvar('&define',self.define_pattern())
   elseif ft =~# '^eruby\>'
