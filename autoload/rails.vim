@@ -2853,6 +2853,7 @@ function! s:libEdit(cmd,...)
     call s:EditSimpleRb(a:cmd,"lib",a:0? a:1 : "",extra."lib/",".rb")
   else
     call s:EditSimpleRb(a:cmd,"lib","seeds","db/",".rb")
+    call s:warn("Rlib for db/seeds.rb has been deprecated in favor of :Rmigration 0")
   endif
 endfunction
 
