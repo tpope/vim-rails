@@ -305,10 +305,6 @@ function! s:readable_last_format(start) dict abort
   return ""
 endfunction
 
-function! s:lastformat(start)
-  return rails#buffer().last_format(a:start)
-endfunction
-
 function! s:format(...)
   let format = rails#buffer().last_format(a:0 > 1 ? a:2 : line("."))
   return format ==# '' && a:0 ? a:1 : format
