@@ -4394,12 +4394,6 @@ function! RailsBufInit(path)
   call s:BufSettings()
   call s:BufCommands()
   call s:BufAbbreviations()
-  " snippetsEmu.vim
-  if exists('g:loaded_snippet')
-    silent! runtime! ftplugin/rails_snippets.vim
-    " filetype snippets need to come last for higher priority
-    exe "silent! runtime! ftplugin/".&filetype."_snippets.vim"
-  endif
   let t = rails#buffer().type_name()
   let t = "-".t
   let f = '/'.RailsFilePath()
