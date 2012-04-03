@@ -820,11 +820,6 @@ that this is a user preference has been ignored.
 					*rails-'path'*		*rails-'pa'*
 All the relevant directories from your application are added to your 'path'.
 This makes it easy to access a buried file: >
-	:find blog_controller.rb
-<
-					*rails-'suffixesadd'*	*rails-'sua'*
-This is filetype dependent, but typically includes .rb, .rake, and several
-others.  This allows shortening the above example: >
 	:find blog_controller
 <
 					*rails-'includeexpr'*	*rails-'inex'*
