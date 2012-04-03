@@ -281,7 +281,11 @@ function! s:lastmethod(...)
   return rails#buffer().last_method(a:0 ? a:1 : line("."))
 endfunction
 
-function! s:readable_last_format(start) dict abort
+function! s:readable_format(start) dict abort
+  let format = matchstr(self.getline(a:start), '\%(:formats *=>\|\<formats:\) *\[\= *[:''"]\zs\w\+')
+  if format !=# ''
+    return format
+  endif
   if self.type_name('view')
     let format = fnamemodify(self.path(),':r:e')
     if format == ''
@@ -302,21 +306,14 @@ function! s:readable_last_format(start) dict abort
       let line -= 1
     endwhile
   endif
-  return ""
+  return self.type_name('mailer') ? 'text' : 'html'
 endfunction
 
-function! s:format(...)
-  let format = rails#buffer().last_format(a:0 > 1 ? a:2 : line("."))
-  return format ==# '' && a:0 ? a:1 : format
+function! s:format()
+  return rails#buffer().format(line('.'))
 endfunction
 
-call s:add_methods('readable',['end_of','last_opening_line','last_method_line','last_method','last_format','define_pattern'])
-
-let s:view_types = split('rhtml,erb,rxml,builder,rjs,mab,liquid,haml,dryml,mn,slim',',')
-
-function! s:viewspattern()
-  return '\%('.join(s:view_types,'\|').'\)'
-endfunction
+call s:add_methods('readable',['end_of','last_opening_line','last_method_line','last_method','format','define_pattern'])
 
 function! s:controller(...)
   return rails#buffer().controller_name(a:0 ? a:1 : 0)
@@ -937,7 +934,7 @@ function! s:BufCommands()
     command! -buffer -bar -nargs=? -complete=customlist,s:Complete_environments Rdbext  :call s:BufDatabase(2,<q-args>)|let b:dbext_buffer_defaulted = 1
   endif
   let ext = expand("%:e")
-  if ext =~ s:viewspattern()
+  if RailsFilePath() =~ '\<app/views/'
     " TODO: complete controller names with trailing slashes here
     command! -buffer -bar -bang -nargs=? -range -complete=customlist,s:controllerList Rextract :<line1>,<line2>call s:Extract(<bang>0,<f-args>)
   endif
@@ -1870,7 +1867,7 @@ function! s:RailsFind()
 
   " UGH
   let buffer = rails#buffer()
-  let format = s:format('html')
+  let format = s:format()
 
   let res = s:findit('\v\s*<require\s*\(=\s*File.dirname\(__FILE__\)\s*\+\s*[:'."'".'"](\f+)>.=',expand('%:h').'/\1')
   if res != ""|return res.(fnamemodify(res,':e') == '' ? '.rb' : '')|endif
@@ -2587,6 +2584,60 @@ function! s:observerEdit(cmd,...)
   call s:EditSimpleRb(a:cmd,"observer",a:0? a:1 : s:model(1),"app/models/","_observer.rb")
 endfunction
 
+function! s:dotcmp(i1, i2)
+  return strlen(s:gsub(a:i1,'[^.]', '')) - strlen(s:gsub(a:i2,'[^.]', ''))
+endfunc
+
+let s:view_types = split('rhtml,erb,rxml,builder,rjs,haml',',')
+
+function! s:readable_resolve_view(name,...) dict abort
+  let name = a:name
+  let pre = 'app/views/'
+  if name !~# '/'
+    let controller = self.controller_name(1)
+    if controller != ''
+      let name = controller.'/'.name
+    endif
+  endif
+  if name =~# '\.\w\+\.\w\+$' || name =~# '\.\%('.join(s:view_types,'\|').'\)$'
+    return pre.name
+  else
+    for format in ['.'.self.format(a:0 ? a:1 : 0), '']
+      let found = self.app().relglob('', 'app/views/'.name.format.'.*')
+      call sort(found, s:function('s:dotcmp'))
+      if !empty(found)
+        return found[0]
+      endif
+    endfor
+  endif
+  return ''
+endfunction
+
+function! s:readable_resolve_layout(name, ...) dict abort
+  let name = a:name
+  if name ==# ''
+    let name = self.controller_name(1)
+  endif
+  if name !~# '/'
+    let name = 'layouts/'.name
+  endif
+  let view = self.resolve_view(name, a:0 ? a:1 : 0)
+  if view ==# '' && a:name ==# ''
+    let view = self.resolve_view('layouts/application', a:0 ? a:1 : 0)
+  endif
+  return view
+endfunction
+
+call s:add_methods('readable', ['resolve_view', 'resolve_layout'])
+
+function! s:findview(name)
+  return rails#buffer().resolve_view(a:name, line('.'))
+endfunction
+
+function! s:findlayout(name)
+  return rails#buffer().resolve_layout(a:name, line('.'))
+endfunction
+
 function! s:viewEdit(cmd,...)
   if a:0 && a:1 =~ '^[^!#:]'
     let view = matchstr(a:1,'[^!#:]*')
@@ -2605,65 +2656,26 @@ function! s:viewEdit(cmd,...)
   if view !~ '/'
     return s:error("Cannot find view without controller")
   endif
-  let file = "app/views/".view
-  let found = s:findview(view)
+  let found = rails#buffer().resolve_view(view, line('.'))
+  let djump = a:0 ? matchstr(a:1,'!.*\|#\zs.*\|:\zs\d*\ze\%(:in\)\=$') : ''
   if found != ''
-    let dir = fnamemodify(rails#app().path(found),':h')
-    if !isdirectory(dir)
-      if a:0 && a:1 =~ '!'
-        call mkdir(dir,'p')
-      else
-        return s:error('No such directory')
-      endif
-    endif
     call s:edit(a:cmd,found)
-  elseif file =~ '\.\w\+$'
-    call s:findedit(a:cmd,file)
+    call s:djump(djump)
+  elseif a:0 && a:1 =~# '!'
+    call s:edit(a:cmd,'app/views/'.view)
+    call s:djump(djump)
   else
-    let format = s:format(rails#buffer().type_name('mailer') ? 'text' : 'html')
-    if glob(rails#app().path(file.'.'.format).'.*[^~]') != ''
-      let file .= '.' . format
-    endif
     call s:findedit(a:cmd,file)
   endif
-endfunction
-
-function! s:findview(name)
-  let self = rails#buffer()
-  let name = a:name
-  let pre = 'app/views/'
-  if name !~# '/'
-    let controller = self.controller_name(1)
-    if controller != ''
-      let name = controller.'/'.name
-    endif
-  endif
-  if name =~# '\.\w\+\.\w\+$' || name =~# '\.'.s:viewspattern().'$'
-    return pre.name
-  else
-    for format in ['.'.s:format('html'), '']
-      for type in s:view_types
-        if self.app().has_file(pre.name.format.'.'.type)
-          return pre.name.format.'.'.type
-        endif
-      endfor
-    endfor
-  endif
-  return ''
-endfunction
-
-function! s:findlayout(name)
-  return s:findview("layouts/".(a:name == '' ? 'application' : a:name))
 endfunction
 
 function! s:layoutEdit(cmd,...)
-  if a:0
+  if a:0 && a:1 =~# '/'
+    return s:viewEdit(a:cmd,a:1)
+  elseif a:0
     return s:viewEdit(a:cmd,"layouts/".a:1)
   endif
-  let file = s:findlayout(s:controller(1))
-  if file == ""
-    let file = s:findlayout("application")
-  endif
+  let file = s:findlayout('')
   if file == ""
     let file = "app/views/layouts/application.html.erb"
   endif
@@ -3022,10 +3034,7 @@ function! s:readable_related(...) dict abort
     let lastmethod = self.last_method(a:1)
     if self.type_name('controller','mailer') && lastmethod != ""
       let root = s:sub(s:sub(s:sub(f,'/application%(_controller)=\.rb$','/shared_controller.rb'),'/%(controllers|models|mailers)/','/views/'),'%(_controller)=\.rb$','/'.lastmethod)
-      let format = self.last_format(a:1)
-      if format == ''
-        let format = self.type_name('mailer') ? 'text' : 'html'
-      endif
+      let format = self.format(a:1)
       if glob(self.app().path().'/'.root.'.'.format.'.*[^~]') != ''
         return root . '.' . format
       else
@@ -3062,8 +3071,6 @@ function! s:readable_related(...) dict abort
       endif
     elseif self.type_name('controller')
       return s:sub(s:sub(f,'/controllers/','/helpers/'),'%(_controller)=\.rb$','_helper.rb')
-    " elseif self.type_name('helper')
-      " return s:findlayout(s:controller())
     elseif self.type_name('model-arb')
       let table_name = matchstr(join(self.getline(1,50),"\n"),'\n\s*self\.table_name\s*=\s*[:"'']\zs\w\+')
       if table_name == ''
@@ -3216,17 +3223,14 @@ function! s:Extract(bang,...) range abort
   else
     let curdir = fnamemodify(RailsFilePath(),':h')
   endif
-  let curdir = rails_root."/".curdir
-  let dir = fnamemodify(file,":h")
-  let fname = fnamemodify(file,":t")
-  if fnamemodify(fname,":e") == ""
-    let name = fname
-    let fname .= ".".matchstr(expand("%:t"),'\.\zs.*')
-  elseif fnamemodify(fname,":e") !~ '^'.s:viewspattern().'$'
-    let name = fnamemodify(fname,":r")
-    let fname .= ".".ext
-  else
-    let name = fnamemodify(fname,":r:r")
+  let curdir = rails_root.'/'.curdir
+  let dir = fnamemodify(file,':h')
+  let fname = fnamemodify(file,':t')
+  let name = matchstr(file, '^[^.]*')
+  if fnamemodify(fname, ':e') == ''
+    let fname .= matchstr(expand('%:t'),'\..*')
+  elseif fnamemodify(fname, ':e') !=# ext
+    let fname .= '.'.ext
   endif
   let var = "@".name
   let collection = ""
