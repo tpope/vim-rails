@@ -579,6 +579,18 @@ function! s:app_file(name)
   return extend(extend({'_app': self, '_name': a:name}, s:file_prototype,'keep'),s:readable_prototype,'keep')
 endfunction
 
+function! s:readable_relative() dict abort
+  return self.name()
+endfunction
+
+function! s:readable_absolute() dict abort
+  return self.path()
+endfunction
+
+function! s:readable_spec() dict abort
+  return self.path()
+endfunction
+
 function! s:file_path() dict abort
   return self.app().path(self._name)
 endfunction
@@ -809,7 +821,7 @@ endfunction
 call s:add_methods('app',['default_locale','environments','file','has','test_suites'])
 call s:add_methods('file',['path','name','lines','getline'])
 call s:add_methods('buffer',['app','number','path','name','lines','getline','type_name'])
-call s:add_methods('readable',['app','calculate_file_type','type_name','line_count'])
+call s:add_methods('readable',['app','relative','absolute','spec','calculate_file_type','type_name','line_count'])
 
 " }}}1
 " Ruby Execution {{{1
@@ -4358,6 +4370,7 @@ function! RailsBufInit(path)
   if !has_key(s:apps,a:path)
     let s:apps[a:path] = deepcopy(s:app_prototype)
     let s:apps[a:path].root = a:path
+    let s:apps[a:path]._root = a:path
   endif
   let app = s:apps[a:path]
   let buffer = rails#buffer()
