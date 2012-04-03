@@ -410,9 +410,9 @@ function! s:readfile(path,...)
 endfunction
 
 function! s:file_lines() dict abort
-  let ftime = getftime(self.path)
-  if ftime > get(self,last_lines_ftime,0)
-    let self.last_lines = readfile(self.path())
+  let ftime = getftime(self.path())
+  if ftime > get(self,'last_lines_ftime',0)
+    let self.last_lines = s:readfile(self.path())
     let self.last_lines_ftime = ftime
   endif
   return get(self,'last_lines',[])
@@ -420,9 +420,9 @@ endfunction
 
 function! s:file_getline(lnum,...) dict abort
   if a:0
-    return self.lines[lnum-1 : a:1-1]
+    return self.lines()[a:lnum-1 : a:1-1]
   else
-    return self.lines[lnum-1]
+    return self.lines()[a:lnum-1]
   endif
 endfunction
 
@@ -575,7 +575,7 @@ function! RailsRoot()
   endif
 endfunction
 
-function! s:app_file(name)
+function! s:app_file(name) dict abort
   return extend(extend({'_app': self, '_name': a:name}, s:file_prototype,'keep'),s:readable_prototype,'keep')
 endfunction
 
@@ -765,7 +765,7 @@ function! s:buffer_type_name(...) dict abort
   return call('s:match_type',[type == '-' ? '' : type] + a:000)
 endfunction
 
-function! s:readable_type_name() dict abort
+function! s:readable_type_name(...) dict abort
   let type = self.calculate_file_type()
   return call('s:match_type',[type == '-' ? '' : type] + a:000)
 endfunction
