@@ -804,9 +804,9 @@ function! s:app_has(feature) dict
   return features[a:feature]
 endfunction
 
-" Returns the subset of ['test', 'spec', 'cucumber'] present on the app.
+" Returns the subset of ['test', 'spec'] present on the app.
 function! s:app_test_suites() dict
-  return filter(['test','spec','cucumber'],'self.has(v:val)')
+  return filter(['test','spec'],'self.has(v:val)')
 endfunction
 
 call s:add_methods('app',['default_locale','environments','file','has','test_suites'])
