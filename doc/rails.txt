@@ -120,22 +120,11 @@ actually edit a file from a Rails application.
 :Rrefresh!		As above, and also reloads rails.vim.
 
 						*rails-:OpenURL*
-:OpenURL {url}		This is not a command provided by the plugin, but
-			rather provided by user and utilized by other plugin
-			features.  This command should be defined to open the
-			provided {url} in a web browser.  An example command
-			on a Mac might be: >
+:OpenURL {url}		This is a command to open a web browser utilized by
+			other plugin features.  If it doesn't work or opens
+			the wrong web browser, it may be overridden.  For
+			example: >
 		:command -bar -nargs=1 OpenURL :!open <args>
-<			The following appears to work on Windows: >
-		:command -bar -nargs=1 OpenURL :!start cmd /cstart /b <args>
-<			On Debian compatible distributions, the following is
-			the preferred method: >
-		:command -bar -nargs=1 OpenURL :!sensible-browser <args>
-<			If exists("$SECURITYSESSIONID"), has("gui_win32"), or
-			executable("sensible-browser") is true, the
-			corresponding command above will be automatically
-			defined.  Otherwise, you must provide your own (which
-			is recommended, regardless).
 
 NAVIGATION					*rails-navigation*
 
