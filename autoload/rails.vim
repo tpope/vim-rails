@@ -445,6 +445,8 @@ endfunction
 function! s:environment()
   if exists('$RAILS_ENV')
     return $RAILS_ENV
+  elseif exists('$RACK_ENV')
+    return $RACK_ENV
   else
     return "development"
   endif
