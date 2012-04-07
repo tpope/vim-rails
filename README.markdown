@@ -108,7 +108,7 @@ meantime, here's how you can set up `:make` to run the current test:
           \   compiler ruby | setl makeprg=ruby\ -wc\ \"%:p\" |
           \ endif
     autocmd User Bundler
-          \ if &makeprg !~ 'bundle' | setl makeprg^=bundle\ exec\  | endif
+          \ if &makeprg !~# 'bundle' | setl makeprg^=bundle\ exec\  | endif
 
 Contributing
 ------------
