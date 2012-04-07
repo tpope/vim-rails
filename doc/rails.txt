@@ -613,8 +613,7 @@ Integration with the Vim Universe ~
 						*rails-vim-integration*
 
 A handful of Vim plugins are enhanced by rails.vim.  All plugins mentioned can
-be found at http://www.vim.org/.  Cream and GUI menus (for lack of a better
-place) are also covered in this section.
+be found at http://www.vim.org/.  Cream is also covered in this section.
 
 						*rails-:Rtree*
 :Rtree [{arg}]		If |NERDTree| is installed, open a tree for the
@@ -670,20 +669,6 @@ This plugin provides a few additional key bindings if it is running under
 Cream, the user friendly editor which uses Vim as a back-end.  Ctrl+Enter
 finds the file under the cursor (as in |rails-gf|), and Alt+[ and Alt+] find
 the alternate (|rails-alternate|) and related (|rails-related|) files.
-
-						*rails-menu*
-If the GUI is running, a menu for several commonly used features is provided.
-Also on this menu is a list of recently accessed projects.  This list of
-projects can persist across restarts if a 'viminfo' flag is set to enable
-retaining certain global variables.  If this interests you, add something like
-the following to your vimrc: >
-	set viminfo^=!
-<
-Integration with the Rails Universe ~
-						*rails-rails-integration*
-The general policy of rails.vim is to focus exclusively on the Ruby on Rails
-core.  Supporting plugins and other add-ons to Rails has the potential to
-rapidly get out of hand.  However, a few pragmatic exceptions have been made.
 
 						*rails-template-types*
 Commands like :Rview use a hardwired list of extensions (erb, rjs, etc.)
@@ -947,11 +932,6 @@ File to load when a new Rails application is created.  Defaults to the README.
 Use GNU Screen or Tmux (if it is running) to launch |:Rscript| console and
 |:Rserver| in the background.  Enabled by default.
 
-						*g:rails_history_size*  >
-	let g:rails_history_size=5
-Number of projects to remember.  Set to 0 to disable.  See |rails-menu| for
-information on retaining these projects across a restart.
-
 						*g:rails_mappings*  >
 	let g:rails_mappings=1
 Enables a few mappings (mostly for |rails-navigation|). Enabled by default.
@@ -965,12 +945,6 @@ Also enables method specific modelines (note the case difference): >
 	  def show
 	    # rset preview=blog/show/1
 Modelines are deprecated and disabled by default.
-
-						*g:rails_menu*  >
-	let g:rails_menu=1
-When 2, a Rails menu is created.  When 1, this menu is a submenu under the
-Plugin menu.  The default is 0, as the menu is slated for removal from future
-versions of rails.vim.
 
 						*g:rails_url*  >
 	let g:rails_url='http://localhost:3000/'

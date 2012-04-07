@@ -40,10 +40,6 @@ function! s:startswith(string,prefix)
   return strpart(a:string, 0, strlen(a:prefix)) ==# a:prefix
 endfunction
 
-function! s:compact(ary)
-  return s:sub(s:sub(s:gsub(a:ary,'\n\n+','\n'),'\n$',''),'^\n','')
-endfunction
-
 function! s:uniq(list)
   let seen = {}
   let i = 0
@@ -56,19 +52,6 @@ function! s:uniq(list)
     endif
   endwhile
   return a:list
-endfunction
-
-function! s:scrub(collection,item)
-  " Removes item from a newline separated collection
-  let col = "\n" . a:collection
-  let idx = stridx(col,"\n".a:item."\n")
-  let cnt = 0
-  while idx != -1 && cnt < 100
-    let col = strpart(col,0,idx).strpart(col,idx+strlen(a:item)+1)
-    let idx = stridx(col,"\n".a:item."\n")
-    let cnt += 1
-  endwhile
-  return strpart(col,1)
 endfunction
 
 function! s:escarg(p)
@@ -4384,23 +4367,6 @@ function! RailsBufInit(path)
   " IO related).  This caching is a temporary hack; if it doesn't cause
   " problems it should probably be refactored.
   let b:rails_cached_file_type = buffer.calculate_file_type()
-  if g:rails_history_size > 0
-    if !exists("g:RAILS_HISTORY")
-      let g:RAILS_HISTORY = ""
-    endif
-    let path = a:path
-    let g:RAILS_HISTORY = s:scrub(g:RAILS_HISTORY,path)
-    if has("win32")
-      let g:RAILS_HISTORY = s:scrub(g:RAILS_HISTORY,s:gsub(path,'\\','/'))
-    endif
-    let path = fnamemodify(path,':p:~:h')
-    let g:RAILS_HISTORY = s:scrub(g:RAILS_HISTORY,path)
-    if has("win32")
-      let g:RAILS_HISTORY = s:scrub(g:RAILS_HISTORY,s:gsub(path,'\\','/'))
-    endif
-    let g:RAILS_HISTORY = path."\n".g:RAILS_HISTORY
-    let g:RAILS_HISTORY = s:sub(g:RAILS_HISTORY,'%(.{-}\n){,'.g:rails_history_size.'}\zs.*','')
-  endif
   call app.source_callback("config/syntax.vim")
   if expand('%:t') =~ '\.yml\.example$'
     setlocal filetype=yaml
