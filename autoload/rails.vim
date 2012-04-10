@@ -358,16 +358,16 @@ function! s:readable_model_name(...) dict abort
     return s:sub(f,'.*<test/unit/(.*)_test\.rb$','\1')
   elseif f =~ '\<spec/models/.*_spec\.rb$'
     return s:sub(f,'.*<spec/models/(.*)_spec\.rb$','\1')
-  elseif f =~ '\<\%(test\|spec\)/fixtures/.*\.\w*\~\=$'
-    return rails#singularize(s:sub(f,'.*<%(test|spec)/fixtures/(.*)\.\w*\~=$','\1'))
   elseif f =~ '\<\%(test\|spec\)/blueprints/.*\.rb$'
     return s:sub(f,'.*<%(test|spec)/blueprints/(.{-})%(_blueprint)=\.rb$','\1')
   elseif f =~ '\<\%(test\|spec\)/exemplars/.*_exemplar\.rb$'
     return s:sub(f,'.*<%(test|spec)/exemplars/(.*)_exemplar\.rb$','\1')
-  elseif f =~ '\<\%(test/\|spec/\)\=factories/.*\.rb$'
-    return s:sub(f,'.*<%(test/|spec/)=factories/(.{-})%(_factory)=\.rb$','\1')
+  elseif f =~ '\<\%(test/\|spec/\)\=factories/.*_factory\.rb$'
+    return s:sub(f,'.*<%(test/|spec/)=factories/(.{-})_factory.rb$','\1')
   elseif f =~ '\<\%(test/\|spec/\)\=fabricators/.*\.rb$'
-    return s:sub(f,'.*<%(test/|spec/)=fabricators/(.{-})%(_fabricator)=\.rb$','\1')
+    return s:sub(f,'.*<%(test/|spec/)=fabricators/(.{-})_fabricator.rb$','\1')
+  elseif f =~ '\<\%(test\|spec\)/\%(fixtures\|factories\|fabricators\)/.*\.\w\+$'
+    return rails#singularize(s:sub(f,'.*<%(test|spec)/\w+/(.*)\.\w+$','\1'))
   elseif a:0 && a:1
     return rails#singularize(self.controller_name())
   endif
@@ -712,6 +712,8 @@ function! s:readable_calculate_file_type() dict abort
     else
       let r = "fixtures" . (e == "" ? "" : "-" . e)
     endif
+  elseif f =~ '\<\%(test\|spec\)/\%(factories\|fabricators\)\>'
+    let r = "fixtures-replacement"
   elseif f =~ '\<test/.*_test\.rb'
     let r = "test"
   elseif f =~ '\<spec/.*_spec\.rb'
