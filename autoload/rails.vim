@@ -1964,8 +1964,10 @@ function! s:RailsFind()
   if buffer.type_name('controller')
     let contr = s:controller()
     let view = s:findit('\s*\<def\s\+\(\k\+\)\>(\=','/\1')
-    let res = s:findview(contr.'/'.view)
-    if res != ""|return res|endif
+    if view !=# ''
+      let res = s:findview(contr.'/'.view)
+      if res != ""|return res|endif
+    endif
   endif
 
   let old_isfname = &isfname
