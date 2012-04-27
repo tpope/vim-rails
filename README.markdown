@@ -91,6 +91,11 @@ Of course.
 Baby, you can go all the way back to Rails 1 if you like (give or take
 some syntax highlighting).
 
+> Can I use rails.vim with engines?
+
+Not officially, but if you create `config/environment.rb` in the root of
+the engine, it will mostly work.
+
 > Rake is slow.  How about making `:Rake` run
 > `testrb`/`rspec`/`cucumber` directly instead of `rake`?
 
