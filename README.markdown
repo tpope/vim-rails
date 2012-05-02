@@ -76,6 +76,11 @@ This plugin cares about the current file, not the current working
 directory.  Edit a file from a Rails application.  You can use the `:RT`
 family of commands to open a new tab and edit a file at the same time.
 
+> Can I use rails.vim to edit Rails engines?
+
+It's not supported, but if you `touch config/environment.rb` in the root
+of the engine, things should mostly work.
+
 > Can I use rails.vim to edit other Ruby projects?
 
 I wrote [rake.vim](https://github.com/tpope/vim-rake) for exactly that
