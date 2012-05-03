@@ -2675,7 +2675,7 @@ function! s:viewEdit(cmd,...)
     call s:edit(a:cmd,'app/views/'.view)
     call s:djump(djump)
   else
-    call s:findedit(a:cmd,file)
+    call s:findedit(a:cmd,view)
   endif
 endfunction
 
