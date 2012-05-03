@@ -3043,12 +3043,11 @@ function! s:readable_related(...) dict abort
   if a:0 && a:1
     let lastmethod = self.last_method(a:1)
     if self.type_name('controller','mailer') && lastmethod != ""
-      let root = s:sub(s:sub(s:sub(f,'/application%(_controller)=\.rb$','/shared_controller.rb'),'/%(controllers|models|mailers)/','/views/'),'%(_controller)=\.rb$','/'.lastmethod)
-      let format = self.format(a:1)
-      if glob(self.app().path().'/'.root.'.'.format.'.*[^~]') != ''
-        return root . '.' . format
+      let view = self.resolve_view(lastmethod, line('.'))
+      if view !=# ''
+        return view
       else
-        return root
+        return s:sub(s:sub(s:sub(f,'/application%(_controller)=\.rb$','/shared_controller.rb'),'/%(controllers|models|mailers)/','/views/'),'%(_controller)=\.rb$','/'.lastmethod)
       endif
     elseif f =~ '\<config/environments/'
       return "config/database.yml#". fnamemodify(f,':t:r')
