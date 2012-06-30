@@ -4506,14 +4506,8 @@ function! s:BufSettings()
   if ft =~# '^eruby\>' || ft =~# '^yaml\>'
     " surround.vim
     if exists("g:loaded_surround")
-      " The idea behind the || part here is that one can normally define the
-      " surrounding to omit the hyphen (since standard ERuby does not use it)
-      " but have it added in Rails ERuby files.  Unfortunately, this makes it
-      " difficult if you really don't want a hyphen in Rails ERuby files.  If
-      " this is your desire, you will need to accomplish it via a rails.vim
-      " autocommand.
       if self.getvar('surround_45') == '' || self.getvar('surround_45') == "<% \r %>" " -
-        call self.setvar('surround_45', "<% \r -%>")
+        call self.setvar('surround_45', "<% \r %>")
       endif
       if self.getvar('surround_61') == '' " =
         call self.setvar('surround_61', "<%= \r %>")
@@ -4522,9 +4516,9 @@ function! s:BufSettings()
         call self.setvar('surround_35', "<%# \r %>")
       endif
       if self.getvar('surround_101') == '' || self.getvar('surround_101')== "<% \r %>\n<% end %>" "e
-        call self.setvar('surround_5',   "<% \r -%>\n<% end -%>")
-        call self.setvar('surround_69',  "<% \1expr: \1 -%>\r<% end -%>")
-        call self.setvar('surround_101', "<% \r -%>\n<% end -%>")
+        call self.setvar('surround_5',   "<% \r %>\n<% end %>")
+        call self.setvar('surround_69',  "<% \1expr: \1 %>\r<% end %>")
+        call self.setvar('surround_101', "<% \r %>\n<% end %>")
       endif
     endif
   endif
