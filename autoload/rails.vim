@@ -1334,6 +1334,8 @@ function! s:initOpenURL()
       command -bar -nargs=1 OpenURL :!open <args>
     elseif has("gui_win32")
       command -bar -nargs=1 OpenURL :!start cmd /cstart /b <args>
+    elseif executable("xdg-open")
+      command -bar -nargs=1 OpenURL :!xdg-open <args>
     elseif executable("sensible-browser")
       command -bar -nargs=1 OpenURL :!sensible-browser <args>
     elseif executable('launchy')
