@@ -850,12 +850,12 @@ function! s:app_background_script_command(cmd) dict abort
   else
     exe "!".cmd
   endif
-  return v:shell_error
+  return ''
 endfunction
 
 function! s:app_execute_script_command(cmd) dict abort
   exe '!'.s:esccmd(self.script_shell_command(a:cmd))
-  return v:shell_error
+  return ''
 endfunction
 
 function! s:app_lightweight_ruby_eval(ruby,...) dict abort
@@ -918,7 +918,7 @@ function! s:BufCommands()
   command! -buffer -bar -nargs=? -bang -range -complete=customlist,s:Complete_preview Rpreview :call s:Preview(<bang>0,<line1>,<q-args>)
   command! -buffer -bar -nargs=? -bang -complete=customlist,s:Complete_environments   Rlog     :call s:Log(<bang>0,<q-args>)
   command! -buffer -bar -nargs=* -bang -complete=customlist,s:Complete_set            Rset     :call s:Set(<bang>0,<f-args>)
-  command! -buffer -bar -nargs=0 Rtags       :call rails#app().tags_command()
+  command! -buffer -bar -nargs=0 Rtags       :execute rails#app().tags_command()
   " Embedding all this logic directly into the command makes the error
   " messages more concise.
   command! -buffer -bar -nargs=? -bang Rdoc  :
@@ -1028,12 +1028,14 @@ function! s:app_tags_command() dict
   elseif executable("ctags.exe")
     let cmd = "ctags.exe"
   else
-    return s:error("ctags not found")
+    call s:error("ctags not found")
+    return ''
   endif
   if !isdirectory(self.path('tmp'))
     call mkdir(self.path('tmp'), 'p')
   endif
   exe '!'.cmd.' -f '.s:escarg(self.path("tmp/tags")).' -R --langmap="ruby:+.rake.builder.rjs" '.g:rails_ctags_arguments.' '.s:escarg(self.path())
+  return ''
 endfunction
 
 call s:add_methods('app',['tags_command'])
@@ -1046,7 +1048,7 @@ function! s:Refresh(bang)
       silent! ruby ActiveRecord::Base.clear_reloadable_connections! if defined?(ActiveRecord)
     endif
   endif
-  call rails#app().cache.clear()
+  let _ = rails#app().cache.clear()
   silent doautocmd User BufLeaveRails
   if a:bang
     for key in keys(s:apps)
@@ -1451,14 +1453,14 @@ endfunction
 " Script Wrappers {{{1
 
 function! s:BufScriptWrappers()
-  command! -buffer -bar -nargs=*       -complete=customlist,s:Complete_script   Rscript       :call rails#app().script_command(<bang>0,<f-args>)
-  command! -buffer -bar -nargs=*       -complete=customlist,s:Complete_generate Rgenerate     :call rails#app().generate_command(<bang>0,<f-args>)
-  command! -buffer -bar -nargs=*       -complete=customlist,s:Complete_destroy  Rdestroy      :call rails#app().destroy_command(<bang>0,<f-args>)
-  command! -buffer -bar -nargs=? -bang -complete=customlist,s:Complete_server   Rserver       :call rails#app().server_command(<bang>0,<q-args>)
-  command! -buffer -bang -nargs=1 -range=0 -complete=customlist,s:Complete_ruby Rrunner       :call rails#app().runner_command(<bang>0 ? -2 : (<count>==<line2>?<count>:-1),<f-args>)
-  command! -buffer       -nargs=1 -range=0 -complete=customlist,s:Complete_ruby Rp            :call rails#app().runner_command(<count>==<line2>?<count>:-1,'p begin '.<f-args>.' end')
-  command! -buffer       -nargs=1 -range=0 -complete=customlist,s:Complete_ruby Rpp           :call rails#app().runner_command(<count>==<line2>?<count>:-1,'require %{pp}; pp begin '.<f-args>.' end')
-  command! -buffer       -nargs=1 -range=0 -complete=customlist,s:Complete_ruby Ry            :call rails#app().runner_command(<count>==<line2>?<count>:-1,'y begin '.<f-args>.' end')
+  command! -buffer -bar -nargs=*       -complete=customlist,s:Complete_script   Rscript       :execute rails#app().script_command(<bang>0,<f-args>)
+  command! -buffer -bar -nargs=*       -complete=customlist,s:Complete_generate Rgenerate     :execute rails#app().generate_command(<bang>0,<f-args>)
+  command! -buffer -bar -nargs=*       -complete=customlist,s:Complete_destroy  Rdestroy      :execute rails#app().destroy_command(<bang>0,<f-args>)
+  command! -buffer -bar -nargs=? -bang -complete=customlist,s:Complete_server   Rserver       :execute rails#app().server_command(<bang>0,<q-args>)
+  command! -buffer -bang -nargs=1 -range=0 -complete=customlist,s:Complete_ruby Rrunner       :execute rails#app().runner_command(<bang>0 ? -2 : (<count>==<line2>?<count>:-1),<f-args>)
+  command! -buffer       -nargs=1 -range=0 -complete=customlist,s:Complete_ruby Rp            :execute rails#app().runner_command(<count>==<line2>?<count>:-1,'p begin '.<f-args>.' end')
+  command! -buffer       -nargs=1 -range=0 -complete=customlist,s:Complete_ruby Rpp           :execute rails#app().runner_command(<count>==<line2>?<count>:-1,'require %{pp}; pp begin '.<f-args>.' end')
+  command! -buffer       -nargs=1 -range=0 -complete=customlist,s:Complete_ruby Ry            :execute rails#app().runner_command(<count>==<line2>?<count>:-1,'y begin '.<f-args>.' end')
 endfunction
 
 function! s:app_generators() dict
@@ -1504,6 +1506,7 @@ function! s:app_runner_command(count,args) dict
       exe a:count.'put =res'
     endif
   endif
+  return ''
 endfunction
 
 function! s:getpidfor(bind,port)
@@ -1553,6 +1556,7 @@ function! s:app_server_command(bang,arg) dict
     call self.execute_script_command('server '.a:arg." -d")
   endif
   call s:setopt('a:root_url','http://'.(bind=='0.0.0.0'?'localhost': bind).':'.port.'/')
+  return ''
 endfunction
 
 function! s:app_destroy_command(bang,...) dict
@@ -1569,6 +1573,7 @@ function! s:app_destroy_command(bang,...) dict
   endwhile
   call self.execute_script_command('destroy'.str)
   call self.cache.clear('user_classes')
+  return ''
 endfunction
 
 function! s:app_generate_command(bang,...) dict
@@ -1598,6 +1603,7 @@ function! s:app_generate_command(bang,...) dict
     endif
     edit `=self.path(file)`
   endif
+  return ''
 endfunction
 
 call s:add_methods('app', ['generators','script_command','runner_command','server_command','destroy_command','generate_command'])
