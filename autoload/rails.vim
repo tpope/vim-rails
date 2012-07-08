@@ -2630,9 +2630,7 @@ function! s:readable_resolve_layout(name, ...) dict abort
   if name ==# ''
     let name = self.controller_name(1)
   endif
-  if name !~# '/'
-    let name = 'layouts/'.name
-  endif
+  let name = 'layouts/'.name
   let view = self.resolve_view(name, a:0 ? a:1 : 0)
   if view ==# '' && a:name ==# ''
     let view = self.resolve_view('layouts/application', a:0 ? a:1 : 0)
@@ -2682,13 +2680,11 @@ function! s:viewEdit(cmd,...)
 endfunction
 
 function! s:layoutEdit(cmd,...)
-  if a:0 && a:1 =~# '/'
-    return s:viewEdit(a:cmd,a:1)
-  elseif a:0
+  if a:0
     return s:viewEdit(a:cmd,"layouts/".a:1)
   endif
   let file = s:findlayout('')
-  if file == ""
+  if file ==# ""
     let file = "app/views/layouts/application.html.erb"
   endif
   call s:edit(a:cmd,s:sub(file,'^/',''))
