@@ -628,7 +628,7 @@ function! RailsFileType()
     return ""
   else
     return rails#buffer().type_name()
-  end
+  endif
 endfunction
 
 function! s:readable_calculate_file_type() dict abort
@@ -1376,7 +1376,7 @@ function! s:readable_preview_urls(lnum) dict abort
   endwhile
   if has_key(self,'getvar') && self.getvar('rails_preview') != ''
     let url += [self.getvar('rails_preview')]
-  end
+  endif
   if self.name() =~ '^public/stylesheets/sass/'
     let urls = urls + [s:sub(s:sub(self.name(),'^public/stylesheets/sass/','/stylesheets/'),'\.s[ac]ss$','.css')]
   elseif self.name() =~ '^public/'
@@ -1954,13 +1954,13 @@ function! s:RailsFind()
   let res = s:findfromview('stylesheet_link_tag','public/stylesheets/\1')
   if res != '' && fnamemodify(res, ':e') == '' " Append the default extension iff the filename doesn't already contains an extension
     let res .= '.css'
-  end
+  endif
   if res != ""|return res|endif
 
   let res = s:sub(s:findfromview('javascript_include_tag','public/javascripts/\1'),'/defaults>','/application')
   if res != '' && fnamemodify(res, ':e') == '' " Append the default extension iff the filename doesn't already contains an extension
     let res .= '.js'
-  end
+  endif
   if res != ""|return res|endif
 
   if buffer.type_name('controller')
