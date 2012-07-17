@@ -4476,7 +4476,7 @@ function! s:BufSettings()
     call self.setvar('&shiftwidth',2)
     call self.setvar('&softtabstop',2)
     call self.setvar('&expandtab',1)
-    if exists('+completefunc') && self.getvar('&completefunc') == ''
+    if exists('+completefunc') && self.getvar('&completefunc') ==# '' && &g:completefunc ==# ''
       call self.setvar('&completefunc','syntaxcomplete#Complete')
     endif
   endif
