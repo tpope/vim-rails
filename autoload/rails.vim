@@ -675,7 +675,7 @@ function! s:readable_calculate_file_type() dict abort
       let r = "model-".class
     elseif f =~ '_mailer\.rb$'
       let r = "mailer"
-    elseif top =~ '\<\%(self\.\%(table_name\|primary_key\)\|has_one\|has_many\|belongs_to\)\>'
+    elseif top =~ '\<\%(self\.\%(table_name\|primary_key\)\|has_one\|has_many\|belongs_to\|embeds_one\|embeds_many\|embedded_in\)\>'
       let r = "model-arb"
     else
       let r = "model"
@@ -1891,10 +1891,10 @@ function! s:RailsFind()
   let res = s:findamethod('require','\1')
   if res != ""|return res.(fnamemodify(res,':e') == '' ? '.rb' : '')|endif
 
-  let res = s:findamethod('belongs_to\|has_one\|composed_of\|validates_associated\|scaffold','app/models/\1.rb')
+  let res = s:findamethod('belongs_to\|has_one\|composed_of\|validates_associated\|scaffold\|embedded_in\|embeds_one','app/models/\1.rb')
   if res != ""|return res|endif
 
-  let res = rails#singularize(s:findamethod('has_many\|has_and_belongs_to_many','app/models/\1'))
+  let res = rails#singularize(s:findamethod('has_many\|has_and_belongs_to_many\|embeds_many','app/models/\1'))
   if res != ""|return res.".rb"|endif
 
   let res = rails#singularize(s:findamethod('create_table\|change_table\|drop_table\|add_column\|rename_column\|remove_column\|add_index','app/models/\1'))
@@ -3596,7 +3596,7 @@ function! s:BufSyntax()
       endif
       if buffer.type_name() ==# 'model' || buffer.type_name('model-arb')
         syn keyword rubyRailsARMethod default_scope named_scope scope serialize
-        syn keyword rubyRailsARAssociationMethod belongs_to has_one has_many has_and_belongs_to_many composed_of accepts_nested_attributes_for
+        syn keyword rubyRailsARAssociationMethod belongs_to has_one has_many has_and_belongs_to_many composed_of accepts_nested_attributes_for embeds_one embeds_many embedded_in
         syn keyword rubyRailsARCallbackMethod before_create before_destroy before_save before_update before_validation before_validation_on_create before_validation_on_update
         syn keyword rubyRailsARCallbackMethod after_create after_destroy after_save after_update after_validation after_validation_on_create after_validation_on_update
         syn keyword rubyRailsARCallbackMethod around_create around_destroy around_save around_update
