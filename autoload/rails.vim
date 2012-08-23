@@ -3666,7 +3666,7 @@ function! s:BufSyntax()
       endif
       if buffer.type_name('config-routes')
         syn match rubyRailsMethod '\.\zs\%(connect\|named_route\)\>'
-        syn keyword rubyRailsMethod match get put post delete redirect root resource resources collection member nested scope namespace controller constraints
+        syn keyword rubyRailsMethod match get put post delete redirect root resource resources collection member nested scope namespace controller constraints mount
       endif
       syn keyword rubyRailsMethod debugger
       syn keyword rubyRailsMethod alias_attribute alias_method_chain attr_accessor_with_default attr_internal attr_internal_accessor attr_internal_reader attr_internal_writer delegate mattr_accessor mattr_reader mattr_writer superclass_delegating_accessor superclass_delegating_reader superclass_delegating_writer
