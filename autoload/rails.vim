@@ -1943,10 +1943,10 @@ function! s:RailsFind()
   if res != ""|return res|endif
 
   let res = s:findasymbol('action','\1')
-  if res != ""|return res|endif
+  if res != ""|return s:findview(res)|endif
 
-  let res = s:findasymbol('template','app/views/\1')
-  if res != ""|return res|endif
+  let res = s:findasymbol('template','\1')
+  if res != ""|return s:findview(res)|endif
 
   let res = s:sub(s:sub(s:findasymbol('partial','\1'),'^/',''),'[^/]+$','_&')
   if res != ""|return res."\n".s:findview(res)|endif
@@ -1954,8 +1954,8 @@ function! s:RailsFind()
   let res = s:sub(s:sub(s:findfromview('render\s*(\=\s*\%(:partial\s\+=>\|partial:\)\s*','\1'),'^/',''),'[^/]+$','_&')
   if res != ""|return res."\n".s:findview(res)|endif
 
-  let res = s:findamethod('render\>\s*\%(:\%(template\|action\)\s\+=>\|template:\|action:\)\s*','\1.'.format.'\n\1')
-  if res != ""|return res|endif
+  let res = s:findamethod('render\>\s*\%(:\%(template\|action\)\s\+=>\|template:\|action:\)\s*','\1')
+  if res != ""|return s:findview(res)|endif
 
   let res = s:sub(s:findfromview('render','\1'),'^/','')
   if !buffer.type_name('controller', 'mailer')
