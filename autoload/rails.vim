@@ -688,9 +688,9 @@ function! s:readable_calculate_file_type() dict abort
     let r = "view-" . e
   elseif f =~ '\<lib/.*\.rb$'
     let r = 'lib'
-  elseif f =~ '\<test/unit/.*_test\.rb$'
+  elseif f =~ '\<test/\%(unit\|models\|helpers\)/.*_test\.rb$'
     let r = "test-unit"
-  elseif f =~ '\<test/functional/.*_test\.rb$'
+  elseif f =~ '\<test/\%(functional\|controllers\)/.*_test\.rb$'
     let r = "test-functional"
   elseif f =~ '\<test/integration/.*_test\.rb$'
     let r = "test-integration"
