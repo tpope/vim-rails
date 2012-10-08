@@ -331,7 +331,7 @@ function! s:readable_controller_name(...) dict abort
   if has_key(self,'getvar') && self.getvar('rails_controller') != ''
     return self.getvar('rails_controller')
   elseif f =~ '\<app/views/layouts/'
-    return s:sub(f,'.*<app/views/layouts/(.{-})\..*','\1')
+    return s:sub(f,'. *<app/views/layouts/(.{-})\..*','\1')
   elseif f =~ '\<app/views/'
     return s:sub(f,'.*<app/views/(.{-})/\k+\.\k+%(\.\k+)=$','\1')
   elseif f =~ '\<app/helpers/.*_helper\.rb$'
@@ -2144,6 +2144,7 @@ function! s:BufFinderCommands()
   call s:addfilecmds("layout")
   call s:addfilecmds("fixtures")
   call s:addfilecmds("locale")
+  call s:addfilecmds("asset")
   if rails#app().has('test') || rails#app().has('spec')
     call s:addfilecmds("unittest")
     call s:addfilecmds("functionaltest")
@@ -2314,6 +2315,10 @@ endfunction
 
 function! s:localeList(A,L,P)
   return s:completion_filter(rails#app().relglob("config/locales/","**/*"),a:A)
+endfunction
+
+function! s:assetList(A,L,P)
+  return s:completion_filter(rails#app().relglob("app/assets/","**/*"), a:A)
 endfunction
 
 function! s:migrationList(A,L,P)
@@ -2580,6 +2585,10 @@ function! s:localeEdit(cmd,...)
   else
     call s:findedit(a:cmd,rails#app().find_file(c,'config/locales',['.yml','.rb'],'config/locales/'.c))
   endif
+endfunction
+
+function! s:assetEdit(cmd,...)
+  call s:edit(a:cmd, rails#app().find_file(a:1, 'app/assets'))
 endfunction
 
 function! s:metalEdit(cmd,...)
