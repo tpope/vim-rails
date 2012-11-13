@@ -3162,28 +3162,30 @@ function! s:readable_related(...) dict abort
     let file = fnamemodify(f,":r")
     if file =~ '_\%(test\|spec\)$'
       let file = s:sub(file,'_%(test|spec)$','.rb')
+      let app_and_test_swap = s:sub(file, '<%(test|spec)/', 'app/')
     else
       let file .= '_test.rb'
+      let app_and_test_swap = s:sub(file,'<app/','test/')
     endif
     if self.type_name('helper')
-      return s:sub(file,'<app/','test/')."\n".
+      return app_and_test_swap."\n".
             \s:sub(file,'<app/helpers/','test/unit/helpers/')."\n".
             \s:sub(s:sub(file,'_test\.rb$','_spec.rb'),'<app/helpers/','spec/helpers/')
     elseif self.type_name('model')
-      return s:sub(file,'<app/','test/')."\n".
+      return app_and_test_swap."\n".
             \s:sub(file,'<app/models/','test/unit/')."\n".
             \s:sub(s:sub(file,'_test\.rb$','_spec.rb'),'<app/models/','spec/models/')
     elseif self.type_name('controller')
-      return s:sub(file,'<app/','test/')."\n".
+      return app_and_test_swap."\n".
             \s:sub(file,'<app/controllers/','test/functional/')."\n".
             \s:sub(s:sub(file,'_test\.rb$','_spec.rb'),'app/controllers/','spec/controllers/')
     elseif self.type_name('mailer')
-      return s:sub(file,'<app/','test/')."\n".
+      return app_and_test_swap."\n".
             \s:sub(file,'<app/m%(ailer|odel)s/','test/unit/')."\n".
             \s:sub(s:sub(file,'_test\.rb$','_spec.rb'),'<app/','spec/')
     elseif self.type_name('test-unit')
       let app_helpered = s:sub(file,'test/unit/helpers/','app/helpers/')
-      return s:sub(app_helpered,'test/unit/','app/models/')."\n".
+      return app_and_test_swap."\n".
             \s:sub(app_helpered,'<test/','app/')."\n".
             \s:sub(file,'test/unit/','lib/')
     elseif self.type_name('test-functional')
@@ -3191,22 +3193,25 @@ function! s:readable_related(...) dict abort
         return s:sub(file,'<test/functional/','app/apis/')
       elseif file =~ '_controller\.rb'
         return s:sub(file,'<test/functional/','app/controllers/')."\n".
-              \s:sub(file,'<test/','app/')
+              \app_and_test_swap
       else
         return s:sub(file,'<test/functional/','')
       endif
     elseif self.type_name('spec-lib')
       return s:sub(file,'<spec/','')
     elseif self.type_name('lib')
-      return s:sub(f,'<lib/(.*)\.rb$','test/unit/\1_test.rb')."\n".s:sub(f,'<lib/(.*)\.rb$','spec/lib/\1_spec.rb')
+      return s:sub(f,'<lib/(.*)\.rb$','test/unit/\1_test.rb')."\n".
+            \s:sub(f,'<lib/(.*)\.rb$','spec/lib/\1_spec.rb')
     elseif self.type_name('spec')
-      return s:sub(file,'<spec/','app/')
+      return app_and_test_swap
     elseif file =~ '\<vendor/.*/lib/'
       return s:sub(file,'<vendor/.{-}/\zslib/','test/')
     elseif file =~ '\<vendor/.*/test/'
       return s:sub(file,'<vendor/.{-}/\zstest/','lib/')
     else
-      return fnamemodify(file,':t')."\n".s:sub(s:sub(f,'\.rb$','_spec.rb'),'^app/','spec/')
+      return fnamemodify(file,':t')."\n".
+            \app_and_test_swap."\n".
+            \s:sub(app_and_test_swap,'test','spec')
     endif
   else
     return ""
