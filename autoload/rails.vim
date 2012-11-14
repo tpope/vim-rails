@@ -2549,10 +2549,12 @@ call s:add_methods('app', ['migration'])
 
 function! s:migrationEdit(cmd,...)
   let cmd = s:findcmdfor(a:cmd)
-  let arg = a:0 ? a:1 : ''
+  let c = rails#pluralize("create_".s:model(1))
+  let arg = a:0 ? a:1 : c
   let migr = arg == "." ? "db/migrate" : rails#app().migration(arg)
+  
   if migr != ''
-    call s:findedit(cmd,migr)
+    call s:findedit(cmd, migr)
   else
     return s:error("Migration not found".(arg=='' ? '' : ': '.arg))
   endif
