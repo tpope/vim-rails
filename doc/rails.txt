@@ -181,7 +181,7 @@ navigating unfamiliar applications.
 
 Alternate and Related Files ~
 						*rails-alternate-related*
-Two commands, :A and :R, are used quickly jump to an "alternate" and a
+Two commands, :A and :R, are used to quickly jump to an "alternate" and a
 "related" file, defined below.
 
 	*rails-:A* *rails-:AE* *rails-:AS* *rails-:AV* *rails-:AT* *rails-:AD*
