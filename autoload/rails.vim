@@ -4375,6 +4375,9 @@ endfunction
 " Detection {{{1
 
 function! s:app_source_callback(file) dict
+  if !&modeline
+    return
+  endif
   if self.cache.needs('existence')
     call self.cache.set('existence',{})
   endif
