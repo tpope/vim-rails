@@ -398,9 +398,10 @@ itself!).
 Custom Navigation Commands  ~
 						*rails-custom-navigation*
 
-It is also possible to create custom navigation commands.  This is best done
-in an initialization routine of some sort (e.g., an autocommand); see
-|rails-configuration| for details.
+It is also possible to create custom navigation commands.  The preferred way
+to do this is with the method outlined under |rails-custom-file-types|.  You
+can also use |:Rnavcommand|, either from |macros/rails.vim| or a
+|rails-:autocmd|.
 
 						*rails-:Rnavcommand*
 :Rnavcommand [options] {name} [{path} ...]
@@ -416,9 +417,6 @@ in an initialization routine of some sort (e.g., an autocommand); see
 			-default=controller(), or -default=both(), the current
 			model, controller, or both (as with :Rintegrationtest)
 			is used as a default.
-
-						*rails-:Rcommand*
-:Rcommand		Obsolete alias for |:Rnavcommand|.
 
 Examples: >
 	Rnavcommand api      app/apis -glob=**/* -suffix=_api.rb
@@ -847,6 +845,24 @@ Rails file is loaded.
 If you have settings particular to a specific project, they can be put in a
 config/rails.vim file in the root directory of the application.  The file is
 sourced in the |sandbox| for security reasons.
+
+						*rails-custom-file-types*
+Perhaps the most useful thing one can put in |config/rails.vim| is a
+declaration of additional types of files used in the application.  For
+example:
+>
+	let b:rails_file_types = {
+	      \ 'service': {
+	      \   'prefix': 'app/service/',
+	      \   'suffix': '_service.rb'},
+	      \ 'fabricator': {
+	      \   'prefix': ['test/fabricators/', 'spec/fabricators/'],
+	      \   'suffix': '_fabricator.rb',
+	      \   'affinity': 'model'}}
+<
+Providing this causes :Rservice and :Rfabricator navigation commands to be
+created.  The optional affinity option determines whether the current model
+name or controller name is used for the default when no argument is given.
 
 						*rails-:Rset*
 :Rset {option}[={value}]

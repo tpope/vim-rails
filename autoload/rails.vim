@@ -2176,6 +2176,11 @@ function! s:BufFinderCommands()
   call s:addfilecmds("lib")
   call s:addfilecmds("environment")
   call s:addfilecmds("initializer")
+  if exists('b:rails_file_types')
+    for [name, command] in items(b:rails_file_types)
+      call s:define_navcommand(extend({'name': name}, command))
+    endfor
+  endif
 endfunction
 
 function! s:completion_filter(results,A)
@@ -2406,41 +2411,55 @@ function! s:initializerList(A,L,P)
 endfunction
 
 function! s:Navcommand(bang,...)
-  let suffix = ".rb"
-  let filter = "**/*"
-  let prefix = ""
-  let default = ""
-  let name = ""
+  let command = {'prefix': []}
   let i = 0
   while i < a:0
     let i += 1
     let arg = a:{i}
     if arg =~# '^-suffix='
       let suffix = matchstr(arg,'-suffix=\zs.*')
+      let command.suffix = suffix
     elseif arg =~# '^-default='
-      let default = matchstr(arg,'-default=\zs.*')
+      let command.default = matchstr(arg,'-default=\zs.*')
     elseif arg =~# '^-\%(glob\|filter\)='
-      let filter = matchstr(arg,'-\w*=\zs.*')
+      let command.glob = matchstr(arg,'-\w*=\zs.*')
     elseif arg !~# '^-'
-      " A literal '\n'.  For evaluation below
-      if name == ""
-        let name = arg
+      if !has_key(command, 'name')
+        let command.name = arg
       else
-        let prefix .= "\\n".s:sub(arg,'/=$','/')
+        let command.prefix += [arg]
       endif
     endif
   endwhile
-  let prefix = s:sub(prefix,'^\\n','')
-  if name !~ '^[A-Za-z]\+$'
+  call s:define_navcommand(command)
+endfunction
+
+function! s:define_navcommand(command) abort
+  let command = extend({'default': '', 'glob': '**/*', 'suffix': '.rb'}, a:command)
+  if type(command.prefix) == type([])
+    let paths = command.prefix
+  else
+    let paths = split(command.prefix, "\n")
+  endif
+  if has_key(command, 'affinity') && command.default ==# ''
+    let command.default = command.affinity . '()'
+  endif
+  let prefix = join(map(copy(paths), 's:sub(v:val, "/=$", "/")'), "\n")
+  let suffix = type(command.suffix) == type([]) ? command.suffix[0] : command.suffix
+  if command.name !~ '^[A-Za-z]\+$'
     return s:error("E182: Invalid command name")
   endif
-  let cmds = 'ESVTD '
-  let cmd = ''
-  while cmds != ''
-    exe 'command! -buffer -bar -bang -nargs=* -complete=customlist,'.s:sid.'CommandList R'.cmd.name." :call s:CommandEdit('".cmd."<bang>','".name."',\"".prefix."\",".string(suffix).",".string(filter).",".string(default).",<f-args>)"
-    let cmd = strpart(cmds,0,1)
-    let cmds = strpart(cmds,1)
-  endwhile
+  for type in ['E', 'S', 'V', 'T', 'D', '']
+    exe 'command! -buffer -bar -bang -nargs=* '
+          \ '-complete=customlist,'.s:sid.'CommandList ' .
+          \ 'R' . type . command.name . ' :call s:CommandEdit(' .
+          \ string(type . "<bang>") . ',' .
+          \ string(command.name) . ',' .
+          \ string(prefix) . ',' .
+          \ string(get(command,'suffix','.rb')) . ',' .
+          \ string(command.glob) . ',' .
+          \ string(command.default) . ',<f-args>)'
+  endfor
 endfunction
 
 function! s:CommandList(A,L,P)
