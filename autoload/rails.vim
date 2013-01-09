@@ -2178,7 +2178,7 @@ function! s:BufFinderCommands()
   call s:addfilecmds("initializer")
   if exists('b:rails_file_types')
     for [name, command] in items(b:rails_file_types)
-      call s:define_navcommand(extend({'name': name}, command))
+      call s:define_navcommand(name, command)
     endfor
   endif
 endfunction
@@ -2424,17 +2424,20 @@ function! s:Navcommand(bang,...)
     elseif arg =~# '^-\%(glob\|filter\)='
       let command.glob = matchstr(arg,'-\w*=\zs.*')
     elseif arg !~# '^-'
-      if !has_key(command, 'name')
-        let command.name = arg
+      if !exists('name')
+        let name = arg
       else
         let command.prefix += [arg]
       endif
     endif
   endwhile
-  call s:define_navcommand(command)
+  if !exists('name') || name !~# '^[a-z]\+$'
+    return s:error("E182: Invalid command name")
+  endif
+  return s:define_navcommand(name, command)
 endfunction
 
-function! s:define_navcommand(command) abort
+function! s:define_navcommand(name, command) abort
   let command = extend({'default': '', 'glob': '**/*', 'suffix': '.rb'}, a:command)
   if type(command.prefix) == type([])
     let paths = command.prefix
@@ -2446,15 +2449,15 @@ function! s:define_navcommand(command) abort
   endif
   let prefix = join(map(copy(paths), 's:sub(v:val, "/=$", "/")'), "\n")
   let suffix = type(command.suffix) == type([]) ? command.suffix[0] : command.suffix
-  if command.name !~ '^[A-Za-z]\+$'
+  if a:name !~# '^[a-z]\+$'
     return s:error("E182: Invalid command name")
   endif
   for type in ['E', 'S', 'V', 'T', 'D', '']
     exe 'command! -buffer -bar -bang -nargs=* '
           \ '-complete=customlist,'.s:sid.'CommandList ' .
-          \ 'R' . type . command.name . ' :call s:CommandEdit(' .
+          \ 'R' . type . a:name . ' :call s:CommandEdit(' .
           \ string(type . "<bang>") . ',' .
-          \ string(command.name) . ',' .
+          \ string(a:name) . ',' .
           \ string(prefix) . ',' .
           \ string(get(command,'suffix','.rb')) . ',' .
           \ string(command.glob) . ',' .
