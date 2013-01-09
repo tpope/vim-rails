@@ -54,6 +54,10 @@ function! s:uniq(list)
   return a:list
 endfunction
 
+function! s:split(arg, ...)
+  return type(a:arg) == type([]) ? copy(a:arg) : split(a:arg, a:0 ? a:1 : "\n")
+endfunction
+
 function! s:escarg(p)
   return s:gsub(a:p,'[ !%#]','\\&')
 endfunction
@@ -302,11 +306,30 @@ function! s:controller(...)
   return rails#buffer().controller_name(a:0 ? a:1 : 0)
 endfunction
 
+function! s:find_classification(classifications, filename) abort
+  let f = a:filename
+  for c in a:classifications
+    for prefix in s:split(get(c, 'prefix', []))
+      for suffix in s:split(get(c, 'suffix', '.rb'))
+        if s:startswith(f, prefix) && f[-strlen(suffix) : - 1] ==# suffix
+          return [f[strlen(prefix) : -strlen(suffix)-1], c]
+        endif
+      endfor
+    endfor
+  endfor
+  return ['', {}]
+endfunction
+
 function! s:readable_controller_name(...) dict abort
   let f = self.name()
   if has_key(self,'getvar') && self.getvar('rails_controller') != ''
     return self.getvar('rails_controller')
-  elseif f =~ '\<app/views/layouts/'
+  endif
+  let [root, _] = s:find_classification(filter(values(self.app().config('classifications')), 'get(v:val, "affinity", "") ==# "controller"'), f)
+  if root !=# ''
+    return root
+  endif
+  if f =~ '\<app/views/layouts/'
     return s:sub(f,'.*<app/views/layouts/(.{-})\..*','\1')
   elseif f =~ '\<app/views/'
     return s:sub(f,'.*<app/views/(.{-})/\k+\.\k+%(\.\k+)=$','\1')
@@ -348,7 +371,12 @@ function! s:readable_model_name(...) dict abort
   let f = self.name()
   if has_key(self,'getvar') && self.getvar('rails_model') != ''
     return self.getvar('rails_model')
-  elseif f =~ '\<app/models/.*_observer.rb$'
+  endif
+  let [root, _] = s:find_classification(filter(values(self.app().config('classifications')), 'get(v:val, "affinity", "") ==# "model"'), f)
+  if root !=# ''
+    return root
+  endif
+  if f =~ '\<app/models/.*_observer.rb$'
     return s:sub(f,'.*<app/models/(.*)_observer\.rb$','\1')
   elseif f =~ '\<app/models/.*\.rb$'
     return s:sub(f,'.*<app/models/(.*)\.rb$','\1')
@@ -2176,6 +2204,9 @@ function! s:BufFinderCommands()
   call s:addfilecmds("lib")
   call s:addfilecmds("environment")
   call s:addfilecmds("initializer")
+  for [name, command] in items(rails#app().config('classifications'))
+    call s:define_navcommand(name, command)
+  endfor
   if exists('b:rails_file_types')
     for [name, command] in items(b:rails_file_types)
       call s:define_navcommand(name, command)
@@ -2439,11 +2470,7 @@ endfunction
 
 function! s:define_navcommand(name, command) abort
   let command = extend({'default': '', 'glob': '**/*', 'suffix': '.rb'}, a:command)
-  if type(command.prefix) == type([])
-    let paths = command.prefix
-  else
-    let paths = split(command.prefix, "\n")
-  endif
+  let paths = s:split(get(command, 'prefix', []))
   if has_key(command, 'affinity') && command.default ==# ''
     let command.default = command.affinity . '()'
   endif
@@ -3128,6 +3155,10 @@ function! s:readable_related(...) dict abort
     elseif self.type_name('db-schema')
       return self.app().migration(1)
     endif
+  endif
+  let [root, classification] = s:find_classification(filter(values(self.app().config('classifications')), 'get(v:val, "alternate", "") =~# "%s"'), f)
+  if root !=# ''
+    return printf(classification.alternate, root)
   endif
   if f =~ '\<config/environments/'
     return "config/application.rb\nconfig/environment.rb"
