@@ -2469,13 +2469,13 @@ function! s:Navcommand(bang,...)
 endfunction
 
 function! s:define_navcommand(name, command) abort
-  let command = extend({'default': '', 'glob': '**/*', 'suffix': '.rb'}, a:command)
-  let paths = s:split(get(command, 'prefix', []))
+  let command = extend({'default': '', 'glob': '**/*'}, a:command)
+  let command.prefix = s:split(get(command, 'prefix', []))
+  let command.suffix = s:split(get(command, 'suffix', ['.rb']))
   if has_key(command, 'affinity') && command.default ==# ''
     let command.default = command.affinity . '()'
   endif
-  let prefix = join(map(copy(paths), 's:sub(v:val, "/=$", "/")'), "\n")
-  let suffix = type(command.suffix) == type([]) ? command.suffix[0] : command.suffix
+  let prefix = join(map(copy(command.prefix), 's:sub(v:val, "/=$", "/")'), "\n")
   if a:name !~# '^[a-z]\+$'
     return s:error("E182: Invalid command name")
   endif
@@ -2484,52 +2484,41 @@ function! s:define_navcommand(name, command) abort
           \ '-complete=customlist,'.s:sid.'CommandList ' .
           \ 'R' . type . a:name . ' :call s:CommandEdit(' .
           \ string(type . "<bang>") . ',' .
-          \ string(a:name) . ',' .
-          \ string(prefix) . ',' .
-          \ string(get(command,'suffix','.rb')) . ',' .
-          \ string(command.glob) . ',' .
-          \ string(command.default) . ',<f-args>)'
+          \ string(a:name) . ',' . string(command) . ',<f-args>)'
   endfor
 endfunction
 
 function! s:CommandList(A,L,P)
   let cmd = matchstr(a:L,'\CR[A-Z]\=\w\+')
   exe cmd." &"
-  let lp = s:last_prefix . "\n"
-  let res = []
-  while lp != ""
-    let p = matchstr(lp,'.\{-\}\ze\n')
-    let lp = s:sub(lp,'.{-}\n','')
-    let res += rails#app().relglob(p,s:last_filter,s:last_suffix)
-  endwhile
-  if s:last_camelize
-    return s:autocamelize(res,a:A)
+  let command = s:last_options
+  let matches = []
+  for prefix in command.prefix
+    for suffix in command.suffix
+      let matches += rails#app().relglob(prefix, command.glob, suffix)
+    endfor
+  endfor
+  if command.suffix == ['.rb']
+    return s:autocamelize(matches, a:A)
   else
-    return s:completion_filter(res,a:A)
+    return s:completion_filter(matches, a:A)
   endif
 endfunction
 
-function! s:CommandEdit(cmd,name,prefix,suffix,filter,default,...)
+function! s:CommandEdit(cmd, name, options, ...)
   if a:0 && a:1 == "&"
-    let s:last_prefix = a:prefix
-    let s:last_suffix = a:suffix
-    let s:last_filter = a:filter
-    let s:last_camelize = (a:suffix =~# '\.rb$')
+    let s:last_options = a:options
   else
-    if a:default == "both()"
-      if s:model() != ""
-        let default = s:model()
-      else
-        let default = s:controller()
-      endif
-    elseif a:default == "model()"
+    if a:options.default ==# "both()"
+      let default = s:model() !=# "" ? s:model() : s:controller()
+    elseif a:options.default ==# "model()"
       let default = s:model(1)
-    elseif a:default == "controller()"
+    elseif a:options.default ==# "controller()"
       let default = s:controller(1)
     else
-      let default = a:default
+      let default = a:options.default
     endif
-    call s:EditSimpleRb(a:cmd,a:name,a:0 ? a:1 : default,a:prefix,a:suffix)
+    call s:EditSimpleRb(a:cmd,a:name,a:0 ? a:1 : default, join(a:options.prefix, "\n"),a:options.suffix[0])
   endif
 endfunction
 
