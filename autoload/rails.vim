@@ -4226,6 +4226,38 @@ endfunction
 " }}}1
 " Settings {{{1
 
+function! rails#json_parse(string) abort
+  let [null, false, true] = ['', 0, 1]
+  let stripped = substitute(a:string,'\C"\(\\.\|[^"\\]\)*"','','g')
+  if stripped !~# "[^,:{}\\[\\]0-9.\\-+Eaeflnr-u \n\r\t]"
+    try
+      return eval(substitute(a:string,"[\r\n]"," ",'g'))
+    catch
+    endtry
+  endif
+  throw "invalid JSON: ".a:string
+endfunction
+
+function! s:app_config(...) dict abort
+  if self.cache.needs('config')
+    call self.cache.set('config', {})
+    if self.has_file('config/editor.json')
+      try
+        call self.cache.set('config', rails#json_parse(join(readfile('config/editor.json'), ' ')))
+      catch /^invalid JSON:/
+        call s:error("Couldn't parse config/editor.json")
+      endtry
+    endif
+  endif
+  if a:0
+    return get(self.cache.get('config'), a:1, {})
+  else
+    return self.cache.get('config')
+  endif
+endfunction
+
+call s:add_methods('app', ['config'])
+
 function! s:Set(bang,...)
   let c = 1
   let defscope = ''
@@ -4281,6 +4313,8 @@ function! s:getopt(opt,...)
     return b:{var}
   elseif scope =~ 'a' && has_key(app,'options') && has_key(app.options,opt)
     return app.options[opt]
+  elseif scope =~ 'a' && has_key(rails#app().config(), opt)
+    return rails#app().config()[opt]
   elseif scope =~ 'g' && exists("g:".s:sname()."_".opt)
     return g:{var}
   else
@@ -4587,6 +4621,7 @@ augroup railsPluginAuto
   autocmd User BufEnterRails call s:BufDatabase(-1)
   autocmd User dbextPreConnection call s:BufDatabase(1)
   autocmd BufWritePost */config/database.yml      call rails#cache_clear("dbext_settings")
+  autocmd BufWritePost */config/editor.json       call rails#cache_clear("config")
   autocmd BufWritePost */test/test_helper.rb      call rails#cache_clear("user_assertions")
   autocmd BufWritePost */config/routes.rb         call rails#cache_clear("named_routes")
   autocmd BufWritePost */config/environment.rb    call rails#cache_clear("default_locale")
