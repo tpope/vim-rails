@@ -4199,6 +4199,9 @@ function! s:BufAbbreviations()
     Rabbrev AO::  ActiveModel
     Rabbrev AE::  ActiveResource
   endif
+  for [lhs, rhs] in items(rails#app().config('abbreviations'))
+    call s:Abbrev(0, lhs, rhs)
+  endfor
 endfunction
 
 function! s:Abbrev(bang,...) abort
