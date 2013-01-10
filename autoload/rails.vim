@@ -2475,7 +2475,6 @@ function! s:define_navcommand(name, command) abort
   if has_key(command, 'affinity') && command.default ==# ''
     let command.default = command.affinity . '()'
   endif
-  let prefix = join(map(copy(command.prefix), 's:sub(v:val, "/=$", "/")'), "\n")
   if a:name !~# '^[a-z]\+$'
     return s:error("E182: Invalid command name")
   endif
@@ -2518,7 +2517,8 @@ function! s:CommandEdit(cmd, name, options, ...)
     else
       let default = a:options.default
     endif
-    call s:EditSimpleRb(a:cmd,a:name,a:0 ? a:1 : default, join(a:options.prefix, "\n"),a:options.suffix[0])
+    let prefix = join(map(copy(a:options.prefix), 's:sub(v:val, "/=$", "/")'), "\n")
+    call s:EditSimpleRb(a:cmd,a:name,a:0 ? a:1 : default, prefix,a:options.suffix[0])
   endif
 endfunction
 
