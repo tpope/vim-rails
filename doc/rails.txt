@@ -200,7 +200,7 @@ Two commands, :A and :R, are used to quickly jump to an "alternate" and a
 :RT			and with a count and a file name argument, they find a
 :RD			file in 'path' (e.g., :1R PostsController.)  You can
 			also append a line number (post.rb:42) or a method
-			(PostsController#32) to both forms.
+			(PostsController#index) to both forms.
 
 					*rails-alternate* *rails-related*
 The alternate file is most frequently the test file, though there are
