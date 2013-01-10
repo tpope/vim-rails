@@ -2494,7 +2494,7 @@ function! s:CommandEdit(cmd, name, options, ...)
       let default = s:model() !=# "" ? s:model() : s:controller()
     elseif a:options.default ==# "model()"
       let default = s:model(1)
-    elseif a:options.default ==# "controller()"
+    elseif a:options.default ==# "controller()" || a:options.default ==# "collection()"
       let default = s:controller(1)
     else
       let default = a:options.default
