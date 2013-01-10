@@ -502,9 +502,7 @@ endfunction
 call s:add_methods('buffer',['getvar','setvar'])
 
 " }}}1
-" "Public" Interface {{{1
-
-" RailsRoot() is the only official public function
+" Public Interface {{{1
 
 function! rails#underscore(str)
   let str = s:gsub(a:str,'::','/')
@@ -2525,7 +2523,6 @@ endfunction
 function! s:EditSimpleRb(cmd,name,target,prefix,suffix,...)
   let cmd = s:findcmdfor(a:cmd)
   if a:target == ""
-    " Good idea to emulate error numbers like this?
     return s:error("E471: Argument required")
   endif
   let f = a:0 ? a:target : rails#underscore(a:target)
@@ -3236,7 +3233,6 @@ function! s:readable_related(...) dict abort
             \s:sub(file,'<app/controllers/','test/functional/')."\n".
             \s:sub(s:sub(file,'_test\.rb$','_spec.rb'),'app/controllers/','spec/controllers/')
     elseif self.type_name('mailer')
-      " is %(|odel) necessary on that 2nd one ↓ ?
       return s:sub(file,'<app/','test/')."\n".
             \s:sub(file,'<app/m%(ailer|odel)s/','test/unit/')."\n".
             \s:sub(s:sub(file,'_test\.rb$','_spec.rb'),'<app/','spec/')
@@ -3332,7 +3328,6 @@ function! s:Extract(bang,...) range abort
       return s:error('No such directory')
     endif
   endif
-  " No tabs, they'll just complicate things
   if ext =~? '^\%(rhtml\|erb\|dryml\)$'
     let erub1 = '\<\%\s*'
     let erub2 = '\s*-=\%\>'
@@ -3783,7 +3778,6 @@ function! s:BufSyntax()
       exe 'syn cluster htmlJavaScript add=javascriptRailsFunction'
     elseif &syntax == "yaml"
       syn case match
-      " Modeled after syntax/eruby.vim
       unlet! b:current_syntax
       let g:main_syntax = 'eruby'
       syn include @rubyTop syntax/ruby.vim
@@ -4329,7 +4323,6 @@ function! s:getopt(opt,...)
   let var = s:sname().'_'.opt
   let lastmethod = s:lastmethod(lnum)
   if lastmethod == '' | let lastmethod = ' ' | endif
-  " Get buffer option
   if scope =~ 'l' && exists('b:_'.var) && has_key(b:_{var},lastmethod)
     return b:_{var}[lastmethod]
   elseif exists('b:'.var) && (scope =~ 'b' || (scope =~ 'l' && lastmethod == ' '))
@@ -4614,7 +4607,6 @@ function! s:BufSettings()
     endif
   endif
   if ft =~# '^eruby\>' || ft =~# '^yaml\>'
-    " surround.vim
     if exists("g:loaded_surround")
       if self.getvar('surround_45') == '' || self.getvar('surround_45') == "<% \r %>" " -
         call self.setvar('surround_45', "<% \r %>")
