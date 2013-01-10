@@ -413,10 +413,9 @@ can also use |:Rnavcommand|, either from |macros/rails.vim| or a
 			a file glob to use to find files, _excluding_ the
 			suffix.  Useful values include -glob=* and -glob=**/*.
 			The -default option specifies a default argument (not
-			a full path).  If it is specified as -default=model(),
-			-default=controller(), or -default=both(), the current
-			model, controller, or both (as with :Rintegrationtest)
-			is used as a default.
+			a full path).  If it is specified as -default=model()
+			or -default=controller(), the current model or
+			controller is used as a default.
 
 Examples: >
 	Rnavcommand api      app/apis -glob=**/* -suffix=_api.rb
