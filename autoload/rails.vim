@@ -1653,19 +1653,19 @@ function! s:Complete_script(ArgLead,CmdLine,P)
     if target =~# '^\w*controller$'
       return filter(s:controllerList(a:ArgLead,"",""),'v:val !=# "application"')
     elseif target ==# 'generator'
-      return s:completion_filter(map(rails#app().relglob('lib/generators/','*'),'s:sub(v:val,"/$","")'))
+      return s:completion_filter(map(rails#app().relglob('lib/generators/','*'),'s:sub(v:val,"/$","")'), a:ArgLead)
     elseif target ==# 'helper'
-      return s:helperList(a:ArgLead,"","")
+      return s:autocamelize(rails#app().relglob('app/helpers/','**/*','_helper.rb'),a:ArgLead)
     elseif target ==# 'integration_test' || target ==# 'integration_spec' || target ==# 'feature'
       return s:integrationtestList(a:ArgLead,"","")
     elseif target ==# 'metal'
-      return s:metalList(a:ArgLead,"","")
+      return s:autocamelize(rails#app().relglob('app/metal/','**/*','.rb'),a:ArgLead)
     elseif target ==# 'migration' || target ==# 'session_migration'
       return s:migrationList(a:ArgLead,"","")
     elseif target =~# '^\w*\%(model\|resource\)$' || target =~# '\w*scaffold\%(_controller\)\=$' || target ==# 'mailer'
       return s:modelList(a:ArgLead,"","")
     elseif target ==# 'observer'
-      let observers = s:observerList("","","")
+      let observers = rails#app().relglob("app/models/","**/*","_observer.rb")
       let models = s:modelList("","","")
       if cmd =~# '^destroy\>'
         let models = []
@@ -2173,15 +2173,16 @@ endfunction
 
 function! s:BufFinderCommands()
   command! -buffer -bar -nargs=+ Rnavcommand :call s:Navcommand(<bang>0,<f-args>)
-  call s:addfilecmds("metal")
+  call s:define_navcommand('helper', {'prefix': 'app/helpers/', 'suffix': '_helper.rb', 'default': 'controller'})
+  call s:define_navcommand('initializer', {'prefix': 'config/initializers/', 'default': '../routes'})
+  call s:define_navcommand('metal', {'prefix': 'app/metal/', 'default': '../boot'})
+  call s:define_navcommand('observer', {'prefix': 'app/observers/', 'suffix': '_observer.rb', 'default': 'model'})
   call s:addfilecmds("model")
   call s:addfilecmds("view")
   call s:addfilecmds("controller")
   call s:addfilecmds("mailer")
   call s:addfilecmds("migration")
   call s:addfilecmds("schema")
-  call s:addfilecmds("observer")
-  call s:addfilecmds("helper")
   call s:addfilecmds("layout")
   call s:addfilecmds("fixtures")
   call s:addfilecmds("locale")
@@ -2201,7 +2202,6 @@ function! s:BufFinderCommands()
   call s:addfilecmds("task")
   call s:addfilecmds("lib")
   call s:addfilecmds("environment")
-  call s:addfilecmds("initializer")
   for [name, command] in items(rails#app().config('classifications'))
     call s:define_navcommand(name, command)
   endfor
@@ -2263,10 +2263,6 @@ function! s:relglob(...)
   return join(call(rails#app().relglob,a:000,rails#app()),"\n")
 endfunction
 
-function! s:helperList(A,L,P)
-  return s:autocamelize(rails#app().relglob("app/helpers/","**/*","_helper.rb"),a:A)
-endfunction
-
 function! s:controllerList(A,L,P)
   let con = rails#app().relglob("app/controllers/","**/*",".rb")
   call map(con,'s:sub(v:val,"_controller$","")')
@@ -2310,18 +2306,10 @@ function! s:javascriptList(A,L,P)
   return s:completion_filter(list,a:A)
 endfunction
 
-function! s:metalList(A,L,P)
-  return s:autocamelize(rails#app().relglob("app/metal/","**/*",".rb"),a:A)
-endfunction
-
 function! s:modelList(A,L,P)
   let models = rails#app().relglob("app/models/","**/*",".rb")
   call filter(models,'v:val !~# "_observer$"')
   return s:autocamelize(models,a:A)
-endfunction
-
-function! s:observerList(A,L,P)
-  return s:autocamelize(rails#app().relglob("app/models/","**/*","_observer.rb"),a:A)
 endfunction
 
 function! s:fixturesList(A,L,P)
@@ -2433,10 +2421,6 @@ endfunction
 
 function! s:environmentList(A,L,P)
   return s:completion_filter(rails#app().relglob("config/environments/","**/*",".rb"),a:A)
-endfunction
-
-function! s:initializerList(A,L,P)
-  return s:completion_filter(rails#app().relglob("config/initializers/","**/*",".rb"),a:A)
 endfunction
 
 function! s:Navcommand(bang,...)
@@ -2632,20 +2616,8 @@ function! s:localeEdit(cmd,...)
   endif
 endfunction
 
-function! s:metalEdit(cmd,...)
-  if a:0
-    call s:EditSimpleRb(a:cmd,"metal",a:1,"app/metal/",".rb")
-  else
-    call s:EditSimpleRb(a:cmd,"metal",'config/boot',"",".rb")
-  endif
-endfunction
-
 function! s:modelEdit(cmd,...)
   call s:EditSimpleRb(a:cmd,"model",a:0? a:1 : s:model(1),"app/models/",".rb")
-endfunction
-
-function! s:observerEdit(cmd,...)
-  call s:EditSimpleRb(a:cmd,"observer",a:0? a:1 : s:model(1),"app/models/","_observer.rb")
 endfunction
 
 function! s:dotcmp(i1, i2)
@@ -2760,10 +2732,6 @@ endfunction
 
 function! s:mailerEdit(cmd,...)
   return s:EditSimpleRb(a:cmd,"mailer",a:0? a:1 : s:controller(1),"app/mailers/\napp/models/",".rb")
-endfunction
-
-function! s:helperEdit(cmd,...)
-  return s:EditSimpleRb(a:cmd,"helper",a:0? a:1 : s:controller(1),"app/helpers/","_helper.rb")
 endfunction
 
 function! s:stylesheetEdit(cmd,...)
@@ -2945,10 +2913,6 @@ function! s:environmentEdit(cmd,...)
   else
     return s:EditSimpleRb(a:cmd,"environment","environment","config/",".rb")
   endif
-endfunction
-
-function! s:initializerEdit(cmd,...)
-  return s:EditSimpleRb(a:cmd,"initializer",a:0? a:1 : "../routes","config/initializers/",".rb")
 endfunction
 
 " }}}1
