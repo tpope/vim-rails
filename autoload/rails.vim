@@ -4224,7 +4224,7 @@ function! s:app_config(...) dict abort
     call self.cache.set('config', {})
     if self.has_file('config/editor.json')
       try
-        call self.cache.set('config', rails#json_parse(join(readfile('config/editor.json'), ' ')))
+        call self.cache.set('config', rails#json_parse(join(readfile(self.path('config/editor.json')), ' ')))
       catch /^invalid JSON:/
         call s:error("Couldn't parse config/editor.json")
       endtry
