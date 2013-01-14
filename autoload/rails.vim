@@ -4356,7 +4356,7 @@ function! s:Complete_set(A,L,P)
 endfunction
 
 function! s:BufModelines()
-  if !g:rails_modelines
+  if !g:rails_modelines && !&modelines
     return
   endif
   let lines = getline("$")."\n".getline(line("$")-1)."\n".getline(1)."\n".getline(2)."\n".getline(3)."\n"
