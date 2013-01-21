@@ -2440,7 +2440,7 @@ function! s:Navcommand(bang,...)
       if !exists('name')
         let name = arg
       else
-        let command.prefix += [arg]
+        let command.prefix += [s:sub(arg, '/=$', '/')]
       endif
     endif
   endwhile
