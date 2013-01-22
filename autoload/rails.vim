@@ -4301,7 +4301,7 @@ function! s:app_config(...) dict abort
     endif
   endif
   if a:0
-    return get(self.cache.get('config'), a:1, {})
+    return get(self.cache.get('config'), a:1, a:0 > 1 ? a:2 : {})
   else
     return self.cache.get('config')
   endif
@@ -4569,6 +4569,7 @@ function! s:SetBasePath()
   call filter(old_path,'!s:startswith(v:val,transformed_path)')
 
   let path = ['lib', 'vendor']
+  let path += self.app().config('path', [])
   let path += ['app/controllers', 'app/helpers', 'app/mailers', 'app/models', 'app/*', 'app/models/concerns', 'app/controllers/concerns']
   let path += ['app/views']
   if self.controller_name() != ''
