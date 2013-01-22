@@ -2728,8 +2728,8 @@ endfunction
 
 function! s:mailerEdit(cmd,...)
   return rails#buffer().open_command(a:cmd, a:0 ? a:1 : '', 'mailer', {
-        \ 'prefix': 'app/controllers/',
-        \ 'suffix': ['.rb', '_mailer.rb'],
+        \ 'prefix': ['app/mailers/', 'app/models/'],
+        \ 'suffix': '.rb',
         \ 'affinity': 'controller'})
 endfunction
 
