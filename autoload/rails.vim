@@ -8,9 +8,6 @@ if exists('g:autoloaded_rails') || &cp
 endif
 let g:autoloaded_rails = '4.4'
 
-let s:cpo_save = &cpo
-set cpo&vim
-
 " Utility Functions {{{1
 
 let s:app_prototype = {}
@@ -4624,7 +4621,4 @@ if !exists('s:apps')
 endif
 
 " }}}1
-
-let &cpo = s:cpo_save
-
 " vim:set sw=2 sts=2:
