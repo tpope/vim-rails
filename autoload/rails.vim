@@ -855,7 +855,9 @@ function! s:app_ruby_shell_command(cmd) dict abort
 endfunction
 
 function! s:app_script_shell_command(cmd) dict abort
-  if self.has_file('script/rails') && a:cmd !~# '^rails\>'
+  if !empty(glob(rails#app().path('.zeus.sock'))) && a:cmd =~# '^\%(console\|dbconsole\|destroy\|generate\|server\|runner\)\>'
+    return 'cd '.s:rquote(self.path()).' && zeus '.a:cmd
+  elseif self.has_file('script/rails') && a:cmd !~# '^rails\>'
     let cmd = 'script/rails '.a:cmd
   else
     let cmd = 'script/'.a:cmd
@@ -1104,7 +1106,9 @@ function! s:Rake(bang,lnum,arg)
   let old_makeprg = &l:makeprg
   let old_errorformat = &l:errorformat
   try
-    if exists('b:bundler_root') && b:bundler_root ==# rails#app().path()
+    if !empty(glob(rails#app().path('.zeus.sock'))) && executable('zeus')
+      let &l:makeprg = 'zeus rake'
+    elseif exists('b:bundler_root') && b:bundler_root ==# rails#app().path()
       let &l:makeprg = 'bundle exec rake'
     else
       let &l:makeprg = 'rake'
