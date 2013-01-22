@@ -2162,7 +2162,7 @@ function! s:addfilecmds(type)
   let cmd = ''
   while cmds != ''
     let cplt = " -complete=customlist,".s:sid.l."List"
-    exe "command! -buffer -bar ".(cmd == 'D' ? '-range=0 ' : '')."-nargs=*".cplt." R".cmd.l." :call s:".l.'Edit("'.(cmd == 'D' ? '<line1>' : '').cmd.'<bang>",<f-args>)'
+    exe "command! -buffer -bar ".(cmd == 'D' ? '-range=0 ' : '')."-nargs=*".cplt." R".cmd.l." :execute s:".l.'Edit("'.(cmd == 'D' ? '<line1>' : '').cmd.'<bang>",<f-args>)'
     let cmd = strpart(cmds,0,1)
     let cmds = strpart(cmds,1)
   endwhile
@@ -2460,7 +2460,7 @@ function! s:define_navcommand(name, command) abort
   for type in ['E', 'S', 'V', 'T', 'D', '']
     exe 'command! -buffer -bar -bang -nargs=* '
           \ '-complete=customlist,'.s:sid.'CommandList ' .
-          \ 'R' . type . a:name . ' :call s:CommandEdit(' .
+          \ 'R' . type . a:name . ' :execute s:CommandEdit(' .
           \ string(type . "<bang>") . ',' .
           \ string(a:name) . ',' . string(command) . ',<f-args>)'
   endfor
@@ -2486,6 +2486,7 @@ endfunction
 function! s:CommandEdit(cmd, name, options, ...)
   if a:0 && a:1 == "&"
     let s:last_options = a:options
+    return ''
   else
     if a:options.default ==# "both()"
       let default = s:model() !=# "" ? s:model() : s:controller()
@@ -2497,7 +2498,7 @@ function! s:CommandEdit(cmd, name, options, ...)
       let default = a:options.default
     endif
     let prefix = join(map(copy(a:options.prefix), 's:sub(v:val, "/=$", "/")'), "\n")
-    call s:EditSimpleRb(a:cmd,a:name,a:0 ? a:1 : default, prefix,a:options.suffix[0])
+    return s:EditSimpleRb(a:cmd,a:name,a:0 ? a:1 : default, prefix,a:options.suffix[0])
   endif
 endfunction
 
@@ -2568,7 +2569,7 @@ function! s:migrationEdit(cmd,...)
   let arg = a:0 ? a:1 : ''
   let migr = arg == "." ? "db/migrate" : rails#app().migration(arg)
   if migr != ''
-    call s:findedit(cmd,migr)
+    return s:findedit(cmd,migr)
   else
     return s:error("Migration not found".(arg=='' ? '' : ': '.arg))
   endif
@@ -2580,7 +2581,7 @@ function! s:schemaEdit(cmd,...)
   if rails#app().has_file('db/schema.rb') || !rails#app().has_file(schema)
     let schema = 'db/schema.rb'
   endif
-  call s:findedit(cmd,schema.(a:0 ? '#'.a:1 : ''))
+  return s:findedit(cmd,schema.(a:0 ? '#'.a:1 : ''))
 endfunction
 
 function! s:fixturesEdit(cmd,...)
@@ -2598,23 +2599,23 @@ function! s:fixturesEdit(cmd,...)
   let dirs = ['test/fixtures', 'spec/fixtures', 'test/factories', 'spec/factories']
   let file = get(filter(copy(dirs), 'isdirectory(rails#app().path(v:val))'), 0, dirs[0]).'/'.c.e
   if file =~ '\.\w\+$' && rails#app().find_file(c.e, dirs) ==# ''
-    call s:edit(a:cmd,file)
+    return s:edit(a:cmd,file)
   else
-    call s:findedit(a:cmd, rails#app().find_file(c.e, dirs, ['.yml', '.csv', '.rb'], file))
+    return s:findedit(a:cmd, rails#app().find_file(c.e, dirs, ['.yml', '.csv', '.rb'], file))
   endif
 endfunction
 
 function! s:localeEdit(cmd,...)
   let c = a:0 ? a:1 : rails#app().default_locale()
   if c =~# '\.'
-    call s:edit(a:cmd,rails#app().find_file(c,'config/locales',[],'config/locales/'.c))
+    return s:edit(a:cmd,rails#app().find_file(c,'config/locales',[],'config/locales/'.c))
   else
-    call s:findedit(a:cmd,rails#app().find_file(c,'config/locales',['.yml','.rb'],'config/locales/'.c))
+    return s:findedit(a:cmd,rails#app().find_file(c,'config/locales',['.yml','.rb'],'config/locales/'.c))
   endif
 endfunction
 
 function! s:modelEdit(cmd,...)
-  call s:EditSimpleRb(a:cmd,"model",a:0? a:1 : s:model(1),"app/models/",".rb")
+  return s:EditSimpleRb(a:cmd,"model",a:0? a:1 : s:model(1),"app/models/",".rb")
 endfunction
 
 function! s:dotcmp(i1, i2)
@@ -2692,11 +2693,13 @@ function! s:viewEdit(cmd,...)
   if found != ''
     call s:edit(a:cmd,found)
     call s:djump(djump)
+    return ''
   elseif a:0 && a:1 =~# '!'
     call s:edit(a:cmd,'app/views/'.view)
     call s:djump(djump)
+    return ''
   else
-    call s:findedit(a:cmd,view)
+    return s:findedit(a:cmd,view)
   endif
 endfunction
 
@@ -2708,7 +2711,7 @@ function! s:layoutEdit(cmd,...)
   if file ==# ""
     let file = "app/views/layouts/application.html.erb"
   endif
-  call s:edit(a:cmd,s:sub(file,'^/',''))
+  return s:edit(a:cmd,s:sub(file,'^/',''))
 endfunction
 
 function! s:controllerEdit(cmd,...)
@@ -2848,7 +2851,7 @@ function! s:specEdit(cmd,...)
   if a:0
     return s:EditSimpleRb(a:cmd,"spec",a:1,"spec/","_spec.rb")
   else
-    call s:EditSimpleRb(a:cmd,"spec","spec_helper","spec/",".rb")
+    return s:EditSimpleRb(a:cmd,"spec","spec_helper","spec/",".rb")
   endif
 endfunction
 
@@ -2864,16 +2867,16 @@ function! s:pluginEdit(cmd,...)
     if a:1 =~ '^[^/.]*/\=$' && rails#app().has_file("vendor/plugins/".a:1."/init.rb")
       return s:EditSimpleRb(a:cmd,"plugin",s:sub(a:1,'/$',''),"vendor/plugins/","/init.rb")
     elseif plugin == ""
-      call s:edit(cmd,"vendor/plugins/".s:sub(a:1,'\.$',''))
+      return s:edit(cmd,"vendor/plugins/".s:sub(a:1,'\.$',''))
     elseif a:1 == "."
-      call s:findedit(cmd,"vendor/plugins/".plugin)
+      return s:findedit(cmd,"vendor/plugins/".plugin)
     elseif isdirectory(rails#app().path("vendor/plugins/".matchstr(a:1,'^[^/]*')))
-      call s:edit(cmd,"vendor/plugins/".a:1)
+      return s:edit(cmd,"vendor/plugins/".a:1)
     else
-      call s:findedit(cmd,"vendor/plugins/".a:1."\nvendor/plugins/".plugin."/".a:1)
+      return s:findedit(cmd,"vendor/plugins/".a:1."\nvendor/plugins/".plugin."/".a:1)
     endif
   else
-    call s:findedit(a:cmd,"Gemfile")
+    return s:findedit(a:cmd,"Gemfile")
   endif
 endfunction
 
@@ -2885,9 +2888,9 @@ function! s:taskEdit(cmd,...)
     let extra = plugin."/tasks/\n".plugin."/lib/tasks/\n"
   endif
   if a:0
-    call s:EditSimpleRb(a:cmd,"task",a:1,extra."lib/tasks/",".rake")
+    return s:EditSimpleRb(a:cmd,"task",a:1,extra."lib/tasks/",".rake")
   else
-    call s:findedit(a:cmd,(plugin != "" ? plugin."/Rakefile\n" : "")."Rakefile")
+    return s:findedit(a:cmd,(plugin != "" ? plugin."/Rakefile\n" : "")."Rakefile")
   endif
 endfunction
 
@@ -2897,7 +2900,7 @@ function! s:libEdit(cmd,...)
     let extra = s:sub(RailsFilePath(),'<vendor/plugins/[^/]*/\zs.*','lib/')."\n"
   endif
   if a:0
-    call s:EditSimpleRb(a:cmd,"lib",a:0? a:1 : "",extra."lib/",".rb")
+    return s:EditSimpleRb(a:cmd,"lib",a:0? a:1 : "",extra."lib/",".rb")
   else
     return s:findedit(a:cmd,"Gemfile")
   endif
@@ -2985,7 +2988,7 @@ function! s:findedit(cmd,files,...) abort
     let arg = file == "." ? rails#app().path() : rails#app().path(file)
     let testcmd = s:editcmdfor(cmd).' '.(a:0 ? a:1 . ' ' : '').s:escarg(arg)
     exe testcmd
-    return
+    return ''
   elseif rails#app().path() =~ '://' || cmd =~ 'edit' || cmd =~ 'split'
     if file !~ '^/' && file !~ '^\w:' && file !~ '://'
       let file = s:escarg(rails#app().path(file))
@@ -2997,6 +3000,7 @@ function! s:findedit(cmd,files,...) abort
   if s:try(testcmd)
     call s:djump(djump)
   endif
+  return ''
 endfunction
 
 function! s:edit(cmd,file,...)
@@ -3008,6 +3012,7 @@ function! s:edit(cmd,file,...)
   else
     exe cmd.file
   endif
+  return ''
 endfunction
 
 function! s:Alternate(cmd,line1,line2,count,...)
