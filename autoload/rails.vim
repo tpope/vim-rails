@@ -3017,7 +3017,7 @@ function! s:readable_open_command(cmd, argument, name, options) abort
   for [prefix, suffix] in pairs
     let file = rails#app().path(prefix . root . suffix)
     if filereadable(file)
-      return cmd . ' ' . fnameescape(file) . '|exe ' . s:sid . 'djump('.string(djump) . ')'
+      return cmd . ' ' . fnameescape(simplify(file)) . '|exe ' . s:sid . 'djump('.string(djump) . ')'
     endif
   endfor
   if djump !~# '^!'
@@ -3029,7 +3029,7 @@ function! s:readable_open_command(cmd, argument, name, options) abort
       if !isdirectory(fnamemodify(file, ':h'))
         call mkdir(fnamemodify(file, ':h'), 'p')
       endif
-      return cmd . ' ' . fnameescape(prefix . root . suffix)
+      return cmd . ' ' . fnameescape(simplify(prefix . root . suffix))
     endif
   endfor
   return 'echoerr '.string("Couldn't find destination directory for ".a:name.' '.a:argument)
