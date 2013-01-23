@@ -2883,7 +2883,7 @@ endfunction
 
 function! s:taskEdit(cmd,...)
   let plugin = ""
-  let extra = ""
+  let extra = []
   if RailsFilePath() =~ '\<vendor/plugins/.'
     let plugin = matchstr(RailsFilePath(),'\<vendor/plugins/[^/]*')
     let extra = [plugin."/tasks/", plugin."/lib/tasks/"]
