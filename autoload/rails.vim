@@ -2976,7 +2976,7 @@ function! s:try(cmd) abort
   return 1
 endfunction
 
-function! s:readable_open_command(cmd, argument, name, options) abort
+function! s:readable_open_command(cmd, argument, name, options) dict abort
   let cmd = s:editcmdfor(a:cmd)
   let djump = ''
   let default = get(a:options, 'default', get(a:options, 'affinity', '').'()')
