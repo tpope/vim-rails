@@ -2997,7 +2997,7 @@ function! s:readable_open_command(cmd, argument, name, options) dict abort
     endif
   elseif a:argument ==# '' && type(default) == type([])
     for file in default
-      if rails#app().has_file(file)
+      if self.app().has_file(file)
         return cmd . ' ' . fnameescape(file)
       endif
     endfor
@@ -3015,7 +3015,7 @@ function! s:readable_open_command(cmd, argument, name, options) dict abort
     endfor
   endfor
   for [prefix, suffix] in pairs
-    let file = rails#app().path(prefix . root . suffix)
+    let file = self.app().path(prefix . root . suffix)
     if filereadable(file)
       return cmd . ' ' . fnameescape(simplify(file)) . '|exe ' . s:sid . 'djump('.string(djump) . ')'
     endif
@@ -3024,8 +3024,8 @@ function! s:readable_open_command(cmd, argument, name, options) dict abort
     return 'echoerr '.string('No such '.a:name.' '.a:argument)
   endif
   for [prefix, suffix] in pairs
-    if isdirectory(rails#app().path(prefix))
-      let file = rails#app().path(prefix . root . suffix)
+    if isdirectory(self.app().path(prefix))
+      let file = self.app().path(prefix . root . suffix)
       if !isdirectory(fnamemodify(file, ':h'))
         call mkdir(fnamemodify(file, ':h'), 'p')
       endif
