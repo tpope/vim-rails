@@ -3029,7 +3029,7 @@ function! s:readable_open_command(cmd, argument, name, options) dict abort
       if !isdirectory(fnamemodify(file, ':h'))
         call mkdir(fnamemodify(file, ':h'), 'p')
       endif
-      return cmd . ' ' . fnameescape(simplify(prefix . root . suffix))
+      return cmd . ' ' . fnameescape(simplify(file))
     endif
   endfor
   return 'echoerr '.string("Couldn't find destination directory for ".a:name.' '.a:argument)
