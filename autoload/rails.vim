@@ -2171,10 +2171,23 @@ endfunction
 
 function! s:BufFinderCommands()
   command! -buffer -bar -nargs=+ Rnavcommand :call s:Navcommand(<bang>0,<f-args>)
-  call s:define_navcommand('helper', {'prefix': 'app/helpers/', 'suffix': '_helper.rb', 'default': 'controller'})
-  call s:define_navcommand('initializer', {'prefix': 'config/initializers/', 'default': '../routes'})
-  call s:define_navcommand('metal', {'prefix': 'app/metal/', 'default': '../boot'})
-  call s:define_navcommand('observer', {'prefix': 'app/observers/', 'suffix': '_observer.rb', 'default': 'model'})
+  call s:define_navcommand('environment', {
+        \ 'prefix': 'config/environments/',
+        \ 'default': ['config/application.rb', 'config/environment.rb']})
+  call s:define_navcommand('helper', {
+        \ 'prefix': 'app/helpers/',
+        \ 'suffix': '_helper.rb',
+        \ 'affinity': 'controller'})
+  call s:define_navcommand('initializer', {
+        \ 'prefix': 'config/initializers/',
+        \ 'default': ['config/routes.rb']})
+  call s:define_navcommand('metal', {
+        \ 'prefix': 'app/metal/',
+        \ 'default': ['config/boot.rb']})
+  call s:define_navcommand('observer', {
+        \ 'prefix': 'app/models/',
+        \ 'suffix': '_observer.rb',
+        \ 'affinity': 'model'})
   call s:addfilecmds("model")
   call s:addfilecmds("view")
   call s:addfilecmds("controller")
@@ -2199,7 +2212,6 @@ function! s:BufFinderCommands()
   call s:addfilecmds("plugin")
   call s:addfilecmds("task")
   call s:addfilecmds("lib")
-  call s:addfilecmds("environment")
   for [name, command] in items(rails#app().config('classifications'))
     call s:define_navcommand(name, command)
   endfor
@@ -2415,10 +2427,6 @@ function! s:libList(A,L,P)
     let all = rails#app().relglob(path,"**/*",".rb") + all
   endif
   return s:autocamelize(all,a:A)
-endfunction
-
-function! s:environmentList(A,L,P)
-  return s:completion_filter(rails#app().relglob("config/environments/","**/*",".rb"),a:A)
 endfunction
 
 function! s:Navcommand(bang,...)
@@ -2847,13 +2855,10 @@ function! s:integrationtestEdit(cmd,...)
 endfunction
 
 function! s:specEdit(cmd,...)
-  if a:0
-    return rails#buffer().open_command(a:cmd, a:1, 'spec', {
-          \ 'prefix': 'spec/',
-          \ 'suffix': '_spec.rb'})
-  else
-    return s:EditSimpleRb(a:cmd,"spec","spec_helper","spec/",".rb")
-  endif
+  return rails#buffer().open_command(a:cmd, a:0 ? a:1 : '', 'spec', {
+        \ 'prefix': 'spec/',
+        \ 'suffix': '_spec.rb',
+        \ 'default': ['spec/spec_helper.rb']})
 endfunction
 
 function! s:pluginEdit(cmd,...)
@@ -2902,24 +2907,10 @@ function! s:libEdit(cmd,...)
   if RailsFilePath() =~ '\<vendor/plugins/.'
     let extra = [s:sub(RailsFilePath(),'<vendor/plugins/[^/]*/\zs.*','lib/')]
   endif
-  if a:0
-    return rails#buffer().open_command(a:cmd, a:1, 'lib', {
-          \ 'prefix': extra + ['lib/'],
-          \ 'suffix': '.rb'})
-  else
-    return s:findedit(a:cmd,"Gemfile")
-  endif
-endfunction
-
-function! s:environmentEdit(cmd,...)
-  if a:0 || rails#app().has_file('config/application.rb')
-    return rails#buffer().open_command(a:cmd, a:1, 'environment', {
-          \ 'prefix': 'config/environments/',
-          \ 'suffix': '.rb',
-          \ 'default': '../application'})
-  else
-    return s:EditSimpleRb(a:cmd,"environment","environment","config/",".rb")
-  endif
+  return rails#buffer().open_command(a:cmd, a:0 ? a:1 : '', 'lib', {
+        \ 'prefix': extra + ['lib/'],
+        \ 'suffix': '.rb',
+        \ 'default': ['Gemfile']})
 endfunction
 
 " }}}1
