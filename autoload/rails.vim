@@ -2882,7 +2882,9 @@ function! s:pluginEdit(cmd,...)
       return s:findedit(cmd,"vendor/plugins/".a:1."\nvendor/plugins/".plugin."/".a:1)
     endif
   else
-    return s:findedit(a:cmd,"Gemfile")
+    call s:findedit(a:cmd,"Gemfile")
+    call s:warn(':Rplugin is deprecated. Use :Rlib to open the Gemfile.')
+    return ''
   endif
 endfunction
 
