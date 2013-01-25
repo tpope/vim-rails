@@ -2721,15 +2721,18 @@ function! s:controllerEdit(cmd,...)
   if a:0 == 0
     let controller = s:controller(1)
     if rails#buffer().type_name() =~# '^view\%(-layout\|-partial\)\@!'
-      let suffix .= '#'.expand('%:t:r')
+      let jump = '#'.expand('%:t:r')
+    else
+      let jump = ''
     endif
   else
-    let controller = a:1
+    let controller = matchstr(a:1, '[^#!]*')
+    let jump = matchstr(a:1, '[#!].*')
   endif
   if rails#app().has_file("app/controllers/".controller."_controller.rb") || !rails#app().has_file("app/controllers/".controller.".rb")
     let suffix = "_controller".suffix
   endif
-  return rails#buffer().open_command(a:cmd, controller, 'controller', {
+  return rails#buffer().open_command(a:cmd, controller . jump, 'controller', {
         \ 'prefix': 'app/controllers/',
         \ 'suffix': suffix})
 endfunction
