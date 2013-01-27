@@ -2,28 +2,28 @@
 
 Author:  Tim Pope <http://tpo.pe/>
 
-|rails-introduction|		Introduction and Feature Summary
-|rails-commands|		General Commands
-|rails-navigation|		Navigation
-|rails-gf|			    File Under Cursor - gf
-|rails-alternate-related|	    Alternate and Related Files
-|rails-type-navigation|		    File Type Commands
-|rails-custom-navigation|	    Custom Navigation Commands
-|rails-rake|			Rake
-|rails-scripts|			Script Wrappers
-|rails-refactoring|		Refactoring Helpers
-|rails-partials|		    Partial Extraction
-|rails-migrations|		    Migration Inversion
-|rails-integration|		Integration
-|rails-vim-integration|		    Integration with the Vim Universe
-|rails-rails-integration|	    Integration with the Rails Universe
-|rails-abbreviations|		Abbreviations
-|rails-syntax|			Syntax Highlighting
-|rails-options|			Managed Vim Options
-|rails-configuration|		Configuration
-|rails-global-settings| 	Global Settings
-|rails-about|			About rails.vim
-|rails-license|			    License
+|rails-introduction|            Introduction and Feature Summary
+|rails-commands|                General Commands
+|rails-navigation|              Navigation
+|rails-gf|                          File Under Cursor - gf
+|rails-alternate-related|           Alternate and Related Files
+|rails-type-navigation|             File Type Commands
+|rails-custom-navigation|           Custom Navigation Commands
+|rails-rake|                    Rake
+|rails-scripts|                 Script Wrappers
+|rails-refactoring|             Refactoring Helpers
+|rails-partials|                    Partial Extraction
+|rails-migrations|                  Migration Inversion
+|rails-integration|             Integration
+|rails-vim-integration|             Integration with the Vim Universe
+|rails-rails-integration|           Integration with the Rails Universe
+|rails-abbreviations|           Abbreviations
+|rails-syntax|                  Syntax Highlighting
+|rails-options|                 Managed Vim Options
+|rails-configuration|           Configuration
+|rails-global-settings|         Global Settings
+|rails-about|                   About rails.vim
+|rails-license|                     License
 
 This plugin is only available if 'compatible' is not set.
 
