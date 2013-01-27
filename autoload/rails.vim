@@ -2215,11 +2215,6 @@ function! s:BufFinderCommands()
   for [name, command] in items(rails#app().config('classifications'))
     call s:define_navcommand(name, command)
   endfor
-  if exists('b:rails_file_types')
-    for [name, command] in items(b:rails_file_types)
-      call s:define_navcommand(name, command)
-    endfor
-  endif
 endfunction
 
 function! s:completion_filter(results,A)
