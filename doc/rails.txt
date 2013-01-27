@@ -399,9 +399,8 @@ Custom Navigation Commands  ~
 						*rails-custom-navigation*
 
 It is also possible to create custom navigation commands.  The preferred way
-to do this is with the method outlined under |rails-custom-file-types|.  You
-can also use |:Rnavcommand|, either from |macros/rails.vim| or a
-|rails-:autocmd|.
+to do this is with the method outlined under |config/editor.json|.  You can
+also use |:Rnavcommand|, either from |macros/rails.vim| or a |rails-:autocmd|.
 
 						*rails-:Rnavcommand*
 :Rnavcommand [options] {name} [{path} ...]
@@ -840,34 +839,47 @@ can be placed in a "macros/rails.vim" file in the 'runtimepath' (for example,
 "~/.vim/macros/rails.vim").  This file is sourced by rails.vim each time a
 Rails file is loaded.
 
+						*config/editor.json*
+This file provides for application specific configuration and is intended to
+be checked into version control.  Example:
+>
+	{
+	  "abbreviations": {
+	    "FB::": "FooBar"
+	  },
+	  "classifications": {
+	    "service": {
+	      "prefix": "app/services/",
+	      "suffix": "_service.rb",
+	      "alternate": "test/functional/%s_service_test.rb"
+	    },
+	    "fabricator": {
+	      "prefix": ["test/fabricators/", "spec/fabricators/"],
+	      "suffix": "_fabricator.rb",
+	      "affinity": "model"
+	    }
+	  },
+	  "path": ["app/services"]
+	}
+<
+This "classifications" section is used to provide navigation commands.  The
+above configuration causes :Rservice and :Rfabricator navigation commands to
+be created.  The optional "affinity" option determines whether the current
+model name or controller name is used for the default when no argument is
+given.  The optional "alternate" option controls the destination of :A.
+
+
 						*config/rails.vim*
 If you have settings particular to a specific project, they can be put in a
 config/rails.vim file in the root directory of the application.  The file is
-sourced in the |sandbox| for security reasons.
-
-						*rails-custom-file-types*
-Perhaps the most useful thing one can put in |config/rails.vim| is a
-declaration of additional types of files used in the application.  For
-example:
->
-	let b:rails_file_types = {
-	      \ 'service': {
-	      \   'prefix': 'app/service/',
-	      \   'suffix': '_service.rb'},
-	      \ 'fabricator': {
-	      \   'prefix': ['test/fabricators/', 'spec/fabricators/'],
-	      \   'suffix': '_fabricator.rb',
-	      \   'affinity': 'model'}}
-<
-Providing this causes :Rservice and :Rfabricator navigation commands to be
-created.  The optional affinity option determines whether the current model
-name or controller name is used for the default when no argument is given.
+sourced in the |sandbox| for security reasons, which makes invoking rails.vim
+commands like |:Rnavcommand| or |:Rset| impossible.  Thus, this file is
+deprecated in favor of |config/editor.json|.
 
 						*rails-:Rset*
 :Rset {option}[={value}]
 			Query or set a local option.  This command may be
-			called directly, from an autocommand, or from
-			config/rails.vim.
+			called interactively or from an autocommand.
 
 Options may be set in one of four scopes, which may be indicated by an
 optional prefix.  These scopes determine how broadly an option will apply.
