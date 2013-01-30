@@ -2,10 +2,7 @@
 " Author:       Tim Pope <http://tpo.pe/>
 " GetLatestVimScripts: 1567 1 :AutoInstall: rails.vim
 
-" Install this file as plugin/rails.vim.  See doc/rails.txt for details. (Grab
-" it from the URL above if you don't have it.)  To access it from Vim, see
-" :help add-local-help (hint: :helptags ~/.vim/doc) Afterwards, you should be
-" able to do :help rails
+" Install this file as plugin/rails.vim.
 
 if exists('g:loaded_rails') || &cp || v:version < 700
   finish
