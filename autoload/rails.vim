@@ -4146,7 +4146,7 @@ endfunction
 function! s:BufAbbreviations()
   command! -buffer -bar -nargs=* -bang Rabbrev :call s:Abbrev(<bang>0,<f-args>)
   " Some of these were cherry picked from the TextMate snippets
-  if g:rails_abbreviations
+  if type(g:rails_abbreviations) != type(0) || g:rails_abbreviations
     let buffer = rails#buffer()
     " Limit to the right filetypes.  But error on the liberal side
     if buffer.type_name('controller','view','helper','test-functional','test-integration')
