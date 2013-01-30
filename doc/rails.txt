@@ -712,7 +712,6 @@ Rabbrev pa[ params		pa[:id]			params[:id]
 Rabbrev pa[ params		pa<C-]>			params
 Rabbrev pa[ params		pa.inspect		params.inspect
 Rabbrev AR:: ActionRecord	AR::Base		ActiveRecord::Base
-Rabbrev :a :action\ =>\		render :a<Tab>		render :action => 
 
 In short, ( expands on (, :: expands on . and :, and [ expands on . and [.
 These trailing punctuation marks are NOT part of the final abbreviation, and
@@ -725,9 +724,7 @@ space).
 
 Many abbreviations are provided by default: use :Rabbrev to list them.  They
 vary depending on the type of file (models have different abbreviations than
-controllers).  There is one "smart" abbreviation, :c, which expands to
-":controller => ", ":collection => ", or ":conditions => " depending on
-context.
+controllers).
 
 SYNTAX HIGHLIGHTING				*rails-syntax*
 

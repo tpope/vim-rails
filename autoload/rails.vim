@@ -4100,19 +4100,6 @@ function! s:selectiveexpand(pat,good,default,...)
   endif
 endfunction
 
-function! s:TheCWord()
-  let l = s:linepeak()
-  if l =~ '\<\%(find\|first\|last\|all\|paginate\)\>'
-    return s:selectiveexpand('..',':conditions => ',':c')
-  elseif l =~ '\<render\s*(\=\s*:partial\s*=>\s*'
-    return s:selectiveexpand('..',':collection => ',':c')
-  elseif l =~ '\<\%(url_for\|link_to\|form_tag\)\>' || l =~ ':url\s*=>\s*{\s*'
-    return s:selectiveexpand('..',':controller => ',':c')
-  else
-    return s:selectiveexpand('..',':conditions => ',':c')
-  endif
-endfunction
-
 function! s:AddSelectiveExpand(abbr,pat,expn,...)
   let expn  = s:gsub(s:gsub(a:expn        ,'[\"|]','\\&'),'\<','\\<Lt>')
   let expn2 = s:gsub(s:gsub(a:0 ? a:1 : '','[\"|]','\\&'),'\<','\\<Lt>')
@@ -4213,13 +4200,6 @@ function! s:BufAbbreviations()
       Rabbrev asre( assert_response
       Rabbrev art(  assert_redirected_to
     endif
-    Rabbrev :a    :action\ =>\ 
-    " hax
-    Rabbrev :c    :co________\ =>\ 
-    inoreabbrev <buffer> <silent> :c <C-R>=<SID>TheCWord()<CR>
-    Rabbrev :i    :id\ =>\ 
-    Rabbrev :o    :object\ =>\ 
-    Rabbrev :p    :partial\ =>\ 
     Rabbrev logd( logger.debug
     Rabbrev logi( logger.info
     Rabbrev logw( logger.warn
