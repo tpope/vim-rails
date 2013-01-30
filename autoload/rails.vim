@@ -2177,6 +2177,7 @@ function! s:BufFinderCommands()
   call s:define_navcommand('helper', {
         \ 'prefix': 'app/helpers/',
         \ 'suffix': '_helper.rb',
+        \ 'template': "module %SHelper\nend",
         \ 'affinity': 'controller'})
   call s:define_navcommand('initializer', {
         \ 'prefix': 'config/initializers/',
@@ -2187,6 +2188,7 @@ function! s:BufFinderCommands()
   call s:define_navcommand('observer', {
         \ 'prefix': 'app/models/',
         \ 'suffix': '_observer.rb',
+        \ 'template': "class %SObserver < ActiveRecord::Observer\nend",
         \ 'affinity': 'model'})
   call s:addfilecmds("model")
   call s:addfilecmds("view")
@@ -2561,6 +2563,19 @@ call s:add_methods('app', ['migration'])
 function! s:migrationEdit(cmd,...)
   let cmd = s:findcmdfor(a:cmd)
   let arg = a:0 ? a:1 : ''
+  if arg =~# '!'
+    " This will totally miss the mark if we cross into or out of DST.
+    let ts = localtime()
+    let local = strftime('%H', ts) * 3600 + strftime('%M', ts) * 60 + strftime('%S')
+    let offset = local - ts % 86400
+    if offset <= -12 * 60 * 60
+      let offset += 86400
+    endif
+    return rails#buffer().open_command(a:cmd, strftime('%Y%m%d%H%M%S', ts - offset).'_'.arg, 'migration', {
+          \ 'template': 'class ' . rails#camelize(matchstr(arg, '[^!]*')) . " < ActiveRecord::Migration\nend",
+          \ 'prefix': 'db/migrate/',
+          \ 'suffix': '.rb'})
+  endif
   let migr = arg == "." ? "db/migrate" : rails#app().migration(arg)
   if migr != ''
     return s:findedit(cmd,migr)
@@ -2612,6 +2627,7 @@ function! s:modelEdit(cmd,...)
   return rails#buffer().open_command(a:cmd, a:0 ? a:1 : '', 'model', {
         \ 'prefix': 'app/models/',
         \ 'suffix': '.rb',
+        \ 'template': "class %S\nend",
         \ 'affinity': 'model'})
 endfunction
 
@@ -2713,6 +2729,7 @@ endfunction
 
 function! s:controllerEdit(cmd,...)
   let suffix = '.rb'
+  let template = "class %S < ApplicationController\nend"
   if a:0 == 0
     let controller = s:controller(1)
     if rails#buffer().type_name() =~# '^view\%(-layout\|-partial\)\@!'
@@ -2725,9 +2742,11 @@ function! s:controllerEdit(cmd,...)
     let jump = matchstr(a:1, '[#!].*')
   endif
   if rails#app().has_file("app/controllers/".controller."_controller.rb") || !rails#app().has_file("app/controllers/".controller.".rb")
+    let template = "class %SController < ApplicationController\nend"
     let suffix = "_controller".suffix
   endif
   return rails#buffer().open_command(a:cmd, controller . jump, 'controller', {
+        \ 'template': template,
         \ 'prefix': 'app/controllers/',
         \ 'suffix': suffix})
 endfunction
@@ -2736,6 +2755,7 @@ function! s:mailerEdit(cmd,...)
   return rails#buffer().open_command(a:cmd, a:0 ? a:1 : '', 'mailer', {
         \ 'prefix': ['app/mailers/', 'app/models/'],
         \ 'suffix': '.rb',
+        \ 'template': "class %S < ActionMailer::Base\nend",
         \ 'affinity': 'controller'})
 endfunction
 
@@ -2853,9 +2873,11 @@ function! s:integrationtestEdit(cmd,...)
 endfunction
 
 function! s:specEdit(cmd,...)
+  let describe = s:sub(s:sub(rails#camelize(a:1), '^[^:]*::', ''), '!.*', '')
   return rails#buffer().open_command(a:cmd, a:0 ? a:1 : '', 'spec', {
         \ 'prefix': 'spec/',
         \ 'suffix': '_spec.rb',
+        \ 'template': "require 'spec_helper'\n\ndescribe ".describe." do\nend",
         \ 'default': ['spec/spec_helper.rb']})
 endfunction
 
@@ -3020,7 +3042,13 @@ function! s:readable_open_command(cmd, argument, name, options) dict abort
       if !isdirectory(fnamemodify(file, ':h'))
         call mkdir(fnamemodify(file, ':h'), 'p')
       endif
-      return cmd . ' ' . fnameescape(simplify(file))
+      let template = s:split(get(a:options, 'template', ''))
+      let placeholders = {
+            \ '%s': rails#underscore(root),
+            \ '%S': rails#camelize(root),
+            \ '%%': '%'}
+      call map(template, 'substitute(v:val, "%.", "\\=get(placeholders, submatch(0), submatch(0))", "g")')
+      return cmd . ' ' . fnameescape(simplify(file)) . '|call setline(1, '.string(template).')' . '|set nomod'
     endif
   endfor
   return 'echoerr '.string("Couldn't find destination directory for ".a:name.' '.a:argument)

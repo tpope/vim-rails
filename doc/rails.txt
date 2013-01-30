@@ -240,8 +240,8 @@ opening in a new tab, and reading the file into the current buffer.  For
 There is also :REmodel which is a synonym for :Rmodel (future versions might
 allow customization of the behavior of :Rmodel).  They also allow for jumping
 to methods or line numbers using the same syntax as |:R|, and file creation
-can be forced by adding a ! after the filename (not after the command
-itself!).
+(with a bit of boilerplate) can be forced by adding a ! after the filename
+(not after the command itself!).
 
 :Rcontroller					|rails-:Rcontroller|
 :Renvironment					|rails-:Renvironment|
@@ -851,12 +851,14 @@ be checked into version control.  Example:
 	    "service": {
 	      "prefix": "app/services/",
 	      "suffix": "_service.rb",
+	      "template": "class %SService < AbstractService\nend",
 	      "alternate": "test/functional/%s_service_test.rb"
 	    },
 	    "fabricator": {
 	      "prefix": ["test/fabricators/", "spec/fabricators/"],
 	      "suffix": "_fabricator.rb",
-	      "affinity": "model"
+	      "affinity": "model",
+	      "template": "Fabricator :%s do\nend"
 	    }
 	  },
 	  "path": ["app/services"]
