@@ -4350,9 +4350,6 @@ function! s:getopt(opt,...)
   if scope =~ 'l' && &filetype !~# '^ruby\>'
     let scope = s:sub(scope,'l','b')
   endif
-  if scope =~ 'l'
-    call s:LocalModelines(lnum)
-  endif
   let var = s:sname().'_'.opt
   let lastmethod = s:lastmethod(lnum)
   if lastmethod == '' | let lastmethod = ' ' | endif
@@ -4422,58 +4419,6 @@ function! s:Complete_set(A,L,P)
     return filter(sort(map(keys(s:opts()),'extra.v:val')),'s:startswith(v:val,a:A)')
   endif
   return []
-endfunction
-
-function! s:BufModelines()
-  if !g:rails_modelines && !&modelines
-    return
-  endif
-  let lines = getline("$")."\n".getline(line("$")-1)."\n".getline(1)."\n".getline(2)."\n".getline(3)."\n"
-  let pat = '\s\+\zs.\{-\}\ze\%(\n\|\s\s\|#{\@!\|%>\|-->\|$\)'
-  let cnt = 1
-  let mat    = matchstr(lines,'\C\<Rset'.pat)
-  let matend = matchend(lines,'\C\<Rset'.pat)
-  while mat != "" && cnt < 10
-    let mat = s:sub(mat,'\s+$','')
-    let mat = s:gsub(mat,'\|','\\|')
-    if mat != ''
-      silent! exe "Rset <B> ".mat
-    endif
-    let mat    = matchstr(lines,'\C\<Rset'.pat,matend)
-    let matend = matchend(lines,'\C\<Rset'.pat,matend)
-    let cnt += 1
-  endwhile
-endfunction
-
-function! s:LocalModelines(lnum)
-  if !g:rails_modelines
-    return
-  endif
-  let lbeg = s:lastmethodline(a:lnum)
-  let lend = s:endof(lbeg)
-  if lbeg == 0 || lend == 0
-    return
-  endif
-  let lines = "\n"
-  let lnum = lbeg
-  while lnum < lend && lnum < lbeg + 5
-    let lines .= getline(lnum) . "\n"
-    let lnum += 1
-  endwhile
-  let pat = '\s\+\zs.\{-\}\ze\%(\n\|\s\s\|#{\@!\|%>\|-->\|$\)'
-  let cnt = 1
-  let mat    = matchstr(lines,'\C\<rset'.pat)
-  let matend = matchend(lines,'\C\<rset'.pat)
-  while mat != "" && cnt < 10
-    let mat = s:sub(mat,'\s+$','')
-    let mat = s:gsub(mat,'\|','\\|')
-    if mat != ''
-      silent! exe "Rset <l> ".mat
-    endif
-    let mat    = matchstr(lines,'\C\<rset'.pat,matend)
-    let matend = matchend(lines,'\C\<rset'.pat,matend)
-    let cnt += 1
-  endwhile
 endfunction
 
 " }}}1
@@ -4552,7 +4497,6 @@ function! RailsBufInit(path)
   if f != ''
     exe "silent doautocmd User Rails".f
   endif
-  call s:BufModelines()
   call s:BufMappings()
   return b:rails_root
 endfunction
