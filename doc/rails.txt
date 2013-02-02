@@ -47,7 +47,9 @@ actually edit a file from a Rails application.
 
 						*rails-:Rails*
 :Rails new {directory}	The only global command.  Creates a new Rails
-			application in {directory}, and loads the README.
+			application in {directory}, and loads the README.  If
+			rails.vim is active for the current buffer, :Rails is
+			an alias for |:Rscript|.
 
 :Rails!			Show the version of rails.vim installed.  If rails.vim
 			is active for the current buffer, also show the type

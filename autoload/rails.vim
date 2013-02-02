@@ -1014,12 +1014,7 @@ endfunction
 
 function! rails#new_app_command(bang,...)
   if a:0 == 0
-    let msg = "rails.vim ".g:autoloaded_rails
-    if a:bang && exists('b:rails_root') && rails#buffer().type_name() == ''
-      echo msg." (Rails)"
-    elseif a:bang && exists('b:rails_root')
-      echo msg." (Rails-".rails#buffer().type_name().")"
-    elseif a:bang
+    if a:bang
       echo msg
     else
       !rails
@@ -1478,7 +1473,8 @@ endfunction
 " Script Wrappers {{{1
 
 function! s:BufScriptWrappers()
-  command! -buffer -bar -nargs=*       -complete=customlist,s:Complete_script   Rscript       :execute rails#app().script_command(<bang>0,<f-args>)
+  command! -buffer -bang -bar -nargs=* -complete=customlist,s:Complete_script   Rscript       :execute rails#app().script_command(<bang>0,<f-args>)
+  command! -buffer -bang -bar -nargs=* -complete=customlist,s:Complete_script   Rails         :execute rails#app().script_command(<bang>0,<f-args>)
   command! -buffer -bar -nargs=*       -complete=customlist,s:Complete_generate Rgenerate     :execute rails#app().generate_command(<bang>0,<f-args>)
   command! -buffer -bar -nargs=*       -complete=customlist,s:Complete_destroy  Rdestroy      :execute rails#app().destroy_command(<bang>0,<f-args>)
   command! -buffer -bar -nargs=? -bang -complete=customlist,s:Complete_server   Rserver       :execute rails#app().server_command(<bang>0,<q-args>)
@@ -1502,6 +1498,12 @@ function! s:app_generators() dict
 endfunction
 
 function! s:app_script_command(bang,...) dict
+  let msg = "rails.vim ".g:autoloaded_rails
+  if a:0 == 0 && a:bang && rails#buffer().type_name() == ''
+    echo msg." (Rails)"
+  elseif a:0 == 0 && a:bang
+    echo msg." (Rails-".rails#buffer().type_name().")"
+  endif
   let str = ""
   let cmd = a:0 ? a:1 : "console"
   let c = 2
