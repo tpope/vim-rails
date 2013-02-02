@@ -2872,8 +2872,8 @@ function! s:integrationtestEdit(cmd,...)
   return s:EditSimpleRb(a:cmd,"integrationtest",f.jump,tests[0][0],tests[0][1],1)
 endfunction
 
-function! s:specEdit(cmd,...)
-  let describe = s:sub(s:sub(rails#camelize(a:1), '^[^:]*::', ''), '!.*', '')
+function! s:specEdit(cmd,...) abort
+  let describe = s:sub(s:sub(rails#camelize(a:0 ? a:1 : ''), '^[^:]*::', ''), '!.*', '')
   return rails#buffer().open_command(a:cmd, a:0 ? a:1 : '', 'spec', {
         \ 'prefix': 'spec/',
         \ 'suffix': '_spec.rb',
