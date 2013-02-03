@@ -55,7 +55,6 @@ call s:SetOptDefault("rails_ctags_arguments","--languages=-javascript")
 call s:SetOptDefault("rails_default_file","README")
 call s:SetOptDefault("rails_root_url",'http://localhost:3000/')
 call s:SetOptDefault("rails_gnu_screen",1)
-call s:SetOptDefault("rails_generators","controller\ngenerator\nhelper\nintegration_test\nmailer\nmetal\nmigration\nmodel\nobserver\nperformance_test\nplugin\nresource\nscaffold\nscaffold_controller\nsession_migration\nstylesheets")
 if exists("g:loaded_dbext") && executable("sqlite3") && ! executable("sqlite")
   " Since dbext can't find it by itself
   call s:SetOptDefault("dbext_default_SQLITE_bin","sqlite3")

@@ -809,6 +809,7 @@ function! s:app_has(feature) dict
   let map = {
         \'test': 'test/',
         \'spec': 'spec/',
+        \'bundler': '.bundle/',
         \'cucumber': 'features/',
         \'turnip': 'spec/acceptance/',
         \'sass': 'public/stylesheets/sass/',
@@ -1484,17 +1485,26 @@ function! s:BufScriptWrappers()
   command! -buffer       -nargs=1 -range=0 -complete=customlist,s:Complete_ruby Ry            :execute rails#app().runner_command(<count>==<line2>?<count>:-1,'y begin '.<f-args>.' end')
 endfunction
 
-function! s:app_generators() dict
+function! s:app_generators() dict abort
   if self.cache.needs('generators')
-    let generators = self.relglob("vendor/plugins/","*/generators/*")
-    let generators += self.relglob("","lib/generators/*")
-    call filter(generators,'v:val =~ "/$"')
-    let generators += split(glob(expand("~/.rails/generators")."/*"),"\n")
-    call map(generators,'s:sub(v:val,"^.*[\\\\/]generators[\\\\/]\\ze.","")')
-    call map(generators,'s:sub(v:val,"[\\\\/]$","")')
-    call self.cache.set('generators',generators)
+    let paths = [self.path('vendor/plugins/*'), self.path('lib'), expand("~/.rails")]
+    if self.has('bundler') && exists('*bundler#project')
+      let gems = values(bundler#project(self.path()).gems())
+      let paths += map(copy(gems), 'v:val . "/lib/rails"')
+      let paths += map(copy(gems), 'v:val . "/lib"')
+      let builtin = []
+    else
+      let builtin = ['assets', 'controller', 'generator', 'helper', 'integration_test', 'mailer', 'migration', 'model', 'observer', 'performance_test', 'resource', 'scaffold', 'scaffold_controller', 'session_migration', 'task']
+    endif
+    let generators = s:split(globpath(s:pathjoin(paths), 'generators/**/*_generator.rb'))
+    call map(generators, 's:sub(v:val,"^.*[\\\\/]generators[\\\\/]\\ze.","")')
+    call map(generators, 's:sub(v:val,"[\\\\/][^\\\\/]*_generator\.rb$","")')
+    call map(generators, 'tr(v:val, "/", ":")')
+    let builtin += map(filter(copy(generators), 'v:val =~# "^rails:"'), 'v:val[6:-1]')
+    call filter(generators,'v:val !~# "^rails:"')
+    call self.cache.set('generators',s:uniq(builtin + generators))
   endif
-  return sort(split(g:rails_generators,"\n") + self.cache.get('generators'))
+  return self.cache.get('generators')
 endfunction
 
 function! s:app_script_command(bang,...) dict
