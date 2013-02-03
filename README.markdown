@@ -70,13 +70,13 @@ Once help tags have been generated, you can view the manual with
 FAQ
 ---
 
-> I installed the plugin and started Vim.  Why does only the :Rails
+> I installed the plugin and started Vim.  Why does only the `:Rails`
 > command exist?
 
 This plugin cares about the current file, not the current working
 directory.  Edit a file from a Rails application.
 
-> I opened a new tab.  Why does only the :Rails command exist?
+> I opened a new tab.  Why does only the `:Rails` command exist?
 
 This plugin cares about the current file, not the current working
 directory.  Edit a file from a Rails application.  You can use the `:RT`
