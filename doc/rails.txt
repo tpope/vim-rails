@@ -62,10 +62,10 @@ actually edit a file from a Rails application.
 :Rlcd [{directory}]	|:lcd| to /path/to/railsapp/{directory}.
 
 						*rails-:Redit*
-:Redit {file}		Deprecated in favor of |:R|.
+:Redit {file}		Obsolete alias for |:R|.
 
 						*rails-:Rfind*
-:Rfind [{file}]		Deprecated in favor of |:R| or |:find|.
+:Rfind [{file}]		Obsolete alias for |:find|.
 
 						*rails-:Rlog*
 :Rlog [{logfile}]	Split window and open {logfile} ($RAILS_ENV or
