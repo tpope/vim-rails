@@ -922,20 +922,6 @@ function! s:prephelp()
   endif
 endfunction
 
-function! RailsHelpCommand(...)
-  call s:prephelp()
-  let topic = a:0 ? a:1 : ""
-  if topic == "" || topic == "-"
-    return "help rails"
-  elseif topic =~ '^g:'
-    return "help ".topic
-  elseif topic =~ '^-'
-    return "help rails".topic
-  else
-    return "help rails-".topic
-  endif
-endfunction
-
 function! s:BufCommands()
   call s:BufFinderCommands()
   call s:BufNavCommands()
@@ -945,12 +931,6 @@ function! s:BufCommands()
   command! -buffer -bar -nargs=? -bang -complete=customlist,s:Complete_environments   Rlog     :call s:Log(<bang>0,<q-args>)
   command! -buffer -bar -nargs=* -bang -complete=customlist,s:Complete_set            Rset     :call s:Set(<bang>0,<f-args>)
   command! -buffer -bar -nargs=0 Rtags       :execute rails#app().tags_command()
-  " Embedding all this logic directly into the command makes the error
-  " messages more concise.
-  command! -buffer -bar -nargs=? -bang Rdoc  :
-        \ if <bang>0 || <q-args> =~ "^\\([:'-]\\|g:\\)" |
-        \   exe RailsHelpCommand(<q-args>) |
-        \ else | call s:Doc(<bang>0,<q-args>) | endif
   command! -buffer -bar -nargs=0 -bang Rrefresh :if <bang>0|unlet! g:autoloaded_rails|source `=s:file`|endif|call s:Refresh(<bang>0)
   if exists(":NERDTree")
     command! -buffer -bar -nargs=? -complete=customlist,s:Complete_cd Rtree :NERDTree `=rails#app().path(<f-args>)`
@@ -965,29 +945,6 @@ function! s:BufCommands()
   endif
   if RailsFilePath() =~ '\<db/migrate/.*\.rb$'
     command! -buffer -bar                 Rinvert  :call s:Invert(<bang>0)
-  endif
-endfunction
-
-function! s:Doc(bang, string)
-  if a:string != ""
-    if exists("g:rails_search_url")
-      let query = substitute(a:string,'[^A-Za-z0-9_.~-]','\="%".printf("%02X",char2nr(submatch(0)))','g')
-      let url = printf(g:rails_search_url, query)
-    else
-      return s:error("specify a g:rails_search_url with %s for a query placeholder")
-    endif
-  elseif isdirectory(rails#app().path("doc/api/classes"))
-    let url = rails#app().path("/doc/api/index.html")
-  elseif s:getpidfor("0.0.0.0","8808") > 0
-    let url = "http://localhost:8808"
-  else
-    let url = "http://api.rubyonrails.org"
-  endif
-  call s:initOpenURL()
-  if exists(":OpenURL")
-    exe "OpenURL ".s:escarg(url)
-  else
-    return s:error("No :OpenURL command found")
   endif
 endfunction
 

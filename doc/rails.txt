@@ -61,16 +61,6 @@ actually edit a file from a Rails application.
 						*rails-:Rlcd*
 :Rlcd [{directory}]	|:lcd| to /path/to/railsapp/{directory}.
 
-						*rails-:Rdoc*
-:Rdoc			Browse to the Rails API, either in doc/api in the
-			current Rails application, gem_server if it is
-			running, or http://api.rubyonrails.org/ .  Requires
-			:OpenURL to be defined (see |rails-:OpenURL|).
-
-						*rails-:Rdoc!*
-:Rdoc!			Make the appropriate |:helptags| call and invoke
-			|:help| rails.
-
 						*rails-:Redit*
 :Redit {file}		Deprecated in favor of |:R|.
 
