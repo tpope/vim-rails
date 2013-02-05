@@ -928,16 +928,6 @@ File to load when a new Rails application is created.  Defaults to the README.
 Use GNU Screen or Tmux (if it is running) to launch |:Rscript| console and
 |:Rserver| in the background.  Enabled by default.
 
-						*g:rails_modelines*  >
-	let g:rails_modelines=1
-Enable modelines like the following: >
-	# Rset task=db:schema:load
-Modelines set buffer-local options using the :Rset command.
-Also enables method specific modelines (note the case difference): >
-	  def show
-	    # rset preview=blog/show/1
-Modelines are deprecated and disabled by default.
-
 						*g:rails_url*  >
 	let g:rails_url='http://localhost:3000/'
 Used for the |:Rpreview| command.  Default is as shown above.  Overridden by
