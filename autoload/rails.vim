@@ -4037,12 +4037,8 @@ function! s:BufAbbreviations()
       Rabbrev coo[ cookies
       Rabbrev fl[ flash
       Rabbrev rr( render
-      Rabbrev ra( render :action\ =>\ 
-      Rabbrev rc( render :controller\ =>\ 
       Rabbrev rf( render :file\ =>\ 
-      Rabbrev ri( render :inline\ =>\ 
       Rabbrev rj( render :json\ =>\ 
-      Rabbrev rl( render :layout\ =>\ 
       Rabbrev rp( render :partial\ =>\ 
       Rabbrev rt( render :text\ =>\ 
       Rabbrev rx( render :xml\ =>\ 
@@ -4053,8 +4049,6 @@ function! s:BufAbbreviations()
     endif
     if buffer.type_name('controller')
       Rabbrev re(  redirect_to
-      Rabbrev rea( redirect_to :action\ =>\ 
-      Rabbrev rec( redirect_to :controller\ =>\ 
       Rabbrev rst( respond_to
     endif
     if buffer.type_name() ==# 'model' || buffer.type_name('model-arb')
@@ -4097,7 +4091,6 @@ function! s:BufAbbreviations()
     Rabbrev logw( logger.warn
     Rabbrev loge( logger.error
     Rabbrev logf( logger.fatal
-    Rabbrev fi(   find
     Rabbrev AR::  ActiveRecord
     Rabbrev AV::  ActionView
     Rabbrev AC::  ActionController
@@ -4105,7 +4098,6 @@ function! s:BufAbbreviations()
     Rabbrev AS::  ActiveSupport
     Rabbrev AM::  ActionMailer
     Rabbrev AO::  ActiveModel
-    Rabbrev AE::  ActiveResource
     for pairs in items(type(g:rails_abbreviations) == type({}) ? g:rails_abbreviations : {}) + items(rails#app().config('abbreviations'))
       call call(function(s:sid.'Abbrev'), [0, pairs[0]] + s:split(pairs[1]))
     endfor
