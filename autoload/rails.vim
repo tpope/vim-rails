@@ -1623,7 +1623,10 @@ function! s:Complete_script(ArgLead,CmdLine,P)
     elseif target ==# 'helper'
       return s:autocamelize(rails#app().relglob('app/helpers/','**/*','_helper.rb'),a:ArgLead)
     elseif target ==# 'integration_test' || target ==# 'integration_spec' || target ==# 'feature'
-      return s:integrationtestList(a:ArgLead,"","")
+      return s:autocamelize(
+            \ rails#app().relglob('test/integration/','**/*','_test.rb') +
+            \ rails#app().relglob('spec/requests/', '**/*', '_spec.rb') +
+            \ rails#app().relglob('features/', '**/*', '.feature'), a:ArgLead)
     elseif target ==# 'metal'
       return s:autocamelize(rails#app().relglob('app/metal/','**/*','.rb'),a:ArgLead)
     elseif target ==# 'migration' || target ==# 'session_migration'
@@ -2146,6 +2149,36 @@ function! s:BufFinderCommands()
         \ 'suffix': '_observer.rb',
         \ 'template': "class %SObserver < ActiveRecord::Observer\nend",
         \ 'affinity': 'model'})
+  let tests = filter([
+        \ ['test', 'test/unit/%s_test.rb', 'test/functional/%s_test.rb'],
+        \ ['test', 'test/models/%s_test.rb', 'test/controllers/%s_test.rb'],
+        \ ['test', 'test/helpers/%s_test.rb', 'test/mailers/%s_test.rb'],
+        \ ['spec', 'spec/models/%s_spec.rb', 'spec/controllers/%s_spec.rb'],
+        \ ['spec', 'spec/helpers/%s_spec.rb', 'spec/mailers/%s_spec.rb']],
+        \ 'rails#app().has(v:val[0])')
+  if !empty(tests)
+    call s:define_navcommand('unittest', {
+          \ 'pattern': map(copy(tests), 'v:val[1]'),
+          \ 'affinity': 'model'})
+    call s:define_navcommand('functionaltest', {
+          \ 'pattern': map(copy(tests), 'v:val[2]'),
+          \ 'affinity': 'controller'})
+  endif
+  let integration_tests = map(filter([
+        \ ['test', 'test/integration/%s_test.rb'],
+        \ ['spec', 'spec/requests/%s_spec.rb'],
+        \ ['spec', 'spec/integration/%s_spec.rb'],
+        \ ['cucumber', 'features/%s.feature'],
+        \ ['turnip', 'spec/acceptance/%s.feature']],
+        \ 'rails#app().has(v:val[0])'), 'v:val[1]')
+  if !empty(integration_tests)
+    call s:define_navcommand('integrationtest', {
+          \ 'pattern': integration_tests,
+          \ 'default': [
+          \   'test/test_helper.rb',
+          \   'features/support/env.rb',
+          \   'spec/spec_helper.rb']})
+  endif
   call s:addfilecmds("model")
   call s:addfilecmds("view")
   call s:addfilecmds("controller")
@@ -2155,13 +2188,6 @@ function! s:BufFinderCommands()
   call s:addfilecmds("layout")
   call s:addfilecmds("fixtures")
   call s:addfilecmds("locale")
-  if rails#app().has('test') || rails#app().has('spec')
-    call s:addfilecmds("unittest")
-    call s:addfilecmds("functionaltest")
-  endif
-  if rails#app().has('test') || rails#app().has('spec') || rails#app().has('cucumber')
-    call s:addfilecmds("integrationtest")
-  endif
   if rails#app().has('spec')
     call s:addfilecmds("spec")
   endif
@@ -2307,50 +2333,6 @@ function! s:schemaList(A,L,P)
   return s:autocamelize(tables, a:A)
 endfunction
 
-function! s:unittestList(A,L,P)
-  let found = []
-  if rails#app().has('test')
-    let found += rails#app().relglob("test/unit/","**/*","_test.rb")
-  endif
-  if rails#app().has('spec')
-    let found += rails#app().relglob("spec/models/","**/*","_spec.rb")
-  endif
-  return s:autocamelize(found,a:A)
-endfunction
-
-function! s:functionaltestList(A,L,P)
-  let found = []
-  if rails#app().has('test')
-    let found += rails#app().relglob("test/functional/","**/*","_test.rb")
-  endif
-  if rails#app().has('spec')
-    let found += rails#app().relglob("spec/controllers/","**/*","_spec.rb")
-    let found += rails#app().relglob("spec/mailers/","**/*","_spec.rb")
-  endif
-  return s:autocamelize(found,a:A)
-endfunction
-
-function! s:integrationtestList(A,L,P)
-  if a:A =~# '^\u'
-    return s:autocamelize(rails#app().relglob("test/integration/","**/*","_test.rb"),a:A)
-  endif
-  let found = []
-  if rails#app().has('test')
-    let found += rails#app().relglob("test/integration/","**/*","_test.rb")
-  endif
-  if rails#app().has('spec')
-    let found += rails#app().relglob("spec/requests/","**/*","_spec.rb")
-    let found += rails#app().relglob("spec/integration/","**/*","_spec.rb")
-  endif
-  if rails#app().has('cucumber')
-    let found += rails#app().relglob("features/","**/*",".feature")
-  endif
-  if rails#app().has('turnip')
-    let found += rails#app().relglob("spec/acceptance/","**/*",".feature")
-  endif
-  return s:completion_filter(found,a:A)
-endfunction
-
 function! s:specList(A,L,P)
   return s:completion_filter(rails#app().relglob("spec/","**/*","_spec.rb"),a:A)
 endfunction
@@ -2433,16 +2415,15 @@ function! s:CommandList(A,L,P)
   exe cmd." &"
   let command = s:last_options
   let matches = []
-  for prefix in command.prefix
-    for suffix in command.suffix
-      let matches += rails#app().relglob(prefix, command.glob, suffix)
-    endfor
+  for [prefix, suffix] in s:classification_pairs(command)
+    let results = rails#app().relglob(prefix, command.glob, suffix)
+    if suffix =~# '\.rb$' && a:A =~# '^\u'
+      let matches += map(results, 'rails#camelize(v:val)')
+    else
+      let matches += results
+    endif
   endfor
-  if command.suffix == ['.rb']
-    return s:autocamelize(matches, a:A)
-  else
-    return s:completion_filter(matches, a:A)
-  endif
+  return s:completion_filter(matches, a:A)
 endfunction
 
 function! s:CommandEdit(cmd, name, options, ...)
@@ -2749,85 +2730,6 @@ function! s:javascriptEdit(cmd,...)
   endif
 endfunction
 
-function! s:unittestEdit(cmd,...)
-  let f = rails#underscore(a:0 ? matchstr(a:1,'[^!#:]*') : s:model(1))
-  let jump = a:0 ? matchstr(a:1,'[!#:].*') : ''
-  if jump =~ '!'
-    let cmd = s:editcmdfor(a:cmd)
-  else
-    let cmd = s:findcmdfor(a:cmd)
-  endif
-  let mapping = {'test': ['test/unit/','_test.rb'], 'spec': ['spec/models/','_spec.rb']}
-  let tests = map(filter(rails#app().test_suites(),'has_key(mapping,v:val)'),'get(mapping,v:val)')
-  if empty(tests)
-    let tests = [mapping['test']]
-  endif
-  for [prefix, suffix] in tests
-    if !a:0 && rails#buffer().type_name('model-aro') && f != '' && f !~# '_observer$'
-      if rails#app().has_file(prefix.f.'_observer'.suffix)
-        return s:findedit(cmd,prefix.f.'_observer'.suffix.jump)
-      endif
-    endif
-  endfor
-  for [prefix, suffix] in tests
-    if rails#app().has_file(prefix.f.suffix)
-      return s:findedit(cmd,prefix.f.suffix.jump)
-    endif
-  endfor
-  return s:EditSimpleRb(a:cmd,"unittest",f.jump,tests[0][0],tests[0][1],1)
-endfunction
-
-function! s:functionaltestEdit(cmd,...)
-  let f = rails#underscore(a:0 ? matchstr(a:1,'[^!#:]*') : s:controller(1))
-  let jump = a:0 ? matchstr(a:1,'[!#:].*') : ''
-  if jump =~ '!'
-    let cmd = s:editcmdfor(a:cmd)
-  else
-    let cmd = s:findcmdfor(a:cmd)
-  endif
-  let mapping = {'test': [['test/functional/'],['_test.rb','_controller_test.rb']], 'spec': [['spec/controllers/','spec/mailers/'],['_spec.rb','_controller_spec.rb']]}
-  let tests = map(filter(rails#app().test_suites(),'has_key(mapping,v:val)'),'get(mapping,v:val)')
-  if empty(tests)
-    let tests = [mapping[tests]]
-  endif
-  for [prefixes, suffixes] in tests
-    for prefix in prefixes
-      for suffix in suffixes
-        if rails#app().has_file(prefix.f.suffix)
-          return s:findedit(cmd,prefix.f.suffix.jump)
-        endif
-      endfor
-    endfor
-  endfor
-  return s:EditSimpleRb(a:cmd,"functionaltest",f.jump,tests[0][0][0],tests[0][1][0],1)
-endfunction
-
-function! s:integrationtestEdit(cmd,...)
-  if !a:0
-    return s:EditSimpleRb(a:cmd,"integrationtest","test/test_helper\nfeatures/support/env\nspec/spec_helper","",".rb")
-  endif
-  let f = rails#underscore(matchstr(a:1,'[^!#:]*'))
-  let jump = matchstr(a:1,'[!#:].*')
-  if jump =~ '!'
-    let cmd = s:editcmdfor(a:cmd)
-  else
-    let cmd = s:findcmdfor(a:cmd)
-  endif
-  let tests = [['test/integration/','_test.rb'], ['spec/requests/','_spec.rb'], ['spec/integration/','_spec.rb'], ['features/','.feature'], ['spec/acceptance/','.feature']]
-  call filter(tests, 'isdirectory(rails#app().path(v:val[0]))')
-  if empty(tests)
-    let tests = [['test/integration/','_test.rb']]
-  endif
-  for [prefix, suffix] in tests
-    if rails#app().has_file(prefix.f.suffix)
-      return s:findedit(cmd,prefix.f.suffix.jump)
-    elseif rails#app().has_file(prefix.rails#underscore(f).suffix)
-      return s:findedit(cmd,prefix.rails#underscore(f).suffix.jump)
-    endif
-  endfor
-  return s:EditSimpleRb(a:cmd,"integrationtest",f.jump,tests[0][0],tests[0][1],1)
-endfunction
-
 function! s:specEdit(cmd,...) abort
   let describe = s:sub(s:sub(rails#camelize(a:0 ? a:1 : ''), '^[^:]*::', ''), '!.*', '')
   return rails#buffer().open_command(a:cmd, a:0 ? a:1 : '', 'spec', {
@@ -2945,6 +2847,22 @@ function! s:try(cmd) abort
   return 1
 endfunction
 
+function! s:classification_pairs(options)
+  let pairs = []
+  if has_key(a:options, 'pattern')
+    for pattern in s:split(a:options.pattern)
+      let pairs += [s:split(pattern, '%s')]
+    endfor
+  else
+    for prefix in s:split(get(a:options, 'prefix', []))
+      for suffix in s:split(get(a:options, 'suffix', []))
+        let pairs += [[prefix, suffix]]
+      endfor
+    endfor
+  endif
+  return pairs
+endfunction
+
 function! s:readable_open_command(cmd, argument, name, options) dict abort
   let cmd = s:editcmdfor(a:cmd)
   let djump = ''
@@ -2977,14 +2895,9 @@ function! s:readable_open_command(cmd, argument, name, options) dict abort
   if root ==# ''
     return 'echoerr "E471: Argument required"'
   endif
-  let pairs = []
-  for prefix in s:split(get(a:options, 'prefix', []))
-    for suffix in s:split(get(a:options, 'suffix', []))
-      let pairs += [[prefix, suffix]]
-    endfor
-  endfor
+  let pairs = s:classification_pairs(a:options)
   for [prefix, suffix] in pairs
-    let file = self.app().path(prefix . root . suffix)
+    let file = self.app().path(prefix . (suffix =~# '\.rb$' ? rails#underscore(root) : root) . suffix)
     if filereadable(file)
       return cmd . ' ' . fnameescape(simplify(file)) . '|exe ' . s:sid . 'djump('.string(djump) . ')'
     endif
@@ -2994,7 +2907,7 @@ function! s:readable_open_command(cmd, argument, name, options) dict abort
   endif
   for [prefix, suffix] in pairs
     if isdirectory(self.app().path(prefix))
-      let file = self.app().path(prefix . root . suffix)
+      let file = self.app().path(prefix . (suffix =~# '\.rb$' ? rails#underscore(root) : root) . suffix)
       if !isdirectory(fnamemodify(file, ':h'))
         call mkdir(fnamemodify(file, ':h'), 'p')
       endif

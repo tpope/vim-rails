@@ -666,12 +666,10 @@ detected, so all navigation commands should work as expected inside a spec
 file.  :Rake in a spec runs just that spec, and in a model, controller, or
 helper, runs the associated spec.
 
-|:Runittest| and |:Rfunctionaltest| lead double lives, handling model and
-controller specs respectively.  For helper and view specs, you can use
-|:Rspec| or define your own navigation commands:
+|:Runittest| and |:Rfunctionaltest| lead double lives, handling model/helper
+and controller/mailer specs respectively.  For view specs, you can use
+|:Rspec|, or define your own navigation commands:
 >
-	Rnavcommand spechelper     spec/helpers     -glob=**/*
-		\ -suffix=_helper_spec.rb        -default=controller()
 	Rnavcommand specview spec/views -glob=**/* -suffix=_spec.rb
 <
 ABBREVIATIONS				*rails-abbreviations* *rails-snippets*
