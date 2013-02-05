@@ -928,10 +928,6 @@ File to load when a new Rails application is created.  Defaults to the README.
 Use GNU Screen or Tmux (if it is running) to launch |:Rscript| console and
 |:Rserver| in the background.  Enabled by default.
 
-						*g:rails_mappings*  >
-	let g:rails_mappings=1
-Enables a few mappings (mostly for |rails-navigation|). Enabled by default.
-
 						*g:rails_modelines*  >
 	let g:rails_modelines=1
 Enable modelines like the following: >

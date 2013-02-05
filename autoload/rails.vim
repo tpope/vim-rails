@@ -3861,21 +3861,19 @@ function! s:BufMappings()
   nnoremap <buffer> <silent> <Plug>RailsSplitFind  :<C-U>call <SID>Find(v:count1,'S')<CR>
   nnoremap <buffer> <silent> <Plug>RailsVSplitFind :<C-U>call <SID>Find(v:count1,'V')<CR>
   nnoremap <buffer> <silent> <Plug>RailsTabFind    :<C-U>call <SID>Find(v:count1,'T')<CR>
-  if g:rails_mappings
-    if !hasmapto("<Plug>RailsFind")
-      nmap <buffer> gf              <Plug>RailsFind
-    endif
-    if !hasmapto("<Plug>RailsSplitFind")
-      nmap <buffer> <C-W>f          <Plug>RailsSplitFind
-    endif
-    if !hasmapto("<Plug>RailsTabFind")
-      nmap <buffer> <C-W>gf         <Plug>RailsTabFind
-    endif
-    if exists("$CREAM")
-      imap <buffer> <C-CR> <C-O><Plug>RailsFind
-      imap <buffer> <M-[>  <C-O><Plug>RailsAlternate
-      imap <buffer> <M-]>  <C-O><Plug>RailsRelated
-    endif
+  if !hasmapto("<Plug>RailsFind")
+    nmap <buffer> gf              <Plug>RailsFind
+  endif
+  if !hasmapto("<Plug>RailsSplitFind")
+    nmap <buffer> <C-W>f          <Plug>RailsSplitFind
+  endif
+  if !hasmapto("<Plug>RailsTabFind")
+    nmap <buffer> <C-W>gf         <Plug>RailsTabFind
+  endif
+  if exists("$CREAM")
+    imap <buffer> <C-CR> <C-O><Plug>RailsFind
+    imap <buffer> <M-[>  <C-O><Plug>RailsAlternate
+    imap <buffer> <M-]>  <C-O><Plug>RailsRelated
   endif
   " SelectBuf you're a dirty hack
   let v:errmsg = ""
