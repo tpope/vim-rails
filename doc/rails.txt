@@ -848,7 +848,7 @@ be checked into version control.  Example:
 	      "template": "Fabricator :%s do\nend"
 	    }
 	  },
-	  "path": ["app/services"]
+	  "path_additions": ["app/services"]
 	}
 <
 This "classifications" section is used to provide navigation commands.  The

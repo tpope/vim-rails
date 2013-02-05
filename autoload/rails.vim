@@ -4405,7 +4405,7 @@ function! s:SetBasePath()
   call filter(old_path,'!s:startswith(v:val,transformed_path)')
 
   let path = ['lib', 'vendor']
-  let path += self.app().config('path', [])
+  let path += self.app().config('path_additions', [])
   let path += ['app/controllers', 'app/helpers', 'app/mailers', 'app/models', 'app/*', 'app/models/concerns', 'app/controllers/concerns']
   let path += ['app/views']
   if self.controller_name() != ''
