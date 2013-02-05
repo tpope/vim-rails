@@ -3942,7 +3942,6 @@ function! s:BufDatabase(...)
     return
   endif
   let self = rails#app()
-  let s:lock_database = 1
   if (a:0 && a:1 > 1)
     call self.cache.clear('dbext_settings')
   endif
@@ -3952,7 +3951,6 @@ function! s:BufDatabase(...)
     let env = s:environment()
   endif
   if (!self.cache.has('dbext_settings') || !has_key(self.cache.get('dbext_settings'),env)) && (a:0 ? a:1 : 0) <= 0
-    unlet! s:lock_database
     return
   endif
   let dict = self.dbext_settings(env)
@@ -3968,7 +3966,6 @@ function! s:BufDatabase(...)
   elseif exists('$PGPASSWORD')
     let $PGPASSWORD = ''
   endif
-  unlet! s:lock_database
 endfunction
 
 call s:add_methods('app', ['dbext_settings'])
