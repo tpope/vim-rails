@@ -912,7 +912,15 @@ are being considered for removal.
 Set this include guard to prevent the plugin from being loaded.
 
 						*g:rails_abbreviations*
-Enable Rails abbreviations.  See |rails-abbreviations|.  Enabled by default.
+Dictionary of additional |:Rabbrev| abbreviations.  Example:
+>
+  let g:rails_abbreviations = {
+        \ "AE::": "ActiveResource",
+	\ "p[": "params",
+	\ "rj(": ["render", "json: "]}
+<
+This variable was formerly used to globally disable abbreviations.  Use
+g:rails_no_abbreviations if you want to do that.
 
 						*g:rails_ctags_arguments*  >
 	let g:rails_ctags_arguments='--languages=-javascript'

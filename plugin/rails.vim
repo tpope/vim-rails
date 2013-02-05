@@ -48,7 +48,7 @@ function! s:SetOptDefault(opt,val)
   endif
 endfunction
 
-call s:SetOptDefault("rails_abbreviations",1)
+call s:SetOptDefault("rails_abbreviations", {})
 call s:SetOptDefault("rails_ctags_arguments","--languages=-javascript")
 call s:SetOptDefault("rails_default_file","README")
 call s:SetOptDefault("rails_root_url",'http://localhost:3000/')
