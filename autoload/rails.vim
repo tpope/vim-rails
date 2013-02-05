@@ -2159,9 +2159,21 @@ function! s:BufFinderCommands()
   if !empty(tests)
     call s:define_navcommand('unittest', {
           \ 'pattern': map(copy(tests), 'v:val[1]'),
+          \ 'template': {
+          \   'test/unit/': "require 'test_helper'\n\nclass %STest < ActiveSupport::TestCase\nend",
+          \   'test/models/': "require 'test_helper'\n\nclass %STest < ActiveSupport::TestCase\nend",
+          \   'test/helpers/': "require 'test_helper'\n\nclass %STest < ActionView::TestCase\nend",
+          \   'spec/models/': "require 'spec_helper'\n\ndescribe %S do\nend",
+          \   'spec/helpers/': "require 'spec_helper'\n\ndescribe %S do\nend"},
           \ 'affinity': 'model'})
     call s:define_navcommand('functionaltest', {
           \ 'pattern': map(copy(tests), 'v:val[2]'),
+          \ 'template': {
+          \   'test/functional/': "require 'test_helper'\n\nclass %STest < ActionController::TestCase\nend",
+          \   'test/controllers/': "require 'test_helper'\n\nclass %STest < ActionController::TestCase\nend",
+          \   'test/mailers/': "require 'test_helper'\n\nclass %STest < ActionMailer::TestCase\nend",
+          \   'spec/models/': "require 'spec_helper'\n\ndescribe %S do\nend",
+          \   'spec/helpers/': "require 'spec_helper'\n\ndescribe %S do\nend"},
           \ 'affinity': 'controller'})
   endif
   let integration_tests = map(filter([
@@ -2174,6 +2186,12 @@ function! s:BufFinderCommands()
   if !empty(integration_tests)
     call s:define_navcommand('integrationtest', {
           \ 'pattern': integration_tests,
+          \ 'template': {
+          \   'test/integration/': "require 'test_helper'\n\nclass %STest < ActionDispatch::IntegrationTest\nend",
+          \   'spec/requests/': "require 'spec_helper'\n\ndescribe \"%h\" do\nend",
+          \   'spec/integration/': "require 'spec_helper'\n\ndescribe \"%h\" do\nend",
+          \   'features/': "Feature: %h",
+          \   'spec/acceptance': "Feature: %h"},
           \ 'default': [
           \   'test/test_helper.rb',
           \   'features/support/env.rb',
@@ -2911,10 +2929,15 @@ function! s:readable_open_command(cmd, argument, name, options) dict abort
       if !isdirectory(fnamemodify(file, ':h'))
         call mkdir(fnamemodify(file, ':h'), 'p')
       endif
-      let template = s:split(get(a:options, 'template', ''))
+      if type(get(a:options, 'template', '')) == type({})
+        let template = s:split(get(a:options.template, prefix, ''))
+      else
+        let template = s:split(get(a:options, 'template', ''))
+      endif
       let placeholders = {
             \ '%s': rails#underscore(root),
             \ '%S': rails#camelize(root),
+            \ '%h': toupper(root[0]) . tr(rails#underscore(root), '_', ' ')[1:-1],
             \ '%%': '%'}
       call map(template, 'substitute(v:val, "%.", "\\=get(placeholders, submatch(0), submatch(0))", "g")')
       call map(template, 's:gsub(v:val, "\t", "  ")')
