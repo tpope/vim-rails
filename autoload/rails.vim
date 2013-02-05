@@ -3004,6 +3004,7 @@ function! s:readable_open_command(cmd, argument, name, options) dict abort
             \ '%S': rails#camelize(root),
             \ '%%': '%'}
       call map(template, 'substitute(v:val, "%.", "\\=get(placeholders, submatch(0), submatch(0))", "g")')
+      call map(template, 's:gsub(v:val, "\t", "  ")')
       return cmd . ' ' . fnameescape(simplify(file)) . '|call setline(1, '.string(template).')' . '|set nomod'
     endif
   endfor
