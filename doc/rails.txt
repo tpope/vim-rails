@@ -933,11 +933,6 @@ Use GNU Screen or Tmux (if it is running) to launch |:Rscript| console and
 Used for the |:Rpreview| command.  Default is as shown above.  Overridden by
 b:rails_url.
 
-						*g:rails_syntax*  >
-	let g:rails_syntax=1
-When enabled, this tweaks the syntax highlighting to be more Rails friendly.
-Enabled by default.  See |rails-syntax|.
-
 					*rails-tabs* *g:rails_tabstop*  >
 	let g:rails_tabstop=4
 This option now requires the plugin railstab.vim from vim.org:

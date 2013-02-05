@@ -3578,7 +3578,7 @@ endfunction
 call s:add_methods('app', ['user_classes','user_assertions'])
 
 function! s:BufSyntax()
-  if (!exists("g:rails_syntax") || g:rails_syntax)
+  if !exists("g:rails_no_syntax")
     let buffer = rails#buffer()
     let s:javascript_functions = "$ $$ $A $F $H $R $w jQuery"
     let classes = s:gsub(join(rails#app().user_classes(),' '),'::',' ')
