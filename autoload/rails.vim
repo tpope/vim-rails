@@ -3959,6 +3959,10 @@ function! s:BufDatabase(...)
   for key in ['type', 'profile', 'bin', 'user', 'passwd', 'dbname', 'srvname', 'host', 'port', 'dsnname', 'extra', 'integratedlogin']
     let b:dbext_{key} = get(dict,key,'')
   endfor
+  if b:dbext_type == 'SQLITE'
+    " dbext seems to have overlooked the release of sqlite3 a decade ago
+    let g:dbext_default_SQLITE_bin = "sqlite3"
+  endif
   if b:dbext_type == 'PGSQL'
     let $PGPASSWORD = b:dbext_passwd
   elseif exists('$PGPASSWORD')
