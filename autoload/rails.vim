@@ -2148,7 +2148,7 @@ function! s:BufFinderCommands()
         \ 'rails#app().has(v:val[0])')
   if !empty(tests)
     call s:define_navcommand('unittest', {
-          \ 'pattern': map(copy(tests), 'v:val[1]'),
+          \ 'format': map(copy(tests), 'v:val[1]'),
           \ 'template': {
           \   'test/unit/': "require 'test_helper'\n\nclass %STest < ActiveSupport::TestCase\nend",
           \   'test/models/': "require 'test_helper'\n\nclass %STest < ActiveSupport::TestCase\nend",
@@ -2157,7 +2157,7 @@ function! s:BufFinderCommands()
           \   'spec/helpers/': "require 'spec_helper'\n\ndescribe %S do\nend"},
           \ 'affinity': 'model'})
     call s:define_navcommand('functionaltest', {
-          \ 'pattern': map(copy(tests), 'v:val[2]'),
+          \ 'format': map(copy(tests), 'v:val[2]'),
           \ 'template': {
           \   'test/functional/': "require 'test_helper'\n\nclass %STest < ActionController::TestCase\nend",
           \   'test/controllers/': "require 'test_helper'\n\nclass %STest < ActionController::TestCase\nend",
@@ -2175,7 +2175,7 @@ function! s:BufFinderCommands()
         \ 'rails#app().has(v:val[0])'), 'v:val[1]')
   if !empty(integration_tests)
     call s:define_navcommand('integrationtest', {
-          \ 'pattern': integration_tests,
+          \ 'format': integration_tests,
           \ 'template': {
           \   'test/integration/': "require 'test_helper'\n\nclass %STest < ActionDispatch::IntegrationTest\nend",
           \   'spec/requests/': "require 'spec_helper'\n\ndescribe \"%h\" do\nend",
@@ -2857,7 +2857,7 @@ endfunction
 
 function! s:classification_pairs(options)
   let pairs = []
-  if has_key(a:options, 'pattern')
+  if has_key(a:options, 'format')
     for pattern in s:split(a:options.pattern)
       let pairs += [s:split(pattern, '%s')]
     endfor
