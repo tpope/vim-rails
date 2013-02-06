@@ -406,7 +406,8 @@ also use |:Rnavcommand|, either from |macros/rails.vim| or a |rails-:autocmd|.
 			The -default option specifies a default argument (not
 			a full path).  If it is specified as -default=model()
 			or -default=controller(), the current model or
-			controller is used as a default.
+			controller is used as a default.  Deprecated in favor
+			of |config/editor.json| classifications.
 
 Examples: >
 	Rnavcommand api      app/apis -glob=**/* -suffix=_api.rb
