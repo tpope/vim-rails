@@ -518,8 +518,10 @@ A limited amount of completion with <Tab> is supported.
 
 						*rails-:Rserver*
 :Rserver {options}	Launches script/server {options} in the background.
-			On win32, this means |!start|.  On other systems, this
-			uses the --daemon option.
+			On win32, this means |!start|.  If running inside
+			screen or tmux, a new window inside the current
+			session is created.  Otherwise, the --daemon option is
+			used.
 
 						*rails-:Rserver!*
 :Rserver! {options}	Same as |:Rserver|, only first attempts to kill any
@@ -930,11 +932,6 @@ JavaScript files, since ctags has a tendency to choke on those.
 						*g:rails_default_file*  >
 	let g:rails_default_file='config/database.yml'
 File to load when a new Rails application is created.  Defaults to the README.
-
-					*rails-screen* *g:rails_gnu_screen*  >
-	let g:rails_gnu_screen=1
-Use GNU Screen or Tmux (if it is running) to launch |:Rscript| console and
-|:Rserver| in the background.  Enabled by default.
 
 						*g:rails_url*  >
 	let g:rails_url='http://localhost:3000/'
