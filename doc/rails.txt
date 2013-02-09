@@ -939,16 +939,6 @@ File to load when a new Rails application is created.  Defaults to the README.
 Used for the |:Rpreview| command.  Default is as shown above.  Overridden by
 b:rails_url.
 
-					*rails-tabs* *g:rails_tabstop*  >
-	let g:rails_tabstop=4
-This option now requires the plugin railstab.vim from vim.org:
-	http://www.vim.org/scripts/script.php?script_id=2253
-
-If your goal is simply just override this plugin's settings and use your own
-custom 'shiftwidth', adjust things manually in an autocommand: >
-	autocmd User Rails set sw=4 sts=4 noet
-This is highly discouraged: don't fight Rails.
-
 ABOUT					*rails-about* *rails-plugin-author*
 
 This plugin was written by Tim Pope.  Email all comments, complaints, and compliments to him at vim at tpope. org.
