@@ -3026,8 +3026,18 @@ endfunction
 
 function! s:readable_related(...) dict abort
   let f = self.name()
+  let [root, classification] = s:find_classification(values(self.app().config('classifications')), f)
   if a:0 && a:1
     let lastmethod = self.last_method(a:1)
+    if root !=# '' && has_key(classification, 'related')
+      let related = s:split(classification.related)
+      if empty(lastmethod)
+        call filter(related, 'v:val !~# "%m"')
+      endif
+      if !empty(related)
+        return s:gsub(s:gsub(join(related, "\n"), '\%s', root), '\%m', lastmethod)
+      endif
+    endif
     if self.type_name('controller','mailer') && lastmethod != ""
       let view = self.resolve_view(lastmethod, line('.'))
       if view !=# ''
@@ -3078,9 +3088,8 @@ function! s:readable_related(...) dict abort
       return self.app().migration(1)
     endif
   endif
-  let [root, classification] = s:find_classification(filter(values(self.app().config('classifications')), 'get(v:val, "alternate", "") =~# "%s"'), f)
-  if root !=# ''
-    return printf(classification.alternate, root)
+  if root !=# '' && has_key(classification, 'alternate')
+    return s:gsub(join(s:split(classification.alternate), "\n"), '\%s', root)
   endif
   if f =~ '\<config/environments/'
     return "config/application.rb\nconfig/environment.rb"

@@ -858,8 +858,8 @@ This "classifications" section is used to provide navigation commands.  The
 above configuration causes :Rservice and :Rfabricator navigation commands to
 be created.  The optional "affinity" option determines whether the current
 model name or controller name is used for the default when no argument is
-given.  The optional "alternate" option controls the destination of :A.
-
+given.  The optional "alternate" and "related" options control the destination
+of :A and :R.
 
 						*config/rails.vim*
 If you have settings particular to a specific project, they can be put in a
