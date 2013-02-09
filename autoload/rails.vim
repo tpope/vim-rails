@@ -2858,8 +2858,8 @@ endfunction
 function! s:classification_pairs(options)
   let pairs = []
   if has_key(a:options, 'format')
-    for pattern in s:split(a:options.pattern)
-      let pairs += [s:split(pattern, '%s')]
+    for format in s:split(a:options.format)
+      let pairs += [s:split(format, '%s')]
     endfor
   else
     for prefix in s:split(get(a:options, 'prefix', []))
