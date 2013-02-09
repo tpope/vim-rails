@@ -930,6 +930,12 @@ g:rails_no_abbreviations if you want to do that.
 Additional arguments to pass to ctags from |:Rtags|.  Defaults to ignoring
 JavaScript files, since ctags has a tendency to choke on those.
 
+						*g:rails_default_config*  >
+	let g:rails_default_config = {
+	      \ "path_additions": ["extras"]}
+If |config/editor.json| is missing, this variable is used instead.  Useful, in
+particular, for a default set of classifications.
+
 						*g:rails_url*  >
 	let g:rails_url='http://localhost:3000/'
 Used for the |:Rpreview| command.  Default is as shown above.  Overridden by

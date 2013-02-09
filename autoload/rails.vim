@@ -4164,7 +4164,7 @@ endfunction
 
 function! s:app_config(...) dict abort
   if self.cache.needs('config')
-    call self.cache.set('config', {})
+    call self.cache.set('config', 0)
     if self.has_file('config/editor.json')
       try
         call self.cache.set('config', rails#json_parse(join(readfile(self.path('config/editor.json')), ' ')))
@@ -4173,10 +4173,17 @@ function! s:app_config(...) dict abort
       endtry
     endif
   endif
-  if a:0
-    return get(self.cache.get('config'), a:1, a:0 > 1 ? a:2 : {})
+  if type(self.cache.get('config')) == type({})
+    let config = self.cache.get('config')
+  elseif exists('g:rails_default_config')
+    let config = g:rails_default_config
   else
-    return self.cache.get('config')
+    let config = {}
+  endif
+  if a:0
+    return get(config, a:1, a:0 > 1 ? a:2 : {})
+  else
+    return config
   endif
 endfunction
 
