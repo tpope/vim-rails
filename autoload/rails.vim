@@ -980,8 +980,8 @@ function! rails#new_app_command(bang,...)
   endif
   exe '!rails '.join(map(copy(args),'s:rquote(v:val)'),' ')
   for dir in args
-    if dir !~# '^-' && filereadable(dir.'/'.g:rails_default_file)
-      edit `=dir.'/'.g:rails_default_file`
+    if dir !~# '^-' && filereadable(dir.'/README')
+      edit `=dir.'/README'`
       return
     endif
   endfor

@@ -930,10 +930,6 @@ g:rails_no_abbreviations if you want to do that.
 Additional arguments to pass to ctags from |:Rtags|.  Defaults to ignoring
 JavaScript files, since ctags has a tendency to choke on those.
 
-						*g:rails_default_file*  >
-	let g:rails_default_file='config/database.yml'
-File to load when a new Rails application is created.  Defaults to the README.
-
 						*g:rails_url*  >
 	let g:rails_url='http://localhost:3000/'
 Used for the |:Rpreview| command.  Default is as shown above.  Overridden by
