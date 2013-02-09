@@ -2147,7 +2147,7 @@ function! s:BufFinderCommands()
         \ ['spec', 'spec/helpers/%s_spec.rb', 'spec/mailers/%s_spec.rb']],
         \ 'rails#app().has(v:val[0])')
   if !empty(tests)
-    call s:define_navcommand('unittest', {
+    call s:define_navcommand('unit test', {
           \ 'format': map(copy(tests), 'v:val[1]'),
           \ 'template': {
           \   'test/unit/': "require 'test_helper'\n\nclass %STest < ActiveSupport::TestCase\nend",
@@ -2156,7 +2156,7 @@ function! s:BufFinderCommands()
           \   'spec/models/': "require 'spec_helper'\n\ndescribe %S do\nend",
           \   'spec/helpers/': "require 'spec_helper'\n\ndescribe %S do\nend"},
           \ 'affinity': 'model'})
-    call s:define_navcommand('functionaltest', {
+    call s:define_navcommand('functional test', {
           \ 'format': map(copy(tests), 'v:val[2]'),
           \ 'template': {
           \   'test/functional/': "require 'test_helper'\n\nclass %STest < ActionController::TestCase\nend",
@@ -2174,7 +2174,7 @@ function! s:BufFinderCommands()
         \ ['turnip', 'spec/acceptance/%s.feature']],
         \ 'rails#app().has(v:val[0])'), 'v:val[1]')
   if !empty(integration_tests)
-    call s:define_navcommand('integrationtest', {
+    call s:define_navcommand('integration test', {
           \ 'format': integration_tests,
           \ 'template': {
           \   'test/integration/': "require 'test_helper'\n\nclass %STest < ActionDispatch::IntegrationTest\nend",
@@ -2406,13 +2406,14 @@ function! s:define_navcommand(name, command) abort
   if has_key(command, 'affinity') && command.default ==# ''
     let command.default = command.affinity . '()'
   endif
-  if a:name !~# '^[a-z]\+$'
-    return s:error("E182: Invalid command name")
+  let name = s:gsub(a:name, ' ', '')
+  if name !~# '^[a-z]\+$'
+    return s:error("E182: Invalid command name ".name)
   endif
   for type in ['E', 'S', 'V', 'T', 'D', '']
     exe 'command! -buffer -bar -bang -nargs=* '
           \ '-complete=customlist,'.s:sid.'CommandList ' .
-          \ 'R' . type . a:name . ' :execute s:CommandEdit(' .
+          \ 'R' . type . name . ' :execute s:CommandEdit(' .
           \ string(type . "<bang>") . ',' .
           \ string(a:name) . ',' . string(command) . ',<f-args>)'
   endfor
@@ -2858,8 +2859,8 @@ endfunction
 function! s:classification_pairs(options)
   let pairs = []
   if has_key(a:options, 'format')
-    for pattern in s:split(a:options.pattern)
-      let pairs += [s:split(pattern, '%s')]
+    for format in s:split(a:options.format)
+      let pairs += [s:split(format, '%s')]
     endfor
   else
     for prefix in s:split(get(a:options, 'prefix', []))
