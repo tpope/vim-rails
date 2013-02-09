@@ -936,8 +936,8 @@ JavaScript files, since ctags has a tendency to choke on those.
 If |config/editor.json| is missing, this variable is used instead.  Useful, in
 particular, for a default set of classifications.
 
-						*g:rails_url*  >
-	let g:rails_url='http://localhost:3000/'
+						*g:rails_root_url*  >
+	let g:rails_root_url='http://localhost:3000/'
 Used for the |:Rpreview| command.  Default is as shown above.  Overridden by
 b:rails_url.
 
