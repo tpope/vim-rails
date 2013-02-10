@@ -1124,12 +1124,7 @@ function! s:Rake(bang,lnum,arg)
       endif
     endif
     if arg == ''
-      let opt = s:getopt('task','bl')
-      if opt != ''
-        let arg = opt
-      else
-        let arg = rails#buffer().default_rake_task(lnum)
-      endif
+      let arg = rails#buffer().default_rake_task(lnum)
     endif
     if !has_key(self,'options') | let self.options = {} | endif
     if arg == '-'
@@ -4298,7 +4293,7 @@ function! s:setopt(opt,val)
 endfunction
 
 function! s:opts()
-  return {'alternate': 'b', 'controller': 'b', 'model': 'b', 'preview': 'l', 'task': 'b', 'related': 'l', 'root_url': 'a'}
+  return {'alternate': 'b', 'controller': 'b', 'model': 'b', 'related': 'l', 'root_url': 'a'}
 endfunction
 
 function! s:Complete_set(A,L,P)
