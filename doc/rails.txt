@@ -943,8 +943,6 @@ b:rails_url.
 
 ABOUT					*rails-about* *rails-plugin-author*
 
-This plugin was written by Tim Pope.  Email all comments, complaints, and compliments to him at vim at tpope. org.
-
 The latest stable version can be found at
     http://www.vim.org/scripts/script.php?script_id=1567
 
