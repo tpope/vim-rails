@@ -80,7 +80,8 @@ actually edit a file from a Rails application.
 			might like :Rake log:clear.
 
 						*rails-:Rpreview*
-:Rpreview [{path}]	Creates a URL from http://localhost:3000/ and the
+:Rpreview [{path}]	Creates a URL from http://localhost:3000/ (or
+			the last arguments given to |:Rserver|) and the
 			{path} given.  The not too useful default is to then
 			edit this URL using Vim itself, allowing |netrw| to
 			download it.  More useful is to define a :OpenURL
@@ -522,7 +523,12 @@ A limited amount of completion with <Tab> is supported.
 			On win32, this means |!start|.  If running inside
 			screen or tmux, a new window inside the current
 			session is created.  Otherwise, the --daemon option is
-			used.
+			used.  Calling this command also sets the base URL for
+			|:Rpreview| based on the provided --binding and --port
+			options, defaulting to localhost and 300 respectively.
+			This works even if the server failed to start, which
+			one can use to set the URL to an already running
+			server.
 
 						*rails-:Rserver!*
 :Rserver! {options}	Same as |:Rserver|, only first attempts to kill any
@@ -939,8 +945,8 @@ particular, for a default set of classifications.
 
 						*g:rails_root_url*  >
 	let g:rails_root_url='http://localhost:3000/'
-Used for the |:Rpreview| command.  Default is as shown above.  Overridden by
-b:rails_url.
+Used for the |:Rpreview| command.  This setting is deprecated in favor of
+using |:Rserver| to customize the URL for a given application.
 
 ABOUT					*rails-about* *rails-plugin-author*
 

@@ -1508,11 +1508,13 @@ endfunction
 
 function! s:app_server_command(bang,arg) dict
   let port = matchstr(a:arg,'\%(-p\|--port=\=\)\s*\zs\d\+')
-  if port == ''
+  if empty(port)
     let port = "3000"
   endif
-  " TODO: Extract bind argument
-  let bind = "0.0.0.0"
+  let bind = matchstr(a:arg,'\%(-b\|--binding=\=\)\s*\zs\S\+')
+  if empty(bind)
+    let bind = "0.0.0.0"
+  endif
   if a:bang && executable("ruby")
     let pid = s:getpidfor(bind,port)
     if pid =~ '^\d\+$'
