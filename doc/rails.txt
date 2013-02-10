@@ -839,14 +839,15 @@ be checked into version control.  Example:
 	  },
 	  "classifications": {
 	    "service": {
-	      "prefix": "app/services/",
-	      "suffix": "_service.rb",
+	      "format": "app/services/%s_service.rb",
 	      "template": "class %SService < AbstractService\nend",
 	      "alternate": "test/functional/%s_service_test.rb"
 	    },
 	    "fabricator": {
-	      "prefix": ["test/fabricators/", "spec/fabricators/"],
-	      "suffix": "_fabricator.rb",
+	      "format": [
+	        "test/fabricators/%s_fabricator.rb",
+	        "spec/fabricators/%s_fabricator.rb"
+	      ],
 	      "affinity": "model",
 	      "template": "Fabricator :%s do\nend"
 	    }
