@@ -799,8 +799,11 @@ endfunction
 
 function! s:app_default_locale() dict abort
   if self.cache.needs('default_locale')
-    let candidates = map(filter(s:readfile(self.path('config/environment.rb')),'v:val =~ "^ *config.i18n.default_locale = :[\"'']\\=[A-Za-z-]\\+[\"'']\\= *$"'),'matchstr(v:val,"[A-Za-z-]\\+[\"'']\\= *$")')
-    call self.cache.set('default_locale',get(candidates,0,'en'))
+    let candidates = map(filter(
+          \ s:readfile(self.path('config/application.rb')) + s:readfile(self.path('config/environment.rb')),
+          \ 'v:val =~ "^ *config.i18n.default_locale = :[\"'']\\=[A-Za-z-]\\+[\"'']\\= *$"'
+          \ ), 'matchstr(v:val,"[A-Za-z-]\\+[\"'']\\= *$")')
+    call self.cache.set('default_locale', get(candidates, 0, 'en'))
   endif
   return self.cache.get('default_locale')
 endfunction
@@ -4507,7 +4510,7 @@ augroup railsPluginAuto
   autocmd BufWritePost */config/editor.json       call rails#cache_clear("config")
   autocmd BufWritePost */test/test_helper.rb      call rails#cache_clear("user_assertions")
   autocmd BufWritePost */config/routes.rb         call rails#cache_clear("named_routes")
-  autocmd BufWritePost */config/environment.rb    call rails#cache_clear("default_locale")
+  autocmd BufWritePost */config/application.rb    call rails#cache_clear("default_locale")
   autocmd BufWritePost */config/environments/*.rb call rails#cache_clear("environments")
   autocmd BufWritePost */tasks/**.rake            call rails#cache_clear("rake_tasks")
   autocmd BufWritePost */generators/**            call rails#cache_clear("generators")
