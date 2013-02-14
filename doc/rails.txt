@@ -855,7 +855,9 @@ be checked into version control.  Example:
 	        "spec/fabricators/%s_fabricator.rb"
 	      ],
 	      "affinity": "model",
-	      "template": "Fabricator :%s do\nend"
+	      "template": "Fabricator :%s do\nend",
+	      "alternate": "app/models/%s.rb",
+	      "related": "db/schema.rb#%p"
 	    }
 	  },
 	  "path_additions": ["app/services"]
@@ -866,7 +868,8 @@ above configuration causes :Rservice and :Rfabricator navigation commands to
 be created.  The optional "affinity" option determines whether the current
 model name or controller name is used for the default when no argument is
 given.  The optional "alternate" and "related" options control the destination
-of :A and :R.
+of :A and :R.  In the "related" option, one can also use %m to insert the
+current method.
 
 						*config/rails.vim*
 If you have settings particular to a specific project, they can be put in a

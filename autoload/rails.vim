@@ -3028,6 +3028,10 @@ endfunction
 function! s:readable_related(...) dict abort
   let f = self.name()
   let [root, classification] = s:find_classification(values(self.app().config('classifications')), f)
+  let placeholders = {
+        \ '%s': root,
+        \ '%p': rails#pluralize(root),
+        \ '%%': '%'}
   if a:0 && a:1
     let lastmethod = self.last_method(a:1)
     if root !=# '' && has_key(classification, 'related')
@@ -3036,7 +3040,8 @@ function! s:readable_related(...) dict abort
         call filter(related, 'v:val !~# "%m"')
       endif
       if !empty(related)
-        return s:gsub(s:gsub(join(related, "\n"), '\%s', root), '\%m', lastmethod)
+        call map(related, 'substitute(v:val, "%.", "\\=get(placeholders, submatch(0), submatch(0))", "g")')
+        return s:gsub(join(related, "\n"), '\%m', lastmethod)
       endif
     endif
     if self.type_name('controller','mailer') && lastmethod != ""
@@ -3090,7 +3095,7 @@ function! s:readable_related(...) dict abort
     endif
   endif
   if root !=# '' && has_key(classification, 'alternate')
-    return s:gsub(join(s:split(classification.alternate), "\n"), '\%s', root)
+    return join(map(s:split(classification.alternate), 'substitute(v:val, "%.", "\\=get(placeholders, submatch(0), submatch(0))", "g")'), "\n")
   endif
   if f =~ '\<config/environments/'
     return "config/application.rb\nconfig/environment.rb"
