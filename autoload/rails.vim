@@ -2894,10 +2894,10 @@ function! s:readable_open_command(cmd, argument, name, options) dict abort
   elseif a:argument ==# '' && type(default) == type([])
     for file in default
       if self.app().has_file(file)
-        return cmd . ' ' . fnameescape(file)
+        return cmd . ' ' . fnameescape(self.app().path(file))
       endif
     endfor
-    return cmd . ' ' . fnameescape(a:default[0])
+    return cmd . ' ' . fnameescape(self.app().path(a:default[0]))
   else
     let root = a:argument
   endif
