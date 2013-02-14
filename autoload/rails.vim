@@ -2170,9 +2170,9 @@ function! s:BufFinderCommands()
   endif
   let integration_tests = map(filter([
         \ ['test', 'test/integration/%s_test.rb'],
+        \ ['spec', 'spec/features/%s_spec.rb'],
         \ ['spec', 'spec/requests/%s_spec.rb'],
         \ ['spec', 'spec/integration/%s_spec.rb'],
-        \ ['spec', 'spec/features/%s_spec.rb'],
         \ ['cucumber', 'features/%s.feature'],
         \ ['turnip', 'spec/acceptance/%s.feature']],
         \ 'rails#app().has(v:val[0])'), 'v:val[1]')
@@ -2182,8 +2182,8 @@ function! s:BufFinderCommands()
           \ 'template': {
           \   'test/integration/': "require 'test_helper'\n\nclass %STest < ActionDispatch::IntegrationTest\nend",
           \   'spec/requests/': "require 'spec_helper'\n\ndescribe \"%h\" do\nend",
-          \   'spec/integration/': "require 'spec_helper'\n\ndescribe \"%h\" do\nend",
           \   'spec/features/': "require 'spec_helper'\n\ndescribe \"%h\" do\nend",
+          \   'spec/integration/': "require 'spec_helper'\n\ndescribe \"%h\" do\nend",
           \   'features/': "Feature: %h",
           \   'spec/acceptance': "Feature: %h"},
           \ 'default': [
@@ -4427,7 +4427,7 @@ function! s:SetBasePath()
     let path += ['test', 'test/unit', 'test/functional', 'test/integration', 'test/controllers', 'test/helpers', 'test/mailers', 'test/models']
   endif
   if self.app().has('spec')
-    let path += ['spec', 'spec/controllers', 'spec/helpers', 'spec/mailers', 'spec/models', 'spec/views', 'spec/lib', 'spec/requests', 'spec/integration', 'spec/features']
+    let path += ['spec', 'spec/controllers', 'spec/helpers', 'spec/mailers', 'spec/models', 'spec/views', 'spec/lib', 'spec/features', 'spec/requests', 'spec/integration']
   endif
   let path += ['vendor/plugins/*/lib', 'vendor/plugins/*/test', 'vendor/rails/*/lib', 'vendor/rails/*/test']
   call map(path,'self.app().path(v:val)')
