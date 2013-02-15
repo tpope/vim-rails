@@ -859,8 +859,10 @@ function! s:app_script_shell_command(cmd) dict abort
     return 'cd '.s:rquote(self.path()).' && zeus '.a:cmd
   elseif self.has_file('script/rails') && a:cmd !~# '^rails\>'
     let cmd = 'script/rails '.a:cmd
-  else
+  elseif self.has_file('script/'.a:cmd)
     let cmd = 'script/'.a:cmd
+  else
+    return 'cd '.s:rquote(self.path()).' && rails '.a:cmd
   endif
   return self.ruby_shell_command(cmd)
 endfunction
