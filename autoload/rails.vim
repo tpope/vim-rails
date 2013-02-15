@@ -868,7 +868,7 @@ endfunction
 
 function! s:app_background_script_command(cmd) dict abort
   let cmd = s:esccmd(self.script_shell_command(a:cmd))
-  let title = s:sub(a:cmd,'\s.*')
+  let title = s:sub(a:cmd, '\s.*', '')
   if has("gui_win32")
     exe "!start ".cmd
   elseif exists("$STY") && !has("gui_running") && executable("screen")
