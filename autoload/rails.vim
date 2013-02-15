@@ -1567,7 +1567,6 @@ function! s:app_generate_command(bang,...) dict
   if cmd !~ '-p\>' && cmd !~ '--pretend\>'
     let execstr = self.script_shell_command('generate '.cmd.' -p -f')
     let res = system(execstr)
-    let g:res = res
     let junk = '\%(\e\[[0-9;]*m\)\='
     let file = matchstr(res,junk.'\s\+\%(create\|force\)'.junk.'\s\+\zs\f\+\.rb\ze\n')
     if file == ""
