@@ -1456,7 +1456,7 @@ function! s:app_generators() dict abort
       let paths += map(copy(gems), 'v:val . "/lib"')
       let builtin = []
     else
-      let builtin = ['assets', 'controller', 'generator', 'helper', 'integration_test', 'mailer', 'migration', 'model', 'observer', 'performance_test', 'resource', 'scaffold', 'scaffold_controller', 'session_migration', 'task']
+      let builtin = ['assets', 'controller', 'generator', 'helper', 'integration_test', 'jbuilder', 'jbuilder_scaffold_controller', 'mailer', 'migration', 'model', 'resource', 'scaffold', 'scaffold_controller', 'task']
     endif
     let generators = s:split(globpath(s:pathjoin(paths), 'generators/**/*_generator.rb'))
     call map(generators, 's:sub(v:val,"^.*[\\\\/]generators[\\\\/]\\ze.","")')
