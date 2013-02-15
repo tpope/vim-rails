@@ -1499,7 +1499,7 @@ function! s:app_runner_command(count,args) dict
   if a:count == -2
     return self.script_command(a:bang,"runner",a:args)
   else
-    let str = self.ruby_shell_command('-r./config/boot -e "require '."'commands/runner'".'" '.s:rquote(a:args))
+    let str = self.script_shell_command('runner '.s:rquote(a:args))
     call s:push_chdir(1)
     try
       let res = s:sub(system(str),'\n$','')
