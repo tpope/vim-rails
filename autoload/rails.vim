@@ -64,13 +64,12 @@ function! s:esccmd(p)
 endfunction
 
 function! s:rquote(str)
-  " Imperfect but adequate for Ruby arguments
   if a:str =~ '^[A-Za-z0-9_/.:-]\+$'
     return a:str
   elseif &shell =~? 'cmd'
-    return '"'.s:gsub(s:gsub(a:str,'\','\\'),'"','\\"').'"'
+    return '"'.s:gsub(s:gsub(a:str, '"', '""'), '\%', '"%"').'"'
   else
-    return "'".s:gsub(s:gsub(a:str,'\','\\'),"'","'\\\\''")."'"
+    return shellescape(a:str)
   endif
 endfunction
 
