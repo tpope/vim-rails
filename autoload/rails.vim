@@ -750,7 +750,7 @@ function! s:readable_calculate_file_type() dict abort
     let r = "db-migration"
   elseif f=~ '\<db/schema\.rb$'
     let r = "db-schema"
-  elseif f =~ '\<vendor/plugins/.*/recipes/.*\.rb$' || f =~ '\.rake$' || f =~ '\<\%(Rake\|Cap\)file$' || f =~ '\<config/deploy\.rb$'
+  elseif f =~ '\.rake$' || f =~ '\<\%(Rake\|Cap\)file$' || f =~ '\<config/deploy\.rb$'
     let r = "task"
   elseif f =~ '\<log/.*\.log$'
     let r = "log"
@@ -1483,9 +1483,6 @@ function! s:app_script_command(bang,...) dict
     let str .= " " . s:rquote(a:{c})
     let c += 1
   endwhile
-  if cmd ==# "plugin"
-    call self.cache.clear('generators')
-  endif
   if a:bang || cmd =~# 'console'
     return self.background_script_command(cmd.str)
   else
@@ -1619,10 +1616,6 @@ function! s:Complete_script(ArgLead,CmdLine,P)
     return []
   elseif cmd =~# '^\w*$'
     return s:completion_filter(rails#app().relglob("script/","**/*"),a:ArgLead)
-  elseif cmd =~# '^\%(plugin\)\s\+'.a:ArgLead.'$'
-    return s:completion_filter(["discover","list","install","update","remove","source","unsource","sources"],a:ArgLead)
-  elseif cmd =~# '\%(plugin\)\s\+\%(install\|remove\)\s\+'.a:ArgLead.'$' || cmd =~ '\%(generate\|destroy\)\s\+plugin\s\+'.a:ArgLead.'$'
-    return s:pluginList(a:ArgLead,a:CmdLine,a:P)
   elseif cmd =~# '^\%(generate\|destroy\)\s\+'.a:ArgLead.'$'
     return s:completion_filter(rails#app().generators(),a:ArgLead)
   elseif cmd =~# '^\%(generate\|destroy\)\s\+\w\+\s\+'.a:ArgLead.'$'
@@ -2143,11 +2136,17 @@ function! s:BufFinderCommands()
   call s:define_navcommand('initializer', {
         \ 'prefix': 'config/initializers/',
         \ 'default': ['config/routes.rb']})
+  call s:define_navcommand('lib', {
+        \ 'format': 'lib/%s.rb',
+        \ 'default': ['Gemfile']})
   call s:define_navcommand('model', {
         \ 'prefix': 'app/models/',
         \ 'suffix': '.rb',
         \ 'template': "class %S\nend",
         \ 'affinity': 'model'})
+  call s:define_navcommand('task', {
+        \ 'format': 'lib/tasks/%s.rake',
+        \ 'default': ['Rakefile']})
   let tests = filter([
         \ ['test', 'test/unit/%s_test.rb', 'test/functional/%s_test.rb'],
         \ ['test', 'test/models/%s_test.rb', 'test/controllers/%s_test.rb'],
@@ -2212,8 +2211,6 @@ function! s:BufFinderCommands()
   call s:addfilecmds("stylesheet")
   call s:addfilecmds("javascript")
   call s:addfilecmds("plugin")
-  call s:addfilecmds("task")
-  call s:addfilecmds("lib")
   for [name, command] in items(rails#app().config('classifications'))
     call s:define_navcommand(name, command)
   endfor
@@ -2355,25 +2352,6 @@ function! s:pluginList(A,L,P)
   else
     return s:completion_filter(rails#app().relglob('vendor/plugins/',"*","/init.rb"),a:A)
   endif
-endfunction
-
-" Task files, not actual rake tasks
-function! s:taskList(A,L,P)
-  let all = rails#app().relglob("lib/tasks/","**/*",".rake")
-  if RailsFilePath() =~ '\<vendor/plugins/.'
-    let path = s:sub(RailsFilePath(),'<vendor/plugins/[^/]*/\zs.*','')
-    let all = rails#app().relglob(path."tasks/","**/*",".rake")+rails#app().relglob(path."lib/tasks/","**/*",".rake")+all
-  endif
-  return s:autocamelize(all,a:A)
-endfunction
-
-function! s:libList(A,L,P)
-  let all = rails#app().relglob('lib/',"**/*",".rb")
-  if RailsFilePath() =~ '\<vendor/plugins/.'
-    let path = s:sub(RailsFilePath(),'<vendor/plugins/[^/]*/\zs.*','lib/')
-    let all = rails#app().relglob(path,"**/*",".rb") + all
-  endif
-  return s:autocamelize(all,a:A)
 endfunction
 
 function! s:Navcommand(bang,...)
@@ -2769,33 +2747,6 @@ function! s:pluginEdit(cmd,...)
     call s:warn(':Rplugin is deprecated. Use :Rlib to open the Gemfile.')
     return ''
   endif
-endfunction
-
-function! s:taskEdit(cmd,...)
-  let plugin = ""
-  let extra = []
-  if RailsFilePath() =~ '\<vendor/plugins/.'
-    let plugin = matchstr(RailsFilePath(),'\<vendor/plugins/[^/]*')
-    let extra = [plugin."/tasks/", plugin."/lib/tasks/"]
-  endif
-  if a:0
-    return rails#buffer().open_command(a:cmd, a:1, 'task', {
-          \ 'prefix': extra + ['lib/tasks/'],
-          \ 'suffix': '.rake'})
-  else
-    return s:findedit(a:cmd,(plugin != "" ? plugin."/Rakefile\n" : "")."Rakefile")
-  endif
-endfunction
-
-function! s:libEdit(cmd,...)
-  let extra = []
-  if RailsFilePath() =~ '\<vendor/plugins/.'
-    let extra = [s:sub(RailsFilePath(),'<vendor/plugins/[^/]*/\zs.*','lib/')]
-  endif
-  return rails#buffer().open_command(a:cmd, a:0 ? a:1 : '', 'lib', {
-        \ 'prefix': extra + ['lib/'],
-        \ 'suffix': '.rb',
-        \ 'default': ['Gemfile']})
 endfunction
 
 " }}}1

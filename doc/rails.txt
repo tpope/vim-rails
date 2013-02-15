@@ -338,6 +338,7 @@ to methods or line numbers using the same syntax as |:R|, and file creation
 			Edits a file within a plugin.  If the path to the file
 			is omitted, it defaults to init.rb.  If no argument is
 			given, it defaults to editing the application Gemfile.
+			Deprecated.
 
 						*rails-:Rspec*
 :Rspec [{name}]		Edit the given spec.  With no argument, defaults to
