@@ -3178,7 +3178,7 @@ endfunction
 call s:add_methods('readable',['related'])
 
 " }}}1
-" Partial Extraction {{{1
+" Extraction {{{1
 
 function! s:Extract(bang,...) range abort
   if a:0 == 0 || a:0 > 1
