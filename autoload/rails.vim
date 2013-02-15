@@ -4463,22 +4463,12 @@ function! s:BufSettings()
   elseif ft =~# 'yaml\>' || fnamemodify(self.name(),':e') ==# 'yml'
     call self.setvar('&define',self.define_pattern())
   elseif ft =~# '^eruby\>'
-    if exists("g:loaded_allml")
-      call self.setvar('allml_stylesheet_link_tag', "<%= stylesheet_link_tag '\r' %>")
-      call self.setvar('allml_javascript_include_tag', "<%= javascript_include_tag '\r' %>")
-      call self.setvar('allml_doctype_index', 10)
-    endif
     if exists("g:loaded_ragtag")
       call self.setvar('ragtag_stylesheet_link_tag', "<%= stylesheet_link_tag '\r' %>")
       call self.setvar('ragtag_javascript_include_tag', "<%= javascript_include_tag '\r' %>")
       call self.setvar('ragtag_doctype_index', 10)
     endif
   elseif ft =~# '^haml\>'
-    if exists("g:loaded_allml")
-      call self.setvar('allml_stylesheet_link_tag', "= stylesheet_link_tag '\r'")
-      call self.setvar('allml_javascript_include_tag', "= javascript_include_tag '\r'")
-      call self.setvar('allml_doctype_index', 10)
-    endif
     if exists("g:loaded_ragtag")
       call self.setvar('ragtag_stylesheet_link_tag', "= stylesheet_link_tag '\r'")
       call self.setvar('ragtag_javascript_include_tag', "= javascript_include_tag '\r'")
