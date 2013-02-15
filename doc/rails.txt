@@ -248,7 +248,6 @@ to methods or line numbers using the same syntax as |:R|, and file creation
 :Rlib						|rails-:Rlib|
 :Rlocale					|rails-:Rlocale|
 :Rmailer					|rails-:Rmailer|
-:Rmetal						|rails-:Rmetal|
 :Rmigration					|rails-:Rmigration|
 :Rmodel						|rails-:Rmodel|
 :Robserver					|rails-:Robserver|
@@ -323,10 +322,6 @@ to methods or line numbers using the same syntax as |:R|, and file creation
 :Rmailer [{name}]	Edit the mailer specified.  This looks in both
 			app/mailers for Rails 3 and app/models for older
 			versions of Rails but only tab completes the former.
-
-						*rails-:Rmetal*
-:Rmetal [{name}]	Edit the app/metal file specified.  With no argument,
-			defaults to editing config/boot.rb.
 
 						*rails-:Rmigration*
 :Rmigration [{pattern}]	If {pattern} is a number, find the migration for that

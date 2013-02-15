@@ -684,8 +684,6 @@ function! s:readable_calculate_file_type() dict abort
     let r = "spec"
   elseif f =~ '_helper\.rb$'
     let r = "helper"
-  elseif f =~ '\<app/metal/.*\.rb$'
-    let r = "metal"
   elseif f =~ '\<app/mailers/.*\.rb'
     let r = "mailer"
   elseif f =~ '\<app/models/'
@@ -1641,8 +1639,6 @@ function! s:Complete_script(ArgLead,CmdLine,P)
             \ rails#app().relglob('spec/features/', '**/*', '_spec.rb') +
             \ rails#app().relglob('spec/requests/', '**/*', '_spec.rb') +
             \ rails#app().relglob('features/', '**/*', '.feature'), a:ArgLead)
-    elseif target ==# 'metal'
-      return s:autocamelize(rails#app().relglob('app/metal/','**/*','.rb'),a:ArgLead)
     elseif target ==# 'migration' || target ==# 'session_migration'
       return s:migrationList(a:ArgLead,"","")
     elseif target =~# '^\w*\%(model\|resource\)$' || target =~# '\w*scaffold\%(_controller\)\=$' || target ==# 'mailer'
@@ -2155,9 +2151,6 @@ function! s:BufFinderCommands()
   call s:define_navcommand('initializer', {
         \ 'prefix': 'config/initializers/',
         \ 'default': ['config/routes.rb']})
-  call s:define_navcommand('metal', {
-        \ 'prefix': 'app/metal/',
-        \ 'default': ['config/boot.rb']})
   call s:define_navcommand('observer', {
         \ 'prefix': 'app/models/',
         \ 'suffix': '_observer.rb',
