@@ -1881,7 +1881,7 @@ function! s:RailsFind()
   let res = rails#singularize(s:findamethod('has_many\|has_and_belongs_to_many\|embeds_many','app/models/\1'))
   if res != ""|return res.".rb"|endif
 
-  let res = rails#singularize(s:findamethod('create_table\|change_table\|drop_table\|add_column\|rename_column\|remove_column\|add_index','app/models/\1'))
+  let res = rails#singularize(s:findamethod('create_table\|change_table\|drop_table\|rename_table\|\%(add\|remove\)_\%(column\|index\|timestamps\|reference\|belongs_to\)\|rename_column\|remove_columns\|rename_index','app/models/\1'))
   if res != ""|return res.".rb"|endif
 
   let res = rails#singularize(s:findasymbol('through','app/models/\1'))
@@ -3609,7 +3609,12 @@ function! s:BufSyntax()
         syn keyword rubyRailsFilterMethod verify
       endif
       if buffer.type_name('db-migration','db-schema')
-        syn keyword rubyRailsMigrationMethod create_table change_table drop_table rename_table add_column rename_column change_column change_column_default remove_column add_index remove_index rename_index execute
+        syn keyword rubyRailsMigrationMethod create_table change_table drop_table rename_table create_join_table drop_join_table
+        syn keyword rubyRailsMigrationMethod add_column rename_column change_column change_column_default remove_column remove_columns
+        syn keyword rubyRailsMigrationMethod add_timestamps remove_timestamps
+        syn keyword rubyRailsMigrationMethod add_reference remove_reference add_belongs_to remove_belongs_to
+        syn keyword rubyRailsMigrationMethod add_index remove_index rename_index
+        syn keyword rubyRailsMigrationMethod execute transaction reversible
       endif
       if buffer.type_name('test')
         if !empty(rails#app().user_assertions())
@@ -4051,7 +4056,6 @@ function! s:BufAbbreviations()
       Rabbrev mcht( change_table
       Rabbrev mrnt( rename_table
       Rabbrev mdt(  drop_table
-      Rabbrev mcc(  t.column
     endif
     if buffer.type_name('test')
       Rabbrev ase(  assert_equal
