@@ -373,6 +373,10 @@ function! s:readable_model_name(...) dict abort
   if root !=# ''
     return root
   endif
+  let [root, _] = s:find_classification(filter(values(self.app().config('classifications')), 'get(v:val, "affinity", "") ==# "collection"'), f)
+  if root !=# ''
+    return rails#singularize(root)
+  endif
   if f =~ '\<app/models/.*_observer.rb$'
     return s:sub(f,'.*<app/models/(.*)_observer\.rb$','\1')
   elseif f =~ '\<app/models/.*\.rb$'
