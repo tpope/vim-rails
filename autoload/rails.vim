@@ -870,11 +870,7 @@ endfunction
 function! s:app_background_script_command(cmd) dict abort
   let cmd = s:esccmd(self.script_shell_command(a:cmd))
   if has("gui_win32")
-    if &shellcmdflag == "-c" && ($PATH . &shell) =~? 'cygwin'
-      silent exe "!cygstart -d ".s:rquote(self.path())." ruby ".a:cmd
-    else
-      exe "!start ".cmd
-    endif
+    exe "!start ".cmd
   elseif exists("$STY") && !has("gui_running") && executable("screen")
     silent exe "!screen -ln -fn -t ".s:sub(s:sub(a:cmd,'\s.*',''),'^%(script|-rcommand)/','rails-').' '.cmd
   elseif exists("$TMUX") && !has("gui_running") && executable("tmux")
