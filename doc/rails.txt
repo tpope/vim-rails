@@ -250,7 +250,6 @@ to methods or line numbers using the same syntax as |:R|, and file creation
 :Rmailer					|rails-:Rmailer|
 :Rmigration					|rails-:Rmigration|
 :Rmodel						|rails-:Rmodel|
-:Robserver					|rails-:Robserver|
 :Rplugin					|rails-:Rplugin|
 :Rschema					|rails-:Rschema|
 :Rspec						|rails-:Rspec|
@@ -333,15 +332,6 @@ to methods or line numbers using the same syntax as |:R|, and file creation
 
 						*rails-:Rmodel*
 :Rmodel [{name}]	Edit the specified or current model.
-
-						*rails-:Robserver*
-:Robserver [{name}]	Find the observer with a name like
-			{model}_observer.rb.  When in an observer, most
-			commands (like :Rmodel) will seek based on the
-			observed model ({model}) and not the actual observer
-			({model}_observer).  However, for the command
-			:Runittest, a file of the form
-			{model}_observer_test.rb will be found.
 
 						*rails-:Rplugin*
 :Rplugin [{plugin}[/{path}]]

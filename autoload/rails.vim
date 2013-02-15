@@ -380,7 +380,7 @@ function! s:readable_model_name(...) dict abort
     return s:sub(f,'.*<app/models/(.*)_observer\.rb$','\1')
   elseif f =~ '\<app/models/.*\.rb$'
     return s:sub(f,'.*<app/models/(.*)\.rb$','\1')
-  elseif f =~ '\<test/unit/.*_observer_test\.rb$'
+  elseif f =~ '\<test/\%(unit\|models\)/.*_observer_test\.rb$'
     return s:sub(f,'.*<test/unit/(.*)_observer_test\.rb$','\1')
   elseif f =~ '\<test/\%(unit\|models\)/.*_test\.rb$'
     return s:sub(f,'.*<test/%(unit|models)/(.*)_test\.rb$','\1')
@@ -1643,14 +1643,6 @@ function! s:Complete_script(ArgLead,CmdLine,P)
       return s:migrationList(a:ArgLead,"","")
     elseif target =~# '^\w*\%(model\|resource\)$' || target =~# '\w*scaffold\%(_controller\)\=$' || target ==# 'mailer'
       return s:modelList(a:ArgLead,"","")
-    elseif target ==# 'observer'
-      let observers = rails#app().relglob("app/models/","**/*","_observer.rb")
-      let models = s:modelList("","","")
-      if cmd =~# '^destroy\>'
-        let models = []
-      endif
-      call filter(models,'index(observers,v:val) < 0')
-      return s:completion_filter(observers + models,a:ArgLead)
     else
       return []
     endif
@@ -2151,10 +2143,10 @@ function! s:BufFinderCommands()
   call s:define_navcommand('initializer', {
         \ 'prefix': 'config/initializers/',
         \ 'default': ['config/routes.rb']})
-  call s:define_navcommand('observer', {
+  call s:define_navcommand('model', {
         \ 'prefix': 'app/models/',
-        \ 'suffix': '_observer.rb',
-        \ 'template': "class %SObserver < ActiveRecord::Observer\nend",
+        \ 'suffix': '.rb',
+        \ 'template': "class %S\nend",
         \ 'affinity': 'model'})
   let tests = filter([
         \ ['test', 'test/unit/%s_test.rb', 'test/functional/%s_test.rb'],
@@ -2206,7 +2198,6 @@ function! s:BufFinderCommands()
           \   'features/support/env.rb',
           \   'spec/spec_helper.rb']})
   endif
-  call s:addfilecmds("model")
   call s:addfilecmds("view")
   call s:addfilecmds("controller")
   call s:addfilecmds("mailer")
@@ -2320,12 +2311,6 @@ function! s:javascriptList(A,L,P)
   call map(list,'s:sub(v:val,"\\.js\\..*|\\.\\w+$","")')
   let list += rails#app().relglob("public/javascripts/","**/*",".js")
   return s:completion_filter(list,a:A)
-endfunction
-
-function! s:modelList(A,L,P)
-  let models = rails#app().relglob("app/models/","**/*",".rb")
-  call filter(models,'v:val !~# "_observer$"')
-  return s:autocamelize(models,a:A)
 endfunction
 
 function! s:fixturesList(A,L,P)
@@ -2586,14 +2571,6 @@ function! s:localeEdit(cmd,...)
   else
     return s:findedit(a:cmd,rails#app().find_file(c,'config/locales',['.yml','.rb'],'config/locales/'.c))
   endif
-endfunction
-
-function! s:modelEdit(cmd,...)
-  return rails#buffer().open_command(a:cmd, a:0 ? a:1 : '', 'model', {
-        \ 'prefix': 'app/models/',
-        \ 'suffix': '.rb',
-        \ 'template': "class %S\nend",
-        \ 'affinity': 'model'})
 endfunction
 
 function! s:dotcmp(i1, i2)
