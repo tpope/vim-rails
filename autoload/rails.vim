@@ -3561,7 +3561,7 @@ call s:add_methods('app', ['user_classes','user_assertions'])
 function! s:BufSyntax()
   if !exists("g:rails_no_syntax")
     let buffer = rails#buffer()
-    let s:javascript_functions = "$ $$ $A $F $H $R $w jQuery"
+    let javascript_functions = "$ jQuery"
     let classes = s:gsub(join(rails#app().user_classes(),' '),'::',' ')
     if &syntax == 'ruby'
       if classes != ''
@@ -3695,7 +3695,7 @@ function! s:BufSyntax()
       exe 'syn keyword '.&syntax.'RailsRenderMethod render contained containedin=@'.&syntax.'RailsRegions'
       exe 'syn case match'
       set isk+=$
-      exe 'syn keyword javascriptRailsFunction contained '.s:javascript_functions
+      exe 'syn keyword javascriptRailsFunction contained '.javascript_functions
       exe 'syn cluster htmlJavaScript add=javascriptRailsFunction'
     elseif &syntax == "yaml"
       syn case match
@@ -3716,13 +3716,13 @@ function! s:BufSyntax()
     elseif &syntax == "html"
       syn case match
       set isk+=$
-      exe "syn keyword javascriptRailsFunction contained ".s:javascript_functions
+      exe "syn keyword javascriptRailsFunction contained ".javascript_functions
       syn cluster htmlJavaScript add=javascriptRailsFunction
     elseif &syntax == "javascript" || &syntax == "coffee"
       " The syntax file included with Vim incorrectly sets syn case ignore.
       syn case match
       set isk+=$
-      exe "syn keyword javascriptRailsFunction ".s:javascript_functions
+      exe "syn keyword javascriptRailsFunction ".javascript_functions
 
     elseif &syntax == "scss" || &syntax == "sass"
       syn match sassFunction "\<\%(\%(asset\|image\|font\|video\|audio\|javascript\|stylesheet\)-\%(url\|path\)\)\>(\@=" contained
