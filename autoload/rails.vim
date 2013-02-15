@@ -815,7 +815,7 @@ function! s:app_has(feature) dict
   let map = {
         \'test': 'test/',
         \'spec': 'spec/',
-        \'bundler': '.bundle/',
+        \'bundler': 'Gemfile',
         \'cucumber': 'features/',
         \'turnip': 'spec/acceptance/',
         \'sass': 'public/stylesheets/sass/',
@@ -827,7 +827,11 @@ function! s:app_has(feature) dict
   let features = self.cache.get('features')
   if !has_key(features,a:feature)
     let path = get(map,a:feature,a:feature.'/')
-    let features[a:feature] = isdirectory(rails#app().path(path))
+    if path =~# '/$'
+      let features[a:feature] = isdirectory(rails#app().path(path))
+    else
+      let features[a:feature] = filereadable(rails#app().path(path))
+    endif
   endif
   return features[a:feature]
 endfunction
