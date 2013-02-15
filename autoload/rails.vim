@@ -911,15 +911,6 @@ call s:add_methods('app', ['ruby_shell_command','script_shell_command','execute_
 " }}}1
 " Commands {{{1
 
-function! s:prephelp()
-  let fn = fnamemodify(s:file,':h:h').'/doc/'
-  if filereadable(fn.'rails.txt')
-    if !filereadable(fn.'tags') || getftime(fn.'tags') <= getftime(fn.'rails.txt')
-      silent! helptags `=fn`
-    endif
-  endif
-endfunction
-
 function! s:BufCommands()
   call s:BufFinderCommands()
   call s:BufNavCommands()
