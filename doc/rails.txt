@@ -530,16 +530,22 @@ A few features are dedicated to helping you refactor your code.
 Partial Extraction ~
 						*rails-partials*
 
-The :Rextract command can be used to extract a partial to a new file.
+The :Rextract command can be used to extract part of a view to a partial, part
+of a helper to another helper, or part of a model or controller to a concern.
 
 						*rails-:Rextract*
-:[range]Rextract [{controller}/]{name}	
+:[range]Rextract [{controller}/]{name}
 			Create a {name} partial from [range] lines (default:
-			current line).
+			current line).  Only available in views.
 
-						*rails-:Rpartial*
-:[range]Rpartial [{controller}/]{name}	
-			Obsolete alias for :Rextract.
+:[range]Rextract {helper}
+			Create a {name} helper from [range] lines (default:
+			current line).  Only available in helpers.
+
+:[range]Rextract {concern}
+			Create a {name} concern from [range] lines (default:
+			current line).  Only available in models and
+			controllers.
 
 If this is your file, in app/views/blog/show.html.erb: >
 

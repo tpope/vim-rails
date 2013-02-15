@@ -948,6 +948,10 @@ function! s:BufCommands()
   if RailsFilePath() =~ '\<app/views/'
     " TODO: complete controller names with trailing slashes here
     command! -buffer -bar -bang -nargs=? -range -complete=customlist,s:controllerList Rextract :<line1>,<line2>call s:Extract(<bang>0,<f-args>)
+  elseif rails#buffer().name() =~# '^app/helpers/.*.rb$'
+    command! -buffer -bar -bang -nargs=1 -range Rextract :<line1>,<line2>call s:RubyExtract(<bang>0, 'app/helpers', [], s:sub(<f-args>, '_helper$|Helper$|$', '_helper'))
+  elseif rails#buffer().name() =~# '^app/\w\+/.*\.rb$'
+    command! -buffer -bar -bang -nargs=1 -range Rextract :<line1>,<line2>call s:RubyExtract(<bang>0, matchstr(rails#buffer().name(), '^app/\w\+/').'concerns', ['  extend ActiveSupport::Concern', ''], <f-args>)
   endif
   if RailsFilePath() =~ '\<db/migrate/.*\.rb$'
     command! -buffer -bar                 Rinvert  :call s:Invert(<bang>0)
@@ -3302,6 +3306,26 @@ function! s:Extract(bang,...) range abort
   endif
   silent! exe '%substitute?\%(\w\|[@:"'."'".'-]\)\@<!'.var.'\>?'.name.'?g'
   1
+endfunction
+
+function! s:RubyExtract(bang, root, before, name) range abort
+  let content = getline(a:firstline, a:lastline)
+  execute a:firstline.','.a:lastline.'delete_'
+  let indent = get(sort(map(filter(copy(content), '!empty(v:val)'), 'len(matchstr(v:val, "^ \\+"))')), 0, 0)
+  if indent
+    call map(content, 's:sub(v:val, "^".repeat(" ", indent), "  ")')
+  endif
+  call append(a:firstline-1, repeat(' ', indent).'include '.rails#camelize(a:name))
+  let out = rails#app().path(a:root, a:name . '.rb')
+  if filereadable(out) && !a:bang
+    return s:error('E13: File exists (add ! to override)')
+  endif
+  if !isdirectory(fnamemodify(out, ':h'))
+    call mkdir(fnamemodify(out, ':h'), 'p')
+  endif
+  execute 'split '.fnameescape(out)
+  %delete_
+  call setline(1, ['module '.rails#camelize(a:name)] + a:before + content + ['end'])
 endfunction
 
 " }}}1
