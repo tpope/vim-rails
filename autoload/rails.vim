@@ -3211,7 +3211,7 @@ function! s:readable_related(...) dict abort
     else
       return fnamemodify(file,':t')."\n".
             \app_and_test_swap."\n".
-            \s:sub(app_and_test_swap,'test','spec')
+            \s:sub(s:sub(app_and_test_swap,'^test','spec'), '_test\.rb$', '_spec.rb')
     endif
   else
     return ""
