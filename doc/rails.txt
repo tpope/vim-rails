@@ -592,6 +592,8 @@ Migration Inversion ~
 			reversed.  This chokes on more complicated
 			instructions, but works reasonably well for simple
 			calls to create_table, add_column, and the like.
+			Deprecated now that Rails supports reversible
+			migration definitions.
 
 INTEGRATION					*rails-integration*
 

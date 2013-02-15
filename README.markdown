@@ -30,12 +30,13 @@ features:
   blog controller and edits `app/controllers/blog_controller.rb`.
   `:help rails-scripts`
 
-* Partial extraction and migration inversion.  `:Rextract {file}`
+* Partial and concern extraction.  In a view, `:Rextract {file}`
   replaces the desired range (ideally selected in visual line mode) with
   `render :partial => '{file}'`, which is automatically created with
   your content.  The `@{file}` instance variable is replaced with the
-  `{file}` local variable.  `:Rinvert` takes a `self.up` migration and
-  writes a `self.down`.  `:help rails-refactoring`
+  `{file}` local variable.  In a model or controller, a concern is
+  created, with the appropriate `include` declaration left behind.
+  `:help rails-:Rextract`
 
 * Integration with other plugins.  `:Rtree` spawns
   [NERDTree.vim](https://github.com/scrooloose/nerdtree).  If
