@@ -1890,10 +1890,10 @@ function! s:RailsFind()
   let res = s:findamethod('require','\1')
   if res != ""|return res.(fnamemodify(res,':e') == '' ? '.rb' : '')|endif
 
-  let res = s:findamethod('belongs_to\|has_one\|composed_of\|validates_associated\|scaffold','app/models/\1.rb')
+  let res = s:findamethod('belongs_to\|has_one\|embedded_in\|embeds_one\|composed_of\|validates_associated\|scaffold','app/models/\1.rb')
   if res != ""|return res|endif
 
-  let res = rails#singularize(s:findamethod('has_many\|has_and_belongs_to_many','app/models/\1'))
+  let res = rails#singularize(s:findamethod('has_many\|has_and_belongs_to_many\|embeds_many','app/models/\1'))
   if res != ""|return res.".rb"|endif
 
   let res = rails#singularize(s:findamethod('create_table\|change_table\|drop_table\|add_column\|rename_column\|remove_column\|add_index','app/models/\1'))
