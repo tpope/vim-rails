@@ -846,22 +846,20 @@ call s:add_methods('readable',['app','relative','absolute','spec','calculate_fil
 " Ruby Execution {{{1
 
 function! s:app_ruby_shell_command(cmd) dict abort
-  if self.path() =~ '://'
-    return "ruby ".a:cmd
-  else
-    return "ruby -C ".s:rquote(self.path())." ".a:cmd
-  endif
+  return 'ruby '.a:cmd
 endfunction
 
 function! s:app_script_shell_command(cmd) dict abort
   if !empty(glob(rails#app().path('.zeus.sock'))) && a:cmd =~# '^\%(console\|dbconsole\|destroy\|generate\|server\|runner\)\>'
-    return 'cd '.s:rquote(self.path()).' && zeus '.a:cmd
-  elseif self.has_file('script/rails') && a:cmd !~# '^rails\>'
+    return 'zeus '.a:cmd
+  elseif self.has_file('script/rails')
     let cmd = 'script/rails '.a:cmd
-  elseif self.has_file('bin/rails') && a:cmd !~# '^rails\>'
-    let cmd = 'bin/rails '.a:cmd
-  else
+  elseif self.has_file('script/' . matchstr(a:cmd, '\w\+'))
     let cmd = 'script/'.a:cmd
+  elseif self.has('bundler')
+    return 'bundle exec rails ' . a:cmd
+  else
+    return 'rails '.a:cmd
   endif
   return self.ruby_shell_command(cmd)
 endfunction
@@ -869,20 +867,30 @@ endfunction
 function! s:app_background_script_command(cmd) dict abort
   let cmd = s:esccmd(self.script_shell_command(a:cmd))
   let title = s:sub(a:cmd, '\s.*', '')
-  if has("gui_win32")
-    exe "!start ".cmd
-  elseif exists("$STY") && !has("gui_running") && executable("screen")
-    silent exe "!screen -ln -fn -t ".title.' '.cmd
-  elseif exists("$TMUX") && !has("gui_running") && executable("tmux")
-    silent exe '!tmux new-window -n "'.title.'" "'.cmd.'"'
-  else
-    exe "!".cmd
-  endif
+  call s:push_chdir(1)
+  try
+    if has("gui_win32")
+      exe "!start ".cmd
+    elseif exists("$STY") && !has("gui_running") && executable("screen")
+      silent exe "!screen -ln -fn -t ".title.' '.cmd
+    elseif exists("$TMUX") && !has("gui_running") && executable("tmux")
+      silent exe '!tmux new-window -n "'.title.'" "'.cmd.'"'
+    else
+      exe "!".cmd
+    endif
+  finally
+    call s:pop_command()
+  endtry
   return ''
 endfunction
 
 function! s:app_execute_script_command(cmd) dict abort
-  exe '!'.s:esccmd(self.script_shell_command(a:cmd))
+  call s:push_chdir(1)
+  try
+    exe '!'.s:esccmd(self.script_shell_command(a:cmd))
+  finally
+    call s:pop_command()
+  endtry
   return ''
 endfunction
 
@@ -891,9 +899,8 @@ function! s:app_lightweight_ruby_eval(ruby,...) dict abort
   if !executable("ruby")
     return def
   endif
-  let args = '-e '.s:rquote('begin; require %{rubygems}; rescue LoadError; end; begin; require %{active_support}; rescue LoadError; end; '.a:ruby)
+  let args = '-e '.s:rquote(a:ruby)
   let cmd = self.ruby_shell_command(args)
-  " If the shell is messed up, this command could cause an error message
   silent! let results = system(cmd)
   return v:shell_error == 0 ? results : def
 endfunction
@@ -905,8 +912,12 @@ function! s:app_eval(ruby,...) dict abort
   endif
   let args = "-r./config/boot -r ".s:rquote(self.path("config/environment"))." -e ".s:rquote(a:ruby)
   let cmd = self.ruby_shell_command(args)
-  " If the shell is messed up, this command could cause an error message
-  silent! let results = system(cmd)
+  call s:push_chdir(1)
+  try
+    silent! let results = system(cmd)
+  finally
+    call s:pop_command()
+  endtry
   return v:shell_error == 0 ? results : def
 endfunction
 
@@ -1087,6 +1098,7 @@ let s:efm_backtrace='%D(in\ %f),'
 
 function! s:makewithruby(arg,bang,...)
   let old_make = &makeprg
+  call s:push_chdir(1)
   try
     let &l:makeprg = rails#app().ruby_shell_command(a:arg)
     exe 'make'.(a:bang ? '!' : '')
@@ -1094,6 +1106,7 @@ function! s:makewithruby(arg,bang,...)
       cwindow
     endif
   finally
+    call s:pop_command()
     let &l:makeprg = old_make
   endtry
 endfunction
@@ -1483,7 +1496,12 @@ function! s:app_runner_command(count,args) dict
     return self.script_command(a:bang,"runner",a:args)
   else
     let str = self.ruby_shell_command('-r./config/boot -e "require '."'commands/runner'".'" '.s:rquote(a:args))
-    let res = s:sub(system(str),'\n$','')
+    call s:push_chdir(1)
+    try
+      let res = s:sub(system(str),'\n$','')
+    finally
+      call s:pop_command()
+    endtry
     if a:count < 0
       echo res
     else
@@ -1566,7 +1584,12 @@ function! s:app_generate_command(bang,...) dict
   let cmd = join(map(copy(a:000),'s:rquote(v:val)'),' ')
   if cmd !~ '-p\>' && cmd !~ '--pretend\>'
     let execstr = self.script_shell_command('generate '.cmd.' -p -f')
-    let res = system(execstr)
+    call s:push_chdir(1)
+    try
+      let res = system(execstr)
+    finally
+      call s:pop_command()
+    endtry
     let junk = '\%(\e\[[0-9;]*m\)\='
     let file = matchstr(res,junk.'\s\+\%(create\|force\)'.junk.'\s\+\zs\f\+\.rb\ze\n')
     if file == ""
