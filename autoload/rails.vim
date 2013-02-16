@@ -302,9 +302,9 @@ function! s:controller(...)
   return rails#buffer().controller_name(a:0 ? a:1 : 0)
 endfunction
 
-function! s:find_classification(classifications, filename) abort
+function! s:find_projection(projections, filename) abort
   let f = a:filename
-  for c in a:classifications
+  for c in a:projections
     for prefix in s:split(get(c, 'prefix', []))
       for suffix in s:split(get(c, 'suffix', '.rb'))
         if s:startswith(f, prefix) && f[-strlen(suffix) : - 1] ==# suffix
@@ -321,7 +321,7 @@ function! s:readable_controller_name(...) dict abort
   if has_key(self,'getvar') && self.getvar('rails_controller') != ''
     return self.getvar('rails_controller')
   endif
-  let [root, _] = s:find_classification(filter(values(self.app().config('classifications')), 'get(v:val, "affinity", "") ==# "controller"'), f)
+  let [root, _] = s:find_projection(filter(values(self.app().projections()), 'get(v:val, "affinity", "") ==# "controller"'), f)
   if root !=# ''
     return root
   endif
@@ -368,11 +368,11 @@ function! s:readable_model_name(...) dict abort
   if has_key(self,'getvar') && self.getvar('rails_model') != ''
     return self.getvar('rails_model')
   endif
-  let [root, _] = s:find_classification(filter(values(self.app().config('classifications')), 'get(v:val, "affinity", "") ==# "model"'), f)
+  let [root, _] = s:find_projection(filter(values(self.app().projections()), 'get(v:val, "affinity", "") ==# "model"'), f)
   if root !=# ''
     return root
   endif
-  let [root, _] = s:find_classification(filter(values(self.app().config('classifications')), 'get(v:val, "affinity", "") ==# "collection"'), f)
+  let [root, _] = s:find_projection(filter(values(self.app().projections()), 'get(v:val, "affinity", "") ==# "collection"'), f)
   if root !=# ''
     return rails#singularize(root)
   endif
@@ -2214,7 +2214,7 @@ function! s:BufFinderCommands()
   call s:addfilecmds("stylesheet")
   call s:addfilecmds("javascript")
   call s:addfilecmds("plugin")
-  for [name, command] in items(rails#app().config('classifications'))
+  for [name, command] in items(rails#app().projections())
     call s:define_navcommand(name, command)
   endfor
 endfunction
@@ -2409,7 +2409,7 @@ function! s:CommandList(A,L,P)
   exe cmd." &"
   let command = s:last_options
   let matches = []
-  for [prefix, suffix] in s:classification_pairs(command)
+  for [prefix, suffix] in s:projection_pairs(command)
     let results = rails#app().relglob(prefix, command.glob, suffix)
     if suffix =~# '\.rb$' && a:A =~# '^\u'
       let matches += map(results, 'rails#camelize(v:val)')
@@ -2806,7 +2806,7 @@ function! s:try(cmd) abort
   return 1
 endfunction
 
-function! s:classification_pairs(options)
+function! s:projection_pairs(options)
   let pairs = []
   if has_key(a:options, 'format')
     for format in s:split(a:options.format)
@@ -2854,7 +2854,7 @@ function! s:readable_open_command(cmd, argument, name, options) dict abort
   if root ==# ''
     return 'echoerr "E471: Argument required"'
   endif
-  let pairs = s:classification_pairs(a:options)
+  let pairs = s:projection_pairs(a:options)
   for [prefix, suffix] in pairs
     let file = self.app().path(prefix . (suffix =~# '\.rb$' ? rails#underscore(root) : root) . suffix)
     if filereadable(file)
@@ -2977,15 +2977,15 @@ endfunction
 
 function! s:readable_related(...) dict abort
   let f = self.name()
-  let [root, classification] = s:find_classification(values(self.app().config('classifications')), f)
+  let [root, projection] = s:find_projection(values(self.app().projections()), f)
   let placeholders = {
         \ '%s': root,
         \ '%p': rails#pluralize(root),
         \ '%%': '%'}
   if a:0 && a:1
     let lastmethod = self.last_method(a:1)
-    if root !=# '' && has_key(classification, 'related')
-      let related = s:split(classification.related)
+    if root !=# '' && has_key(projection, 'related')
+      let related = s:split(projection.related)
       if empty(lastmethod)
         call filter(related, 'v:val !~# "%m"')
       endif
@@ -3044,8 +3044,8 @@ function! s:readable_related(...) dict abort
       return self.app().migration(1)
     endif
   endif
-  if root !=# '' && has_key(classification, 'alternate')
-    return join(map(s:split(classification.alternate), 'substitute(v:val, "%.", "\\=get(placeholders, submatch(0), submatch(0))", "g")'), "\n")
+  if root !=# '' && has_key(projection, 'alternate')
+    return join(map(s:split(projection.alternate), 'substitute(v:val, "%.", "\\=get(placeholders, submatch(0), submatch(0))", "g")'), "\n")
   endif
   if f =~ '\<config/environments/'
     return "config/application.rb\nconfig/environment.rb"
@@ -4176,7 +4176,11 @@ function! s:app_config(...) dict abort
   endif
 endfunction
 
-call s:add_methods('app', ['config'])
+function! s:app_projections() dict abort
+  return extend(copy(self.config('classifications')), self.config('projections'))
+endfunction
+
+call s:add_methods('app', ['config', 'projections'])
 
 function! s:Set(bang,...)
   let c = 1

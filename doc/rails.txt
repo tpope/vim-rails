@@ -394,7 +394,7 @@ also use |:Rnavcommand|, either from |macros/rails.vim| or a |rails-:autocmd|.
 			a full path).  If it is specified as -default=model()
 			or -default=controller(), the current model or
 			controller is used as a default.  Deprecated in favor
-			of |config/editor.json| classifications.
+			of |config/editor.json| projections.
 
 Examples: >
 	Rnavcommand api      app/apis -glob=**/* -suffix=_api.rb
@@ -837,7 +837,7 @@ be checked into version control.  Example:
 	  "abbreviations": {
 	    "FB::": "FooBar"
 	  },
-	  "classifications": {
+	  "projections": {
 	    "service": {
 	      "format": "app/services/%s_service.rb",
 	      "template": "class %SService < AbstractService\nend",
@@ -857,13 +857,13 @@ be checked into version control.  Example:
 	  "path_additions": ["app/services"]
 	}
 <
-This "classifications" section is used to provide navigation commands.  The
-above configuration causes :Rservice and :Rfabricator navigation commands to
-be created.  The optional "affinity" option determines whether the current
-model name or controller name is used for the default when no argument is
-given.  The optional "alternate" and "related" options control the destination
-of :A and :R.  In the "related" option, one can also use %m to insert the
-current method.
+This "projections" section is used to provide navigation commands.  The above
+configuration causes :Rservice and :Rfabricator navigation commands to be
+created.  The optional "affinity" option determines whether the current model
+name or controller name is used for the default when no argument is given.
+The optional "alternate" and "related" options control the destination of :A
+and :R.  In the "related" option, one can also use %m to insert the current
+method.
 
 						*config/rails.vim*
 If you have settings particular to a specific project, they can be put in a
@@ -880,10 +880,10 @@ This command is deprecated.  See the below table for the replacement for a
 given option.
 
 Option		 Replacement ~
-alternate	 Provide "alternate" on a |config/editor.json| classification
-controller	 Provide "affinity" on a |config/editor.json| classification
-model		 Provide "affinity" on a |config/editor.json| classification
-related		 Provide "related" on a |config/editor.json| classification
+alternate	 Provide "alternate" on a |config/editor.json| projection
+controller	 Provide "affinity" on a |config/editor.json| projection
+model		 Provide "affinity" on a |config/editor.json| projection
+related		 Provide "related" on a |config/editor.json| projection
 root_url	 |:Rserver| --binding=host --port=12345
 
 Open a bug report if your use case is not addressed by the above alternatives.
@@ -923,7 +923,7 @@ JavaScript files, since ctags has a tendency to choke on those.
 	let g:rails_default_config = {
 	      \ "path_additions": ["extras"]}
 If |config/editor.json| is missing, this variable is used instead.  Useful, in
-particular, for a default set of classifications.
+particular, for a default set of projections.
 
 						*g:rails_root_url*  >
 	let g:rails_root_url='http://localhost:3000/'
