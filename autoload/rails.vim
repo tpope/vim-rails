@@ -3216,8 +3216,6 @@ function! s:Extract(bang,...) range abort
   elseif fnamemodify(fname, ':e') !=# ext
     let fname .= '.'.ext
   endif
-  let var = "@".name
-  let collection = ""
   if dir =~ '^/'
     let out = (rails_root).dir."/_".fname
   elseif dir == "" || dir == "."
@@ -3245,28 +3243,7 @@ function! s:Extract(bang,...) range abort
     let erub2 = ''
   endif
   let spaces = matchstr(getline(first),"^ *")
-  if getline(last+1) =~ '\v^\s*'.erub1.'end'.erub2.'\s*$'
-    let fspaces = matchstr(getline(last+1),"^ *")
-    if getline(first-1) =~ '\v^'.fspaces.erub1.'for\s+(\k+)\s+in\s+([^ %>]+)'.erub2.'\s*$'
-      let collection = s:sub(getline(first-1),'^'.fspaces.erub1.'for\s+(\k+)\s+in\s+([^ >]+)'.erub2.'\s*$','\1>\2')
-    elseif getline(first-1) =~ '\v^'.fspaces.erub1.'([^ %>]+)\.each\s+do\s+\|\s*(\k+)\s*\|'.erub2.'\s*$'
-      let collection = s:sub(getline(first-1),'^'.fspaces.erub1.'([^ %>]+)\.each\s+do\s+\|\s*(\k+)\s*\|'.erub2.'\s*$','\2>\1')
-    endif
-    if collection != ''
-      let var = matchstr(collection,'^\k\+')
-      let collection = s:sub(collection,'^\k+\>','')
-      let first -= 1
-      let last += 1
-    endif
-  else
-    let fspaces = spaces
-  endif
-  let renderstr = "render :partial => '".fnamemodify(file,":r:r")."'"
-  if collection != ""
-    let renderstr .= ", :collection => ".collection
-  elseif "@".name != var
-    let renderstr .= ", :object => ".var
-  endif
+  let renderstr = "render '".fnamemodify(file,":r:r")."'"
   if ext =~? '^\%(rhtml\|erb\|dryml\)$'
     let renderstr = "<%= ".renderstr." %>"
   elseif ext == "rxml" || ext == "builder"
@@ -3285,7 +3262,7 @@ function! s:Extract(bang,...) range abort
   let old_ai = &ai
   try
     let &ai = 0
-    silent exe "norm! :".first.",".last."change\<CR>".fspaces.renderstr."\<CR>.\<CR>"
+    silent exe "norm! :".first.",".last."change\<CR>".spaces.renderstr."\<CR>.\<CR>"
   finally
     let &ai = old_ai
   endtry
@@ -3296,8 +3273,8 @@ function! s:Extract(bang,...) range abort
   endif
   let ft = &ft
   let shortout = fnamemodify(out,':.')
-  silent split `=shortout`
-  silent %delete
+  silent execute 'split '.fnameescape(shortout)
+  silent %delete _
   let &ft = ft
   let @@ = partial
   silent put
@@ -3306,7 +3283,6 @@ function! s:Extract(bang,...) range abort
   if spaces != ""
     silent! exe '%substitute/^'.spaces.'//'
   endif
-  silent! exe '%substitute?\%(\w\|[@:"'."'".'-]\)\@<!'.var.'\>?'.name.'?g'
   1
 endfunction
 
@@ -3326,7 +3302,7 @@ function! s:RubyExtract(bang, root, before, name) range abort
     call mkdir(fnamemodify(out, ':h'), 'p')
   endif
   execute 'split '.fnameescape(out)
-  %delete_
+  silent %delete_
   call setline(1, ['module '.rails#camelize(a:name)] + a:before + content + ['end'])
 endfunction
 

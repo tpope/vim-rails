@@ -31,11 +31,10 @@ features:
   `:help rails-scripts`
 
 * Partial and concern extraction.  In a view, `:Rextract {file}`
-  replaces the desired range (ideally selected in visual line mode) with
-  `render :partial => '{file}'`, which is automatically created with
-  your content.  The `@{file}` instance variable is replaced with the
-  `{file}` local variable.  In a model or controller, a concern is
-  created, with the appropriate `include` declaration left behind.
+  replaces the desired range (typically selected in visual line mode)
+  with `render '{file}'`, which is automatically created with your
+  content.  In a model or controller, a concern is created, with the
+  appropriate `include` declaration left behind.
   `:help rails-:Rextract`
 
 * Integration with other plugins.  `:Rtree` spawns

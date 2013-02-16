@@ -561,24 +561,13 @@ And you issue this command: >
 Your file will change to this: >
 
   1	<div>
-  2	  <%= render :partial => 'post' %>
+  2	  <%= render 'post' %>
   3	</div>
 
 And app/views/blog/_post.html.erb will now contain: >
 
-  1	<h2><%= post.title %></h2>
-  2	<p><%= post.body %></p>
-
-As a special case, if the file had looked like this: >
-
-  1     <% for object in @posts -%>
-  2	  <h2><%= object.title %></h2>
-  3	  <p><%= object.body %></p>
-  4	<% end -%>
-<
-The end result would have been this: >
-
-  1     <%= render :partial => 'post', :collection => @posts %>
+  1	<h2><%= @post.title %></h2>
+  2	<p><%= @post.body %></p>
 <
 The easiest way to choose what to extract is to use |linewise-visual| mode.
 Then, a simple >
