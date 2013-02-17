@@ -999,6 +999,9 @@ function! rails#new_app_command(bang,...)
     if dir !~# '^-' && filereadable(dir.'/README')
       edit `=dir.'/README'`
       return
+    elseif dir !~# '^-' && filereadable(dir.'/README.rdoc')
+      edit `=dir.'/README.rdoc'`
+      return
     endif
   endfor
 endfunction
@@ -3057,7 +3060,7 @@ function! s:readable_related(...) dict abort
   endif
   if f =~ '\<config/environments/'
     return "config/application.rb\nconfig/environment.rb"
-  elseif f == 'README'
+  elseif f ==# 'README' || f ==# 'README.rdoc'
     return "config/database.yml"
   elseif f =~ '\<config/database\.yml$'   | return "config/routes.rb"
   elseif f =~ '\<config/routes\.rb$'
