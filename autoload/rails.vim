@@ -2204,7 +2204,7 @@ function! s:BufFinderCommands()
           \   'spec/features/': "require 'spec_helper'\n\ndescribe \"%h\" do\nend",
           \   'spec/integration/': "require 'spec_helper'\n\ndescribe \"%h\" do\nend",
           \   'features/': "Feature: %h",
-          \   'spec/acceptance': "Feature: %h"},
+          \   'spec/acceptance/': "Feature: %h"},
           \ 'default': [
           \   'test/test_helper.rb',
           \   'features/support/env.rb',
