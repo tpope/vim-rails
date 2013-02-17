@@ -3842,8 +3842,6 @@ function! s:BufMappings()
     imap <buffer> <M-[>  <C-O><Plug>RailsAlternate
     imap <buffer> <M-]>  <C-O><Plug>RailsRelated
   endif
-  " SelectBuf you're a dirty hack
-  let v:errmsg = ""
 endfunction
 
 " }}}1
