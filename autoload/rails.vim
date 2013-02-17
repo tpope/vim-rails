@@ -3601,7 +3601,7 @@ function! s:BufSyntax()
         syn keyword rubyRailsMigrationMethod add_timestamps remove_timestamps
         syn keyword rubyRailsMigrationMethod add_reference remove_reference add_belongs_to remove_belongs_to
         syn keyword rubyRailsMigrationMethod add_index remove_index rename_index
-        syn keyword rubyRailsMigrationMethod execute transaction reversible
+        syn keyword rubyRailsMigrationMethod execute transaction reversible revert
       endif
       if buffer.type_name('test')
         if !empty(rails#app().user_assertions())
