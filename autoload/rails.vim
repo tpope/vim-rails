@@ -2399,8 +2399,10 @@ endfunction
 
 function! s:define_navcommand(name, command) abort
   let command = extend({'default': '', 'glob': '**/*'}, a:command)
-  let command.prefix = s:split(get(command, 'prefix', []))
-  let command.suffix = s:split(get(command, 'suffix', ['.rb']))
+  if !has_key(command, 'format')
+    let command.prefix = s:split(get(command, 'prefix', []))
+    let command.suffix = s:split(get(command, 'suffix', ['.rb']))
+  endif
   if has_key(command, 'affinity') && command.default ==# ''
     let command.default = command.affinity . '()'
   endif
@@ -2824,7 +2826,9 @@ function! s:projection_pairs(options)
   let pairs = []
   if has_key(a:options, 'format')
     for format in s:split(a:options.format)
-      let pairs += [s:split(format, '%s')]
+      if format =~# '%s'
+        let pairs += [s:split(format, '%s')]
+      endif
     endfor
   else
     for prefix in s:split(get(a:options, 'prefix', []))
