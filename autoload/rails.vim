@@ -932,9 +932,10 @@ call s:add_methods('app', ['ruby_shell_command','script_shell_command','execute_
 " Commands {{{1
 
 function! s:BufCommands()
-  call s:BufFinderCommands()
   call s:BufNavCommands()
   call s:BufScriptWrappers()
+  command! -buffer -bar -nargs=+ Rnavcommand :call s:Navcommand(<bang>0,<f-args>)
+  command! -buffer -bar -nargs=* -bang Rabbrev :call s:Abbrev(<bang>0,<f-args>)
   command! -buffer -bar -nargs=? -bang -count -complete=customlist,s:Complete_rake    Rake     :call s:Rake(<bang>0,!<count> && <line1> ? -1 : <count>,<q-args>)
   command! -buffer -bar -nargs=? -bang -range -complete=customlist,s:Complete_preview Rpreview :call s:Preview(<bang>0,<line1>,<q-args>)
   command! -buffer -bar -nargs=? -bang -complete=customlist,s:Complete_environments   Rlog     :call s:Log(<bang>0,<q-args>)
@@ -2126,7 +2127,7 @@ function! s:RailsIncludefind(str,...)
 endfunction
 
 " }}}1
-" File Finders {{{1
+" Projection Commands {{{1
 
 function! s:addfilecmds(type)
   let l = s:sub(a:type,'^.','\l&')
@@ -2136,8 +2137,7 @@ function! s:addfilecmds(type)
   endfor
 endfunction
 
-function! s:BufFinderCommands()
-  command! -buffer -bar -nargs=+ Rnavcommand :call s:Navcommand(<bang>0,<f-args>)
+function! s:BufProjectionCommands()
   call s:define_navcommand('environment', {
         \ 'prefix': 'config/environments/',
         \ 'default': ['config/application.rb', 'config/environment.rb']})
@@ -3998,7 +3998,6 @@ function! s:AddParenExpand(abbr,expn,...)
 endfunction
 
 function! s:BufAbbreviations()
-  command! -buffer -bar -nargs=* -bang Rabbrev :call s:Abbrev(<bang>0,<f-args>)
   " Some of these were cherry picked from the TextMate snippets
   if (type(g:rails_abbreviations) != type(0) || g:rails_abbreviations) && !exists('g:rails_no_abbreviations')
     let buffer = rails#buffer()
@@ -4351,7 +4350,6 @@ function! RailsBufInit(path)
   call s:BufSettings()
   call app.source_callback("config/rails.vim")
   call s:BufCommands()
-  call s:BufAbbreviations()
   let t = rails#buffer().type_name()
   let t = "-".t
   let f = '/'.RailsFilePath()
@@ -4367,6 +4365,8 @@ function! RailsBufInit(path)
     exe "silent doautocmd User Rails".f
   endif
   call s:BufMappings()
+  call s:BufProjectionCommands()
+  call s:BufAbbreviations()
   return b:rails_root
 endfunction
 
