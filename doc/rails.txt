@@ -747,13 +747,9 @@ syntax group is used.  The list of assertions can be refreshed with
 |:Rrefresh|.
 
 						*rails-syntax-strings*
-In the following line of code, the "?" in the conditions clause and the "ASC"
-in the order clause will be highlighted: >
-  Post.find(:all, :conditions => ["body like ?","%e%"], :order => "title ASC")
-<
 A string literal using %Q<> or %<> delimiters will have its contents
 highlighted as HTML.  This is sometimes useful when writing helpers. >
-  link = %<<a href="http://www.vim.org">Vim</a>>
+  link = %<<a href="http://www.vim.org">Vim</a>>.html_safe
 <
 						*rails-syntax-yaml*
 YAML syntax highlighting has been extended to highlight eRuby, which can be
