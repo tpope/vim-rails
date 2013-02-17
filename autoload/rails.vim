@@ -4372,7 +4372,7 @@ function! s:SetBasePath()
 
   let path = ['lib', 'vendor']
   let path += self.app().config('path_additions', [])
-  let path += ['app/controllers', 'app/helpers', 'app/mailers', 'app/models', 'app/*', 'app/models/concerns', 'app/controllers/concerns']
+  let path += ['app/models/concerns', 'app/controllers/concerns', 'app/controllers', 'app/helpers', 'app/mailers', 'app/models', 'app/*']
   let path += ['app/views']
   if self.controller_name() != ''
     let path += ['app/views/'.self.controller_name(), 'public']
@@ -4385,7 +4385,7 @@ function! s:SetBasePath()
   endif
   let path += ['vendor/plugins/*/lib', 'vendor/plugins/*/test', 'vendor/rails/*/lib', 'vendor/rails/*/test']
   call map(path,'self.app().path(v:val)')
-  call self.setvar('&path',(add_dot ? '.,' : '').s:pathjoin([self.app().path()],path,old_path))
+  call self.setvar('&path',(add_dot ? '.,' : '').s:pathjoin(path,old_path))
 endfunction
 
 function! s:BufSettings()
