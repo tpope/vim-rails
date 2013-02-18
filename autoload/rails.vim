@@ -76,6 +76,14 @@ function! s:rquote(str)
   endif
 endfunction
 
+function! s:fnameescape(file) abort
+  if exists('*fnameescape')
+    return fnameescape(a:file)
+  else
+    return escape(a:file," \t\n*?[{`$\\%#'\"|!<")
+  endif
+endfunction
+
 function! s:sname()
   return fnamemodify(s:file,':t:r')
 endfunction
@@ -2873,10 +2881,10 @@ function! s:readable_open_command(cmd, argument, name, options) dict abort
   elseif a:argument ==# '' && type(default) == type([])
     for file in default
       if self.app().has_file(file)
-        return cmd . ' ' . fnameescape(self.app().path(file))
+        return cmd . ' ' . s:fnameescape(self.app().path(file))
       endif
     endfor
-    return cmd . ' ' . fnameescape(self.app().path(a:default[0]))
+    return cmd . ' ' . s:fnameescape(self.app().path(a:default[0]))
   else
     let root = a:argument
   endif
@@ -2887,7 +2895,7 @@ function! s:readable_open_command(cmd, argument, name, options) dict abort
   for [prefix, suffix] in pairs
     let file = self.app().path(prefix . (suffix =~# '\.rb$' ? rails#underscore(root) : root) . suffix)
     if filereadable(file)
-      return cmd . ' ' . fnameescape(simplify(file)) . '|exe ' . s:sid . 'djump('.string(djump) . ')'
+      return cmd . ' ' . s:fnameescape(simplify(file)) . '|exe ' . s:sid . 'djump('.string(djump) . ')'
     endif
   endfor
   if djump !~# '^!'
@@ -2914,7 +2922,7 @@ function! s:readable_open_command(cmd, argument, name, options) dict abort
       endif
       call map(template, 'substitute(v:val, "%.", "\\=get(placeholders, submatch(0), submatch(0))", "g")')
       call map(template, 's:gsub(v:val, "\t", "  ")')
-      return cmd . ' ' . fnameescape(simplify(file)) . '|call setline(1, '.string(template).')' . '|set nomod'
+      return cmd . ' ' . s:fnameescape(simplify(file)) . '|call setline(1, '.string(template).')' . '|set nomod'
     endif
   endfor
   return 'echoerr '.string("Couldn't find destination directory for ".a:name.' '.a:argument)
@@ -3282,7 +3290,7 @@ function! s:Extract(bang,...) range abort
   endif
   let ft = &ft
   let shortout = fnamemodify(out,':.')
-  silent execute 'split '.fnameescape(shortout)
+  silent execute 'split '.s:fnameescape(shortout)
   silent %delete _
   let &ft = ft
   let @@ = partial
@@ -3310,7 +3318,7 @@ function! s:RubyExtract(bang, root, before, name) range abort
   if !isdirectory(fnamemodify(out, ':h'))
     call mkdir(fnamemodify(out, ':h'), 'p')
   endif
-  execute 'split '.fnameescape(out)
+  execute 'split '.s:fnameescape(out)
   silent %delete_
   call setline(1, ['module '.rails#camelize(a:name)] + a:before + content + ['end'])
 endfunction
