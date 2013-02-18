@@ -2402,6 +2402,9 @@ function! s:define_navcommand(name, projection) abort
   if !has_key(projection, 'format')
     let projection.prefix = s:split(get(projection, 'prefix', []))
     let projection.suffix = s:split(get(projection, 'suffix', ['.rb']))
+    if empty(projection.prefix)
+      return
+    endif
   endif
   if has_key(projection, 'affinity') && empty(projection.default)
     let projection.default = projection.affinity . '()'
