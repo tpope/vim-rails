@@ -4385,7 +4385,7 @@ function! s:SetBasePath()
   endif
   let path += ['vendor/plugins/*/lib', 'vendor/plugins/*/test', 'vendor/rails/*/lib', 'vendor/rails/*/test']
   call map(path,'self.app().path(v:val)')
-  call self.setvar('&path',(add_dot ? '.,' : '').s:pathjoin(path,old_path))
+  call self.setvar('&path',(add_dot ? '.,' : '').s:pathjoin(path, [self.app().path()], old_path))
 endfunction
 
 function! s:BufSettings()
