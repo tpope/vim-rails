@@ -37,12 +37,15 @@ function! s:startswith(string,prefix)
   return strpart(a:string, 0, strlen(a:prefix)) ==# a:prefix
 endfunction
 
-function! s:uniq(list)
-  let seen = {}
+function! s:uniq(list) abort
   let i = 0
+  let seen = {}
   while i < len(a:list)
-    if has_key(seen,a:list[i])
-      call remove(a:list, i)
+    if (a:list[i] ==# '' && exists('empty')) || has_key(seen,a:list[i])
+      call remove(a:list,i)
+    elseif a:list[i] ==# ''
+      let i += 1
+      let empty = 1
     else
       let seen[a:list[i]] = 1
       let i += 1
