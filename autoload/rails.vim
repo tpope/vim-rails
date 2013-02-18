@@ -2569,7 +2569,8 @@ function! s:localeEdit(cmd,...)
   if c =~# '\.'
     return s:edit(a:cmd,rails#app().find_file(c,'config/locales',[],'config/locales/'.c))
   else
-    return s:findedit(a:cmd,rails#app().find_file(c,'config/locales',['.yml','.rb'],'config/locales/'.c))
+    return rails#buffer().open_command(a:cmd, c, 'locale', {
+          \ 'format': ['config/locales/%s.yml', 'config/locales/%s.rb']})
   endif
 endfunction
 
