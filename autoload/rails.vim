@@ -2406,7 +2406,10 @@ function! s:define_navcommand(name, command) abort
   if has_key(command, 'affinity') && command.default ==# ''
     let command.default = command.affinity . '()'
   endif
-  let name = s:gsub(a:name, ' ', '')
+  let name = get(command, 'command', s:gsub(a:name, ' ', ''))
+  if empty(name)
+    return
+  endif
   if name !~# '^[a-z]\+$'
     return s:error("E182: Invalid command name ".name)
   endif
