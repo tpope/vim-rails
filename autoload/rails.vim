@@ -2991,9 +2991,8 @@ function! s:Alternate(cmd,line1,line2,count,...)
       return call('s:Edit',[1,a:cmd]+a:000)
     endif
   else
-    let file = s:getopt(a:count ? 'related' : 'alternate', 'bl')
-    if empty(file)
-      unlet! file
+    let file = [s:getopt(a:count ? 'related' : 'alternate', 'bl')]
+    if empty(file[0])
       let file = rails#buffer().alternate(a:count)
     endif
     if !empty(file)
@@ -3088,8 +3087,12 @@ function! s:readable_alternate(...) dict abort
   if root !=# '' && has_key(projection, 'alternate')
     return map(s:split(projection.alternate), 'substitute(v:val, "%.", "\\=get(placeholders, submatch(0), submatch(0))", "g")')
   endif
-  if f =~# '^\<config/environments/'
+  if f =~# '^config/environments/'
     return ['config/application.rb', 'config/environment.rb']
+  elseif f =~# '\.example\.yml$\|\.yml\.example$'
+    return [s:sub(f, '\.example\.yml$|\.yml\.example$', '.yml')]
+  elseif f =~# '\.yml$'
+    return [s:sub(f, '\.yml$', '\.example.yml'), f . '.example']
   elseif f =~# '^README\%(\.\w\+\)\=$'
     return ['config/database.yml']
   elseif f ==# 'config/routes.rb'
@@ -3103,20 +3106,22 @@ function! s:readable_alternate(...) dict abort
   elseif f =~# '^db/migrate/'
     let migrations = sort(self.app().relglob('db/migrate/','*','.rb'))
     let me = matchstr(f,'\<db/migrate/\zs.*\ze\.rb$')
-    if !exists('l:lastmethod') || lastmethod == 'down'
+    if !exists('lastmethod') || lastmethod == 'down' || (a:0 && a:1 == 1)
       let candidates = reverse(filter(copy(migrations),'v:val < me'))
       let migration = "db/migrate/".get(candidates,0,migrations[-1]).".rb"
     else
       let candidates = filter(copy(migrations),'v:val > me')
       let migration = "db/migrate/".get(candidates,0,migrations[0]).".rb"
     endif
-    return [migration . (exists('l:lastmethod') && lastmethod != '' ? '#'.lastmethod : '')]
+    return [migration . (exists('lastmethod') && !empty(lastmethod) ? '#'.lastmethod : '')]
   elseif f =~# '\<application\.js$'
     return ['app/helpers/application_helper.rb']
   elseif self.type_name('javascript')
-    return ['public/javascripts/application.js']
-  elseif self.type_name('db/schema')
-    return self.app().migration('')
+    return ['app/assets/javascripts/application.js', 'public/javascripts/application.js']
+  elseif self.type_name('db-schema') || f =~# '^db/\w\+_structure.sql$'
+    return ['db/seeds.rb']
+  elseif f ==# 'db/seeds.rb'
+    return ['db/schema.rb', 'db/'.s:environment().'_structure.sql']
   elseif self.type_name('view')
     let spec1 = fnamemodify(f,':s?\<app/?spec/?')."_spec.rb"
     let spec2 = fnamemodify(f,':r:s?\<app/?spec/?')."_spec.rb"
@@ -3151,54 +3156,43 @@ function! s:readable_alternate(...) dict abort
     return ['test/models/' . self.model_name() . '_test.rb', 'test/unit/' . self.model_name() . '_test.rb']
   elseif self.type_name('test')
     let app_file = s:sub(s:sub(f, '<test/', 'app/'), '_test\.rb$', '.rb')
-    if self.type_name('test-unit')
-      let app_file = s:sub(app_file,'<app/unit/helpers/','app/helpers/')
+    if app_file =~# '\<app/unit/helpers/'
+      return [s:sub(app_file,'<app/unit/helpers/','app/helpers/')]
+    elseif app_file =~# '\<app/functional/.*_controller\.rb'
+      return [s:sub(app_file,'<app/functional/','app/controllers/')]
+    elseif app_file =~# '\<app/unit/'
       return [s:sub(app_file,'<app/unit/','app/models/'),
             \ s:sub(app_file,'<app/unit/','lib/'),
             \ app_file]
-    elseif self.type_name('test-functional')
-      if app_file =~# '_api\.rb'
-        return [s:sub(file, '<app/functional/', 'app/apis/'), app_file]
-      elseif app_file =~# '_controller\.rb'
-        return [s:sub(file, '<app/functional/', 'app/controllers/'), app_file]
-      endif
+    elseif app_file =~# '\<app/functional'
+      return [s:sub(file, '\<app/functional/', 'app/controllers/'),
+            \ s:sub(file, '\<app/functional/', 'app/mailers/'),
+            \ app_file]
+    else
+      return [app_file]
     endif
-    return [app_file]
   elseif self.type_name('spec-view')
-    return s:sub(s:sub(f,'<spec/','app/'),'_spec\.rb$','')
+    return [s:sub(s:sub(f,'<spec/','app/'),'_spec\.rb$','')]
   elseif self.type_name('spec-lib')
     return [s:sub(s:sub(f,'<spec/',''),'_spec\.rb$','')]
   elseif self.type_name('spec')
     return [s:sub(s:sub(f,'<spec/','app/'),'_spec\.rb$','')]
-  elseif fnamemodify(f,":e") == "rb"
+  elseif f =~# '\<app/.*\.rb'
     let file = fnamemodify(f,":r")
     let test_file = s:sub(file,'<app/','test/') . '_test.rb'
     let spec_file = s:sub(file,'<app/','spec/') . '_spec.rb'
-    if self.type_name('helper')
-      return [test_file,
-            \ s:sub(test_file,'<test/helpers/','test/unit/helpers/'),
-            \ spec_file]
-    elseif self.type_name('model')
-      return [test_file,
-            \ s:sub(test_file,'<test/models/','test/unit/'),
-            \ spec_file]
-    elseif self.type_name('controller')
-      return [test_file,
-            \ s:sub(file,'<app/controllers/','test/functional/'),
-            \ spec_file]
-    elseif self.type_name('mailer')
-      return [test_file,
-            \ s:sub(test_file,'<test/m%(ailer|odel)s/','test/unit/'),
-            \ spec_file]
-    else
-      return ''
-    endif
+    let old_test_file = s:sub(s:sub(s:sub(s:sub(test_file,
+          \ '<test/helpers/', 'test/unit/helpers/'),
+          \ '<test/models/', 'test/unit/'),
+          \ '<test/mailers/', 'test/functional/'),
+          \ '<test/contollers/', 'test/functional/')
+    return s:uniq([test_file, old_test_file, spec_file])
   else
-    return ''
+    return []
   endif
 endfunction
 
-call s:add_methods('readable',['alternate'])
+call s:add_methods('readable', ['alternate'])
 
 " }}}1
 " Extraction {{{1
