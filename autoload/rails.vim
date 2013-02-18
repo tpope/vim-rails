@@ -3848,11 +3848,6 @@ function! s:BufMappings()
   if !hasmapto("<Plug>RailsTabFind")
     nmap <buffer> <C-W>gf         <Plug>RailsTabFind
   endif
-  if exists("$CREAM")
-    imap <buffer> <C-CR> <C-O><Plug>RailsFind
-    imap <buffer> <M-[>  <C-O><Plug>RailsAlternate
-    imap <buffer> <M-]>  <C-O><Plug>RailsRelated
-  endif
 endfunction
 
 " }}}1

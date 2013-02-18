@@ -644,12 +644,6 @@ inflections: crl for alternating between the singular and plural, and crt for
 altering between tableize and classify.  The latter is useful in changing
 constructs like BlogPost.all to current_user.blog_posts.all and vice versa.
 
-						*rails-cream*
-This plugin provides a few additional key bindings if it is running under
-Cream, the user friendly editor which uses Vim as a back-end.  Ctrl+Enter
-finds the file under the cursor (as in |rails-gf|), and Alt+[ and Alt+] find
-the alternate (|rails-alternate|) and related (|rails-related|) files.
-
 						*rails-rspec*
 The presence of a spec directory causes several additional behaviors to
 activate.  :A knows about specs and will jump to them (but Test::Unit files
