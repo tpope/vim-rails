@@ -2909,6 +2909,9 @@ function! s:readable_open_command(cmd, argument, name, options) dict abort
             \ '%S': rails#camelize(root),
             \ '%h': toupper(root[0]) . tr(rails#underscore(root), '_', ' ')[1:-1],
             \ '%%': '%'}
+      if suffix =~# '\.js\>'
+        let placeholders['%S'] = s:gsub(placeholders['%S'], '::', '.')
+      endif
       call map(template, 'substitute(v:val, "%.", "\\=get(placeholders, submatch(0), submatch(0))", "g")')
       call map(template, 's:gsub(v:val, "\t", "  ")')
       return cmd . ' ' . fnameescape(simplify(file)) . '|call setline(1, '.string(template).')' . '|set nomod'
@@ -2977,10 +2980,11 @@ function! s:Alternate(cmd,line1,line2,count,...)
     endif
   else
     let file = s:getopt(a:count ? 'related' : 'alternate', 'bl')
-    if file == ''
-      let file = rails#buffer().related(a:count)
+    if empty(file)
+      unlet! file
+      let file = rails#buffer().alternate(a:count)
     endif
-    if file != ''
+    if !empty(file)
       call s:findedit(a:cmd,file)
     else
       call s:warn("No alternate file is defined")
@@ -3004,7 +3008,7 @@ function! s:Complete_related(A,L,P)
   endif
 endfunction
 
-function! s:readable_related(...) dict abort
+function! s:readable_alternate(...) dict abort
   let f = self.name()
   let [root, projection] = s:find_projection(values(self.app().projections()), f)
   let placeholders = {
@@ -3019,77 +3023,72 @@ function! s:readable_related(...) dict abort
         call filter(related, 'v:val !~# "%m"')
       endif
       if !empty(related)
-        call map(related, 'substitute(v:val, "%.", "\\=get(placeholders, submatch(0), submatch(0))", "g")')
-        return s:gsub(join(related, "\n"), '\%m', lastmethod)
+        return map(related, 's:gsub(substitute(v:val, "%.", "\\=get(placeholders, submatch(0), submatch(0))", "g"), "\\%m", lastmethod)')
       endif
     endif
     if self.type_name('controller','mailer') && lastmethod != ""
       let view = self.resolve_view(lastmethod, line('.'))
       if view !=# ''
-        return view
+        return [view]
       else
-        return s:sub(s:sub(s:sub(f,'/application%(_controller)=\.rb$','/shared_controller.rb'),'/%(controllers|models|mailers)/','/views/'),'%(_controller)=\.rb$','/'.lastmethod)
+        return [s:sub(s:sub(s:sub(f,'/application%(_controller)=\.rb$','/shared_controller.rb'),'/%(controllers|models|mailers)/','/views/'),'%(_controller)=\.rb$','/'.lastmethod)]
       endif
-    elseif f =~ '\<config/environments/'
-      return "config/database.yml#". fnamemodify(f,':t:r')
-    elseif f =~ '\<config/database\.yml$'
+    elseif f =~# '^config/environments/'
+      return ['config/database.yml#'. fnamemodify(f,':t:r')]
+    elseif f ==# 'config/database.yml'
       if lastmethod != ""
-        return "config/environments/".lastmethod.".rb"
+        return ['config/environments/'.lastmethod.'.rb']
       else
-        return "config/application.rb\nconfig/environment.rb"
+        return ['config/application.rb', 'config/environment.rb']
       endif
-    elseif f =~ '\<config/routes\.rb$'      | return "config/database.yml"
-    elseif f =~ '\<config/\%(application\|environment\)\.rb$'
-      return "config/routes.rb"
     elseif self.type_name('view-layout')
-      return s:sub(s:sub(f,'/views/','/controllers/'),'/layouts/(\k+)\..*$','/\1_controller.rb')
+      return [s:sub(s:sub(f,'/views/','/controllers/'),'/layouts/(\k+)\..*$','/\1_controller.rb')]
     elseif self.type_name('view')
       let controller  = s:sub(s:sub(f,'/views/','/controllers/'),'/(\k+%(\.\k+)=)\..*$','_controller.rb#\1')
       let controller2 = s:sub(s:sub(f,'/views/','/controllers/'),'/(\k+%(\.\k+)=)\..*$','.rb#\1')
       let mailer      = s:sub(s:sub(f,'/views/','/mailers/'),'/(\k+%(\.\k+)=)\..*$','.rb#\1')
       let model       = s:sub(s:sub(f,'/views/','/models/'),'/(\k+)\..*$','.rb#\1')
       if self.app().has_file(s:sub(controller,'#.{-}$',''))
-        return controller
+        return [controller]
       elseif self.app().has_file(s:sub(controller2,'#.{-}$',''))
-        return controller2
+        return [controller2]
       elseif self.app().has_file(s:sub(mailer,'#.{-}$',''))
-        return mailer
+        return [mailer]
       elseif self.app().has_file(s:sub(model,'#.{-}$','')) || model =~ '_mailer\.rb#'
-        return model
+        return [model]
       else
-        return controller
+        return [controller]
       endif
     elseif self.type_name('controller')
-      return s:sub(s:sub(f,'/controllers/','/helpers/'),'%(_controller)=\.rb$','_helper.rb')
+      return [s:sub(s:sub(f,'/controllers/','/helpers/'),'%(_controller)=\.rb$','_helper.rb')]
     elseif self.type_name('model-arb')
       let table_name = matchstr(join(self.getline(1,50),"\n"),'\n\s*self\.table_name\s*=\s*[:"'']\zs\w\+')
       if table_name == ''
         let table_name = rails#pluralize(s:gsub(s:sub(fnamemodify(f,':r'),'.{-}<app/models/',''),'/','_'))
       endif
-      return self.app().migration('0#'.table_name)
+      return ['db/schema.rb#'.table_name]
     elseif self.type_name('model-aro')
-      return s:sub(f,'_observer\.rb$','.rb')
-    elseif self.type_name('db-schema')
-      return self.app().migration(1)
+      return [s:sub(f,'_observer\.rb$','.rb')]
+    elseif self.type_name('db-schema') && !empty(lastmethod)
+      return ['app/models/' . rails#singularize(lastmethod) . '.rb']
     endif
   endif
   if root !=# '' && has_key(projection, 'alternate')
-    return join(map(s:split(projection.alternate), 'substitute(v:val, "%.", "\\=get(placeholders, submatch(0), submatch(0))", "g")'), "\n")
+    return map(s:split(projection.alternate), 'substitute(v:val, "%.", "\\=get(placeholders, submatch(0), submatch(0))", "g")')
   endif
-  if f =~ '\<config/environments/'
-    return "config/application.rb\nconfig/environment.rb"
-  elseif f ==# 'README' || f ==# 'README.rdoc'
-    return "config/database.yml"
-  elseif f =~ '\<config/database\.yml$'   | return "config/routes.rb"
-  elseif f =~ '\<config/routes\.rb$'
-    return "config/application.rb\nconfig/environment.rb"
-  elseif f =~ '\<config/\%(application\|environment\)\.rb$'
-    return "config/database.yml"
+  if f =~# '^\<config/environments/'
+    return ['config/application.rb', 'config/environment.rb']
+  elseif f =~# '^README\%(\.\w\+\)\=$'
+    return ['config/database.yml']
+  elseif f ==# 'config/routes.rb'
+    return ['config/application.rb', 'config/environment.rb']
+  elseif f =~# '^config/\%(application\|environment\)\.rb$'
+    return ['config/routes.rb']
   elseif f ==# 'Gemfile'
-    return 'Gemfile.lock'
+    return ['Gemfile.lock']
   elseif f ==# 'Gemfile.lock'
-    return 'Gemfile'
-  elseif f =~ '\<db/migrate/'
+    return ['Gemfile']
+  elseif f =~# '^db/migrate/'
     let migrations = sort(self.app().relglob('db/migrate/','*','.rb'))
     let me = matchstr(f,'\<db/migrate/\zs.*\ze\.rb$')
     if !exists('l:lastmethod') || lastmethod == 'down'
@@ -3099,11 +3098,11 @@ function! s:readable_related(...) dict abort
       let candidates = filter(copy(migrations),'v:val > me')
       let migration = "db/migrate/".get(candidates,0,migrations[0]).".rb"
     endif
-    return migration . (exists('l:lastmethod') && lastmethod != '' ? '#'.lastmethod : '')
-  elseif f =~ '\<application\.js$'
-    return "app/helpers/application_helper.rb"
+    return [migration . (exists('l:lastmethod') && lastmethod != '' ? '#'.lastmethod : '')]
+  elseif f =~# '\<application\.js$'
+    return ['app/helpers/application_helper.rb']
   elseif self.type_name('javascript')
-    return "public/javascripts/application.js"
+    return ['public/javascripts/application.js']
   elseif self.type_name('db/schema')
     return self.app().migration('')
   elseif self.type_name('view')
@@ -3111,99 +3110,83 @@ function! s:readable_related(...) dict abort
     let spec2 = fnamemodify(f,':r:s?\<app/?spec/?')."_spec.rb"
     let spec3 = fnamemodify(f,':r:r:s?\<app/?spec/?')."_spec.rb"
     if self.app().has_file(spec1)
-      return spec1
+      return [spec1]
     elseif self.app().has_file(spec2)
-      return spec2
+      return [spec2]
     elseif self.app().has_file(spec3)
-      return spec3
+      return [spec3]
     elseif self.app().has('spec')
-      return spec2
+      return [spec2]
     else
       if self.type_name('view-layout')
         let dest = fnamemodify(f,':r:s?/layouts\>??').'/layout.'.fnamemodify(f,':e')
       else
         let dest = f
       endif
-      return s:sub(s:sub(dest,'<app/views/','test/functional/'),'/[^/]*$','_controller_test.rb')
+      return [s:sub(s:sub(dest,'<app/views/','test/functional/'),'/[^/]*$','_controller_test.rb')]
     endif
   elseif self.type_name('controller-api')
-    let api = s:sub(s:sub(f,'/controllers/','/apis/'),'_controller\.rb$','_api.rb')
-    return api
+    return [s:sub(s:sub(f,'/controllers/','/apis/'),'_controller\.rb$','_api.rb')]
   elseif self.type_name('api')
-    return s:sub(s:sub(f,'/apis/','/controllers/'),'_api\.rb$','_controller.rb')
+    return [s:sub(s:sub(f,'/apis/','/controllers/'),'_api\.rb$','_controller.rb')]
+  elseif self.type_name('lib')
+    return [s:sub(f,'<lib/(.*)\.rb$','test/lib/\1_test.rb'),
+          \ s:sub(f,'<lib/(.*)\.rb$','test/unit/\1_test.rb'),
+          \ s:sub(f,'<lib/(.*)\.rb$','spec/lib/\1_spec.rb')]
   elseif self.type_name('fixtures') && f =~ '\<spec/'
-    let file = rails#singularize(fnamemodify(f,":t:r")).'_spec.rb'
-    return file
+    return ['spec/models/' . self.model_name() . '_spec.rb']
   elseif self.type_name('fixtures')
-    let file = rails#singularize(fnamemodify(f,":t:r")).'_test.rb'
-    return file
-  elseif f == ''
-    call s:warn("No filename present")
-  elseif f =~ '\<test/unit/routing_test\.rb$'
-    return 'config/routes.rb'
+    return ['test/models/' . self.model_name() . '_test.rb', 'test/unit/' . self.model_name() . '_test.rb']
+  elseif self.type_name('test')
+    let app_file = s:sub(s:sub(f, '<test/', 'app/'), '_test\.rb$', '.rb')
+    if self.type_name('test-unit')
+      let app_file = s:sub(app_file,'<app/unit/helpers/','app/helpers/')
+      return [s:sub(app_file,'<app/unit/','app/models/'),
+            \ s:sub(app_file,'<app/unit/','lib/'),
+            \ app_file]
+    elseif self.type_name('test-functional')
+      if app_file =~# '_api\.rb'
+        return [s:sub(file, '<app/functional/', 'app/apis/'), app_file]
+      elseif app_file =~# '_controller\.rb'
+        return [s:sub(file, '<app/functional/', 'app/controllers/'), app_file]
+      endif
+    endif
+    return [app_file]
   elseif self.type_name('spec-view')
     return s:sub(s:sub(f,'<spec/','app/'),'_spec\.rb$','')
+  elseif self.type_name('spec-lib')
+    return [s:sub(s:sub(f,'<spec/',''),'_spec\.rb$','')]
+  elseif self.type_name('spec')
+    return [s:sub(s:sub(f,'<spec/','app/'),'_spec\.rb$','')]
   elseif fnamemodify(f,":e") == "rb"
     let file = fnamemodify(f,":r")
-    if file =~ '_\%(test\|spec\)$'
-      let file = s:sub(file,'_%(test|spec)$','.rb')
-      let app_and_test_swap = s:sub(file, '<%(test|spec)/', 'app/')
-    else
-      let file .= '_test.rb'
-      let app_and_test_swap = s:sub(file,'<app/','test/')
-    endif
+    let test_file = s:sub(file,'<app/','test/') . '_test.rb'
+    let spec_file = s:sub(file,'<app/','spec/') . '_spec.rb'
     if self.type_name('helper')
-      return app_and_test_swap."\n".
-            \s:sub(file,'<app/helpers/','test/unit/helpers/')."\n".
-            \s:sub(s:sub(file,'_test\.rb$','_spec.rb'),'<app/helpers/','spec/helpers/')
+      return [test_file,
+            \ s:sub(test_file,'<test/helpers/','test/unit/helpers/'),
+            \ spec_file]
     elseif self.type_name('model')
-      return app_and_test_swap."\n".
-            \s:sub(file,'<app/models/','test/unit/')."\n".
-            \s:sub(s:sub(file,'_test\.rb$','_spec.rb'),'<app/models/','spec/models/')
+      return [test_file,
+            \ s:sub(test_file,'<test/models/','test/unit/'),
+            \ spec_file]
     elseif self.type_name('controller')
-      return app_and_test_swap."\n".
-            \s:sub(file,'<app/controllers/','test/functional/')."\n".
-            \s:sub(s:sub(file,'_test\.rb$','_spec.rb'),'app/controllers/','spec/controllers/')
+      return [test_file,
+            \ s:sub(file,'<app/controllers/','test/functional/'),
+            \ spec_file]
     elseif self.type_name('mailer')
-      return app_and_test_swap."\n".
-            \s:sub(file,'<app/m%(ailer|odel)s/','test/unit/')."\n".
-            \s:sub(s:sub(file,'_test\.rb$','_spec.rb'),'<app/','spec/')
-    elseif self.type_name('test-unit')
-      let app_helpered = s:sub(file,'test/unit/helpers/','app/helpers/')
-      return app_and_test_swap."\n".
-            \s:sub(app_helpered,'<test/','app/')."\n".
-            \s:sub(file,'test/unit/','lib/')
-    elseif self.type_name('test-functional')
-      if file =~ '_api\.rb'
-        return s:sub(file,'<test/functional/','app/apis/')
-      elseif file =~ '_controller\.rb'
-        return s:sub(file,'<test/functional/','app/controllers/')."\n".
-              \app_and_test_swap
-      else
-        return s:sub(file,'<test/functional/','')
-      endif
-    elseif self.type_name('spec-lib')
-      return s:sub(file,'<spec/','')
-    elseif self.type_name('lib')
-      return s:sub(f,'<lib/(.*)\.rb$','test/unit/\1_test.rb')."\n".
-            \s:sub(f,'<lib/(.*)\.rb$','spec/lib/\1_spec.rb')
-    elseif self.type_name('spec')
-      return app_and_test_swap
-    elseif file =~ '\<vendor/.*/lib/'
-      return s:sub(file,'<vendor/.{-}/\zslib/','test/')
-    elseif file =~ '\<vendor/.*/test/'
-      return s:sub(file,'<vendor/.{-}/\zstest/','lib/')
+      return [test_file,
+            \ s:sub(test_file,'<test/m%(ailer|odel)s/','test/unit/'),
+            \ spec_file]
     else
-      return fnamemodify(file,':t')."\n".
-            \app_and_test_swap."\n".
-            \s:sub(s:sub(app_and_test_swap,'^test','spec'), '_test\.rb$', '_spec.rb')
+      return ''
     endif
   else
-    return ""
+    return ''
   endif
 endfunction
 
-call s:add_methods('readable',['related'])
+call s:add_methods('readable',['alternate'])
 
 " }}}1
 " Extraction {{{1
