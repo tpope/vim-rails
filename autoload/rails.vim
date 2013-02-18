@@ -1460,8 +1460,8 @@ endfunction
 function! s:BufScriptWrappers()
   command! -buffer -bang -bar -nargs=* -complete=customlist,s:Complete_script   Rscript       :execute rails#app().script_command(<bang>0,<f-args>)
   command! -buffer -bang -bar -nargs=* -complete=customlist,s:Complete_script   Rails         :execute rails#app().script_command(<bang>0,<f-args>)
-  command! -buffer -bar -nargs=*       -complete=customlist,s:Complete_generate Rgenerate     :execute rails#app().generate_command(<bang>0,<f-args>)
-  command! -buffer -bar -nargs=*       -complete=customlist,s:Complete_destroy  Rdestroy      :execute rails#app().destroy_command(<bang>0,<f-args>)
+  command! -buffer -bang -bar -nargs=* -complete=customlist,s:Complete_generate Rgenerate     :execute rails#app().generator_command(<bang>0,'generate',<f-args>)
+  command! -buffer -bar -nargs=*       -complete=customlist,s:Complete_destroy  Rdestroy      :execute rails#app().generator_command(1,'destroy',<f-args>)
   command! -buffer -bar -nargs=? -bang -complete=customlist,s:Complete_server   Rserver       :execute rails#app().server_command(<bang>0,<q-args>)
   command! -buffer -bang -nargs=1 -range=0 -complete=customlist,s:Complete_ruby Rrunner       :execute rails#app().runner_command(<bang>0 ? -2 : (<count>==<line2>?<count>:-1),<f-args>)
   command! -buffer       -nargs=1 -range=0 -complete=customlist,s:Complete_ruby Rp            :execute rails#app().runner_command(<count>==<line2>?<count>:-1,'p begin '.<f-args>.' end')
@@ -1581,58 +1581,43 @@ function! s:app_server_command(bang,arg) dict
   return ''
 endfunction
 
-function! s:app_destroy_command(bang,...) dict
-  if a:0 == 0
-    return self.execute_script_command('destroy')
-  elseif a:0 == 1
-    return self.execute_script_command('destroy '.s:rquote(a:1))
-  endif
-  let str = ""
-  let c = 1
-  while c <= a:0
-    let str .= " " . s:rquote(a:{c})
-    let c += 1
-  endwhile
-  call self.execute_script_command('destroy'.str)
+function! s:color_efm(pre, before, after)
+   return a:pre . '%\S%#  %#' . a:before . "\e[0m %#" . a:after . ',' .
+         \ a:pre . '  %#'.a:before.' %#'.a:after . ','
+endfunction
+
+let s:efm_generate =
+      \ s:color_efm('%-G', 'invoke', '%f') .
+      \ s:color_efm('%-G', 'conflict', '%f') .
+      \ s:color_efm('%-G', 'run', '%f') .
+      \ s:color_efm('Overwrite%.%#', '%m', '%f') .
+      \ s:color_efm('', '%m', '%f') .
+      \ '%-G%.%#'
+
+function! s:app_generator_command(bang,...) dict
   call self.cache.clear('user_classes')
-  return ''
-endfunction
-
-function! s:app_generate_command(bang,...) dict
-  if a:0 == 0
-    return self.execute_script_command('generate')
-  elseif a:0 == 1
-    return self.execute_script_command('generate '.s:rquote(a:1))
-  endif
+  call self.cache.clear('features')
   let cmd = join(map(copy(a:000),'s:rquote(v:val)'),' ')
-  if cmd !~ '-p\>' && cmd !~ '--pretend\>'
-    let execstr = self.script_shell_command('generate '.cmd.' -p -f')
+  let old_makeprg = &l:makeprg
+  let old_errorformat = &l:errorformat
+  try
+    let &l:makeprg = self.script_shell_command(cmd)
+    let &l:errorformat = s:efm_generate
     call s:push_chdir(1)
-    try
-      let res = system(execstr)
-    finally
-      call s:pop_command()
-    endtry
-    let junk = '\%(\e\[[0-9;]*m\)\='
-    let file = matchstr(res,junk.'\s\+\%(create\|force\)'.junk.'\s\+\zs\f\+\.rb\ze\n')
-    if file == ""
-      let file = matchstr(res,junk.'\s\+\%(identical\)'.junk.'\s\+\zs\f\+\.rb\ze\n')
+    if a:bang
+      make!
+    else
+      make
     endif
-  else
-    let file = ""
-  endif
-  if !self.execute_script_command('generate '.cmd) && file != ''
-    call self.cache.clear('user_classes')
-    call self.cache.clear('features')
-    if file =~ '^db/migrate/\d\d\d\d'
-      let file = get(self.relglob('',s:sub(file,'\d+','[0-9]*[0-9]')),-1,file)
-    endif
-    edit `=self.path(file)`
-  endif
+  finally
+    call s:pop_command()
+    let &l:errorformat = old_errorformat
+    let &l:makeprg = old_makeprg
+  endtry
   return ''
 endfunction
 
-call s:add_methods('app', ['generators','script_command','runner_command','server_command','destroy_command','generate_command'])
+call s:add_methods('app', ['generators','script_command','runner_command','server_command','generator_command'])
 
 function! s:Complete_script(ArgLead,CmdLine,P)
   let cmd = s:sub(a:CmdLine,'^\u\w*\s+','')
@@ -1658,8 +1643,10 @@ function! s:Complete_script(ArgLead,CmdLine,P)
             \ rails#app().relglob('features/', '**/*', '.feature'), a:ArgLead)
     elseif target ==# 'migration' || target ==# 'session_migration'
       return s:migrationList(a:ArgLead,"","")
+    elseif target ==# 'mailer'
+      return s:mailerList(a:ArgLead,"","")
     elseif target =~# '^\w*\%(model\|resource\)$' || target =~# '\w*scaffold\%(_controller\)\=$' || target ==# 'mailer'
-      return s:modelList(a:ArgLead,"","")
+      return s:completion_filter(rails#app().relglob('app/models/','**/*','.rb'), a:ArgLead)
     else
       return []
     endif

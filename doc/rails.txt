@@ -498,11 +498,13 @@ A limited amount of completion with <Tab> is supported.
 :[range]Ry  {code}	output).
 
 						*rails-:Rgenerate*
-:Rgenerate {options}	Calls script/generate {options}, and then edits the
-			first file generated.
+:Rgenerate {options}	Calls rails generate {options} and loads the
+			generated files into the quickfix list.  Use ! to
+			surpress jumping to the first file.
 
 						*rails-:Rdestroy*
-:Rdestroy {options}	Calls script/destroy {options}.
+:Rdestroy {options}	Calls rails destroy {options} and loads the destroyed
+			files into the quickfix list.
 
 						*rails-:Rserver*
 :Rserver {options}	Launches script/server {options} in the background.
