@@ -2397,18 +2397,22 @@ function! s:Navcommand(bang,...)
   return s:define_navcommand(name, command)
 endfunction
 
-function! s:define_navcommand(name, command) abort
-  let command = extend({'default': '', 'glob': '**/*'}, a:command)
-  if !has_key(command, 'format')
-    let command.prefix = s:split(get(command, 'prefix', []))
-    let command.suffix = s:split(get(command, 'suffix', ['.rb']))
+function! s:define_navcommand(name, projection) abort
+  let projection = extend({'default': '', 'glob': '**/*'}, a:projection)
+  if !has_key(projection, 'format')
+    let projection.prefix = s:split(get(projection, 'prefix', []))
+    let projection.suffix = s:split(get(projection, 'suffix', ['.rb']))
   endif
-  if has_key(command, 'affinity') && command.default ==# ''
-    let command.default = command.affinity . '()'
+  if has_key(projection, 'affinity') && empty(projection.default)
+    let projection.default = projection.affinity . '()'
   endif
-  let name = get(command, 'command', s:gsub(a:name, ' ', ''))
-  if empty(name)
+  if get(projection, 'command', 1) =~# '^0\=$'
     return
+  endif
+  if type(get(projection, 'command', 1)) ==# type('')
+    let name = projection.command
+  else
+    let name = s:gsub(a:name, ' ', '')
   endif
   if name !~# '^[a-z]\+$'
     return s:error("E182: Invalid command name ".name)
@@ -2419,7 +2423,7 @@ function! s:define_navcommand(name, command) abort
           \ '-complete=customlist,'.s:sid.'CommandList ' .
           \ prefix . name . ' :execute s:CommandEdit(' .
           \ string((prefix =~# 'D' ? '<line1>' : '') . s:sub(prefix, '^R', '') . "<bang>") . ',' .
-          \ string(a:name) . ',' . string(command) . ',<f-args>)'
+          \ string(a:name) . ',' . string(projection) . ',<f-args>)'
   endfor
 endfunction
 
