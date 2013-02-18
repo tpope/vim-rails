@@ -4368,7 +4368,6 @@ function! s:SetBasePath()
   let transformed_path = s:pathsplit(s:pathjoin([self.app().path()]))[0]
   let add_dot = self.getvar('&path') =~# '^\.\%(,\|$\)'
   let old_path = s:pathsplit(s:sub(self.getvar('&path'),'^\.%(,|$)',''))
-  call filter(old_path,'!s:startswith(v:val,transformed_path)')
 
   let path = ['lib', 'vendor']
   let path += self.app().config('path_additions', [])
@@ -4385,7 +4384,7 @@ function! s:SetBasePath()
   endif
   let path += ['vendor/plugins/*/lib', 'vendor/plugins/*/test', 'vendor/rails/*/lib', 'vendor/rails/*/test']
   call map(path,'self.app().path(v:val)')
-  call self.setvar('&path',(add_dot ? '.,' : '').s:pathjoin(path, [self.app().path()], old_path))
+  call self.setvar('&path',(add_dot ? '.,' : '').s:pathjoin(s:uniq(path + [self.app().path()] + old_path)))
 endfunction
 
 function! s:BufSettings()
