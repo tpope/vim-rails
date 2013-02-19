@@ -119,7 +119,7 @@ augroup railsPluginDetect
   autocmd Syntax railslog if s:autoload()|call rails#log_syntax()|endif
 augroup END
 
-command! -bar -bang -nargs=* -complete=dir Rails :if s:autoload()|call rails#new_app_command(<bang>0,<f-args>)|endif
+command! -bar -bang -nargs=* -complete=dir Rails :if s:autoload()|execute rails#new_app_command(<bang>0,<f-args>)|endif
 
 " }}}1
 " abolish.vim support {{{1

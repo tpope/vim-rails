@@ -995,29 +995,52 @@ function! s:Log(bang,arg)
   endif
 endfunction
 
-function! rails#new_app_command(bang,...)
-  if a:0 == 0
-    if a:bang
-      echo msg
-    else
-      !rails
-    endif
-    return
+function! rails#new_app_command(bang,...) abort
+  if !a:0 && a:bang
+    echo "rails.vim ".g:autoloaded_rails
+  elseif !a:0 || a:1 !=# 'new'
+    return 'echoerr '.string('Usage: rails new <path>')
   endif
-  let args = map(copy(a:000),'expand(v:val)')
+
+  let args = copy(a:000)
   if a:bang
-    let args = ['--force'] + args
+    let args += ['--force']
   endif
-  exe '!rails '.join(map(copy(args),'s:rquote(v:val)'),' ')
-  for dir in args
-    if dir !~# '^-' && filereadable(dir.'/README')
-      edit `=dir.'/README'`
-      return
-    elseif dir !~# '^-' && filereadable(dir.'/README.rdoc')
-      edit `=dir.'/README.rdoc'`
-      return
+
+  if &shellpipe !~# 'tee' && index(args, '--skip') < 0 && index(args, '--force') < 0
+    let args += ['--skip']
+  endif
+
+  let temp = tempname()
+  try
+    exe '!rails' join(map(copy(args),'s:rquote(v:val)'),' ') &shellpipe temp
+  catch /^Vim:Interrupt/
+  endtry
+
+  if filereadable(expand(args[1]))
+    let lines = readfile(temp)
+    if get(lines, 0, '') =~# ' $'
+      let pos = '2cc'
+      let lines[0] .= '.'
+      call writefile(lines, temp)
+    else
+      let pos = 'cfirst'
     endif
-  endfor
+
+    let old_errorformat = &l:errorformat
+    let chdir = exists("*haslocaldir") && haslocaldir() ? 'lchdir' : 'chdir'
+    let cwd = getcwd()
+    try
+      exe chdir s:fnameescape(expand(args[1]))
+      let &l:errorformat = s:efm_generate
+      exe 'cgetfile' temp
+      exe pos
+    finally
+      let &l:errorformat = old_errorformat
+      exe chdir s:fnameescape(cwd)
+    endtry
+  endif
+  return ''
 endfunction
 
 function! s:app_tags_command() dict

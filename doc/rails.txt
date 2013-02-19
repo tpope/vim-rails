@@ -45,12 +45,12 @@ GENERAL COMMANDS				*rails-commands*
 All commands are buffer local, unless otherwise stated.  This means you must
 actually edit a file from a Rails application.
 
-						*rails-:Rails*
-:Rails new {directory}	The only global command.  Creates a new Rails
-			application in {directory}, and loads the README.  If
-			rails.vim is active for the current buffer, :Rails is
-			an alias for |:Rscript|.
+						*rails-:Rails-new*
+:Rails new {directory}	The only global command.  Invokes "rails new
+			{directory}" and loads the generated files into the
+			quickfix list.
 
+						*rails-:Rails!*
 :Rails!			Show the version of rails.vim installed.  If rails.vim
 			is active for the current buffer, also show the type
 			of Rails file detected.
@@ -472,17 +472,21 @@ The following commands are wrappers around the scripts in the script directory
 of the Rails application.  Most have extra features beyond calling the script.
 A limited amount of completion with <Tab> is supported.
 
-						*rails-:Rscript*
-:Rscript {script} {options}
-			Call ruby script/{script} {options}.  Defaults to
-			calling script/console.
 
-						*rails-:Rconsole*
-:Rconsole {options}	Obsolete. Call |:Rscript| instead.
+						*rails-:Rails*
+:Rails {command} [options]
+			Depending on the Rails version, invoke one of
+			"bin/rails {command}", "script/rails {command}", or
+			"script/{command}".
+
+						*rails-:Rscript*
+:Rscript {command} [options]
+			Deprecated alias for |:Rails| {command}.  Defaults to
+			calling |:Rails| console.
 
 						*rails-:Rrunner*
-:[range]Rrunner {code}	Executes {code} with script/runner.  Differs from
-			:Rscript runner {code} in that the code is passed as
+:[range]Rrunner {code}	Executes {code} with rails runner.  Differs from
+			:Rails runner {code} in that the code is passed as
 			one argument.  Also, |system()| is used instead of
 			|:!|.  This is to help eliminate annoying "Press
 			ENTER" prompts.  If a line number is given in the
@@ -507,7 +511,7 @@ A limited amount of completion with <Tab> is supported.
 			files into the quickfix list.
 
 						*rails-:Rserver*
-:Rserver {options}	Launches script/server {options} in the background.
+:Rserver {options}	Launches rails server {options} in the background.
 			On win32, this means |!start|.  If running inside
 			screen or tmux, a new window inside the current
 			session is created.  Otherwise, the --daemon option is
