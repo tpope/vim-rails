@@ -1495,8 +1495,10 @@ function! s:app_script_command(bang,...) dict
   let msg = "rails.vim ".g:autoloaded_rails
   if a:0 == 0 && a:bang && rails#buffer().type_name() == ''
     echo msg." (Rails)"
+    return
   elseif a:0 == 0 && a:bang
     echo msg." (Rails-".rails#buffer().type_name().")"
+    return
   endif
   let str = ""
   let cmd = a:0 ? a:1 : "console"
