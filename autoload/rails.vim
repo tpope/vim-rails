@@ -869,6 +869,8 @@ function! s:app_script_shell_command(cmd) dict abort
     let cmd = 'script/rails '.a:cmd
   elseif self.has_file('script/' . matchstr(a:cmd, '\w\+'))
     let cmd = 'script/'.a:cmd
+  elseif self.has_file('bin/rails')
+    let cmd = 'bin/rails '.a:cmd
   elseif self.has('bundler')
     return 'bundle exec rails ' . a:cmd
   else
