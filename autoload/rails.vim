@@ -1163,6 +1163,7 @@ function! s:Rake(bang,lnum,arg)
   let old_makeprg = &l:makeprg
   let old_errorformat = &l:errorformat
   try
+    call s:push_chdir(1)
     if !empty(glob(rails#app().path('.zeus.sock'))) && executable('zeus')
       let &l:makeprg = 'zeus rake'
     elseif rails#app().has_file('bin/rake')
@@ -1195,10 +1196,7 @@ function! s:Rake(bang,lnum,arg)
     let withrubyargs = '-r ./config/boot -r '.s:rquote(self.path('config/environment')).' -e "puts \%((in \#{Dir.getwd}))" '
     if arg =~# '^notes\>'
       let &l:errorformat = '%-P%f:,\ \ *\ [%*[\ ]%l]\ [%t%*[^]]] %m,\ \ *\ [%*[\ ]%l] %m,%-Q'
-      " %D to chdir is apparently incompatible with %P multiline messages
-      call s:push_chdir(1)
       exe 'make! '.arg
-      call s:pop_command()
       if !a:bang
         cwindow
       endif
@@ -1242,6 +1240,7 @@ function! s:Rake(bang,lnum,arg)
   finally
     let &l:errorformat = old_errorformat
     let &l:makeprg = old_makeprg
+    call s:pop_command()
   endtry
 endfunction
 
