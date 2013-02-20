@@ -4358,6 +4358,7 @@ function! RailsBufInit(path)
     $
   endif
   call s:BufSettings()
+  call s:BufMappings()
   call app.source_callback("config/rails.vim")
   call s:BufCommands()
   let t = rails#buffer().type_name()
@@ -4374,7 +4375,6 @@ function! RailsBufInit(path)
   if f != ''
     exe "silent doautocmd User Rails".f
   endif
-  call s:BufMappings()
   call s:BufProjectionCommands()
   call s:BufAbbreviations()
   return b:rails_root
