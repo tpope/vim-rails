@@ -375,31 +375,13 @@ to methods or line numbers using the same syntax as |:R|, and file creation
 Custom Navigation Commands  ~
 						*rails-custom-navigation*
 
-It is also possible to create custom navigation commands.  The preferred way
-to do this is with the method outlined under |config/editor.json|.  You can
-also use |:Rnavcommand|, either from |macros/rails.vim| or a |rails-:autocmd|.
+The officially supported way to create custom navigation commands is with
+projections, as described under |config/editor.json|.
 
 						*rails-:Rnavcommand*
 :Rnavcommand [options] {name} [{path} ...]
-			Create a navigation command with the supplied
-			name, looking in the supplied paths, using the
-			supplied options.  The -suffix option specifies what
-			suffix to filter on, and strip from the filename, and
-			defaults to -suffix=.rb .  The -glob option specifies
-			a file glob to use to find files, _excluding_ the
-			suffix.  Useful values include -glob=* and -glob=**/*.
-			The -default option specifies a default argument (not
-			a full path).  If it is specified as -default=model()
-			or -default=controller(), the current model or
-			controller is used as a default.  Deprecated in favor
-			of |config/editor.json| projections.
-
-Examples: >
-	Rnavcommand api      app/apis -glob=**/* -suffix=_api.rb
-	Rnavcommand config   config   -glob=*.*  -suffix= -default=routes.rb
-	Rnavcommand concern  app/concerns -glob=**/*
-	Rnavcommand exemplar test/exemplars spec/exemplars -glob=**/*
-			\ -default=model() -suffix=_exemplar.rb
+			Create a custom navigation command.  Deprecated in
+			favor of |config/editor.json| projections.
 
 Finally, one Vim feature that proves helpful in conjunction with all of the
 above is |CTRL-^|.  This keystroke edits the previous file, and is helpful to
