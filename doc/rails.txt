@@ -209,11 +209,9 @@ model			unit test		schema definition
 controller (in method)	functional test		template (view)
 template (view)		functional test  	controller (jump to method)
 migration		previous migration	next migration
-config/database.yml	config/routes.rb	config/environments/*.rb
+database.yml		database.example.yml	environments/*.rb
 
-Suggestions for further contexts to consider for the alternate file, related
-file, and file under the cursor are welcome.  They are subtly tweaked from
-release to release.
+Alternates can be tweaked with projections in |config/editor.json|.
 
 File Type Navigation Commands ~
 						*rails-type-navigation*
