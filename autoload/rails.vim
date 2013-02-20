@@ -1114,7 +1114,8 @@ function! s:app_rake_tasks() dict
   if self.cache.needs('rake_tasks')
     call s:push_chdir()
     try
-      let lines = split(system("rake -T"),"\n")
+      let output = system(self.has_file('bin/rake') ? self.ruby_shell_command('bin/rake -T') : 'rake -T')
+      let lines = split(output, "\n")
     finally
       call s:pop_command()
     endtry
@@ -1164,6 +1165,8 @@ function! s:Rake(bang,lnum,arg)
   try
     if !empty(glob(rails#app().path('.zeus.sock'))) && executable('zeus')
       let &l:makeprg = 'zeus rake'
+    elseif rails#app().has_file('bin/rake')
+      let &l:makeprg = rails#app().ruby_shell_command('bin/rake')
     elseif exists('b:bundler_root') && b:bundler_root ==# rails#app().path()
       let &l:makeprg = 'bundle exec rake'
     else
