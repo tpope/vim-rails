@@ -2437,7 +2437,7 @@ function! s:define_navcommand(name, projection) abort
   if type(get(projection, 'command', 1)) ==# type('')
     let name = projection.command
   else
-    let name = s:gsub(a:name, ' ', '')
+    let name = s:gsub(a:name, '[[:space:][:punct:]]', '')
   endif
   if name !~# '^[a-z]\+$'
     return s:error("E182: Invalid command name ".name)
@@ -2913,7 +2913,7 @@ function! s:readable_open_command(cmd, argument, name, options) dict abort
     endif
   endfor
   if djump !~# '^!'
-    return 'echoerr '.string('No such '.a:name.' '.a:argument)
+    return 'echoerr '.string('No such '.tr(a:name, '_', ' ').' '.a:argument)
   endif
   for [prefix, suffix] in pairs
     if isdirectory(self.app().path(prefix))
