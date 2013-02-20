@@ -316,12 +316,10 @@ endfunction
 function! s:find_projection(projections, filename) abort
   let f = a:filename
   for c in a:projections
-    for prefix in s:split(get(c, 'prefix', []))
-      for suffix in s:split(get(c, 'suffix', '.rb'))
-        if s:startswith(f, prefix) && f[-strlen(suffix) : - 1] ==# suffix
-          return [f[strlen(prefix) : -strlen(suffix)-1], c]
-        endif
-      endfor
+    for [prefix, suffix] in s:projection_pairs(c)
+      if s:startswith(f, prefix) && f[-strlen(suffix) : - 1] ==# suffix
+        return [f[strlen(prefix) : -strlen(suffix)-1], c]
+      endif
     endfor
   endfor
   return ['', {}]
