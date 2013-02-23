@@ -1168,7 +1168,7 @@ function! s:Rake(bang,lnum,arg)
       let &l:makeprg = 'zeus rake'
     elseif rails#app().has_file('bin/rake')
       let &l:makeprg = rails#app().ruby_shell_command('bin/rake')
-    elseif exists('b:bundler_root') && b:bundler_root ==# rails#app().path()
+    elseif rails#app().has('bundler')
       let &l:makeprg = 'bundle exec rake'
     else
       let &l:makeprg = 'rake'
