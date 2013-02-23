@@ -109,6 +109,10 @@ function! s:app_path(...) dict
   return join([self.root]+a:000,'/')
 endfunction
 
+function! s:app_has_path(file) dict
+  return getftime(a:path) != -1
+endfunction
+
 function! s:app_has_file(file) dict
   return filereadable(self.path(a:file))
 endfunction
@@ -149,7 +153,7 @@ function! s:app_find_file(name, ...) dict abort
   endtry
 endfunction
 
-call s:add_methods('app',['path','has_file','find_file'])
+call s:add_methods('app',['path','has_path','has_file','find_file'])
 
 " Split a path into a list.  From pathogen.vim
 function! s:pathsplit(path) abort
@@ -834,11 +838,7 @@ function! s:app_has(feature) dict
   let features = self.cache.get('features')
   if !has_key(features,a:feature)
     let path = get(map,a:feature,a:feature.'/')
-    if path =~# '/$'
-      let features[a:feature] = isdirectory(rails#app().path(path))
-    else
-      let features[a:feature] = filereadable(rails#app().path(path))
-    endif
+    let features[a:feature] = rails#app().has_path(path)
   endif
   return features[a:feature]
 endfunction
@@ -861,13 +861,13 @@ function! s:app_ruby_shell_command(cmd) dict abort
 endfunction
 
 function! s:app_script_shell_command(cmd) dict abort
-  if !empty(glob(rails#app().path('.zeus.sock'))) && a:cmd =~# '^\%(console\|dbconsole\|destroy\|generate\|server\|runner\)\>'
+  if rails#app().has_path('.zeus.sock') && a:cmd =~# '^\%(console\|dbconsole\|destroy\|generate\|server\|runner\)\>'
     return 'zeus '.a:cmd
-  elseif self.has_file('script/rails')
+  elseif self.has_path('script/rails')
     let cmd = 'script/rails '.a:cmd
-  elseif self.has_file('script/' . matchstr(a:cmd, '\w\+'))
+  elseif self.has_path('script/' . matchstr(a:cmd, '\w\+'))
     let cmd = 'script/'.a:cmd
-  elseif self.has_file('bin/rails')
+  elseif self.has_path('bin/rails')
     let cmd = 'bin/rails '.a:cmd
   elseif self.has('bundler')
     return 'bundle exec rails ' . a:cmd
@@ -1058,7 +1058,7 @@ function! s:app_tags_command() dict
     call s:error("ctags not found")
     return ''
   endif
-  if !isdirectory(self.path('tmp'))
+  if !self.has_path('tmp')
     call mkdir(self.path('tmp'), 'p')
   endif
   exe '!'.cmd.' -f '.s:escarg(self.path("tmp/tags")).' -R --langmap="ruby:+.rake.builder.rjs" '.g:rails_ctags_arguments.' '.s:escarg(self.path())
@@ -1114,7 +1114,7 @@ function! s:app_rake_tasks() dict
   if self.cache.needs('rake_tasks')
     call s:push_chdir()
     try
-      let output = system(self.has_file('bin/rake') ? self.ruby_shell_command('bin/rake -T') : 'rake -T')
+      let output = system(self.has_path('bin/rake') ? self.ruby_shell_command('bin/rake -T') : 'rake -T')
       let lines = split(output, "\n")
     finally
       call s:pop_command()
@@ -1164,9 +1164,9 @@ function! s:Rake(bang,lnum,arg)
   let old_errorformat = &l:errorformat
   try
     call s:push_chdir(1)
-    if !empty(glob(rails#app().path('.zeus.sock'))) && executable('zeus')
+    if rails#app().has_path('.zeus.sock') && executable('zeus')
       let &l:makeprg = 'zeus rake'
-    elseif rails#app().has_file('bin/rake')
+    elseif rails#app().has_path('bin/rake')
       let &l:makeprg = rails#app().ruby_shell_command('bin/rake')
     elseif rails#app().has('bundler')
       let &l:makeprg = 'bundle exec rake'
@@ -2902,7 +2902,7 @@ function! s:readable_open_command(cmd, argument, name, options) dict abort
     endif
   elseif a:argument ==# '' && type(default) == type([])
     for file in default
-      if self.app().has_file(file)
+      if self.app().has_path(file)
         return cmd . ' ' . s:fnameescape(self.app().path(file))
       endif
     endfor
@@ -2924,7 +2924,7 @@ function! s:readable_open_command(cmd, argument, name, options) dict abort
     return 'echoerr '.string('No such '.tr(a:name, '_', ' ').' '.a:argument)
   endif
   for [prefix, suffix] in pairs
-    if isdirectory(self.app().path(prefix))
+    if self.app().has_path(prefix)
       let file = self.app().path(prefix . (suffix =~# '\.rb$' ? rails#underscore(root) : root) . suffix)
       if !isdirectory(fnamemodify(file, ':h'))
         call mkdir(fnamemodify(file, ':h'), 'p')
@@ -2968,7 +2968,7 @@ function! s:findedit(cmd,files,...) abort
   endif
   if file == ''
     let testcmd = "edit"
-  elseif isdirectory(rails#app().path(file))
+  elseif rails#app().has_path(file.'/')
     let arg = file == "." ? rails#app().path() : rails#app().path(file)
     let testcmd = s:editcmdfor(cmd).' '.(a:0 ? a:1 . ' ' : '').s:escarg(arg)
     exe testcmd
@@ -3879,7 +3879,7 @@ function! s:app_dbext_settings(environment) dict
   let cache = self.cache.get('dbext_settings')
   if !has_key(cache,a:environment)
     let dict = {}
-    if self.has_file("config/database.yml")
+    if self.has_path("config/database.yml")
       let cmdb = 'require %{yaml}; File.open(%q{'.self.path().'/config/database.yml}) {|f| y = YAML::load(f); e = y[%{'
       let cmde = '}]; i=0; e=y[e] while e.respond_to?(:to_str) && (i+=1)<16; e.each{|k,v|puts k.to_s+%{=}+v.to_s}}'
       let out = self.lightweight_ruby_eval(cmdb.a:environment.cmde)
@@ -4159,7 +4159,7 @@ endfunction
 function! s:app_config(...) dict abort
   if self.cache.needs('config')
     call self.cache.set('config', 0)
-    if self.has_file('config/editor.json')
+    if self.has_path('config/editor.json')
       try
         call self.cache.set('config', rails#json_parse(join(readfile(self.path('config/editor.json')), ' ')))
       catch /^invalid JSON:/
