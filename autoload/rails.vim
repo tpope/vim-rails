@@ -109,7 +109,7 @@ function! s:app_path(...) dict
   return join([self.root]+a:000,'/')
 endfunction
 
-function! s:app_has_path(file) dict
+function! s:app_has_path(path) dict
   return getftime(a:path) != -1
 endfunction
 
