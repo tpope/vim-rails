@@ -2915,6 +2915,9 @@ function! s:readable_open_command(cmd, argument, name, options) dict abort
   endif
   let pairs = s:projection_pairs(a:options)
   for [prefix, suffix] in pairs
+    if root ==# '.' && self.app().has_path(prefix)
+      return cmd . ' ' . s:fnameescape(rails#app().path(prefix))
+    endif
     let file = self.app().path(prefix . (suffix =~# '\.rb$' ? rails#underscore(root) : root) . suffix)
     if filereadable(file)
       return cmd . ' ' . s:fnameescape(simplify(file)) . '|exe ' . s:sid . 'djump('.string(djump) . ')'
