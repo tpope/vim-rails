@@ -3213,7 +3213,12 @@ function! s:readable_alternate(...) dict abort
   endif
 endfunction
 
-call s:add_methods('readable', ['alternate'])
+" For backwards compatibility
+function! s:readable_related(...) dict abort
+  return self.alternate(a:0 ? a:1 : 0)
+endfunction
+
+call s:add_methods('readable', ['alternate', 'related'])
 
 " }}}1
 " Extraction {{{1
