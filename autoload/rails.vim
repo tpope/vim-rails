@@ -1061,7 +1061,7 @@ function! s:app_tags_command() dict
   if !self.has_path('tmp')
     call mkdir(self.path('tmp'), 'p')
   endif
-  exe '!'.cmd.' -f '.s:escarg(self.path("tmp/tags")).' -R --langmap="ruby:+.rake.builder.rjs" '.g:rails_ctags_arguments.' '.s:escarg(self.path())
+  exe '!'.cmd.' -f '.s:escarg(self.path("tags")).' -R --langmap="ruby:+.rake.builder.rjs" '.g:rails_ctags_arguments.' '.s:escarg(self.path())
   return ''
 endfunction
 
@@ -4423,8 +4423,8 @@ function! s:BufSettings()
   let self = rails#buffer()
   call s:SetBasePath()
   let rp = s:gsub(self.app().path(),'[ ,]','\\&')
-  if stridx(&tags,rp.'/tmp/tags') == -1
-    let &l:tags = rp . '/tmp/tags,' . &tags . ',' . rp . '/tags'
+  if stridx(&tags,rp.'/tags') == -1
+    let &l:tags = rp . '/tags,' . rp . '/tmp/tags,' . &tags
   endif
   call self.setvar('&includeexpr','RailsIncludeexpr()')
   call self.setvar('&suffixesadd', s:sub(self.getvar('&suffixesadd'),'^$','.rb'))
