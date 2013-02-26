@@ -2461,7 +2461,8 @@ function! s:define_navcommand(name, projection) abort
 endfunction
 
 function! s:CommandList(A,L,P)
-  let cmd = matchstr(a:L,'\CR[A-Z]\=\w\+')
+  let cmd = matchstr(a:L,'\C[A-Z]\w\+')
+  let g:cmd = cmd
   exe cmd." &"
   let command = s:last_options
   let matches = []
