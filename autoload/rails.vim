@@ -3207,7 +3207,7 @@ function! s:readable_alternate(...) dict abort
           \ '<test/helpers/', 'test/unit/helpers/'),
           \ '<test/models/', 'test/unit/'),
           \ '<test/mailers/', 'test/functional/'),
-          \ '<test/contollers/', 'test/functional/')
+          \ '<test/controllers/', 'test/functional/')
     return s:uniq([test_file, old_test_file, spec_file])
   else
     return []
