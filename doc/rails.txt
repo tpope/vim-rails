@@ -579,11 +579,7 @@ Integration with the Vim Universe ~
 						*rails-vim-integration*
 
 A handful of Vim plugins are enhanced by rails.vim.  All plugins mentioned can
-be found at http://www.vim.org/.  Cream is also covered in this section.
-
-						*rails-:Rtree*
-:Rtree [{arg}]		If |NERDTree| is installed, open a tree for the
-			application root or the given subdirectory.
+be found at http://www.vim.org/.
 
 						*rails-:Rdbext* *rails-dbext*
 :Rdbext [{environment}] This command is only provided when the |dbext| plugin
