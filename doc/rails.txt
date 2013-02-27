@@ -876,7 +876,7 @@ This variable was formerly used to globally disable abbreviations.  Use
 g:rails_no_abbreviations if you want to do that.
 
 						*g:rails_ctags_arguments*  >
-	let g:rails_ctags_arguments='--languages=-javascript'
+	let g:rails_ctags_arguments = ['--languages=-javascript']
 Additional arguments to pass to ctags from |:Rtags|.  Defaults to ignoring
 JavaScript files, since ctags has a tendency to choke on those.
 
