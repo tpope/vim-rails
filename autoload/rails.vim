@@ -3010,8 +3010,8 @@ function! s:Alternate(cmd,line1,line2,count,...)
       return call('s:Edit',[1,a:cmd]+a:000)
     endif
   else
-    let file = [s:getopt(a:count ? 'related' : 'alternate', 'bl')]
-    if empty(file[0])
+    let file = s:getopt(a:count ? 'related' : 'alternate', 'bl')
+    if empty(file)
       let file = rails#buffer().alternate(a:count)
     endif
     if !empty(file)
@@ -3038,7 +3038,7 @@ function! s:Complete_related(A,L,P)
   endif
 endfunction
 
-function! s:readable_alternate(...) dict abort
+function! s:readable_alternate_candidates(...) dict abort
   let f = self.name()
   let [root, projection] = s:find_projection(values(self.app().projections()), f)
   let placeholders = {
@@ -3074,21 +3074,10 @@ function! s:readable_alternate(...) dict abort
     elseif self.type_name('view-layout')
       return [s:sub(s:sub(f,'/views/','/controllers/'),'/layouts/(\k+)\..*$','/\1_controller.rb')]
     elseif self.type_name('view')
-      let controller  = s:sub(s:sub(f,'/views/','/controllers/'),'/(\k+%(\.\k+)=)\..*$','_controller.rb#\1')
-      let controller2 = s:sub(s:sub(f,'/views/','/controllers/'),'/(\k+%(\.\k+)=)\..*$','.rb#\1')
-      let mailer      = s:sub(s:sub(f,'/views/','/mailers/'),'/(\k+%(\.\k+)=)\..*$','.rb#\1')
-      let model       = s:sub(s:sub(f,'/views/','/models/'),'/(\k+)\..*$','.rb#\1')
-      if self.app().has_file(s:sub(controller,'#.{-}$',''))
-        return [controller]
-      elseif self.app().has_file(s:sub(controller2,'#.{-}$',''))
-        return [controller2]
-      elseif self.app().has_file(s:sub(mailer,'#.{-}$',''))
-        return [mailer]
-      elseif self.app().has_file(s:sub(model,'#.{-}$','')) || model =~ '_mailer\.rb#'
-        return [model]
-      else
-        return [controller]
-      endif
+       return [s:sub(s:sub(f,'/views/','/controllers/'),'/(\k+%(\.\k+)=)\..*$','_controller.rb#\1'),
+             \ s:sub(s:sub(f,'/views/','/mailers/'),'/(\k+%(\.\k+)=)\..*$','.rb#\1'),
+             \ s:sub(s:sub(f,'/views/','/models/'),'/(\k+)\..*$','.rb#\1')]
+      return [controller, controller2, mailer, model]
     elseif self.type_name('controller')
       return [s:sub(s:sub(f,'/controllers/','/helpers/'),'%(_controller)=\.rb$','_helper.rb')]
     elseif self.type_name('model-arb')
@@ -3142,25 +3131,11 @@ function! s:readable_alternate(...) dict abort
   elseif f ==# 'db/seeds.rb'
     return ['db/schema.rb', 'db/'.s:environment().'_structure.sql']
   elseif self.type_name('view')
-    let spec1 = fnamemodify(f,':s?\<app/?spec/?')."_spec.rb"
-    let spec2 = fnamemodify(f,':r:s?\<app/?spec/?')."_spec.rb"
-    let spec3 = fnamemodify(f,':r:r:s?\<app/?spec/?')."_spec.rb"
-    if self.app().has_file(spec1)
-      return [spec1]
-    elseif self.app().has_file(spec2)
-      return [spec2]
-    elseif self.app().has_file(spec3)
-      return [spec3]
-    elseif self.app().has('spec')
-      return [spec2]
-    else
-      if self.type_name('view-layout')
-        let dest = fnamemodify(f,':r:s?/layouts\>??').'/layout.'.fnamemodify(f,':e')
-      else
-        let dest = f
-      endif
-      return [s:sub(s:sub(dest,'<app/views/','test/functional/'),'/[^/]*$','_controller_test.rb')]
-    endif
+    return [fnamemodify(f,':s?\<app/?spec/?')."_spec.rb",
+          \ fnamemodify(f,':r:s?\<app/?spec/?')."_spec.rb",
+          \ fnamemodify(f,':r:r:s?\<app/?spec/?')."_spec.rb",
+          \ s:sub(s:sub(dest,'<app/views/','test/functional/'),'/[^/]*$','_controller_test.rb')]
+    return [spec_format, spec_handler, spec_bare, test]
   elseif self.type_name('controller-api')
     return [s:sub(s:sub(f,'/controllers/','/apis/'),'_controller\.rb$','_api.rb')]
   elseif self.type_name('api')
@@ -3211,12 +3186,22 @@ function! s:readable_alternate(...) dict abort
   endif
 endfunction
 
+function! s:readable_alternate(...) dict abort
+  let candidates = self.alternate_candidates(a:0 ? a:1 : 0)
+  for file in candidates
+    if self.app().has_path(file)
+      return file
+    endif
+  endfor
+  return get(candidates, 0, '')
+endfunction
+
 " For backwards compatibility
 function! s:readable_related(...) dict abort
   return self.alternate(a:0 ? a:1 : 0)
 endfunction
 
-call s:add_methods('readable', ['alternate', 'related'])
+call s:add_methods('readable', ['alternate_candidates', 'alternate', 'related'])
 
 " }}}1
 " Extraction {{{1
