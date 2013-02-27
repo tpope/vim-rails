@@ -851,17 +851,12 @@ Open a bug report if your use case is not addressed by the above alternatives.
 
 GLOBAL SETTINGS					*rails-global-settings*
 
-A few global variables control the behavior of this plugin.  In general, they
-can be enabled by setting them to 1 in your vimrc, and disabled by setting
-them to 0. >
-	let g:rails_some_option=1
-	let g:rails_some_option=0
-Most of these seldom need to be used.  So seldom, in fact, that you should
-notify the |rails-plugin-author| if you find any of them useful, as nearly all
-are being considered for removal.
+The following global variables are used to change or add additional behavior
+to rails.vim.  They generally have project specific equivalents in
+|config/editor.json|.
 
 						*g:loaded_rails*  >
-	let g:loaded_rails=1
+	let g:loaded_rails = 1
 Set this include guard to prevent the plugin from being loaded.
 
 						*g:rails_abbreviations*
