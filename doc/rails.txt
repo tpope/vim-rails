@@ -211,7 +211,7 @@ template (view)		functional test  	controller (jump to method)
 migration		previous migration	next migration
 database.yml		database.example.yml	environments/*.rb
 
-Alternates can be tweaked with projections in |config/editor.json|.
+Alternates can be tweaked with |rails-projections|.
 
 File Type Navigation Commands ~
 						*rails-type-navigation*
@@ -376,12 +376,12 @@ Custom Navigation Commands  ~
 						*rails-custom-navigation*
 
 The officially supported way to create custom navigation commands is with
-projections, as described under |config/editor.json|.
+projections, as described under |rails-projections|.
 
 						*rails-:Rnavcommand*
 :Rnavcommand [options] {name} [{path} ...]
 			Create a custom navigation command.  Deprecated in
-			favor of |config/editor.json| projections.
+			favor of |rails-projections|.
 
 Finally, one Vim feature that proves helpful in conjunction with all of the
 above is |CTRL-^|.  This keystroke edits the previous file, and is helpful to
@@ -803,28 +803,14 @@ be checked into version control.  Example:
 	      "format": "app/services/%s_service.rb",
 	      "template": "class %SService < AbstractService\nend",
 	      "alternate": "test/functional/%s_service_test.rb"
-	    },
-	    "fabricator": {
-	      "format": [
-	        "test/fabricators/%s_fabricator.rb",
-	        "spec/fabricators/%s_fabricator.rb"
-	      ],
-	      "affinity": "model",
-	      "template": "Fabricator :%s do\nend",
-	      "alternate": "app/models/%s.rb",
-	      "related": "db/schema.rb#%p"
 	    }
 	  },
 	  "path_additions": ["app/services"]
 	}
 <
-This "projections" section is used to provide navigation commands.  The above
-configuration causes :Rservice and :Rfabricator navigation commands to be
-created.  The optional "affinity" option determines whether the current model
-name or controller name is used for the default when no argument is given.
-The optional "alternate" and "related" options control the destination of :A
-and :R.  In the "related" option, one can also use %m to insert the current
-method.
+See |g:rails_abbreviations| and |g:rails_projections| for explanations of the
+respective sections.  The "path_additions" entry is used to add additional
+directories to 'path'.
 
 						*g:rails_default_config*
 If |config/editor.json| is missing, g:rails_default_config is used instead.
@@ -883,6 +869,78 @@ g:rails_no_abbreviations if you want to do that.
 
 Additional arguments to pass to ctags from |:Rtags|.  Defaults to ignoring
 JavaScript files, since ctags has a tendency to choke on those.
+
+		*rails-projection* *rails-projections* *g:rails_projections*
+Projections define categories of files in your application.  They are the
+spiritual successor to |rails-:Rset| and |rails-:Rnavcommand|.
+>
+	let g:rails_projections = {
+	      \ "uploader": {
+	      \   "format": "app/uploaders/%s_uploader.rb",
+	      \   "template": [
+	      \     "class %SUploader < CarrierWave::Uploader::Base",
+	      \     "end"
+	      \   ],
+	      \   "alternate": "test/unit/%s_uploader_test.rb"
+	      \ },
+	      \ "fabricator": {
+	      \   "format": [
+	      \     "test/fabricators/%s_fabricator.rb",
+	      \     "spec/fabricators/%s_fabricator.rb"
+	      \   ],
+	      \   "affinity": "model",
+	      \   "template": "Fabricator :%s do\nend",
+	      \   "alternate": "app/models/%s.rb",
+	      \   "related": "db/schema.rb#%p"
+	      \ }
+
+The above configuration causes :Ruploader and :Rfabricator navigation commands
+to be created.  You can include spaces in the key ("functional test") for
+friendlier error messages; they will be stripped when creating a navigation command.  Exact definitions of the available options are as follows:
+
+						*rails-projection-format*
+"format" ~
+	Defines where the file can be found.  This is mandatory, and must
+	contain %s for the "root" of the filename.  This is where the argument
+	to the created navigation command will be plugged in, and also
+	controls several behaviors below.  You can also give a list of
+	multiple formats.
+						*rails-projection-affinity*
+"affinity" ~
+	Provide this if the root of your file name corresponds to either
+	a model or controller.  The root of a helper generally corresponds to
+	a controller, for example, so a "helper" projection would have an
+	"affinity" of "controller".  You can also provide "collection" if it
+	corresponds to a plural model (e.g., fixtures).  Providing this lets
+	you use other affiliated commands without an argument, and determines
+	the default if "default" is not specified.
+						*rails-projection-default*
+"default" ~
+	Controls the default destination of the navigation command if no
+	argument is given.  This can either be a string, which will be plugged
+	in to the given "format" as the root, or a list of one or more files
+	to consider.
+						*rails-projection-template*
+"template" ~
+	If you provide a ! after the argument to the navigation command (that
+	is, :Ruploader foo!, NOT :Ruploader! foo), and a new file is created,
+	this will be used as the body of the file.  You can give either a
+	string or a list of lines.  Provide %s wherever you want the root of
+	the file name and %S wherever you want the camel case version.
+						*rails-projection-alternate*
+"alternate" ~
+	Determines the destination of the |rails-:A| command.  Provide %s
+	wherever you want the root of the file name and %p where you want a
+	pluralized version.  If this is a list, the first readable file will
+	be used.
+						*rails-projection-related*
+"related" ~
+	Determines the destination of the |rails-:R| and :.A commands.  Takes
+	the same placeholders as the "alternate" above, plus %m for the
+	current method, if it exists.
+
+If you have project specific projections (and what projections aren't?), you
+can provide them in |config/editor.json|.
 
 						*g:rails_root_url*  >
 	let g:rails_root_url = 'http://localhost:3000/'
