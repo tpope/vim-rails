@@ -1055,9 +1055,6 @@ function! s:app_tags_command() dict
     call s:error("ctags not found")
     return ''
   endif
-  if !self.has_path('tmp')
-    call mkdir(self.path('tmp'), 'p')
-  endif
   exe '!'.cmd.' -f '.s:escarg(self.path("tags")).' -R --langmap="ruby:+.rake.builder.rjs" '.g:rails_ctags_arguments.' '.s:escarg(self.path())
   return ''
 endfunction
