@@ -497,10 +497,10 @@ A limited amount of completion with <Tab> is supported.
 			session is created.  Otherwise, the --daemon option is
 			used.  Calling this command also sets the base URL for
 			|:Rpreview| based on the provided --binding and --port
-			options, defaulting to localhost and 300 respectively.
-			This works even if the server failed to start, which
-			one can use to set the URL to an already running
-			server.
+			options, defaulting to localhost and 3000
+			respectively.  This works even if the server failed to
+			start, which one can use to set the URL to an already
+			running server (replacing :Rset root_url).
 
 						*rails-:Rserver!*
 :Rserver! {options}	Same as |:Rserver|, only first attempts to kill any
