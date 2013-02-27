@@ -857,6 +857,7 @@ to rails.vim.  They generally have project specific equivalents in
 
 						*g:loaded_rails*  >
 	let g:loaded_rails = 1
+
 Set this include guard to prevent the plugin from being loaded.
 
 						*g:rails_abbreviations*
@@ -872,17 +873,20 @@ g:rails_no_abbreviations if you want to do that.
 
 						*g:rails_ctags_arguments*  >
 	let g:rails_ctags_arguments = ['--languages=-javascript']
+
 Additional arguments to pass to ctags from |:Rtags|.  Defaults to ignoring
 JavaScript files, since ctags has a tendency to choke on those.
 
 						*g:rails_default_config*  >
 	let g:rails_default_config = {
 	      \ "path_additions": ["extras"]}
+
 If |config/editor.json| is missing, this variable is used instead.  Useful, in
 particular, for a default set of projections.
 
 						*g:rails_root_url*  >
-	let g:rails_root_url='http://localhost:3000/'
+	let g:rails_root_url = 'http://localhost:3000/'
+
 Used for the |:Rpreview| command.  This setting is deprecated in favor of
 using |:Rserver| to customize the URL for a given application.
 
