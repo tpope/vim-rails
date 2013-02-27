@@ -4191,16 +4191,19 @@ function! s:app_config(...) dict abort
 endfunction
 
 function! s:app_projections() dict abort
-  if type(self.config('projections')) == type([])
-    let projections = {}
-    for projection in self.config('projections')
-      if !empty(get(projection, 'name', ''))
-        let projections[projection.name] = projection
-      endif
-    endfor
-    return projections
-  endif
-  return extend(copy(self.config('classifications')), self.config('projections'))
+  let projections = {}
+  for config in [g:, self.config()]
+    if type(get(config, 'projections', '')) == type([])
+      for projection in config.projections
+        if !empty(get(projection, 'name', ''))
+          let projections[projection.name] = projection
+        endif
+      endfor
+    elseif type(get(config, 'projections', '')) == type({})
+      call extend(projections, config)
+    endif
+  endfor
+  return projections
 endfunction
 
 call s:add_methods('app', ['config', 'projections'])
