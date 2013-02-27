@@ -2447,7 +2447,7 @@ function! s:define_navcommand(name, projection) abort
   if !get(projection, 'force', 0)
     let keep = 0
     for [prefix, suffix] in s:projection_pairs(projection)
-      if rails#app().has_path(prefix)
+      if rails#app().has_path(s:sub(prefix, '/[^/]*$', '/'))
         let keep = 1
       endif
     endfor

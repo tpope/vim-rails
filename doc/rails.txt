@@ -904,7 +904,8 @@ friendlier error messages; they will be stripped when creating a navigation comm
 	contain %s for the "root" of the filename.  This is where the argument
 	to the created navigation command will be plugged in, and also
 	controls several behaviors below.  You can also give a list of
-	multiple formats.
+	multiple formats.  If none of the given containing directories in the
+	given formats exist, the command won't be created.
 						*rails-projection-affinity*
 "affinity" ~
 	Provide this if the root of your file name corresponds to either
