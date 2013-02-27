@@ -4411,6 +4411,9 @@ function! s:SetBasePath()
 
   let path = ['lib', 'vendor']
   let path += self.app().config('path_additions', [])
+  let path += self.app().config('path', [])
+  let path += get(g:, 'rails_path_additions', [])
+  let path += get(g:, 'rails_path', [])
   let path += ['app/models/concerns', 'app/controllers/concerns', 'app/controllers', 'app/helpers', 'app/mailers', 'app/models', 'app/*']
   let path += ['app/views']
   if self.controller_name() != ''
