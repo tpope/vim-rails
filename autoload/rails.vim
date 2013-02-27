@@ -2922,7 +2922,7 @@ function! s:readable_open_command(cmd, argument, name, options) dict abort
     endif
   endfor
   if djump !~# '^!'
-    return 'echoerr '.string('No such '.tr(a:name, '_', ' ').' '.a:argument)
+    return 'echoerr '.string('No such '.tr(a:name, '_', ' ').' '.root)
   endif
   for [prefix, suffix] in pairs
     if self.app().has_path(prefix)
