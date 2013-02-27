@@ -4203,6 +4203,7 @@ function! s:Set(bang,...)
       call s:setopt(opt,val)
     endif
   endfor
+  call s:warn('Rset is deprecated.  See :help :Rset')
 endfunction
 
 function! s:getopt(opt,...)
