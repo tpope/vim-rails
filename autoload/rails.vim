@@ -4166,13 +4166,24 @@ function! s:app_config(...) dict abort
     let config = {}
   endif
   if a:0
-    return get(config, a:1, a:0 > 1 ? a:2 : {})
+    let default = a:0 > 1 ? a:2 : {}
+    let value = get(config, a:1, default)
+    return type(value) == type(default) ? value : default
   else
     return config
   endif
 endfunction
 
 function! s:app_projections() dict abort
+  if type(self.config('projections')) == type([])
+    let projections = {}
+    for projection in self.config('projections')
+      if !empty(get(projection, 'name', ''))
+        let projections[projection.name] = projection
+      endif
+    endfor
+    return projections
+  endif
   return extend(copy(self.config('classifications')), self.config('projections'))
 endfunction
 
