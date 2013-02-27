@@ -4017,7 +4017,7 @@ endfunction
 
 function! s:BufAbbreviations()
   " Some of these were cherry picked from the TextMate snippets
-  if (type(g:rails_abbreviations) != type(0) || g:rails_abbreviations) && !exists('g:rails_no_abbreviations')
+  if get(g:, 'rails_abbreviations', {}) isnot 0 && !exists('g:rails_no_abbreviations')
     let buffer = rails#buffer()
     " Limit to the right filetypes.  But error on the liberal side
     if buffer.type_name('controller','view','helper','test-functional','test-integration')
