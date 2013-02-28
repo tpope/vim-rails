@@ -4197,15 +4197,15 @@ endfunction
 
 function! s:app_projections() dict abort
   let projections = {}
-  for config in [g:, self.config()]
+  for [config, force] in [[g:, 0], [self.config(), 1]]
     if type(get(config, 'projections', '')) == type([])
       for projection in config.projections
         if !empty(get(projection, 'name', ''))
-          let projections[projection.name] = projection
+          let projections[projection.name] = extend({'force': force}, projection, 'keep')
         endif
       endfor
     elseif type(get(config, 'projections', '')) == type({})
-      call extend(projections, config)
+      call extend(projections, map(config.projections, 'extend({"force": force}, v:val, "keep")'))
     endif
   endfor
   return projections
