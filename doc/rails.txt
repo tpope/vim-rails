@@ -790,7 +790,7 @@ can be placed in a "macros/rails.vim" file in the 'runtimepath' (for example,
 "~/.vim/macros/rails.vim").  This file is sourced by rails.vim each time a
 Rails file is loaded.
 
-						*config/editor.json*
+						*rails-config/editor.json*
 This file provides for application specific configuration and is intended to
 be checked into version control.  Example:
 >
