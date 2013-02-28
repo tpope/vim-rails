@@ -4015,9 +4015,14 @@ function! s:AddParenExpand(abbr,expn,...)
   endif
 endfunction
 
+if !exists('g:rails_no_abbreviations') && type(get(g:, 'rails_abbreviations', {})) == type(0)
+  call s:error('Use rails_no_abbreviations not rails_abbreviations to disable abbreviations')
+  let g:rails_no_abbreviations = 1
+endif
+
 function! s:BufAbbreviations()
   " Some of these were cherry picked from the TextMate snippets
-  if get(g:, 'rails_abbreviations', {}) isnot 0 && !exists('g:rails_no_abbreviations')
+  if !exists('g:rails_no_abbreviations')
     let buffer = rails#buffer()
     " Limit to the right filetypes.  But error on the liberal side
     if buffer.type_name('controller','view','helper','test-functional','test-integration')
