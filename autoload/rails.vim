@@ -2164,29 +2164,23 @@ endfunction
 
 function! s:BufProjectionCommands()
   call s:define_navcommand('environment', {
-        \ 'force': 1,
         \ 'format': 'config/environments/%s.rb',
         \ 'default': ['config/application.rb', 'config/environment.rb']})
   call s:define_navcommand('helper', {
-        \ 'force': 1,
         \ 'format': 'app/helpers/%s_helper.rb',
         \ 'template': "module %SHelper\nend",
         \ 'affinity': 'controller'})
   call s:define_navcommand('initializer', {
-        \ 'force': 1,
         \ 'format': 'config/initializers/%s.rb',
         \ 'default': ['config/routes.rb']})
   call s:define_navcommand('lib', {
-        \ 'force': 1,
         \ 'format': 'lib/%s.rb',
         \ 'default': ['Gemfile']})
   call s:define_navcommand('model', {
-        \ 'force': 1,
         \ 'format': 'app/models/%s.rb',
         \ 'template': "class %S\nend",
         \ 'affinity': 'model'})
   call s:define_navcommand('task', {
-        \ 'force': 1,
         \ 'format': 'lib/tasks/%s.rake',
         \ 'default': ['Rakefile']})
   let tests = filter([
@@ -2198,7 +2192,6 @@ function! s:BufProjectionCommands()
         \ 'rails#app().has(v:val[0])')
   if !empty(tests)
     call s:define_navcommand('unit test', {
-          \ 'force': 1,
           \ 'format': map(copy(tests), 'v:val[1]'),
           \ 'template': {
           \   'test/unit/': "require 'test_helper'\n\nclass %STest < ActiveSupport::TestCase\nend",
@@ -2208,7 +2201,6 @@ function! s:BufProjectionCommands()
           \   'spec/helpers/': "require 'spec_helper'\n\ndescribe %S do\nend"},
           \ 'affinity': 'model'})
     call s:define_navcommand('functional test', {
-          \ 'force': 1,
           \ 'format': map(copy(tests), 'v:val[2]'),
           \ 'template': {
           \   'test/functional/': "require 'test_helper'\n\nclass %STest < ActionController::TestCase\nend",
@@ -2228,7 +2220,6 @@ function! s:BufProjectionCommands()
         \ 'rails#app().has(v:val[0])'), 'v:val[1]')
   if !empty(integration_tests)
     call s:define_navcommand('integration test', {
-          \ 'force': 1,
           \ 'format': integration_tests,
           \ 'template': {
           \   'test/integration/': "require 'test_helper'\n\nclass %STest < ActionDispatch::IntegrationTest\nend",
@@ -2444,7 +2435,7 @@ function! s:define_navcommand(name, projection) abort
   if get(projection, 'command', 1) =~# '^0\=$'
     return
   endif
-  if !get(projection, 'force', 0)
+  if get(projection, 'check', 0)
     let keep = 0
     for [prefix, suffix] in s:projection_pairs(projection)
       if rails#app().has_path(s:sub(prefix, '/[^/]*$', '/'))
@@ -4197,15 +4188,15 @@ endfunction
 
 function! s:app_projections() dict abort
   let projections = {}
-  for [config, force] in [[g:, 0], [self.config(), 1]]
+  for [config, extra] in [[g:, {'check': 1}], [self.config(), {}]]
     if type(get(config, 'projections', '')) == type([])
       for projection in config.projections
         if !empty(get(projection, 'name', ''))
-          let projections[projection.name] = extend({'force': force}, projection, 'keep')
+          let projections[projection.name] = extend(copy(projection), extra)
         endif
       endfor
     elseif type(get(config, 'projections', '')) == type({})
-      call extend(projections, map(config.projections, 'extend({"force": force}, v:val, "keep")'))
+      call extend(projections, map(config.projections, 'extend(copy(v:val), extra)'))
     endif
   endfor
   return projections
