@@ -1055,7 +1055,7 @@ function! s:app_tags_command() dict
     call s:error("ctags not found")
     return ''
   endif
-  let args = self.app().config('ctags_arguments', s:split(get(g:, 'rails_ctags_arguments', '--languages=-javascript'))
+  let args = self.config('ctags_arguments', s:split(get(g:, 'rails_ctags_arguments', '--languages=-javascript')))
   exe '!'.cmd.' -f '.s:escarg(self.path("tags")).' -R --langmap="ruby:+.rake.builder.jbuilder.rjs" '.join(args,' ').' '.s:escarg(self.path())
   return ''
 endfunction
