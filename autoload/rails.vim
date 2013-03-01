@@ -1650,7 +1650,7 @@ function! s:Complete_script(ArgLead,CmdLine,P)
   if cmd !~ '^[ A-Za-z0-9_=:-]*$'
     return []
   elseif cmd =~# '^\w*$'
-    return s:completion_filter(rails#app().relglob("script/","**/*"),a:ArgLead)
+    return s:completion_filter(['generate', 'console', 'server', 'dbconsole', 'application', 'destroy', 'plugin', 'runner'],a:ArgLead)
   elseif cmd =~# '^\%(generate\|destroy\)\s\+'.a:ArgLead.'$'
     return s:completion_filter(rails#app().generators(),a:ArgLead)
   elseif cmd =~# '^\%(generate\|destroy\)\s\+\w\+\s\+'.a:ArgLead.'$'
