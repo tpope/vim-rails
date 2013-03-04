@@ -4425,6 +4425,7 @@ function! s:SetBasePath()
           let path += s:split(projection.path)
           break
         endif
+      endfor
     elseif get(projection, 'path', 1) isnot 0
       for [prefix, suffix] in s:projection_pairs(projection)
         if prefix =~# '^app/' && suffix =~# '\.rb$'
