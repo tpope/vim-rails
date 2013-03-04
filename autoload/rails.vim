@@ -3101,6 +3101,8 @@ function! s:readable_alternate_candidates(...) dict abort
   endif
   if root !=# '' && has_key(projection, 'alternate')
     return map(s:split(projection.alternate), 'substitute(v:val, "%.", "\\=get(placeholders, submatch(0), submatch(0))", "g")')
+  elseif root !=# '' && has_key(projection, 'test')
+    return map(s:split(projection.test), 'substitute(v:val, "%.", "\\=get(placeholders, submatch(0), submatch(0))", "g")')
   endif
   if f =~# '^config/environments/'
     return ['config/application.rb', 'config/environment.rb']
