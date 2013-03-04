@@ -4418,7 +4418,7 @@ function! s:SetBasePath()
   let path += ['app/models/concerns', 'app/controllers/concerns', 'app/controllers', 'app/helpers', 'app/mailers', 'app/models']
 
   for projection in values(self.app().projections())
-    if get(projection, 'path', 0) isnot 0 && get(projection, 'path', 0) isnot 1
+    if type(get(projection, 'path', 0)) == type([]) && !empty(projection.path)
       for [prefix, suffix] in s:projection_pairs(projection)
         let dir = matchstr(prefix, '.*/')
         if !get(projection, 'check', 0) || self.app().has_path(dir)
@@ -4426,11 +4426,11 @@ function! s:SetBasePath()
           break
         endif
       endfor
-    elseif get(projection, 'path', 1) isnot 0
+    elseif get(projection, 'path', 1) isnot 0 && !empty(get(projection, 'path', 1))
       for [prefix, suffix] in s:projection_pairs(projection)
         if prefix =~# '^app/' && suffix =~# '\.rb$'
-          let dir = matchstr(prefix, '.*/')
-          if !get(projection, 'check', 0) || self.app().has_path(dir)
+          let dir = matchstr(prefix, '.*\ze/')
+          if !get(projection, 'check', 0) || self.app().has_path(dir . '/')
             let path += [dir]
           endif
         endif
