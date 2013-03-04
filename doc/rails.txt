@@ -804,13 +804,11 @@ be checked into version control.  Example:
 	      "template": "class %SService < AbstractService\nend",
 	      "alternate": "test/functional/%s_service_test.rb"
 	    }
-	  },
-	  "path_additions": ["app/services"]
+	  }
 	}
 <
 See |g:rails_abbreviations| and |g:rails_projections| for explanations of the
-respective sections.  The "path_additions" entry is used to add additional
-directories to 'path'.
+respective sections.
 
 						*g:rails_default_config*
 If |config/editor.json| is missing, g:rails_default_config is used instead.
@@ -941,6 +939,11 @@ friendlier error messages; they will be stripped when creating a navigation comm
 	Determines the destination of the |rails-:R| and :.A commands.  Takes
 	the same placeholders as the "alternate" above, plus %m for the
 	current method, if it exists.
+						*rails-projection-path*
+"path" ~
+	Provides a list of directories to add to 'path'.  When omitted,
+	defaults to adding each format starting with "app/" and ending with
+	".rb".  A useful value is [] to disable this behavior entirely.
 
 If you have project specific projections (and what projections aren't?), you
 can provide them in |config/editor.json|.

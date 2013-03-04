@@ -4415,8 +4415,29 @@ function! s:SetBasePath()
   let path += self.app().config('path', [])
   let path += get(g:, 'rails_path_additions', [])
   let path += get(g:, 'rails_path', [])
-  let path += ['app/models/concerns', 'app/controllers/concerns', 'app/controllers', 'app/helpers', 'app/mailers', 'app/models', 'app/*']
-  let path += ['app/views']
+  let path += ['app/models/concerns', 'app/controllers/concerns', 'app/controllers', 'app/helpers', 'app/mailers', 'app/models']
+
+  for projection in values(self.app().projections())
+    if get(projection, 'path', 0) isnot 0 && get(projection, 'path', 0) isnot 1
+      for [prefix, suffix] in s:projection_pairs(projection)
+        let dir = matchstr(prefix, '.*/')
+        if !get(projection, 'check', 0) || self.app().has_path(dir)
+          let path += s:split(projection.path)
+          break
+        endif
+    elseif get(projection, 'path', 1) isnot 0
+      for [prefix, suffix] in s:projection_pairs(projection)
+        if prefix =~# '^app/' && suffix =~# '\.rb$'
+          let dir = matchstr(prefix, '.*/')
+          if !get(projection, 'check', 0) || self.app().has_path(dir)
+            let path += [dir]
+          endif
+        endif
+      endfor
+    endif
+  endfor
+
+  let path += ['app/*', 'app/views']
   if self.controller_name() != ''
     let path += ['app/views/'.self.controller_name(), 'public']
   endif
