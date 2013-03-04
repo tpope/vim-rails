@@ -4188,20 +4188,25 @@ function! s:app_config(...) dict abort
   endif
 endfunction
 
+function! s:combine_projections(dest, src, ...) abort
+  let extra = a:0 ? a:1 : {}
+  if type(a:src) == type([])
+    for projection in a:src
+      if !empty(get(projection, 'name', ''))
+        let a:dest[projection.name] = extend(copy(projection), extra)
+      endif
+    endfor
+  elseif type(a:src) == type({})
+    call extend(a:dest, map(a:src, 'extend(copy(v:val), extra)'))
+  endif
+  return a:dest
+endfunction
+
 function! s:app_projections() dict abort
-  let projections = {}
-  for [config, extra] in [[g:, {'check': 1}], [self.config(), {}]]
-    if type(get(config, 'projections', '')) == type([])
-      for projection in config.projections
-        if !empty(get(projection, 'name', ''))
-          let projections[projection.name] = extend(copy(projection), extra)
-        endif
-      endfor
-    elseif type(get(config, 'projections', '')) == type({})
-      call extend(projections, map(config.projections, 'extend(copy(v:val), extra)'))
-    endif
-  endfor
-  return projections
+  let dict = {}
+  call s:combine_projections(dict, get(g:, 'rails_projections', ''), {'check': 1})
+  call s:combine_projections(dict, get(self.config(), 'projections', ''))
+  return dict
 endfunction
 
 call s:add_methods('app', ['config', 'projections'])
