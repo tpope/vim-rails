@@ -948,6 +948,33 @@ friendlier error messages; they will be stripped when creating a navigation comm
 If you have project specific projections (and what projections aren't?), you
 can provide them in |config/editor.json|.
 
+						*g:rails_gem_projections*
+This is a dictionary where the keys are gem names and the values are
+projection dictionaries.  Projections are only used if you have the given
+gem bundled (requires bundler.vim).
+>
+	let g:rails_gem_projections = {
+	      \ "active_model_serializers": {
+	      \   "serializer": {
+	      \     "format": "app/serializers/%s_serializer.rb",
+	      \     "template": [
+	      \       "class %SSerializer < ActiveModel::Serializer",
+	      \       "end"
+	      \     ],
+	      \     "affinity": "model"}},
+	      \ "fabrication": {
+	      \   "fabricator": {
+	      \     "format": "spec/fabricators/%s_fabricator.rb",
+	      \     "affinity": "model",
+	      \     "alternate": "app/models/%s.rb",
+	      \     "related": "db/schema.rb#%p",
+	      \     "template": "Fabricator :%s do\nend"}}}
+<
+The projection dictionaries look identical to |g:rails_projections|, explained
+above.  Generally, you should prefer these gem projections over global
+projections, as that way you won't get a bunch of useless commands in every
+single project.
+
 						*g:rails_root_url*  >
 	let g:rails_root_url = 'http://localhost:3000/'
 

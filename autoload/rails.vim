@@ -4188,6 +4188,19 @@ function! s:app_config(...) dict abort
   endif
 endfunction
 
+function! s:app_has_gem(gem) dict abort
+  if self.has('bundler') && exists('*bundler#project')
+    let project = bundler#project(self.path())
+    if has_key(project, 'has')
+      return project.has(a:gem)
+    elseif has_key(project, 'gems')
+      return has_key(bundler#project(self.path()).gems(), a:gem)
+    endif
+  else
+    return 0
+  endif
+endfunction
+
 function! s:combine_projections(dest, src, ...) abort
   let extra = a:0 ? a:1 : {}
   if type(a:src) == type([])
@@ -4205,11 +4218,16 @@ endfunction
 function! s:app_projections() dict abort
   let dict = {}
   call s:combine_projections(dict, get(g:, 'rails_projections', ''), {'check': 1})
+  for gem in keys(get(g:, 'rails_gem_projections', {}))
+    if self.has_gem(gem)
+      call s:combine_projections(dict, g:rails_gem_projections[gem])
+    endif
+  endfor
   call s:combine_projections(dict, get(self.config(), 'projections', ''))
   return dict
 endfunction
 
-call s:add_methods('app', ['config', 'projections'])
+call s:add_methods('app', ['config', 'has_gem', 'projections'])
 
 function! s:Set(bang,...)
   let c = 1
