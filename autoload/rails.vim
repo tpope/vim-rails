@@ -1476,7 +1476,7 @@ endfunction
 " Script Wrappers {{{1
 
 function! s:BufScriptWrappers()
-  command! -buffer -bang -bar -nargs=* -complete=customlist,s:Complete_script   Rscript       :execute rails#app().script_command(<bang>0,<f-args>)
+  command! -buffer -bang -bar -nargs=* -complete=customlist,s:Complete_script   Rscript       :execute empty(<q-args>) ? rails#app().script_command(<bang>0, 'console') ? rails#app().script_command(<bang>0,<f-args>)
   command! -buffer -bang -bar -nargs=* -complete=customlist,s:Complete_script   Rails         :execute rails#app().script_command(<bang>0,<f-args>)
   command! -buffer -bang -bar -nargs=* -complete=customlist,s:Complete_generate Rgenerate     :execute rails#app().generator_command(<bang>0,'generate',<f-args>)
   command! -buffer -bar -nargs=*       -complete=customlist,s:Complete_destroy  Rdestroy      :execute rails#app().generator_command(1,'destroy',<f-args>)
@@ -1526,17 +1526,11 @@ function! s:app_script_command(bang,...) dict
     echo msg." (Rails-".rails#buffer().type_name().")"
     return
   endif
-  let str = ""
-  let cmd = a:0 ? a:1 : "console"
-  let c = 2
-  while c <= a:0
-    let str .= " " . s:rquote(a:{c})
-    let c += 1
-  endwhile
-  if a:bang || cmd =~# 'console'
-    return self.background_script_command(cmd.str)
+  let str = join(map(copy(a:000), 's:rquote(v:val)'), ' ')
+  if a:bang || str =~# '^\%(c\|console\|db\|dbconsole\|s\|server\)\>'
+    return self.background_script_command(str)
   else
-    return self.execute_script_command(cmd.str)
+    return self.execute_script_command(str)
   endif
 endfunction
 
