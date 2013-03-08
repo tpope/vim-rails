@@ -699,9 +699,6 @@ example, in a model, has_many is highlighted, whereas in a controller,
 before_filter is highlighted.  A wide variety of syntax groups are used but
 they all link by default to railsMethod.
 
-If you feel a method has been wrongfully omitted, submit it to the
-|rails-plugin-author|.
-
 						*rails-syntax-classes*
 Models, helpers, and controllers are given special highlighting.  Depending on
 the version of Vim installed, you may need a rails.vim aware colorscheme in
