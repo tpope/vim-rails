@@ -477,9 +477,8 @@ A limited amount of completion with <Tab> is supported.
 :[range]Rp {code}	Like :Rrunner, but call the Ruby p method on the
 			result. Literally "p begin {code} end".
 
-						*rails-:Rpp* *rails-:Ry*
-:[range]Rpp {code}	Like :Rp, but with pp (pretty print) or y (YAML
-:[range]Ry  {code}	output).
+						*rails-:Rpp*
+:[range]Rpp {code}	Like :Rp, but with pp (pretty print).
 
 						*rails-:Rgenerate*
 :Rgenerate {options}	Calls rails generate {options} and loads the
