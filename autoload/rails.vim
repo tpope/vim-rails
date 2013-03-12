@@ -944,7 +944,7 @@ function! s:BufCommands()
   call s:BufScriptWrappers()
   command! -buffer -bar -nargs=+ Rnavcommand :call s:Navcommand(<bang>0,<f-args>)
   command! -buffer -bar -nargs=* -bang Rabbrev :call s:Abbrev(<bang>0,<f-args>)
-  command! -buffer -bar -nargs=? -bang -count -complete=customlist,s:Complete_rake    Rake     :call s:Rake(<bang>0,!<count> && <line1> ? -1 : <count>,<q-args>)
+  command! -buffer -bar -nargs=? -bang -count -complete=customlist,rails#complete_rake Rake    :call s:Rake(<bang>0,!<count> && <line1> ? -1 : <count>,<q-args>)
   command! -buffer -bar -nargs=? -bang -range -complete=customlist,s:Complete_preview Rpreview :call s:Preview(<bang>0,<line1>,<q-args>)
   command! -buffer -bar -nargs=? -bang -complete=customlist,s:Complete_environments   Rlog     :call s:Log(<bang>0,<q-args>)
   command! -buffer -bar -nargs=* -bang -complete=customlist,s:Complete_set            Rset     :call s:Set(<bang>0,<f-args>)
@@ -1126,7 +1126,7 @@ endfunction
 
 call s:add_methods('app', ['rake_tasks'])
 
-let s:efm_backtrace='%D(in\ %f),'
+let g:rails_rake_errorformat = '%D(in\ %f),'
       \.'%\\s%#from\ %f:%l:%m,'
       \.'%\\s%#from\ %f:%l:,'
       \.'%\\s#{RAILS_ROOT}/%f:%l:\ %#%m,'
@@ -1168,7 +1168,7 @@ function! s:Rake(bang,lnum,arg)
     else
       let &l:makeprg = 'rake'
     endif
-    let &l:errorformat = s:efm_backtrace
+    let &l:errorformat = g:rails_rake_errorformat
     let arg = a:arg
     if &filetype =~# '^ruby\>' && arg == ''
       let mnum = s:lastmethodline(lnum)
@@ -1239,9 +1239,9 @@ function! s:Rake(bang,lnum,arg)
   endtry
 endfunction
 
-function! s:readable_default_rake_task(lnum) dict abort
+function! s:readable_default_rake_task(...) dict abort
   let app = self.app()
-  let lnum = a:lnum < 0 ? 0 : a:lnum
+  let lnum = a:0 ? (a:1 < 0 ? 0 : a:1) : 0
   if self.getvar('&buftype') == 'quickfix'
     return '-'
   elseif self.getline(lnum) =~# '# rake '
@@ -1344,7 +1344,7 @@ function! s:readable_default_rake_task(lnum) dict abort
   endif
 endfunction
 
-function! s:Complete_rake(A,L,P)
+function! rails#complete_rake(A,L,P)
   return s:completion_filter(rails#app().rake_tasks(),a:A)
 endfunction
 
