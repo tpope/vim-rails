@@ -1126,7 +1126,7 @@ endfunction
 
 call s:add_methods('app', ['rake_tasks'])
 
-let g:rails_rake_errorformat = '%D(in\ %f),'
+let g:rails#rake_errorformat = '%D(in\ %f),'
       \.'%\\s%#from\ %f:%l:%m,'
       \.'%\\s%#from\ %f:%l:,'
       \.'%\\s#{RAILS_ROOT}/%f:%l:\ %#%m,'
@@ -1168,7 +1168,7 @@ function! s:Rake(bang,lnum,arg)
     else
       let &l:makeprg = 'rake'
     endif
-    let &l:errorformat = g:rails_rake_errorformat
+    let &l:errorformat = g:rails#rake_errorformat
     let arg = a:arg
     if &filetype =~# '^ruby\>' && arg == ''
       let mnum = s:lastmethodline(lnum)
