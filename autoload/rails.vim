@@ -1137,15 +1137,23 @@ let g:rails#rake_errorformat = '%D(in\ %f),'
       \.'%\\s%#%f:%l:,'
       \.'%m\ [%f:%l]:'
 
+function! s:make(bang, args, ...)
+  if exists(':Make')
+    exe 'Make'.(a:bang ? '! ' : ' ').a:args
+  else
+    exe 'make'.(a:bang ? '! ' : ' ').a:args
+    if !a:bang
+      exe (a:0 ? a:1 : 'cwindow')
+    endif
+  endif
+endfunction
+
 function! s:makewithruby(arg,bang,...)
   let old_make = &makeprg
   call s:push_chdir(1)
   try
     let &l:makeprg = rails#app().ruby_shell_command(a:arg)
-    exe 'make'.(a:bang ? '!' : '')
-    if !a:bang
-      cwindow
-    endif
+    call s:make(a:bang, '')
   finally
     call s:pop_command()
     let &l:makeprg = old_make
@@ -1192,15 +1200,10 @@ function! s:Rake(bang,lnum,arg)
     if arg =~# '^notes\>'
       let &l:errorformat = '%-P%f:,\ \ *\ [%*[\ ]%l]\ [%t%*[^]]] %m,\ \ *\ [%*[\ ]%l] %m,%-Q'
       exe 'make! '.arg
-      if !a:bang
-        cwindow
-      endif
+      call s:make(a:bang, arg)
     elseif arg =~# '^\%(stats\|routes\|secret\|time:zones\|db:\%(charset\|collation\|fixtures:identify\>.*\|migrate:status\|version\)\)\%([: ]\|$\)'
       let &l:errorformat = '%D(in\ %f),%+G%.%#'
-      exe 'make! '.arg
-      if !a:bang
-        copen
-      endif
+      call s:make(a:bang, arg, 'copen')
     elseif arg =~ '^preview\>'
       exe (lnum == 0 ? '' : lnum).'R'.s:gsub(arg,':','/')
     elseif arg =~ '^runner:'
@@ -1227,10 +1230,7 @@ function! s:Rake(bang,lnum,arg)
       let arg = s:sub(arg,'#(\w+[?!=]=)$',' -- -n\1')
       call s:makewithruby(withrubyargs.'-r'.arg,a:bang,arg !~# '_\%(spec\|test\)\.rb$')
     else
-      exe 'make! '.arg
-      if !a:bang
-        cwindow
-      endif
+      call s:make(a:bang, arg)
     endif
   finally
     let &l:errorformat = old_errorformat
