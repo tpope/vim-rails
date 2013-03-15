@@ -971,6 +971,9 @@ above.  Generally, you should prefer these gem projections over global
 projections, as that way you won't get a bunch of useless commands in every
 single project.
 
+Gem maintainers may also provide custom projections by placing them in
+lib/rails/projections.json.
+
 						*g:rails_root_url*  >
 	let g:rails_root_url = 'http://localhost:3000/'
 

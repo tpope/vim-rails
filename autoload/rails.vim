@@ -4144,14 +4144,15 @@ endfunction
 
 function! rails#json_parse(string) abort
   let [null, false, true] = ['', 0, 1]
-  let stripped = substitute(a:string,'\C"\(\\.\|[^"\\]\)*"','','g')
+  let string = type(a:string) == type([]) ? join(a:string, ' ') : a:string
+  let stripped = substitute(string,'\C"\(\\.\|[^"\\]\)*"','','g')
   if stripped !~# "[^,:{}\\[\\]0-9.\\-+Eaeflnr-u \n\r\t]"
     try
-      return eval(substitute(a:string,"[\r\n]"," ",'g'))
+      return eval(substitute(string,"[\r\n]"," ",'g'))
     catch
     endtry
   endif
-  throw "invalid JSON: ".a:string
+  throw "invalid JSON: ".string
 endfunction
 
 function! s:app_config(...) dict abort
@@ -4159,7 +4160,7 @@ function! s:app_config(...) dict abort
     call self.cache.set('config', 0)
     if self.has_path('config/editor.json')
       try
-        call self.cache.set('config', rails#json_parse(join(readfile(self.path('config/editor.json')), ' ')))
+        call self.cache.set('config', rails#json_parse(readfile(self.path('config/editor.json'))))
       catch /^invalid JSON:/
         call s:error("Couldn't parse config/editor.json")
       endtry
@@ -4208,6 +4209,7 @@ function! s:combine_projections(dest, src, ...) abort
   return a:dest
 endfunction
 
+let s:projections_for_gems = {}
 function! s:app_projections() dict abort
   let dict = {}
   call s:combine_projections(dict, get(g:, 'rails_projections', ''), {'check': 1})
@@ -4216,6 +4218,26 @@ function! s:app_projections() dict abort
       call s:combine_projections(dict, g:rails_gem_projections[gem])
     endif
   endfor
+  let gem_path = escape(join(values(self.gems()),','), ' ')
+  if !has_key(s:projections_for_gems, gem_path)
+    let gem_projections = {}
+    for path in ['lib/', 'lib/rails/']
+      for file in findfile(path.'editor.json', gem_path, -1)
+        try
+          call s:combine_projections(gem_projections, get(rails#json_parse(readfile(self.path(file))), 'projections'))
+        catch
+        endtry
+      endfor
+      for file in findfile(path.'projections.json', gem_path, -1)
+        try
+          call s:combine_projections(gem_projections, rails#json_parse(readfile(self.path(file))))
+        catch
+        endtry
+      endfor
+    endfor
+    let s:projections_for_gems[gem_path] = gem_projections
+  endif
+  call s:combine_projections(dict, s:projections_for_gems[gem_path])
   call s:combine_projections(dict, get(self.config(), 'projections', ''))
   return dict
 endfunction
