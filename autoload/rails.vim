@@ -1310,15 +1310,19 @@ function! s:readable_default_rake_task(...) dict abort
     endif
   else
     let test = self.test_file()
-    let with_line = test . (lnum > 0 ? ':'.lnum : '')
+    let with_line = test
+    if test ==# self.name()
+      let with_line .= (lnum > 0 ? ':'.lnum : '')
+    endif
     if empty(test)
       return ''
     elseif test =~# '^test\>'
-      let method = self.last_method(lnum)
-      if meth =~ '^test_'
-        let opts = ' TESTOPTS=-n'.method
-      else
-        let opts = ''
+      let opts = ''
+      if test ==# self.name()
+        let method = self.app().file(test).last_method(lnum)
+        if meth =~ '^test_'
+          let opts = ' TESTOPTS=-n'.method
+        endif
       endif
       if test =~# '^test/unit\>'
         return 'test:units TEST='s:rquote(test).opts
