@@ -465,17 +465,13 @@ A limited amount of completion with <Tab> is supported.
 			calling |:Rails| console.
 
 						*rails-:Rrunner*
-:[range]Rrunner {code}	Executes {code} with rails runner.  Differs from
-			:Rails runner {code} in that the code is passed as
-			one argument.  Also, |system()| is used instead of
-			|:!|.  This is to help eliminate annoying "Press
-			ENTER" prompts.  If a line number is given in the
-			range slot, the output is pasted into the buffer after
-			that line.
+:Rrunner {file}		Run the given file or code with rails runner and load
+:Rrunner {code}		the results in to the quickfix list, using the error
+			parser from the "ruby" |:compiler|.
 
 						*rails-:Rp*
-:[range]Rp {code}	Like :Rrunner, but call the Ruby p method on the
-			result. Literally "p begin {code} end".
+:[range]Rp {code}	Use rails runner to execute "p begin {code} end" and
+			echo the result.
 
 						*rails-:Rpp*
 :[range]Rpp {code}	Like :Rp, but with pp (pretty print).

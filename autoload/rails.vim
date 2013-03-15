@@ -1444,9 +1444,9 @@ function! s:BufScriptWrappers()
   command! -buffer -bang -bar -nargs=* -complete=customlist,s:Complete_generate Rgenerate     :execute rails#app().generator_command(<bang>0,'generate',<f-args>)
   command! -buffer -bar -nargs=*       -complete=customlist,s:Complete_destroy  Rdestroy      :execute rails#app().generator_command(1,'destroy',<f-args>)
   command! -buffer -bar -nargs=? -bang -complete=customlist,s:Complete_server   Rserver       :execute rails#app().server_command(<bang>0,<q-args>)
-  command! -buffer -bang -nargs=1 -range=0 -complete=customlist,s:Complete_ruby Rrunner       :execute rails#app().runner_command(<bang>0 ? -2 : (<count>==<line2>?<count>:-1),<f-args>)
-  command! -buffer       -nargs=1 -range=0 -complete=customlist,s:Complete_ruby Rp            :execute rails#app().runner_command(<count>==<line2>?<count>:-1,'p begin '.<f-args>.' end')
-  command! -buffer       -nargs=1 -range=0 -complete=customlist,s:Complete_ruby Rpp           :execute rails#app().runner_command(<count>==<line2>?<count>:-1,'require %{pp}; pp begin '.<f-args>.' end')
+  command! -buffer -bang -nargs=1 -range=0 -complete=customlist,s:Complete_edit Rrunner       :execute rails#app().runner_command(<bang>0, <count>?<line1>:0, <q-args>)
+  command! -buffer       -nargs=1 -range=0 -complete=customlist,s:Complete_ruby Rp            :execute rails#app().output_command(<count>==<line2>?<count>:-1, 'p begin '.<q-args>.' end')
+  command! -buffer       -nargs=1 -range=0 -complete=customlist,s:Complete_ruby Rpp           :execute rails#app().output_command(<count>==<line2>?<count>:-1, 'require %{pp}; pp begin '.<q-args>.' end')
 endfunction
 
 function! s:app_gems() dict abort
@@ -1496,22 +1496,40 @@ function! s:app_script_command(bang,...) dict
   endif
 endfunction
 
-function! s:app_runner_command(count,args) dict
-  if a:count == -2
-    return self.script_command(a:bang,"runner",a:args)
-  else
-    let str = self.script_shell_command('runner '.s:rquote(a:args))
-    call s:push_chdir(1)
-    try
-      let res = s:sub(system(str),'\n$','')
-    finally
-      call s:pop_command()
-    endtry
-    if a:count < 0
-      echo res
-    else
-      exe a:count.'put =res'
+function! s:app_runner_command(bang,count,args) dict abort
+  let old_makeprg = &l:makeprg
+  let old_errorformat = &l:errorformat
+  let old_compiler = get(b:, 'current_compiler', '')
+  call s:push_chdir(1)
+  try
+    compiler ruby
+    let &l:makeprg = self.script_shell_command('runner')
+    call s:make(a:bang, a:args)
+    return ''
+  finally
+    call s:pop_command()
+    let &l:errorformat = old_errorformat
+    let &l:makeprg = old_makeprg
+    let b:current_compiler = old_compiler
+    if empty(b:current_compiler)
+      unlet b:current_compiler
     endif
+  endtry
+  return ''
+endfunction
+
+function! s:app_output_command(count, code) dict
+  let str = self.script_shell_command('runner '.s:rquote(a:code))
+  call s:push_chdir(1)
+  try
+    let res = s:sub(system(str),'\n$','')
+  finally
+    call s:pop_command()
+  endtry
+  if a:count < 0
+    echo res
+  else
+    exe a:count.'put =res'
   endif
   return ''
 endfunction
@@ -1599,7 +1617,7 @@ function! s:app_generator_command(bang,...) dict
   return ''
 endfunction
 
-call s:add_methods('app', ['gems','generators','script_command','runner_command','server_command','generator_command'])
+call s:add_methods('app', ['gems','generators','script_command','runner_command','output_command','server_command','generator_command'])
 
 function! s:Complete_script(ArgLead,CmdLine,P)
   let cmd = s:sub(a:CmdLine,'^\u\w*\s+','')
