@@ -730,10 +730,10 @@ The following options are set local to buffers where the plugin is active.
 					*rails-'shiftwidth'*	*rails-'sw'*
 					*rails-'softtabstop'*	*rails-'sts'*
 					*rails-'expandtab'*	*rails-'et'*
-A value of 2 is used for 'shiftwidth' (and 'softtabstop'), and 'expandtab' is
-enabled.  This is a strong convention in Rails, so the conventional wisdom
-that this is a user preference has been ignored.
-
+Indent settings are no longer adjusted by default.  Install sleuth.vim, or try
+this in your vimrc instead: >
+	autocmd FileType ruby set sw=2 sts=2 et
+<
 					*rails-'path'*		*rails-'pa'*
 All the relevant directories from your application are added to your 'path'.
 This makes it easy to access a buried file: >
