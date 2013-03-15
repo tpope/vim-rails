@@ -1148,18 +1148,6 @@ function! s:make(bang, args, ...)
   endif
 endfunction
 
-function! s:makewithruby(arg,bang,...)
-  let old_make = &makeprg
-  call s:push_chdir(1)
-  try
-    let &l:makeprg = rails#app().ruby_shell_command(a:arg)
-    call s:make(a:bang, '')
-  finally
-    call s:pop_command()
-    let &l:makeprg = old_make
-  endtry
-endfunction
-
 function! s:Rake(bang,lnum,arg)
   let self = rails#app()
   let lnum = a:lnum < 0 ? 0 : a:lnum
@@ -1204,31 +1192,6 @@ function! s:Rake(bang,lnum,arg)
     elseif arg =~# '^\%(stats\|routes\|secret\|time:zones\|db:\%(charset\|collation\|fixtures:identify\>.*\|migrate:status\|version\)\)\%([: ]\|$\)'
       let &l:errorformat = '%D(in\ %f),%+G%.%#'
       call s:make(a:bang, arg, 'copen')
-    elseif arg =~ '^preview\>'
-      exe (lnum == 0 ? '' : lnum).'R'.s:gsub(arg,':','/')
-    elseif arg =~ '^runner:'
-      let arg = s:sub(arg,'^runner:','')
-      let root = matchstr(arg,'%\%(:\w\)*')
-      let file = expand(root).matchstr(arg,'%\%(:\w\)*\zs.*')
-      if file =~ '#.*$'
-        let extra = " -- -n ".matchstr(file,'#\zs.*')
-        let file = s:sub(file,'#.*','')
-      else
-        let extra = ''
-      endif
-      if self.has_file(file) || self.has_file(file.'.rb')
-        call s:makewithruby(withrubyargs.'-r"'.file.'"'.extra,a:bang,file !~# '_\%(spec\|test\)\%(\.rb\)\=$')
-      else
-        call s:makewithruby(withrubyargs.'-e '.s:esccmd(s:rquote(arg)),a:bang)
-      endif
-    elseif arg == 'run' || arg == 'runner'
-      call s:makewithruby(withrubyargs.'-r"'.RailsFilePath().'"',a:bang,RailsFilePath() !~# '_\%(spec\|test\)\%(\.rb\)\=$')
-    elseif arg =~ '^run:'
-      let arg = s:sub(arg,'^run:','')
-      let arg = s:sub(arg,'^\%:h',expand('%:h'))
-      let arg = s:sub(arg,'^%(\%|$|#@=)',expand('%'))
-      let arg = s:sub(arg,'#(\w+[?!=]=)$',' -- -n\1')
-      call s:makewithruby(withrubyargs.'-r'.arg,a:bang,arg !~# '_\%(spec\|test\)\.rb$')
     else
       call s:make(a:bang, arg)
     endif
