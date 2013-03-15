@@ -744,7 +744,7 @@ function! s:readable_calculate_file_type() dict abort
   elseif f =~ '\<features/.*\.rb$'
     let r = 'cucumber'
   elseif f =~ '\<spec/.*\.feature$'
-    let r = 'turnip-feature'
+    let r = 'spec-feature'
   elseif f =~ '\<\%(test\|spec\)/fixtures\>'
     if e == "yml"
       let r = "fixtures-yaml"
@@ -1202,6 +1202,58 @@ function! s:Rake(bang,lnum,arg)
   endtry
 endfunction
 
+function! s:readable_test_file_candidates() dict abort
+  let f = self.name()
+  let [root, projection] = s:find_projection(values(self.app().projections()), f)
+  if root !=# '' && has_key(projection, 'test')
+    return map(s:split(projection.test), 'substitute(v:val, "%.", "\\=get(placeholders, submatch(0), submatch(0))", "g")')
+  endif
+  if self.type_name('view')
+    return [fnamemodify(f,':s?\<app/?spec/?')."_spec.rb",
+          \ fnamemodify(f,':r:s?\<app/?spec/?')."_spec.rb",
+          \ fnamemodify(f,':r:r:s?\<app/?spec/?')."_spec.rb",
+          \ s:sub(s:sub(dest,'<app/views/','test/functional/'),'/[^/]*$','_controller_test.rb')]
+    return [spec_format, spec_handler, spec_bare, test]
+  elseif self.type_name('controller-api')
+    return [s:sub(s:sub(f,'/controllers/','/apis/'),'_controller\.rb$','_api.rb')]
+  elseif self.type_name('api')
+    return [s:sub(s:sub(f,'/apis/','/controllers/'),'_api\.rb$','_controller.rb')]
+  elseif self.type_name('lib')
+    return [s:sub(f,'<lib/(.*)\.rb$','test/lib/\1_test.rb'),
+          \ s:sub(f,'<lib/(.*)\.rb$','test/unit/\1_test.rb'),
+          \ s:sub(f,'<lib/(.*)\.rb$','spec/lib/\1_spec.rb')]
+  elseif self.type_name('fixtures') && f =~# '\<spec/'
+    return ['spec/models/' . self.model_name() . '_spec.rb']
+  elseif self.type_name('fixtures')
+    return ['test/models/' . self.model_name() . '_test.rb', 'test/unit/' . self.model_name() . '_test.rb']
+  elseif f =~# '\<app/.*\.rb'
+    let file = fnamemodify(f,":r")
+    let test_file = s:sub(file,'<app/','test/') . '_test.rb'
+    let spec_file = s:sub(file,'<app/','spec/') . '_spec.rb'
+    let old_test_file = s:sub(s:sub(s:sub(s:sub(test_file,
+          \ '<test/helpers/', 'test/unit/helpers/'),
+          \ '<test/models/', 'test/unit/'),
+          \ '<test/mailers/', 'test/functional/'),
+          \ '<test/controllers/', 'test/functional/')
+    return s:uniq([test_file, old_test_file, spec_file])
+  elseif f =~# '\<\(test\|spec\)/\%(\1_helper\.rb$\|support\>\)' || f =~# '\<features/.*\.rb$'
+    return matchstr(f, '.*\<\%(test\|spec\|features\)\>')
+  elseif self.type_name('test', 'spec', 'cucumber')
+    return [f]
+  endif
+  return []
+endfunction
+
+function! s:readable_test_file() dict abort
+  let candidates = self.test_file_candidates()
+  for file in candidates
+    if self.app().has_path(file)
+      return file
+    endif
+  endfor
+  return get(candidates, 0, '')
+endfunction
+
 function! s:readable_default_rake_task(...) dict abort
   let app = self.app()
   let lnum = a:0 ? (a:1 < 0 ? 0 : a:1) : 0
@@ -1230,28 +1282,6 @@ function! s:readable_default_rake_task(...) dict abort
     else
       return matchstr(self.getline(1),'\C# rake \zs.*')
     endif
-  elseif self.type_name('spec')
-    if self.name() =~# '\<spec/spec_helper\.rb$'
-      return 'spec'
-    elseif lnum > 0
-      return 'spec SPEC="'.self.path().'":'.lnum
-    else
-      return 'spec SPEC="'.self.path().'"'
-    endif
-  elseif self.type_name('test')
-    let meth = self.last_method(lnum)
-    if meth =~ '^test_'
-      let call = " -n".meth.""
-    else
-      let call = ""
-    endif
-    if self.type_name('test-unit','test-functional','test-integration')
-      return s:sub(s:gsub(self.type_name(),'-',':'),'unit$|functional$','&s').' TEST="'.self.path().'"'.s:sub(call,'^ ',' TESTOPTS=')
-    elseif self.name() =~# '\<test/test_helper\.rb$'
-      return 'test'
-    else
-      return 'test:recent TEST="'.self.path().'"'.s:sub(call,'^ ',' TESTOPTS=')
-    endif
   elseif self.type_name('db-migration')
     let ver = matchstr(self.name(),'\<db/migrate/0*\zs\d*\ze_')
     if ver != ""
@@ -1278,32 +1308,37 @@ function! s:readable_default_rake_task(...) dict abort
     else
       return 'routes CONTROLLER='.self.controller_name()
     endif
-  elseif app.has('spec') && self.name() =~# '^app/.*\.\w\+$' && app.has_file(s:sub(self.name(),'^app/(.*)\.\w\+$','spec/\1_spec.rb'))
-    return 'spec SPEC="'.fnamemodify(s:sub(self.name(),'<app/','spec/'),':p:r').'_spec.rb"'
-  elseif app.has('spec') && self.name() =~# '^app/.*\.\w\+$' && app.has_file(s:sub(self.name(),'^app/(.*)$','spec/\1_spec.rb'))
-    return 'spec SPEC="'.fnamemodify(s:sub(self.name(),'<app/','spec/'),':p').'_spec.rb"'
-  elseif self.type_name('model')
-    return 'test:units TEST="'.fnamemodify(s:sub(self.name(),'<app/models/','test/unit/'),':p:r').'_test.rb"'
-  elseif self.type_name('api','mailer')
-    return 'test:units TEST="'.fnamemodify(s:sub(self.name(),'<app/%(apis|mailers|models)/','test/functional/'),':p:r').'_test.rb"'
-  elseif self.type_name('helper')
-    return 'test:units TEST="'.fnamemodify(s:sub(self.name(),'<app/','test/unit/'),':p:r').'_test.rb"'
-  elseif self.type_name('controller','helper','view')
-    if self.name() =~ '\<app/' && s:controller() !~# '^\%(application\)\=$'
-      return 'test:functionals TEST="'.s:escarg(app.path('test/functional/'.s:controller().'_controller_test.rb')).'"'
-    else
-      return 'test:functionals'
-    endif
-  elseif self.type_name('cucumber-feature')
-    if lnum > 0
-      return 'cucumber FEATURE="'.self.path().'":'.lnum
-    else
-      return 'cucumber FEATURE="'.self.path().'"'
-    endif
-  elseif self.type_name('cucumber')
-    return 'cucumber'
   else
-    return ''
+    let test = self.test_file()
+    let with_line = test . (lnum > 0 ? ':'.lnum : '')
+    if empty(test)
+      return ''
+    elseif test =~# '^test\>'
+      let method = self.last_method(lnum)
+      if meth =~ '^test_'
+        let opts = ' TESTOPTS=-n'.method
+      else
+        let opts = ''
+      endif
+      if test =~# '^test/unit\>'
+        return 'test:units TEST='s:rquote(test).opts
+      elseif test =~# '^test/functional\>'
+        return 'test:functional TEST='s:rquote(test).opts
+      elseif test =~# '^test/integration\>'
+        return 'test:integration TEST='s:rquote(test).opts
+      elseif test ==# 'test'
+        return 'test'
+      else
+        return 'test:recent TEST='s:rquote(test).opts
+      endif
+    elseif test =~# '^spec\>'
+      return 'spec SPEC='.s:rquote(with_line)
+    elseif test =~# '^feature\>'
+      return 'cucumber FEATURE='.s:rquote(with_line)
+    else
+      let task = matchstr(test, '^\w*')
+      return task . ' ' . toupper(task) . '=' . s:rquote(with_line)
+    endif
   endif
 endfunction
 
@@ -1311,7 +1346,7 @@ function! rails#complete_rake(A,L,P)
   return s:completion_filter(rails#app().rake_tasks(),a:A)
 endfunction
 
-call s:add_methods('readable',['default_rake_task'])
+call s:add_methods('readable', ['test_file_candidates', 'test_file', 'default_rake_task'])
 
 " }}}1
 " Preview {{{1
@@ -3075,8 +3110,6 @@ function! s:readable_alternate_candidates(...) dict abort
   endif
   if root !=# '' && has_key(projection, 'alternate')
     return map(s:split(projection.alternate), 'substitute(v:val, "%.", "\\=get(placeholders, submatch(0), submatch(0))", "g")')
-  elseif root !=# '' && has_key(projection, 'test')
-    return map(s:split(projection.test), 'substitute(v:val, "%.", "\\=get(placeholders, submatch(0), submatch(0))", "g")')
   endif
   if f =~# '^config/environments/'
     return ['config/application.rb', 'config/environment.rb']
@@ -3113,24 +3146,6 @@ function! s:readable_alternate_candidates(...) dict abort
     return ['db/seeds.rb']
   elseif f ==# 'db/seeds.rb'
     return ['db/schema.rb', 'db/'.s:environment().'_structure.sql']
-  elseif self.type_name('view')
-    return [fnamemodify(f,':s?\<app/?spec/?')."_spec.rb",
-          \ fnamemodify(f,':r:s?\<app/?spec/?')."_spec.rb",
-          \ fnamemodify(f,':r:r:s?\<app/?spec/?')."_spec.rb",
-          \ s:sub(s:sub(dest,'<app/views/','test/functional/'),'/[^/]*$','_controller_test.rb')]
-    return [spec_format, spec_handler, spec_bare, test]
-  elseif self.type_name('controller-api')
-    return [s:sub(s:sub(f,'/controllers/','/apis/'),'_controller\.rb$','_api.rb')]
-  elseif self.type_name('api')
-    return [s:sub(s:sub(f,'/apis/','/controllers/'),'_api\.rb$','_controller.rb')]
-  elseif self.type_name('lib')
-    return [s:sub(f,'<lib/(.*)\.rb$','test/lib/\1_test.rb'),
-          \ s:sub(f,'<lib/(.*)\.rb$','test/unit/\1_test.rb'),
-          \ s:sub(f,'<lib/(.*)\.rb$','spec/lib/\1_spec.rb')]
-  elseif self.type_name('fixtures') && f =~ '\<spec/'
-    return ['spec/models/' . self.model_name() . '_spec.rb']
-  elseif self.type_name('fixtures')
-    return ['test/models/' . self.model_name() . '_test.rb', 'test/unit/' . self.model_name() . '_test.rb']
   elseif self.type_name('test')
     let app_file = s:sub(s:sub(f, '<test/', 'app/'), '_test\.rb$', '.rb')
     if app_file =~# '\<app/unit/helpers/'
@@ -3154,18 +3169,8 @@ function! s:readable_alternate_candidates(...) dict abort
     return [s:sub(s:sub(f,'<spec/',''),'_spec\.rb$','')]
   elseif self.type_name('spec')
     return [s:sub(s:sub(f,'<spec/','app/'),'_spec\.rb$','')]
-  elseif f =~# '\<app/.*\.rb'
-    let file = fnamemodify(f,":r")
-    let test_file = s:sub(file,'<app/','test/') . '_test.rb'
-    let spec_file = s:sub(file,'<app/','spec/') . '_spec.rb'
-    let old_test_file = s:sub(s:sub(s:sub(s:sub(test_file,
-          \ '<test/helpers/', 'test/unit/helpers/'),
-          \ '<test/models/', 'test/unit/'),
-          \ '<test/mailers/', 'test/functional/'),
-          \ '<test/controllers/', 'test/functional/')
-    return s:uniq([test_file, old_test_file, spec_file])
   else
-    return []
+    return self.test_file_candidates()
   endif
 endfunction
 

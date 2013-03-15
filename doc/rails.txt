@@ -931,6 +931,10 @@ friendlier error messages; they will be stripped when creating a navigation comm
 	Determines the destination of the |rails-:R| and :.A commands.  Takes
 	the same placeholders as the "alternate" above, plus %m for the
 	current method, if it exists.
+						*rails-projection-test*
+"test" ~
+	Determines the default test file to run with |rails-:Rake|.  Also
+	serves as a default for "alternate".
 						*rails-projection-path*
 "path" ~
 	Provides a list of directories to add to 'path'.  When omitted,
