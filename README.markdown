@@ -37,8 +37,7 @@ features:
   appropriate `include` declaration left behind.
   `:help rails-:Rextract`
 
-* Integration with other plugins.  `:Rtree` spawns
-  [NERDTree.vim](https://github.com/scrooloose/nerdtree).  If
+* Integration with other plugins.  If
   [dbext.vim](http://www.vim.org/scripts/script.php?script_id=356) is
   installed, it will be transparently configured to reflect
   `database.yml`.  Users of
