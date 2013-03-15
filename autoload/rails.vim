@@ -849,7 +849,7 @@ function! s:app_ruby_shell_command(cmd) dict abort
 endfunction
 
 function! s:app_script_shell_command(cmd) dict abort
-  if rails#app().has_path('.zeus.sock') && a:cmd =~# '^\%(console\|dbconsole\|destroy\|generate\|server\|runner\)\>'
+  if self.has_path('.zeus.sock') && a:cmd =~# '^\%(console\|dbconsole\|destroy\|generate\|server\|runner\)\>'
     return 'zeus '.a:cmd
   elseif self.has_path('script/rails')
     let cmd = 'script/rails '.a:cmd
