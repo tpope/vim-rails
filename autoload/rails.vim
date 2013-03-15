@@ -1141,7 +1141,7 @@ function! s:make(bang, args, ...)
   if exists(':Make')
     exe 'Make'.(a:bang ? '! ' : ' ').a:args
   else
-    exe 'make'.(a:bang ? '! ' : ' ').a:args
+    exe 'make! '.a:args
     if !a:bang
       exe (a:0 ? a:1 : 'cwindow')
     endif
