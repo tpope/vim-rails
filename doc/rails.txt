@@ -531,10 +531,10 @@ of a helper to another helper, or part of a model or controller to a concern.
 
 If this is your file, in app/views/blog/show.html.erb: >
 
-  1	<div>
-  2	  <h2><%= @post.title %></h2>
-  3	  <p><%= @post.body %></p>
-  4	</div>
+ 1	<div>
+ 2	  <h2><%= @post.title %></h2>
+ 3	  <p><%= @post.body %></p>
+ 4	</div>
 
 And you issue this command: >
 
@@ -542,14 +542,14 @@ And you issue this command: >
 
 Your file will change to this: >
 
-  1	<div>
-  2	  <%= render 'post' %>
-  3	</div>
+ 1	<div>
+ 2	  <%= render 'post' %>
+ 3	</div>
 
 And app/views/blog/_post.html.erb will now contain: >
 
-  1	<h2><%= @post.title %></h2>
-  2	<p><%= @post.body %></p>
+ 1	<h2><%= @post.title %></h2>
+ 2	<p><%= @post.body %></p>
 <
 The easiest way to choose what to extract is to use |linewise-visual| mode.
 Then, a simple >
@@ -726,7 +726,7 @@ syntax group is used.  The list of assertions can be refreshed with
 						*rails-syntax-strings*
 A string literal using %Q<> or %<> delimiters will have its contents
 highlighted as HTML.  This is sometimes useful when writing helpers. >
-  link = %<<a href="http://www.vim.org">Vim</a>>.html_safe
+	link = %<<a href="http://www.vim.org">Vim</a>>.html_safe
 <
 						*rails-syntax-yaml*
 YAML syntax highlighting has been extended to highlight eRuby, which can be
@@ -996,13 +996,13 @@ using |:Rserver| to customize the URL for a given application.
 ABOUT					*rails-about* *rails-plugin-author*
 
 The latest stable version can be found at
-    http://www.vim.org/scripts/script.php?script_id=1567
+	http://www.vim.org/scripts/script.php?script_id=1567
 
 Bugs can be reported and the very latest development version can be retrieved
 from GitHub:
-    https://github.com/tpope/vim-rails
-    git clone git://github.com/tpope/vim-rails.git
-
+	https://github.com/tpope/vim-rails >
+	git clone git://github.com/tpope/vim-rails.git
+<
 						*rails-license*
 Copyright (c) Tim Pope.  Distributed under the same terms as Vim itself.
 See |license|.
