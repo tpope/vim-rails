@@ -4145,13 +4145,29 @@ endfunction
 function! s:app_config(...) dict abort
   if self.cache.needs('config')
     call self.cache.set('config', 0)
+
+    let projections = {}
+    if self.has_path('config/projections.json')
+      try
+        let projections = rails#json_parse(readfile(self.path('config/projections.json')))
+      catch /^invalid JSON:/
+      endtry
+    endif
+
     if self.has_path('config/editor.json')
       try
-        call self.cache.set('config', rails#json_parse(readfile(self.path('config/editor.json'))))
+        let config = rails#json_parse(readfile(self.path('config/editor.json'))))
+        if !has_key(config, 'projections')
+          let config.projections = projections
+        endif
+        call self.cache.set('config', config)
       catch /^invalid JSON:/
         call s:error("Couldn't parse config/editor.json")
       endtry
+    elseif !empty(projections)
+      call self.cache.set('config', {'projections': projections})
     endif
+
   endif
   if type(self.cache.get('config')) == type({})
     let config = self.cache.get('config')
