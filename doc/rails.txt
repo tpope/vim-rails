@@ -81,23 +81,24 @@ actually edit a file from a Rails application.
 			might like :Rake log:clear.
 
 						*rails-:Rpreview*
-:Rpreview [{path}]	Creates a URL from http://localhost:3000/ (or
-			the last arguments given to |:Rserver|) and the
-			{path} given.  The not too useful default is to then
-			edit this URL using Vim itself, allowing |netrw| to
-			download it.  More useful is to define a :OpenURL
-			command, which will be used instead (see
-			|rails-:OpenURL|).  If {path} is omitted, a sensible
-			default is used (considers the current
-			controller/template, but does not take routing into
-			account).  The default is overridden by comments like
-			the following that are either before the current
+:Rpreview [{path}]	Creates a URL from the currently running server (or
+			http://localhost:3000/ if it's not running) and the
+			{path} given and open it in the browser.  If {path} is
+			omitted, a sensible default is used (considers the
+			current controller/template, but does not take routing
+			into account).  The default is overridden by comments
+			like the following that are either before the current
 			method call or at the top of the file: >
+
 		# GET /users
 		# PUT /users/1
-<
+
+<			See |rails-:OpenURL| if you need to provide a custom
+			browser launcher.
+
 						*rails-:Rpreview!*
-:Rpreview! [{path}]	As with :Rpreview, except :OpenURL is never used.
+:Rpreview! [{path}]	Like :Rpreview, but open the path inside Vim using
+			|netrw| instead.
 
 						*rails-:Rtags*
 :Rtags			Calls ctags -R on the current application root.
