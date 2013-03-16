@@ -317,18 +317,6 @@ function! s:controller(...)
   return rails#buffer().controller_name(a:0 ? a:1 : 0)
 endfunction
 
-function! s:find_projection(projections, filename) abort
-  let f = a:filename
-  for c in a:projections
-    for [prefix, suffix] in s:projection_pairs(c)
-      if s:startswith(f, prefix) && f[-strlen(suffix) : - 1] ==# suffix
-        return [f[strlen(prefix) : -strlen(suffix)-1], c]
-      endif
-    endfor
-  endfor
-  return ['', {}]
-endfunction
-
 function! s:readable_controller_name(...) dict abort
   let f = self.name()
   if has_key(self,'getvar') && self.getvar('rails_controller') != ''
@@ -1204,9 +1192,9 @@ endfunction
 
 function! s:readable_test_file_candidates() dict abort
   let f = self.name()
-  let [root, projection] = s:find_projection(values(self.app().projections()), f)
-  if root !=# '' && has_key(projection, 'test')
-    return map(s:split(projection.test), 'substitute(v:val, "%.", "\\=get(placeholders, submatch(0), submatch(0))", "g")')
+  let projected = self.projected('test')
+  if !empty(projected)
+    return projected
   endif
   if self.type_name('view')
     return [fnamemodify(f,':s?\<app/?spec/?')."_spec.rb",
@@ -3060,21 +3048,15 @@ endfunction
 
 function! s:readable_alternate_candidates(...) dict abort
   let f = self.name()
-  let [root, projection] = s:find_projection(values(self.app().projections()), f)
-  let placeholders = {
-        \ '%s': root,
-        \ '%p': rails#pluralize(root),
-        \ '%%': '%'}
   if a:0 && a:1
     let lastmethod = self.last_method(a:1)
-    if root !=# '' && has_key(projection, 'related')
-      let related = s:split(projection.related)
-      if empty(lastmethod)
-        call filter(related, 'v:val !~# "%m"')
-      endif
-      if !empty(related)
-        return map(related, 's:gsub(substitute(v:val, "%.", "\\=get(placeholders, submatch(0), submatch(0))", "g"), "\\%m", lastmethod)')
-      endif
+    let placeholders = {}
+    if !empty(lastmethod)
+      let placeholders.m = lastmethod
+    endif
+    let projected = self.projected('related', placeholders)
+    if !empty(projected)
+      return projected
     endif
     if self.type_name('controller','mailer') && lastmethod != ""
       let view = self.resolve_view(lastmethod, line('.'))
@@ -3112,8 +3094,9 @@ function! s:readable_alternate_candidates(...) dict abort
       return ['app/models/' . rails#singularize(lastmethod) . '.rb']
     endif
   endif
-  if root !=# '' && has_key(projection, 'alternate')
-    return map(s:split(projection.alternate), 'substitute(v:val, "%.", "\\=get(placeholders, submatch(0), submatch(0))", "g")')
+  let projected = self.projected('alternate')
+  if !empty(projected)
+    return projected
   endif
   if f =~# '^config/environments/'
     return ['config/application.rb', 'config/environment.rb']
@@ -4235,6 +4218,37 @@ function! s:app_projections() dict abort
 endfunction
 
 call s:add_methods('app', ['config', 'has_gem', 'projections'])
+
+function! s:find_projection(projections, filename) abort
+  let f = a:filename
+  for c in a:projections
+    for [prefix, suffix] in s:projection_pairs(c)
+      if s:startswith(f, prefix) && f[-strlen(suffix) : - 1] ==# suffix
+        return [f[strlen(prefix) : -strlen(suffix)-1], c]
+      endif
+    endfor
+  endfor
+  return ['', {}]
+endfunction
+
+function! s:readable_projected(key, ...) dict abort
+  let [root, projection] = s:find_projection(values(self.app().projections()), self.name())
+  let projected = {}
+  if empty(projection)
+    return []
+  else
+    let placeholders = {
+          \ 's': root,
+          \ 'p': rails#pluralize(root),
+          \ '%': '%'}
+    if a:0
+      call extend(placeholders, a:1)
+    endif
+    return filter(map(s:split(get(projection, a:key, '')), 'substitute(v:val, "%\\([^: ]\\)", "\\=get(placeholders, submatch(1), \"\n\")", "g")'), 'v:val !~# "\n"')
+  endif
+endfunction
+
+call s:add_methods('readable', ['projected'])
 
 function! s:Set(bang,...)
   let c = 1
