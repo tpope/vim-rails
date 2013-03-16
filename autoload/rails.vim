@@ -2396,7 +2396,7 @@ function! s:pluginList(A,L,P)
 endfunction
 
 function! s:Navcommand(bang,...)
-  let command = {'prefix': []}
+  let command = {'prefix': [], 'deprecation': ':Rnavcommand is deprecated.  See :help config/editor.json for replacement.'}
   let i = 0
   while i < a:0
     let i += 1
@@ -2888,7 +2888,14 @@ function! s:projection_pairs(options)
   return pairs
 endfunction
 
+let s:seen_projection_deprecations = {}
+
 function! s:readable_open_command(cmd, argument, name, options) dict abort
+  let depr = ''
+  if &verbose && has_key(a:options, 'deprecation') && !has_key(s:seen_projection_deprecations, a:options.deprecation)
+    let s:seen_projection_deprecations[a:options.deprecation] = 1
+    let depr = '|echohl WarningMsg|echon '.string(a:options.deprecation).'|echohl NONE'
+  endif
   let cmd = s:editcmdfor(a:cmd)
   let djump = ''
   let default = get(a:options, 'default', get(a:options, 'affinity', '').'()')
@@ -2910,7 +2917,7 @@ function! s:readable_open_command(cmd, argument, name, options) dict abort
   elseif a:argument ==# '' && type(default) == type([])
     for file in default
       if self.app().has_path(file)
-        return cmd . ' ' . s:fnameescape(self.app().path(file))
+        return cmd . ' ' . s:fnameescape(self.app().path(file)) . depr
       endif
     endfor
     return cmd . ' ' . s:fnameescape(self.app().path(a:default[0]))
@@ -2927,7 +2934,7 @@ function! s:readable_open_command(cmd, argument, name, options) dict abort
     endif
     let file = self.app().path(prefix . (suffix =~# '\.rb$' ? rails#underscore(root) : root) . suffix)
     if filereadable(file)
-      return cmd . ' ' . s:fnameescape(simplify(file)) . '|exe ' . s:sid . 'djump('.string(djump) . ')'
+      return cmd . ' ' . s:fnameescape(simplify(file)) . '|exe ' . s:sid . 'djump('.string(djump) . ')' . depr
     endif
   endfor
   if djump !~# '^!'
@@ -2954,7 +2961,7 @@ function! s:readable_open_command(cmd, argument, name, options) dict abort
       endif
       call map(template, 'substitute(v:val, "%.", "\\=get(placeholders, submatch(0), submatch(0))", "g")')
       call map(template, 's:gsub(v:val, "\t", "  ")')
-      return cmd . ' ' . s:fnameescape(simplify(file)) . '|call setline(1, '.string(template).')' . '|set nomod'
+      return cmd . ' ' . s:fnameescape(simplify(file)) . '|call setline(1, '.string(template).')' . '|set nomod' . depr
     endif
   endfor
   return 'echoerr '.string("Couldn't find destination directory for ".a:name.' '.a:argument)
