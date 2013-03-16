@@ -1141,8 +1141,10 @@ function! s:Rake(bang,lnum,arg)
   let lnum = a:lnum < 0 ? 0 : a:lnum
   let old_makeprg = &l:makeprg
   let old_errorformat = &l:errorformat
+  let old_compiler = get(b:, 'current_compiler', '')
   try
     call s:push_chdir(1)
+    let b:current_compiler = 'rake'
     if rails#app().has_path('.zeus.sock') && executable('zeus')
       let &l:makeprg = 'zeus rake'
     elseif rails#app().has_path('bin/rake')
@@ -1186,6 +1188,10 @@ function! s:Rake(bang,lnum,arg)
   finally
     let &l:errorformat = old_errorformat
     let &l:makeprg = old_makeprg
+    let b:current_compiler = old_compiler
+    if empty(b:current_compiler)
+      unlet b:current_compiler
+    endif
     call s:pop_command()
   endtry
 endfunction
