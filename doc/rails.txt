@@ -20,6 +20,7 @@ Author:  Tim Pope <http://tpo.pe/>
 |rails-abbreviations|           Abbreviations
 |rails-syntax|                  Syntax Highlighting
 |rails-options|                 Managed Vim Options
+|rails-projections|             Projections
 |rails-configuration|           Configuration
 |rails-global-settings|         Global Settings
 |rails-about|                   About rails.vim
@@ -675,6 +676,14 @@ an abbreviation ending with "(", you may define where to insert the
 parenthesis by splitting the expansion into two parts (divided by an unescaped
 space).
 
+You can also define abbrevations in either |g:rails_abbreviations| or
+|config/editor.json| as a hash:
+>
+	let g:rails_abbreviations = {
+		\ "AE::": "ActiveResource",
+		\ "p[": "params",
+		\ "rj(": ["render", "json: "]}
+<
 Many abbreviations are provided by default: use :Rabbrev to list them.  They
 vary depending on the type of file (models have different abbreviations than
 controllers).
@@ -752,105 +761,21 @@ they are part of a Rails application).
 A 'completefunc' is provided (if not already set).  It is very simple, as it
 uses syntax highlighting to make its guess.  See |i_CTRL-X_CTRL-U|.
 
-CONFIGURATION					*rails-configuration*
+PROJECTIONS				*rails-projection* *rails-projections*
 
-Very little configuration is actually required; this plugin automatically
-detects your Rails application and adjusts Vim sensibly.
+The bulk of rails.vim features support core Rails conventions and a just a
+handful of popular additions (such as RSpec).  Projections let you teach
+rails.vim about app specific and gem specific behavior.
 
-					*rails-:autocmd* *rails-autocommands*
-If you would like to set your own custom Vim settings whenever a Rails file is
-loaded, you can use an autocommand like the following in your vimrc: >
-	autocmd User Rails		silent! Rlcd
-	autocmd User Rails		map <buffer> <F9> :Rake<CR>
-You can also have autocommands that only apply to certain types of files.
-These are based off the information shown when running the |:Rails!|
-command, with hyphens changed to periods. A few examples: >
-	autocmd User Rails.controller*	iabbr <buffer> wsn wsdl_service_name
-	autocmd User Rails.model.arb*	iabbr <buffer> vfo validates_format_of
-	autocmd User Rails.view.erb*    imap  <buffer> <C-Z> <%=  %><C-O>3h
-End all such Rails autocommands with asterisks, even if you have an exact
-specification, to allow for more specific subtypes to be added in the future.
-There is also a filename matching syntax: >
-	autocmd User Rails/config/environment.rb Rabbrev c config
-	autocmd User Rails/**/foo_bar.rb         Rabbrev FB:: FooBar
-Use the filetype based syntax whenever possible, reserving the filename based
-syntax for more advanced cases.
+There are four primary ways to define projections:
 
-						*macros/rails.vim*
-If you have several commands to run on initialization for all file types, they
-can be placed in a "macros/rails.vim" file in the 'runtimepath' (for example,
-"~/.vim/macros/rails.vim").  This file is sourced by rails.vim each time a
-Rails file is loaded.
+1. Globally, in |g:rails_projections|.
+2. Per app, in |config/editor.json|.
+3. Per bundled gem, in |g:rails_gem_projections|.
+4. Inside a bundled gem, in lib/rails/projections.json.
 
-						*rails-config/editor.json*
-This file provides for application specific configuration and is intended to
-be checked into version control.  Example:
->
-	{
-	  "abbreviations": {
-	    "FB::": "FooBar"
-	  },
-	  "projections": {
-	    "service": {
-	      "format": "app/services/%s_service.rb",
-	      "template": "class %SService < AbstractService\nend",
-	      "alternate": "test/functional/%s_service_test.rb"
-	    }
-	  }
-	}
-<
-See |g:rails_abbreviations| and |g:rails_projections| for explanations of the
-respective sections.
-
-						*g:rails_default_config*
-If |config/editor.json| is missing, g:rails_default_config is used instead.
-Useful, in particular, for a default set of projections.
->
-	let g:rails_default_config = {
-	      \ "projections": {...}}
-<
-						*config/rails.vim*
-If you have settings particular to a specific project, they can be put in a
-config/rails.vim file in the root directory of the application.  The file is
-sourced in the |sandbox| for security reasons, which makes invoking rails.vim
-commands like |:Rnavcommand| or |:Rabbrev| impossible.  Thus, this file is
-deprecated in favor of |config/editor.json|.
-
-						*rails-:Rset*
-:Rset			This command has been superseded by
-			|config/editor.json|.
-
-GLOBAL SETTINGS					*rails-global-settings*
-
-The following global variables are used to change or add additional behavior
-to rails.vim.  They generally have project specific equivalents in
-|config/editor.json|.
-
-						*g:loaded_rails*  >
-	let g:loaded_rails = 1
-
-Set this include guard to prevent the plugin from being loaded.
-
-						*g:rails_abbreviations*
-Dictionary of additional |:Rabbrev| abbreviations.  Example:
->
-  let g:rails_abbreviations = {
-        \ "AE::": "ActiveResource",
-	\ "p[": "params",
-	\ "rj(": ["render", "json: "]}
-<
-This variable was formerly used to globally disable abbreviations.  Use
-g:rails_no_abbreviations if you want to do that.
-
-						*g:rails_ctags_arguments*  >
-	let g:rails_ctags_arguments = ['--languages=-javascript']
-
-Additional arguments to pass to ctags from |:Rtags|.  Defaults to ignoring
-JavaScript files, since ctags has a tendency to choke on those.
-
-		*rails-projection* *rails-projections* *g:rails_projections*
-Projections define categories of files in your application.  They are the
-spiritual successor to |rails-:Rset| and |rails-:Rnavcommand|.
+The JSON files are exactly what you would expect.  The Vim syntax is basically
+the same, but with Vim's |line-continuation| syntax:
 >
 	let g:rails_projections = {
 	      \ "uploader": {
@@ -869,12 +794,18 @@ spiritual successor to |rails-:Rset| and |rails-:Rnavcommand|.
 	      \   "affinity": "model",
 	      \   "template": "Fabricator :%s do\nend",
 	      \   "alternate": "app/models/%s.rb",
-	      \   "related": "db/schema.rb#%p"
+	      \   "related": "db/schema.rb#%p",
+	      \   "test": [
+	      \     "test/models/%s_test.rb",
+	      \     "spec/models/%s_spec.rb"
+	      \   ]
 	      \ }
 
 The above configuration causes :Ruploader and :Rfabricator navigation commands
-to be created.  You can include spaces in the key ("functional test") for
-friendlier error messages; they will be stripped when creating a navigation command.  Exact definitions of the available options are as follows:
+to be created, and affect the behaviors of several commands.  You can include
+spaces in the key ("functional test") for friendlier error messages; they will
+be stripped when creating a navigation command.  Exact definitions of the
+available options are as follows:
 
 						*rails-projection-format*
 "format" ~
@@ -921,22 +852,109 @@ friendlier error messages; they will be stripped when creating a navigation comm
 	current method, if it exists.
 						*rails-projection-test*
 "test" ~
-	Determines the default test file to run with |rails-:Rake|.  Also
-	serves as a default for "alternate", and accepts the same
-	placeholders.
+	Determines the default test file to run with |rails-:Rrunner| and
+	|rails-:Rake|.  Also serves as a default for "alternate", and accepts
+	the same placeholders.
 						*rails-projection-path*
 "path" ~
 	Provides a list of directories to add to 'path'.  When omitted,
 	defaults to adding each format starting with "app/" and ending with
 	".rb".  A useful value is [] to disable this behavior entirely.
 
-If you have project specific projections (and what projections aren't?), you
-can provide them in |config/editor.json|.
+CONFIGURATION					*rails-configuration*
+
+In addition to the crude hammer of global settings (described below),
+rails.vim provides a few different mechanisms for granular configuration.
+
+						*rails-config/editor.json*
+This file provides for application specific configuration and is intended to
+be checked into version control.  Example:
+>
+	{
+	  "abbreviations": {
+	    "FB::": "FooBar"
+	  },
+	  "projections": {
+	    "service": {
+	      "format": "app/services/%s_service.rb",
+	      "template": "class %SService < AbstractService\nend",
+	      "alternate": "test/functional/%s_service_test.rb"
+	    }
+	  }
+	}
+<
+See |rails-abbreviations| and |rails-projections| for explanations of the
+respective sections.
+
+					*rails-:autocmd* *rails-autocommands*
+If you would like to set your own custom Vim settings whenever a Rails file is
+loaded, you can use an autocommand like the following in your vimrc: >
+	autocmd User Rails		silent! Rlcd
+	autocmd User Rails		map <buffer> <F9> :Rake<CR>
+You can also have autocommands that only apply to certain types of files.
+These are based off the information shown when running the |:Rails!|
+command, with hyphens changed to periods. A few examples: >
+	autocmd User Rails.controller*	iabbr <buffer> wsn wsdl_service_name
+	autocmd User Rails.model.arb*	iabbr <buffer> vfo validates_format_of
+	autocmd User Rails.view.erb*    imap  <buffer> <C-Z> <%=  %><C-O>3h
+End all such Rails autocommands with asterisks, even if you have an exact
+specification, to allow for more specific subtypes to be added in the future.
+There is also a filename matching syntax: >
+	autocmd User Rails/config/environment.rb Rabbrev c config
+	autocmd User Rails/**/foo_bar.rb         Rabbrev FB:: FooBar
+Use the filetype based syntax whenever possible, reserving the filename based
+syntax for more advanced cases.
+
+						*macros/rails.vim*
+If you have several commands to run on initialization for all file types, they
+can be placed in a "macros/rails.vim" file in the 'runtimepath' (for example,
+"~/.vim/macros/rails.vim").  This file is sourced by rails.vim each time a
+Rails file is loaded.
+
+						*config/rails.vim*
+If you have settings particular to a specific project, they can be put in a
+config/rails.vim file in the root directory of the application.  The file is
+sourced in the |sandbox| for security reasons, which makes invoking rails.vim
+commands like |:Rnavcommand| or |:Rabbrev| impossible.  Thus, this file is
+deprecated in favor of |config/editor.json|.
+
+						*rails-:Rset*
+:Rset			This command has been superseded by
+			|rails-projections|.
+
+GLOBAL SETTINGS					*rails-global-settings*
+
+When all else fails, set a global.
+
+						*g:rails_abbreviations*
+Dictionary of additional abbreviations.  See |rails-abbreviations|.
+
+This variable was formerly used to globally disable abbreviations.  Use
+g:rails_no_abbreviations if you want to do that.
+
+						*g:rails_ctags_arguments*
+Additional arguments to pass to ctags from |:Rtags|.  Defaults to ignoring
+JavaScript files, since ctags has a tendency to choke on those.
+>
+	let g:rails_ctags_arguments = ['--languages=-javascript']
+<
+						*g:rails_default_config*
+If |config/editor.json| is missing, g:rails_default_config is used instead.
+Useful, in particular, for providing a default set of projections without
+polluting the namespace of every single project.
+>
+	let g:rails_default_config = {
+	      \ "projections": {...}}
+<
+						*g:rails_projections*  >
+Defines the set of globally available projections.  See |rails-projections|.
+Generally, it is advisable to use |g:rails_gem_projections| or
+|config/editor.json| instead where possible.
 
 						*g:rails_gem_projections*
 This is a dictionary where the keys are gem names and the values are
-projection dictionaries.  Projections are only used if you have the given
-gem bundled (requires bundler.vim).
+projection dictionaries.  Projections are only used if the given gem is
+bundled (requires bundler.vim).
 >
 	let g:rails_gem_projections = {
 	      \ "active_model_serializers": {
@@ -955,20 +973,19 @@ gem bundled (requires bundler.vim).
 	      \     "related": "db/schema.rb#%p",
 	      \     "template": "Fabricator :%s do\nend"}}}
 <
-The projection dictionaries look identical to |g:rails_projections|, explained
-above.  Generally, you should prefer these gem projections over global
-projections, as that way you won't get a bunch of useless commands in every
+See |rails-projections|.  Generally, you should prefer these gem projections
+over global projections to avoid getting a bunch of useless commands in every
 single project.
 
 Gem maintainers may also provide custom projections by placing them in
 lib/rails/projections.json.
 
-						*g:rails_root_url*  >
-	let g:rails_root_url = 'http://localhost:3000/'
-
+						*g:rails_root_url*
 Used for the |:Rpreview| command.  This setting is deprecated in favor of
 using |:Rserver| to customize the URL for a given application.
-
+>
+	let g:rails_root_url = 'http://localhost:3000/'
+<
 ABOUT					*rails-about* *rails-plugin-author*
 
 The latest stable version can be found at
