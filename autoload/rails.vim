@@ -3062,9 +3062,9 @@ endfunction
 
 function! s:readable_alternate_candidates(...) dict abort
   let f = self.name()
+  let placeholders = {}
   if a:0 && a:1
     let lastmethod = self.last_method(a:1)
-    let placeholders = {}
     if !empty(lastmethod)
       let placeholders.m = lastmethod
     endif
@@ -3108,7 +3108,7 @@ function! s:readable_alternate_candidates(...) dict abort
       return ['app/models/' . rails#singularize(lastmethod) . '.rb']
     endif
   endif
-  let projected = self.projected('alternate')
+  let projected = self.projected('alternate', placeholders)
   if !empty(projected)
     return projected
   endif
