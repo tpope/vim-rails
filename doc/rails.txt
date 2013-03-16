@@ -855,6 +855,13 @@ available options are as follows:
 	Determines the default test file to run with |rails-:Rrunner| and
 	|rails-:Rake|.  Also serves as a default for "alternate", and accepts
 	the same placeholders.
+						*rails-projection-task*
+"task" ~
+	Determines the default rake task to run.  Provide %l or %m to
+	substitute the current line or method name, or just a bare % (like
+	|:_%|) to substitute the current file name.  If a list with two tasks
+	is provided, the first will be used when a line number is given, and
+	the second when it's omitted.
 						*rails-projection-path*
 "path" ~
 	Provides a list of directories to add to 'path'.  When omitted,

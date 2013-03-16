@@ -1251,6 +1251,7 @@ endfunction
 function! s:readable_default_rake_task(...) dict abort
   let app = self.app()
   let lnum = a:0 ? (a:1 < 0 ? 0 : a:1) : 0
+
   if self.getvar('&buftype') == 'quickfix'
     return '-'
   elseif self.getline(lnum) =~# '# rake '
@@ -1261,7 +1262,22 @@ function! s:readable_default_rake_task(...) dict abort
     return matchstr(self.getline(self.last_method_line(lnum)),'\C# rake \zs.*')
   elseif self.getline(1) =~# '# rake ' && !lnum
     return matchstr(self.getline(1),'\C# rake \zs.*')
-  elseif self.type_name('config-routes')
+  endif
+
+  let placeholders = {}
+  if lnum
+    let placeholders.l = lnum
+    let last = self.last_method(lnum)
+    if !empty(last)
+      let placeholders.m = last
+    endif
+  endif
+  let tasks = self.projected('task', placeholders)
+  if !empty(tasks)
+    return tasks[0]
+  endif
+
+  if self.type_name('config-routes')
     return 'routes'
   elseif self.type_name('fixtures-yaml') && lnum
     return "db:fixtures:identify LABEL=".self.last_method(lnum)
