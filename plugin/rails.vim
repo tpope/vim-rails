@@ -40,17 +40,6 @@ function! s:autoload(...)
 endfunction
 
 " }}}1
-" Configuration {{{
-
-function! s:SetOptDefault(opt,val)
-  if !exists("g:".a:opt)
-    let g:{a:opt} = a:val
-  endif
-endfunction
-
-call s:SetOptDefault("rails_root_url",'http://localhost:3000/')
-
-" }}}1
 " Detection {{{1
 
 function! s:escvar(r)

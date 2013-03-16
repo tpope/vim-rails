@@ -817,20 +817,8 @@ commands like |:Rnavcommand| or |:Rabbrev| impossible.  Thus, this file is
 deprecated in favor of |config/editor.json|.
 
 						*rails-:Rset*
-:Rset {option}[={value}]
-			Query or set a local option.
-
-This command is deprecated.  See the below table for the replacement for a
-given option.
-
-Option		 Replacement ~
-alternate	 Provide "alternate" on a |config/editor.json| projection
-controller	 Provide "affinity" on a |config/editor.json| projection
-model		 Provide "affinity" on a |config/editor.json| projection
-related		 Provide "related" on a |config/editor.json| projection
-root_url	 |:Rserver| --binding=host --port=12345
-
-Open a bug report if your use case is not addressed by the above alternatives.
+:Rset			This command has been superseded by
+			|config/editor.json|.
 
 GLOBAL SETTINGS					*rails-global-settings*
 

@@ -935,7 +935,7 @@ function! s:BufCommands()
   command! -buffer -bar -nargs=? -bang -count -complete=customlist,rails#complete_rake Rake    :call s:Rake(<bang>0,!<count> && <line1> ? -1 : <count>,<q-args>)
   command! -buffer -bar -nargs=? -bang -range -complete=customlist,s:Complete_preview Rpreview :call s:Preview(<bang>0,<line1>,<q-args>)
   command! -buffer -bar -nargs=? -bang -complete=customlist,s:Complete_environments   Rlog     :call s:Log(<bang>0,<q-args>)
-  command! -buffer -bar -nargs=* -bang -complete=customlist,s:Complete_set            Rset     :call s:Set(<bang>0,<f-args>)
+  command! -buffer -bar -nargs=* -bang                                                Rset     :call s:Set(<bang>0,<f-args>)
   command! -buffer -bar -nargs=0 Rtags       :execute rails#app().tags_command()
   command! -buffer -bar -nargs=0 Ctags       :execute rails#app().tags_command()
   command! -buffer -bar -nargs=0 -bang Rrefresh :if <bang>0|unlet! g:autoloaded_rails|source `=s:file`|endif|call s:Refresh(<bang>0)
@@ -1419,9 +1419,9 @@ endfunction
 call s:add_methods('readable',['preview_urls'])
 
 function! s:Preview(bang,lnum,arg)
-  let root = s:getopt("root_url")
+  let root = get(get(rails#app(), 'options', {}), 'root_url')
   if root == ''
-    let root = s:getopt("url")
+    let root = get(g:, 'rails_root_url', 'http://localhost:3000/')
   endif
   let root = s:sub(root,'/$','')
   if a:arg =~ '://'
@@ -1604,7 +1604,8 @@ function! s:app_server_command(bang,arg) dict
     " --daemon would be more descriptive but lighttpd does not support it
     call self.execute_script_command('server '.a:arg." -d")
   endif
-  call s:setopt('a:root_url','http://'.(bind=='0.0.0.0'?'localhost': bind).':'.port.'/')
+  if !has_key(self,'options') | let self.options = {} | endif
+  let self.options.root_url = 'http://'.(bind=='0.0.0.0'?'localhost': bind).':'.port.'/'
   return ''
 endfunction
 
@@ -3018,7 +3019,7 @@ function! s:Alternate(cmd,line1,line2,count,...)
       return call('s:Edit',[1,a:cmd]+a:000)
     endif
   else
-    let file = s:getopt(a:count ? 'related' : 'alternate', 'bl')
+    let file = get(b:, a:count ? 'rails_related' : 'rails_alternate')
     if empty(file)
       let file = rails#buffer().alternate(a:count)
     endif
@@ -4251,117 +4252,7 @@ endfunction
 call s:add_methods('readable', ['projected'])
 
 function! s:Set(bang,...)
-  let c = 1
-  let defscope = ''
-  for arg in a:000
-    if arg =~? '^<[abgl]\=>$'
-      let defscope = (matchstr(arg,'<\zs.*\ze>'))
-    elseif arg !~ '='
-      if defscope != '' && arg !~ '^\w:'
-        let arg = defscope.':'.opt
-      endif
-      let val = s:getopt(arg)
-      if val == '' && !has_key(s:opts(),arg)
-        call s:error("No such rails.vim option: ".arg)
-      else
-        echo arg."=".val
-      endif
-    else
-      let opt = matchstr(arg,'[^=]*')
-      let val = s:sub(arg,'^[^=]*\=','')
-      if defscope != '' && opt !~ '^\w:'
-        let opt = defscope.':'.opt
-      endif
-      call s:setopt(opt,val)
-    endif
-  endfor
-  call s:warn('Rset is deprecated.  See :help :Rset')
-endfunction
-
-function! s:getopt(opt,...)
-  let app = rails#app()
-  let opt = a:opt
-  if a:0
-    let scope = a:1
-  elseif opt =~ '^[abgl]:'
-    let scope = tolower(matchstr(opt,'^\w'))
-    let opt = s:sub(opt,'^\w:','')
-  else
-    let scope = 'abgl'
-  endif
-  let lnum = a:0 > 1 ? a:2 : line('.')
-  if scope =~ 'l' && &filetype !~# '^ruby\>'
-    let scope = s:sub(scope,'l','b')
-  endif
-  let var = s:sname().'_'.opt
-  let lastmethod = s:lastmethod(lnum)
-  if lastmethod == '' | let lastmethod = ' ' | endif
-  if scope =~ 'l' && exists('b:_'.var) && has_key(b:_{var},lastmethod)
-    return b:_{var}[lastmethod]
-  elseif exists('b:'.var) && (scope =~ 'b' || (scope =~ 'l' && lastmethod == ' '))
-    return b:{var}
-  elseif scope =~ 'a' && has_key(app,'options') && has_key(app.options,opt)
-    return app.options[opt]
-  elseif scope =~ 'a' && has_key(rails#app().config(), opt)
-    return rails#app().config()[opt]
-  elseif scope =~ 'g' && exists("g:".s:sname()."_".opt)
-    return g:{var}
-  else
-    return ""
-  endif
-endfunction
-
-function! s:setopt(opt,val)
-  let app = rails#app()
-  if a:opt =~? '[abgl]:'
-    let scope = matchstr(a:opt,'^\w')
-    let opt = s:sub(a:opt,'^\w:','')
-  else
-    let scope = ''
-    let opt = a:opt
-  endif
-  let defscope = get(s:opts(),opt,'a')
-  if scope == ''
-    let scope = defscope
-  endif
-  if &filetype !~# '^ruby\>' && (scope ==# 'B' || scope ==# 'l')
-    let scope = 'b'
-  endif
-  let var = s:sname().'_'.opt
-  if opt =~ '\W'
-    return s:error("Invalid option ".a:opt)
-  elseif scope ==# 'B' && defscope == 'l'
-    if !exists('b:_'.var) | let b:_{var} = {} | endif
-    let b:_{var}[' '] = a:val
-  elseif scope =~? 'b'
-    let b:{var} = a:val
-  elseif scope =~? 'a'
-    if !has_key(app,'options') | let app.options = {} | endif
-    let app.options[opt] = a:val
-  elseif scope =~? 'g'
-    let g:{var} = a:val
-  elseif scope =~? 'l'
-    if !exists('b:_'.var) | let b:_{var} = {} | endif
-    let lastmethod = s:lastmethod(lnum)
-    let b:_{var}[lastmethod == '' ? ' ' : lastmethod] = a:val
-  else
-    return s:error("Invalid scope for ".a:opt)
-  endif
-endfunction
-
-function! s:opts()
-  return {'alternate': 'b', 'controller': 'b', 'model': 'b', 'related': 'l', 'root_url': 'a'}
-endfunction
-
-function! s:Complete_set(A,L,P)
-  if a:A =~ '='
-    let opt = matchstr(a:A,'[^=]*')
-    return [opt."=".s:getopt(opt)]
-  else
-    let extra = matchstr(a:A,'^[abgl]:')
-    return filter(sort(map(keys(s:opts()),'extra.v:val')),'s:startswith(v:val,a:A)')
-  endif
-  return []
+  call s:warn('Rset is obsolete and has no effect')
 endfunction
 
 " }}}1
