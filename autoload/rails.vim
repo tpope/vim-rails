@@ -844,11 +844,19 @@ call s:add_methods('readable',['app','relative','absolute','spec','calculate_fil
 " }}}1
 " Ruby Execution {{{1
 
-function! s:app_ruby_shell_command(cmd) dict abort
+function! s:app_ruby_command(cmd) dict abort
   return 'ruby '.a:cmd
 endfunction
 
-function! s:app_script_shell_command(cmd) dict abort
+function! s:app_ruby_script_command(cmd) dict abort
+  if has('win32')
+    return self.ruby_command(a:cmd)
+  else
+    return a:cmd
+  endif
+endfunction
+
+function! s:app_prepare_rails_command(cmd) dict abort
   if self.has_path('.zeus.sock') && a:cmd =~# '^\%(console\|dbconsole\|destroy\|generate\|server\|runner\)\>'
     return 'zeus '.a:cmd
   elseif self.has_path('script/rails')
@@ -862,11 +870,11 @@ function! s:app_script_shell_command(cmd) dict abort
   else
     return 'rails '.a:cmd
   endif
-  return self.ruby_shell_command(cmd)
+  return self.ruby_script_command(cmd)
 endfunction
 
-function! s:app_background_script_command(cmd) dict abort
-  let cmd = s:esccmd(self.script_shell_command(a:cmd))
+function! s:app_background_rails_command(cmd) dict abort
+  let cmd = s:esccmd(self.prepare_rails_command(a:cmd))
   let title = s:sub(a:cmd, '\s.*', '')
   call s:push_chdir(1)
   try
@@ -885,10 +893,10 @@ function! s:app_background_script_command(cmd) dict abort
   return ''
 endfunction
 
-function! s:app_execute_script_command(cmd) dict abort
+function! s:app_execute_rails_command(cmd) dict abort
   call s:push_chdir(1)
   try
-    exe '!'.s:esccmd(self.script_shell_command(a:cmd))
+    exe '!'.s:esccmd(self.prepare_rails_command(a:cmd))
   finally
     call s:pop_command()
   endtry
@@ -901,7 +909,7 @@ function! s:app_lightweight_ruby_eval(ruby,...) dict abort
     return def
   endif
   let args = '-e '.s:rquote(a:ruby)
-  let cmd = self.ruby_shell_command(args)
+  let cmd = self.ruby_command(args)
   silent! let results = system(cmd)
   return v:shell_error == 0 ? results : def
 endfunction
@@ -912,7 +920,7 @@ function! s:app_eval(ruby,...) dict abort
     return def
   endif
   let args = "-r./config/boot -r ".s:rquote(self.path("config/environment"))." -e ".s:rquote(a:ruby)
-  let cmd = self.ruby_shell_command(args)
+  let cmd = self.ruby_command(args)
   call s:push_chdir(1)
   try
     silent! let results = system(cmd)
@@ -922,7 +930,7 @@ function! s:app_eval(ruby,...) dict abort
   return v:shell_error == 0 ? results : def
 endfunction
 
-call s:add_methods('app', ['ruby_shell_command','script_shell_command','execute_script_command','background_script_command','lightweight_ruby_eval','eval'])
+call s:add_methods('app', ['ruby_command','ruby_script_command','prepare_rails_command','execute_rails_command','background_rails_command','lightweight_ruby_eval','eval'])
 
 " }}}1
 " Commands {{{1
@@ -1097,7 +1105,7 @@ function! s:app_rake_tasks() dict
   if self.cache.needs('rake_tasks')
     call s:push_chdir()
     try
-      let output = system(self.has_path('bin/rake') ? self.ruby_shell_command('bin/rake -T') : 'rake -T')
+      let output = system(self.has_path('bin/rake') ? self.ruby_script_command('bin/rake -T') : 'rake -T')
       let lines = split(output, "\n")
     finally
       call s:pop_command()
@@ -1148,7 +1156,7 @@ function! s:Rake(bang,lnum,arg)
     if rails#app().has_path('.zeus.sock') && executable('zeus')
       let &l:makeprg = 'zeus rake'
     elseif rails#app().has_path('bin/rake')
-      let &l:makeprg = rails#app().ruby_shell_command('bin/rake')
+      let &l:makeprg = rails#app().ruby_script_command('bin/rake')
     elseif rails#app().has('bundler')
       let &l:makeprg = 'bundle exec rake'
     else
@@ -1570,9 +1578,9 @@ function! s:app_script_command(bang,...) dict
   endif
   let str = join(map(copy(a:000), 's:rquote(v:val)'), ' ')
   if a:bang || str =~# '^\%(c\|console\|db\|dbconsole\|s\|server\)\>'
-    return self.background_script_command(str)
+    return self.background_rails_command(str)
   else
-    return self.execute_script_command(str)
+    return self.execute_rails_command(str)
   endif
 endfunction
 
@@ -1583,7 +1591,7 @@ function! s:app_runner_command(bang,count,args) dict abort
   call s:push_chdir(1)
   try
     compiler ruby
-    let &l:makeprg = self.script_shell_command('runner')
+    let &l:makeprg = self.prepare_rails_command('runner')
     call s:make(a:bang, a:args)
     return ''
   finally
@@ -1599,7 +1607,7 @@ function! s:app_runner_command(bang,count,args) dict abort
 endfunction
 
 function! s:app_output_command(count, code) dict
-  let str = self.script_shell_command('runner '.s:rquote(a:code))
+  let str = self.prepare_rails_command('runner '.s:rquote(a:code))
   call s:push_chdir(1)
   try
     let res = s:sub(system(str),'\n$','')
@@ -1642,7 +1650,7 @@ endfunction
 
 function! s:app_server_command(bang,arg) dict
   if a:arg =~# '--help'
-    call self.execute_script_command('server '.a:arg)
+    call self.execute_rails_command('server '.a:arg)
     return ''
   endif
   let pidfile = self.path('tmp/pids/server.pid')
@@ -1662,9 +1670,9 @@ function! s:app_server_command(bang,arg) dict
     endif
   endif
   if has("win32") || (exists("$STY") && executable("screen")) || (exists("$TMUX") && executable("tmux"))
-    call self.background_script_command('server '.a:arg)
+    call self.background_rails_command('server '.a:arg)
   else
-    call self.execute_script_command('server '.a:arg." -d")
+    call self.execute_rails_command('server '.a:arg." -d")
   endif
   return ''
 endfunction
@@ -1689,7 +1697,7 @@ function! s:app_generator_command(bang,...) dict
   let old_makeprg = &l:makeprg
   let old_errorformat = &l:errorformat
   try
-    let &l:makeprg = self.script_shell_command(cmd)
+    let &l:makeprg = self.prepare_rails_command(cmd)
     let &l:errorformat = s:efm_generate
     call s:push_chdir(1)
     if a:bang
