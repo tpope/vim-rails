@@ -84,7 +84,9 @@ actually edit a file from a Rails application.
 :Rpreview [path]	Open the given [path] for the current app in a
 			browser.  The host and port are determined by applying
 			some netstat/lsof trickery to the current server pid.
-			If [path] is omitted, a sensible default is used
+			If no server is running, Pow is consulted, and if all
+			else fails, a default of localhost:3000 is used.  If
+			[path] is omitted, a sensible default is used
 			(considers the current controller/template, but does
 			not take routing into account).  The default is
 			overridden by comments like the following that are
