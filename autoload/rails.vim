@@ -1442,7 +1442,7 @@ call s:add_methods('readable', ['preview_urls'])
 
 function! s:app_server_binding() dict abort
   let pidfile = self.path('tmp/pids/server.pid')
-  let pid = get(s:readfile(pidfile), 0, 0)
+  let pid = get(readfile(pidfile, 'b', 1), 0, 0)
   if pid
     if self.cache.has('server')
       let old = self.cache.get('server')
