@@ -81,21 +81,24 @@ actually edit a file from a Rails application.
 			might like :Rake log:clear.
 
 						*rails-:Rpreview*
-:Rpreview [{path}]	Creates a URL from the currently running server (or
-			http://localhost:3000/ if it's not running) and the
-			{path} given and open it in the browser.  If {path} is
-			omitted, a sensible default is used (considers the
-			current controller/template, but does not take routing
-			into account).  The default is overridden by comments
-			like the following that are either before the current
-			method call or at the top of the file: >
+:Rpreview [path]	Open the given [path] for the current app in a
+			browser.  The host and port are determined by applying
+			some netstat/lsof trickery to the current server pid.
+			If [path] is omitted, a sensible default is used
+			(considers the current controller/template, but does
+			not take routing into account).  The default is
+			overridden by comments like the following that are
+			either before the current method call or at the top of
+			the file: >
 
 		# GET /users
 		# PUT /users/1
-
-<			See |rails-:OpenURL| if you need to provide a custom
-			browser launcher.
-
+<
+			If it's not using the right browser, define a :OpenURL
+			command:
+>
+		:command -bar -nargs=1 OpenURL :!open <args>
+<
 						*rails-:Rpreview!*
 :Rpreview! [{path}]	Like :Rpreview, but open the path inside Vim using
 			|netrw| instead.
@@ -113,13 +116,6 @@ actually edit a file from a Rails application.
 
 						*rails-:Rrefresh!*
 :Rrefresh!		As above, and also reloads rails.vim.
-
-						*rails-:OpenURL*
-:OpenURL {url}		This is a command to open a web browser utilized by
-			other plugin features.  If it doesn't work or opens
-			the wrong web browser, it may be overridden.  For
-			example: >
-		:command -bar -nargs=1 OpenURL :!open <args>
 
 NAVIGATION					*rails-navigation*
 
@@ -492,19 +488,11 @@ A limited amount of completion with <Tab> is supported.
 			On win32, this means |!start|.  If running inside
 			screen or tmux, a new window inside the current
 			session is created.  Otherwise, the --daemon option is
-			used.  Calling this command also sets the base URL for
-			|:Rpreview| based on the provided --binding and --port
-			options, defaulting to localhost and 3000
-			respectively.  This works even if the server failed to
-			start, which one can use to set the URL to an already
-			running server (replacing :Rset root_url).
+			used.
 
 						*rails-:Rserver!*
-:Rserver! {options}	Same as |:Rserver|, only first attempts to kill any
-			other server using the same port.  On non-Windows
-			systems, lsof must be installed for this to work.
-			Pass - as an argument to kill the server without
-			restarting it.
+:Rserver! {options}	Kill the pid found in tmp/pids/server.pid and then
+			invoke |:Rserver|.
 
 REFACTORING HELPERS				*rails-refactoring*
 
@@ -988,12 +976,6 @@ single project.
 Gem maintainers may also provide custom projections by placing them in
 lib/rails/projections.json.
 
-						*g:rails_root_url*
-Used for the |:Rpreview| command.  This setting is deprecated in favor of
-using |:Rserver| to customize the URL for a given application.
->
-	let g:rails_root_url = 'http://localhost:3000/'
-<
 ABOUT					*rails-about* *rails-plugin-author*
 
 The latest stable version can be found at

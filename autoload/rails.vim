@@ -1438,14 +1438,37 @@ function! s:readable_preview_urls(lnum) dict abort
   return urls
 endfunction
 
-call s:add_methods('readable',['preview_urls'])
+call s:add_methods('readable', ['preview_urls'])
 
-function! s:Preview(bang,lnum,arg)
-  let root = get(get(rails#app(), 'options', {}), 'root_url')
-  if root == ''
-    let root = get(g:, 'rails_root_url', 'http://localhost:3000/')
+function! s:app_server_binding() dict abort
+  let pidfile = self.path('tmp/pids/server.pid')
+  let pid = get(s:readfile(pidfile), 0, 0)
+  if pid
+    if self.cache.has('server')
+      let old = self.cache.get('server')
+    else
+      let old = {'pid': 0, 'binding': ''}
+    endif
+    if !empty(old.binding) && pid == old.pid
+      return old.binding
+    endif
+    let binding = rails#get_binding_for(pid)
+    call self.cache.set('server', {'pid': pid, 'binding': binding})
+    if !empty(binding)
+      return binding
+    endif
   endif
-  let root = s:sub(root,'/$','')
+  return ''
+endfunction
+
+call s:add_methods('app', ['server_binding'])
+
+function! s:Preview(bang, lnum, arg) abort
+  let binding = rails#app().server_binding()
+  if empty(binding)
+    let binding = '0.0.0.0:3000'
+  endif
+  let root = 'http://' . s:sub(binding, '^0\.0\.0\.0>', 'localhost')
   if a:arg =~ '://'
     let uri = a:arg
   elseif a:arg != ''
@@ -1583,31 +1606,41 @@ function! s:app_output_command(count, code) dict
   return ''
 endfunction
 
-function! s:getpidfor(bind,port)
-    if has("win32") || has("win64")
-      let netstat = system("netstat -anop tcp")
-      let pid = matchstr(netstat,'\<'.a:bind.':'.a:port.'\>.\{-\}LISTENING\s\+\zs\d\+')
-    elseif executable('lsof')
-      let pid = system("lsof -i 4tcp@".a:bind.':'.a:port."|grep LISTEN|awk '{print $2}'")
-      let pid = s:sub(pid,'\n','')
-    else
-      let pid = ""
-    endif
-    return pid
+function! rails#get_binding_for(pid)
+  if empty(a:pid)
+    return ''
+  endif
+  if has('win32')
+    let output = system('netstat -anop tcp')
+    return matchstr(output, '\n\s*TCP\s\+\zs\S\+\ze\s\+\S\+\s\+LISTENING\s\+'.a:pid.'\>')
+  endif
+  if executable('lsof')
+    let lsof = 'lsof'
+  elseif executable('/usr/sbin/lsof')
+    let lsof = '/usr/sbin/lsof'
+  endif
+  if exists('lsof')
+    let output = system(lsof.' -an -itcp -sTCP:LISTEN -p'.a:pid)
+    let binding = matchstr(output, '\S\+:\d\+\ze\s\+(LISTEN)\n')
+    return s:sub(binding, '^\*', '0.0.0.0')
+  endif
+  if executable('netstat')
+    let output = system('netstat -antp')
+    return matchstr(output, '\S\+:\d\+\ze\s\+\S\+\s\+LISTEN\s\+'.a:pid.'/')
+    return binding
+  endif
+  return ''
 endfunction
 
 function! s:app_server_command(bang,arg) dict
-  let port = matchstr(a:arg,'\%(-p\|--port=\=\)\s*\zs\d\+')
-  if empty(port)
-    let port = "3000"
+  if a:arg =~# '--help'
+    call self.execute_script_command('server '.a:arg)
+    return ''
   endif
-  let bind = matchstr(a:arg,'\%(-b\|--binding=\=\)\s*\zs\S\+')
-  if empty(bind)
-    let bind = "0.0.0.0"
-  endif
+  let pidfile = self.path('tmp/pids/server.pid')
   if a:bang && executable("ruby")
-    let pid = s:getpidfor(bind,port)
-    if pid =~ '^\d\+$'
+    let pid = get(s:readfile(pidfile), 0, 0)
+    if pid
       echo "Killing server with pid ".pid
       if !has("win32")
         call system("ruby -e 'Process.kill(:TERM,".pid.")'")
@@ -1620,14 +1653,11 @@ function! s:app_server_command(bang,arg) dict
       return
     endif
   endif
-  if has("win32") || has("win64") || (exists("$STY") && executable("screen")) || (exists("$TMUX") && executable("tmux"))
+  if has("win32") || (exists("$STY") && executable("screen")) || (exists("$TMUX") && executable("tmux"))
     call self.background_script_command('server '.a:arg)
   else
-    " --daemon would be more descriptive but lighttpd does not support it
     call self.execute_script_command('server '.a:arg." -d")
   endif
-  if !has_key(self,'options') | let self.options = {} | endif
-  let self.options.root_url = 'http://'.(bind=='0.0.0.0'?'localhost': bind).':'.port.'/'
   return ''
 endfunction
 
@@ -1711,7 +1741,7 @@ function! s:Complete_script(ArgLead,CmdLine,P)
     if a:ArgLead =~# '^--environment='
       return s:completion_filter(map(copy(rails#app().environments()),'"--environment=".v:val'),a:ArgLead)
     else
-      return filter(["-p","-b","-e","-m","-d","-u","-c","-h","--port=","--binding=","--environment=","--mime-types=","--daemon","--debugger","--charset=","--help"],'s:startswith(v:val,a:ArgLead)')
+      return filter(["-p","-b","-c","-d","-u","-e","-P","-h","--port=","--binding=","--config=","--daemon","--debugger","--environment=","--pid=","--help"],'s:startswith(v:val,a:ArgLead)')
     endif
   endif
   return ""
