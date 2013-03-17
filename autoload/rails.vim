@@ -110,7 +110,7 @@ function! s:app_path(...) dict
 endfunction
 
 function! s:app_has_path(path) dict
-  return getftime(a:path) != -1
+  return getftime(self.path(a:path)) != -1
 endfunction
 
 function! s:app_has_file(file) dict
