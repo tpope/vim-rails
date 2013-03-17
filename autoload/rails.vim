@@ -1458,6 +1458,11 @@ function! s:app_server_binding() dict abort
       return binding
     endif
   endif
+  for app in s:split(glob("~/.pow/*"))
+    if resolve(app) ==# resolve(self.path())
+      return fnamemodify(app, ':t').'.dev'
+    endif
+  endfor
   return ''
 endfunction
 
