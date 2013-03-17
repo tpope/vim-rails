@@ -4202,7 +4202,7 @@ function! s:app_config(...) dict abort
 
     if self.has_path('config/editor.json')
       try
-        let config = rails#json_parse(readfile(self.path('config/editor.json'))))
+        let config = rails#json_parse(readfile(self.path('config/editor.json')))
         if !has_key(config, 'projections')
           let config.projections = projections
         endif
