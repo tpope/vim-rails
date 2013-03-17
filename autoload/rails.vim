@@ -1468,19 +1468,22 @@ endfunction
 
 call s:add_methods('app', ['server_binding'])
 
-function! s:Preview(bang, lnum, arg) abort
+function! s:Preview(bang, lnum, uri) abort
   let binding = rails#app().server_binding()
   if empty(binding)
     let binding = '0.0.0.0:3000'
   endif
-  let root = 'http://' . s:sub(binding, '^0\.0\.0\.0>', 'localhost')
-  if a:arg =~ '://'
-    let uri = a:arg
-  elseif a:arg != ''
-    let uri = root.'/'.s:sub(a:arg,'^/','')
+  let binding = s:sub(binding, '^0\.0\.0\.0>|^127\.0\.0\.1>', 'localhost')
+  let uri = empty(a:uri) ? get(rails#buffer().preview_urls(a:lnum),0,'') : a:uri
+  if uri =~ '://'
+    "
+  elseif uri =~# '^[[:alnum:]-]\+\.'
+    let uri = 'http://'.s:sub(uri, '^[^/]*\zs', matchstr(root, ':\d\+$'))
+  elseif uri =~# '^[[:alnum:]-]\+\%(/\|$\)'
+    let domain = s:sub(binding, '^localhost>', 'lvh.me')
+    let uri = 'http://'.s:sub(uri, '^[^/]*\zs', '.'.domain)
   else
-    let uri = get(rails#buffer().preview_urls(a:lnum),0,'')
-    let uri = root.'/'.s:sub(s:sub(uri,'^/',''),'/$','')
+    let uri = 'http://'.binding.'/'.s:sub(uri,'^/','')
   endif
   call s:initOpenURL()
   if exists(':OpenURL') && !a:bang
