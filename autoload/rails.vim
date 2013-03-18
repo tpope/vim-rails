@@ -2316,7 +2316,6 @@ function! s:BufProjectionCommands()
   endif
   call s:addfilecmds("stylesheet")
   call s:addfilecmds("javascript")
-  call s:addfilecmds("plugin")
   for [name, command] in items(rails#app().projections())
     call s:define_navcommand(name, command)
   endfor
@@ -2453,14 +2452,6 @@ endfunction
 
 function! s:specList(A,L,P)
   return s:completion_filter(rails#app().relglob("spec/","**/*","_spec.rb"),a:A)
-endfunction
-
-function! s:pluginList(A,L,P)
-  if a:A =~ '/'
-    return s:completion_filter(rails#app().relglob('vendor/plugins/',matchstr(a:A,'.\{-\}/').'**/*'),a:A)
-  else
-    return s:completion_filter(rails#app().relglob('vendor/plugins/',"*","/init.rb"),a:A)
-  endif
 endfunction
 
 function! s:Navcommand(bang,...)
@@ -2855,33 +2846,6 @@ function! s:specEdit(cmd,...) abort
         \ 'suffix': '_spec.rb',
         \ 'template': "require 'spec_helper'\n\ndescribe ".describe." do\nend",
         \ 'default': ['spec/spec_helper.rb']})
-endfunction
-
-function! s:pluginEdit(cmd,...)
-  let cmd = s:findcmdfor(a:cmd)
-  let plugin = ""
-  let extra = ""
-  if RailsFilePath() =~ '\<vendor/plugins/.'
-    let plugin = matchstr(RailsFilePath(),'\<vendor/plugins/\zs[^/]*\ze')
-    let extra = "vendor/plugins/" . plugin . "/\n"
-  endif
-  if a:0
-    if a:1 =~ '^[^/.]*/\=$' && rails#app().has_file("vendor/plugins/".a:1."/init.rb")
-      return s:EditSimpleRb(a:cmd,"plugin",s:sub(a:1,'/$',''),"vendor/plugins/","/init.rb")
-    elseif plugin == ""
-      return s:edit(cmd,"vendor/plugins/".s:sub(a:1,'\.$',''))
-    elseif a:1 == "."
-      return s:findedit(cmd,"vendor/plugins/".plugin)
-    elseif isdirectory(rails#app().path("vendor/plugins/".matchstr(a:1,'^[^/]*')))
-      return s:edit(cmd,"vendor/plugins/".a:1)
-    else
-      return s:findedit(cmd,"vendor/plugins/".a:1."\nvendor/plugins/".plugin."/".a:1)
-    endif
-  else
-    call s:findedit(a:cmd,"Gemfile")
-    call s:warn(':Rplugin is deprecated. Use :Rlib to open the Gemfile.')
-    return ''
-  endif
 endfunction
 
 " }}}1

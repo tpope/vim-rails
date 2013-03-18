@@ -307,7 +307,8 @@ to methods or line numbers using the same syntax as |:R|, and file creation
 			specified name.  If the current file is part of a
 			plugin, the libraries from that plugin can be
 			specified as well.  With no argument, defaults to
-			editing the application Gemfile.
+			editing the application Gemfile (a task formally
+			handled by the defunct :Rplugin).
 
 						*rails-:Rlocale*
 :Rlocale [{name}]	Edit the config/locale file specified, optionally
@@ -330,13 +331,6 @@ to methods or line numbers using the same syntax as |:R|, and file creation
 
 						*rails-:Rmodel*
 :Rmodel [{name}]	Edit the specified or current model.
-
-						*rails-:Rplugin*
-:Rplugin [{plugin}[/{path}]]
-			Edits a file within a plugin.  If the path to the file
-			is omitted, it defaults to init.rb.  If no argument is
-			given, it defaults to editing the application Gemfile.
-			Deprecated.
 
 						*rails-:Rspec*
 :Rspec [{name}]		Edit the given spec.  With no argument, defaults to
