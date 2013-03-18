@@ -2887,21 +2887,6 @@ function! s:editcmdfor(cmd)
   return cmd
 endfunction
 
-function! s:try(cmd) abort
-  if !exists(":try")
-    " I've seen at least one weird setup without :try
-    exe a:cmd
-  else
-    try
-      exe a:cmd
-    catch
-      call s:error(s:sub(v:exception,'^.{-}:\zeE',''))
-      return 0
-    endtry
-  endif
-  return 1
-endfunction
-
 function! s:projection_pairs(options)
   let pairs = []
   if has_key(a:options, 'format')
@@ -3030,9 +3015,12 @@ function! s:findedit(cmd,files,...) abort
   else
     let testcmd = cmd.' '.(a:0 ? a:1 . ' ' : '').file
   endif
-  if s:try(testcmd)
+  try
+    exe testcmd
     call s:djump(djump)
-  endif
+  catch
+    call s:error(s:sub(v:exception,'^.{-}:\zeE',''))
+  endtry
   return ''
 endfunction
 
