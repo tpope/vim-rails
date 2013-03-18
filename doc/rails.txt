@@ -747,7 +747,7 @@ they are part of a Rails application).
 A 'completefunc' is provided (if not already set).  It is very simple, as it
 uses syntax highlighting to make its guess.  See |i_CTRL-X_CTRL-U|.
 
-PROJECTIONS				*rails-projection* *rails-projections*
+PROJECTIONS			*rails-config/projections.json* *rails-projections*
 
 The bulk of rails.vim features support core Rails conventions and a just a
 handful of popular additions (such as RSpec).  Projections let you teach
@@ -756,7 +756,7 @@ rails.vim about app specific and gem specific behavior.
 There are four primary ways to define projections:
 
 1. Globally, in |g:rails_projections|.
-2. Per app, in |config/editor.json|.
+2. Per app, in config/projections.json or nested in |config/editor.json|.
 3. Per bundled gem, in |g:rails_gem_projections|.
 4. Inside a bundled gem, in lib/rails/projections.json.
 
@@ -801,7 +801,7 @@ available options are as follows:
 	behaviors below.  You can also give a list of multiple formats.  With
 	the global option, if none of the given containing directories in the
 	given formats exist, the command won't be created.  Projections in
-	|config/editor.json| are unaffected by this requirement.
+	config/*.json and gems are unaffected by this requirement.
 						*rails-projection-affinity*
 "affinity" ~
 	Provide this if the root of your file name corresponds to either
@@ -880,7 +880,8 @@ be checked into version control.  Example:
 	}
 <
 See |rails-abbreviations| and |rails-projections| for explanations of the
-respective sections.
+respective sections.  You can also put projections in
+|config/projections.json|.
 
 					*rails-:autocmd* *rails-autocommands*
 If you would like to set your own custom Vim settings whenever a Rails file is
