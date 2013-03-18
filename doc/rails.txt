@@ -910,7 +910,7 @@ Rails file is loaded.
 
 						*config/rails.vim*
 This file used to be sourced automatically from the root of the application,
-but has been superseded by |config/editor.json|.
+but has been superseded by |config/editor.json| and |config/projections.json|.
 
 						*rails-:Rset*
 :Rset			This command has been superseded by
