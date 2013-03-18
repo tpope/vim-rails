@@ -910,11 +910,8 @@ can be placed in a "macros/rails.vim" file in the 'runtimepath' (for example,
 Rails file is loaded.
 
 						*config/rails.vim*
-If you have settings particular to a specific project, they can be put in a
-config/rails.vim file in the root directory of the application.  The file is
-sourced in the |sandbox| for security reasons, which makes invoking rails.vim
-commands like |:Rnavcommand| or |:Rabbrev| impossible.  Thus, this file is
-deprecated in favor of |config/editor.json|.
+This file used to be sourced automatically from the root of the application,
+but has been superseded by |config/editor.json|.
 
 						*rails-:Rset*
 :Rset			This command has been superseded by

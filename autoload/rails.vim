@@ -4349,24 +4349,6 @@ endfunction
 " }}}1
 " Detection {{{1
 
-function! s:app_source_callback(file) dict
-  if !&modeline
-    return
-  endif
-  if self.cache.needs('existence')
-    call self.cache.set('existence',{})
-  endif
-  let cache = self.cache.get('existence')
-  if !has_key(cache,a:file)
-    let cache[a:file] = self.has_file(a:file)
-  endif
-  if cache[a:file]
-    sandbox source `=self.path(a:file)`
-  endif
-endfunction
-
-call s:add_methods('app',['source_callback'])
-
 function! RailsBufInit(path)
   let firsttime = !(exists("b:rails_root") && b:rails_root == a:path)
   let b:rails_root = a:path
@@ -4382,7 +4364,6 @@ function! RailsBufInit(path)
   " IO related).  This caching is a temporary hack; if it doesn't cause
   " problems it should probably be refactored.
   let b:rails_cached_file_type = buffer.calculate_file_type()
-  call app.source_callback("config/syntax.vim")
   if expand('%:t') =~ '\.yml\.example$'
     setlocal filetype=yaml
   elseif expand('%:e') =~ '^\%(rjs\|rxml\|builder\|jbuilder\)$'
@@ -4406,7 +4387,6 @@ function! RailsBufInit(path)
   endif
   call s:BufSettings()
   call s:BufMappings()
-  call app.source_callback("config/rails.vim")
   call s:BufCommands()
   let t = rails#buffer().type_name()
   let t = "-".t
