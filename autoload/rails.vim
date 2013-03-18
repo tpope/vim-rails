@@ -873,17 +873,23 @@ function! s:app_prepare_rails_command(cmd) dict abort
   return self.ruby_script_command(cmd)
 endfunction
 
-function! s:app_background_rails_command(cmd) dict abort
+function! s:app_start_rails_command(cmd, ...) dict abort
   let cmd = s:esccmd(self.prepare_rails_command(a:cmd))
   let title = s:sub(a:cmd, '\s.*', '')
+  let title = get({
+        \ 'g': 'generate',
+        \ 'd': 'destroy',
+        \ 'c': 'console',
+        \ 'db': 'dbconsole',
+        \ 's': 'server',
+        \ 'r': 'runner',
+        \ }, title, title)
   call s:push_chdir(1)
   try
-    if has("gui_win32")
+    if exists(':Start')
+      exe 'Start'.(a:0 ? '!' : '').' -title=rails\ '.title.' '.cmd
+    elseif has("win32")
       exe "!start ".cmd
-    elseif exists("$STY") && executable("screen")
-      silent exe "!screen -ln -fn -t ".title.' '.cmd
-    elseif exists("$TMUX") && executable("tmux")
-      silent exe '!tmux new-window -n "'.title.'" "'.cmd.'"'
     else
       exe "!".cmd
     endif
@@ -930,7 +936,7 @@ function! s:app_eval(ruby,...) dict abort
   return v:shell_error == 0 ? results : def
 endfunction
 
-call s:add_methods('app', ['ruby_command','ruby_script_command','prepare_rails_command','execute_rails_command','background_rails_command','lightweight_ruby_eval','eval'])
+call s:add_methods('app', ['ruby_command','ruby_script_command','prepare_rails_command','execute_rails_command','start_rails_command','lightweight_ruby_eval','eval'])
 
 " }}}1
 " Commands {{{1
@@ -1669,10 +1675,10 @@ function! s:app_server_command(bang,arg) dict
       return
     endif
   endif
-  if has("win32") || (exists("$STY") && executable("screen")) || (exists("$TMUX") && executable("tmux"))
-    call self.background_rails_command('server '.a:arg)
+  if exists(':Start') || has('win32')
+    call self.start_rails_command('server '.a:arg, 1)
   else
-    call self.execute_rails_command('server '.a:arg." -d")
+    call self.execute_rails_command('server '.a:arg.' -d')
   endif
   return ''
 endfunction

@@ -481,10 +481,8 @@ A limited amount of completion with <Tab> is supported.
 
 						*rails-:Rserver*
 :Rserver {options}	Launches rails server {options} in the background.
-			On win32, this means |!start|.  If running inside
-			screen or tmux, a new window inside the current
-			session is created.  Otherwise, the --daemon option is
-			used.
+			On win32, this means |!start|.  Otherwise, the
+			--daemon option is passed in.
 
 						*rails-:Rserver!*
 :Rserver! {options}	Kill the pid found in tmp/pids/server.pid and then
