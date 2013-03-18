@@ -4286,21 +4286,32 @@ function! s:find_projection(projections, filename) abort
   return ['', {}]
 endfunction
 
+function! s:expand_placeholders(string, placeholders)
+  let value = substitute(a:string, '%\([^: ]\)', '\=get(a:placeholders, submatch(1), "\n")', 'g')
+  return value =~# '\n' ? '' : value
+endfunction
+
 function! s:readable_projected(key, ...) dict abort
-  let [root, projection] = s:find_projection(values(self.app().projections()), self.name())
-  let projected = {}
-  if empty(projection)
-    return []
+  let projections = self.app().projections()
+  if has_key(projections, self.name())
+    let projection = projections[self.name()]
+    let placeholders = {}
   else
-    let placeholders = {
-          \ 's': root,
-          \ 'p': rails#pluralize(root),
-          \ '%': '%'}
-    if a:0
-      call extend(placeholders, a:1)
+    let [root, projection] = s:find_projection(values(projections), self.name())
+    let projected = {}
+    if empty(projection)
+      return []
+    else
+      let placeholders = {
+            \ 's': root,
+            \ 'p': rails#pluralize(root),
+            \ '%': '%'}
     endif
-    return filter(map(s:split(get(projection, a:key, '')), 'substitute(v:val, "%\\([^: ]\\)", "\\=get(placeholders, submatch(1), \"\n\")", "g")'), 'v:val !~# "\n"')
   endif
+  if a:0
+    call extend(placeholders, a:1)
+  endif
+  return filter(map(s:split(get(projection, a:key, '')), 's:expand_placeholders(v:val, placeholders)'), '!empty(v:val)')
 endfunction
 
 call s:add_methods('readable', ['projected'])
