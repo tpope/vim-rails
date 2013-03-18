@@ -1338,20 +1338,20 @@ function! s:readable_default_rake_task(...) dict abort
       let opts = ''
       if test ==# self.name()
         let method = self.app().file(test).last_method(lnum)
-        if meth =~ '^test_'
+        if method =~ '^test_'
           let opts = ' TESTOPTS=-n'.method
         endif
       endif
       if test =~# '^test/unit\>'
-        return 'test:units TEST='s:rquote(test).opts
+        return 'test:units TEST='.s:rquote(test).opts
       elseif test =~# '^test/functional\>'
-        return 'test:functional TEST='s:rquote(test).opts
+        return 'test:functional TEST='.s:rquote(test).opts
       elseif test =~# '^test/integration\>'
-        return 'test:integration TEST='s:rquote(test).opts
+        return 'test:integration TEST='.s:rquote(test).opts
       elseif test ==# 'test'
         return 'test'
       else
-        return 'test:recent TEST='s:rquote(test).opts
+        return 'test:recent TEST='.s:rquote(test).opts
       endif
     elseif test =~# '^spec\>'
       return 'spec SPEC='.s:rquote(with_line)
