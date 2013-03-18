@@ -3463,7 +3463,6 @@ function! s:Invert(bang)
     exe beg.'put =str'
     exe 1+beg
   endif
-  call s:warn(':Rinvert is deprecated in favor of "def change"')
 endfunction
 
 " }}}1
