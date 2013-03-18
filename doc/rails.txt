@@ -459,9 +459,15 @@ A limited amount of completion with <Tab> is supported.
 			calling |:Rails| console.
 
 						*rails-:Rrunner*
-:Rrunner {file}		Run the given file or code with rails runner and load
+:[range]Rrunner [file]	Run the given file or code with rails runner and load
 :Rrunner {code}		the results in to the quickfix list, using the error
-			parser from the "ruby" |:compiler|.
+			parser from the "ruby" |:compiler|.  If the file looks
+			like a test, spec, or cucumber feature, the
+			"rubyunit", "rspec", or "cucumber" |:compiler| will be
+			used instead.  If provided, [range] is passed to the
+			test runner to restrict execution to a particular
+			line.  With no argument, defaults to running the test
+			for the current file.
 
 						*rails-:Rp*
 :[range]Rp {code}	Use rails runner to execute "p begin {code} end" and
@@ -845,6 +851,9 @@ available options are as follows:
 	|:_%|) to substitute the current file name.  If a list with two tasks
 	is provided, the first will be used when a line number is given, and
 	the second when it's omitted.
+						*rails-projection-compiler*
+"compiler" ~
+	Determines the |:compiler| plugin to use with |rails-:Rrunner|.
 						*rails-projection-path*
 "path" ~
 	Provides a list of directories to add to 'path'.  When omitted,

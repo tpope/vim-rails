@@ -1538,7 +1538,7 @@ function! s:BufScriptWrappers()
   command! -buffer -bang -bar -nargs=* -complete=customlist,s:Complete_generate Rgenerate     :execute rails#app().generator_command(<bang>0,'generate',<f-args>)
   command! -buffer -bar -nargs=*       -complete=customlist,s:Complete_destroy  Rdestroy      :execute rails#app().generator_command(1,'destroy',<f-args>)
   command! -buffer -bar -nargs=? -bang -complete=customlist,s:Complete_server   Rserver       :execute rails#app().server_command(<bang>0,<q-args>)
-  command! -buffer -bang -nargs=1 -range=0 -complete=customlist,s:Complete_edit Rrunner       :execute rails#app().runner_command(<bang>0, <count>?<line1>:0, <q-args>)
+  command! -buffer -bang -nargs=? -range=0 -complete=customlist,s:Complete_edit Rrunner       :execute rails#buffer().runner_command(<bang>0, <count>?<line1>:0, <q-args>)
   command! -buffer       -nargs=1 -range=0 -complete=customlist,s:Complete_ruby Rp            :execute rails#app().output_command(<count>==<line2>?<count>:-1, 'p begin '.<q-args>.' end')
   command! -buffer       -nargs=1 -range=0 -complete=customlist,s:Complete_ruby Rpp           :execute rails#app().output_command(<count>==<line2>?<count>:-1, 'require %{pp}; pp begin '.<q-args>.' end')
 endfunction
@@ -1584,22 +1584,74 @@ function! s:app_script_command(bang,...) dict
   endif
   let str = join(map(copy(a:000), 's:rquote(v:val)'), ' ')
   if a:bang || str =~# '^\%(c\|console\|db\|dbconsole\|s\|server\)\>'
-    return self.background_rails_command(str)
+    return self.start_rails_command(str)
   else
     return self.execute_rails_command(str)
   endif
 endfunction
 
-function! s:app_runner_command(bang,count,args) dict abort
+function! s:readable_runner_command(bang, count, arg) dict abort
   let old_makeprg = &l:makeprg
   let old_errorformat = &l:errorformat
   let old_compiler = get(b:, 'current_compiler', '')
   call s:push_chdir(1)
   try
-    compiler ruby
-    let &l:makeprg = self.prepare_rails_command('runner')
-    call s:make(a:bang, a:args)
+    if !empty(a:arg)
+      let arg = a:arg
+    elseif a:count
+      let arg = self.name()
+    else
+      let arg = self.test_file()
+      if empty(arg)
+        let arg = a:arg
+      endif
+    endif
+
+    let extra = ''
+    if a:count > 0
+      let extra = ':'.a:count
+    endif
+
+    let file = arg ==# self.name() ? self : self.app().file(arg)
+    if arg =~# '^test/.*_test\.rb$'
+      let compiler = 'rubyunit'
+      if a:count > 0
+        let method = file.last_method(lnum)
+        if method =~ '^test_'
+          let extra = ' -n'.method
+        else
+          let extra = ''
+        endif
+      endif
+    elseif arg =~# '^spec/.*\%(_spec\.rb\|\.feature\)$'
+      let compiler = 'rspec'
+    elseif arg =~# '^features/.*\.features$'
+      let compiler = 'cucumber'
+    else
+      let compiler = 'ruby'
+    endif
+
+    let compiler = get(file.projected('compiler'), 0, compiler)
+    if empty(findfile('compiler/'.compiler.'.vim', escape(&rtp, ' ')))
+      let compiler = 'ruby'
+    endif
+
+    execute 'compiler '.compiler
+
+    if compiler ==# 'ruby'
+      let &l:makeprg = self.app().prepare_rails_command('runner')
+      let extra = ''
+    elseif &makeprg =~# '^\%(testrb\|rspec\|cucumber\)\>' && self.app().has_path('.zeus.sock')
+      let &l:makeprg = 'zeus ' . &l:makeprg
+    elseif self.app().has_path('bin/' . &l:makeprg)
+      let &l:makeprg = self.app().ruby_script_command('bin/' . &l:makeprg)
+    elseif &l:makeprg !~# '^bundle\>' && self.app().has('bundler')
+      let &l:makeprg = 'bundle exec ' . &l:makeprg
+    endif
+
+    call s:make(a:bang, arg . extra)
     return ''
+
   finally
     call s:pop_command()
     let &l:errorformat = old_errorformat
@@ -1611,6 +1663,8 @@ function! s:app_runner_command(bang,count,args) dict abort
   endtry
   return ''
 endfunction
+
+call s:add_methods('readable', ['runner_command'])
 
 function! s:app_output_command(count, code) dict
   let str = self.prepare_rails_command('runner '.s:rquote(a:code))
@@ -1719,7 +1773,7 @@ function! s:app_generator_command(bang,...) dict
   return ''
 endfunction
 
-call s:add_methods('app', ['gems','generators','script_command','runner_command','output_command','server_command','generator_command'])
+call s:add_methods('app', ['gems','generators','script_command','output_command','server_command','generator_command'])
 
 function! s:Complete_script(ArgLead,CmdLine,P)
   let cmd = s:sub(a:CmdLine,'^\u\w*\s+','')
