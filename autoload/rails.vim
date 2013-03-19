@@ -887,7 +887,7 @@ function! s:app_start_rails_command(cmd, ...) dict abort
   call s:push_chdir(1)
   try
     if exists(':Start')
-      exe 'Start'.(a:0 ? '!' : '').' -title=rails\ '.title.' '.cmd
+      exe 'Start'.(a:0 && a:1 ? '!' : '').' -title=rails\ '.title.' '.cmd
     elseif has("win32")
       exe "!start ".cmd
     else
@@ -1584,7 +1584,7 @@ function! s:app_script_command(bang,...) dict
   endif
   let str = join(map(copy(a:000), 's:rquote(v:val)'), ' ')
   if a:bang || str =~# '^\%(c\|console\|db\|dbconsole\|s\|server\)\>'
-    return self.start_rails_command(str)
+    return self.start_rails_command(str, a:bang)
   else
     return self.execute_rails_command(str)
   endif
