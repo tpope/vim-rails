@@ -59,7 +59,7 @@ function! s:Detect(filename)
   let ofn = ""
   while fn != ofn
     if filereadable(fn . "/config/environment.rb")
-      return s:BufInit(fn)
+      return s:BufInit(resolve(fn))
     endif
     let ofn = fn
     let fn = fnamemodify(ofn,':h')
