@@ -37,6 +37,10 @@ function! s:startswith(string,prefix)
   return strpart(a:string, 0, strlen(a:prefix)) ==# a:prefix
 endfunction
 
+function! s:endswith(string,suffix)
+  return strpart(a:string, len(a:string) - len(a:suffix), len(a:suffix)) ==# a:suffix
+endfunction
+
 function! s:uniq(list) abort
   let i = 0
   let seen = {}
@@ -325,7 +329,7 @@ function! s:readable_find_affinity() dict abort
       continue
     endif
     let [prefix, suffix; _] = split(pattern, '\*', 1)
-    if s:startswith(f, prefix) && f[-strlen(suffix) : - 1] ==# suffix
+    if s:startswith(f, prefix) && s:endswith(f, suffix)
       let root = f[strlen(prefix) : -strlen(suffix)-1]
       return [all[pattern].affinity, root]
     endif
@@ -4426,7 +4430,7 @@ function! s:readable_projected(key, ...) dict abort
   endif
   for pattern in reverse(sort(filter(keys(all), 'v:val =~# "*"'), s:function('rails#lencmp')))
     let [prefix, suffix; _] = split(pattern, '\*', 1)
-    if s:startswith(f, prefix) && f[-strlen(suffix) : - 1] ==# suffix
+    if s:startswith(f, prefix) && s:endswith(f, suffix)
       let root = f[strlen(prefix) : -strlen(suffix)-1]
       let ph = extend({
             \ 's': root,
