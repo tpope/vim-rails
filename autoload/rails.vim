@@ -324,7 +324,7 @@ function! s:readable_find_affinity() dict abort
     if !has_key(all[pattern], 'affinity')
       continue
     endif
-    let [prefix, suffix] = split(pattern, '*')
+    let [prefix, suffix; _] = split(pattern, '\*', 1)
     if s:startswith(f, prefix) && f[-strlen(suffix) : - 1] ==# suffix
       let root = f[strlen(prefix) : -strlen(suffix)-1]
       return [all[pattern].affinity, root]
@@ -2617,7 +2617,7 @@ function! s:CommandList(A,L,P)
     if pattern !~# '\*'
       continue
     endif
-    let [prefix, suffix] = split(pattern, '\*')
+    let [prefix, suffix; _] = split(pattern, '\*', 1)
     let results = rails#app().relglob(prefix, '**/*', suffix)
     if suffix =~# '\.rb$' && a:A =~# '^\u'
       let matches += map(results, 'rails#camelize(v:val)')
@@ -3042,7 +3042,7 @@ function! s:readable_open_command(cmd, argument, name, projections) dict abort
     if projection.pattern !~# '\*'
       continue
     endif
-    let [prefix, suffix] = split(projection.pattern, '\*')
+    let [prefix, suffix; _] = split(projection.pattern, '\*', 1)
     if self.app().has_path(prefix)
       let file = self.app().path(prefix . (suffix =~# '\.rb$' ? rails#underscore(root) : root) . suffix)
       if !isdirectory(fnamemodify(file, ':h'))
@@ -4425,7 +4425,7 @@ function! s:readable_projected(key, ...) dict abort
     let mine += map(s:split(get(all[f], a:key, '')), 's:expand_placeholders(v:val, a:0 ? a:1 : 0)')
   endif
   for pattern in reverse(sort(filter(keys(all), 'v:val =~# "*"'), s:function('rails#lencmp')))
-    let [prefix, suffix] = split(pattern, '*')
+    let [prefix, suffix; _] = split(pattern, '\*', 1)
     if s:startswith(f, prefix) && f[-strlen(suffix) : - 1] ==# suffix
       let root = f[strlen(prefix) : -strlen(suffix)-1]
       let ph = extend({
