@@ -2987,12 +2987,14 @@ function! s:readable_open_command(cmd, argument, name, projections) dict abort
     if projection.pattern =~# '\*'
       if !empty(argument)
         let root = argument
-      elseif get(projection, 'affinity', '') ==# '\%(model\|resource\)$'
+      elseif get(projection, 'affinity', '') =~# '\%(model\|resource\)$'
         let root = self.model_name(1)
       elseif get(projection, 'affinity', '') =~# '^\%(controller\|collection\)$'
         let root = self.controller_name(1)
+      else
+        continue
       endif
-      let file = s:sub(projection.pattern, '\*', argument)
+      let file = s:sub(projection.pattern, '\*', root)
     elseif empty(argument) && projection.pattern !~# '\*'
       let file = projection.pattern
     else
@@ -3004,7 +3006,7 @@ function! s:readable_open_command(cmd, argument, name, projections) dict abort
     endif
   endfor
   if empty(argument)
-    let defaults = filter(map(copy(a:projections), 'v:val.pattern'), 'v:val =~# "\\*"')
+    let defaults = filter(map(copy(a:projections), 'v:val.pattern'), 'v:val !~# "\\*\\|()"')
     if empty(defaults)
       return 'echoerr "E471: Argument required"'
     else
