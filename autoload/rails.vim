@@ -58,6 +58,10 @@ function! s:split(arg, ...)
   return type(a:arg) == type([]) ? copy(a:arg) : split(a:arg, a:0 ? a:1 : "\n")
 endfunction
 
+function! rails#lencmp(i1, i2) abort
+  return len(a:i1) - len(a:i2)
+endfunc
+
 function! s:escarg(p)
   return s:gsub(a:p,'[ !%#]','\\&')
 endfunction
@@ -313,6 +317,22 @@ endfunction
 
 call s:add_methods('readable',['end_of','last_opening_line','last_method_line','last_method','format','define_pattern'])
 
+function! s:readable_find_affinity() dict abort
+  let f = self.name()
+  let all = self.app().projections()
+  for pattern in reverse(sort(filter(keys(all), 'v:val =~# "*"'), s:function('rails#lencmp')))
+    if !has_key(all[pattern], 'affinity')
+      continue
+    endif
+    let [prefix, suffix] = split(pattern, '*')
+    if s:startswith(f, prefix) && f[-strlen(suffix) : - 1] ==# suffix
+      let root = f[strlen(prefix) : -strlen(suffix)-1]
+      return [all[pattern].affinity, root]
+    endif
+  endfor
+  return ['', '']
+endfunction
+
 function! s:controller(...)
   return rails#buffer().controller_name(a:0 ? a:1 : 0)
 endfunction
@@ -322,9 +342,11 @@ function! s:readable_controller_name(...) dict abort
   if has_key(self,'getvar') && self.getvar('rails_controller') != ''
     return self.getvar('rails_controller')
   endif
-  let [root, _] = s:find_projection(filter(values(self.app().projections()), 'get(v:val, "affinity", "") ==# "controller"'), f)
-  if root !=# ''
+  let [affinity, root] = self.find_affinity()
+  if affinity ==# 'controller'
     return root
+  elseif affinity ==# 'resource'
+    return rails#pluralize(root)
   endif
   if f =~ '\<app/views/layouts/'
     return s:sub(f,'.*<app/views/layouts/(.{-})\..*','\1')
@@ -369,12 +391,10 @@ function! s:readable_model_name(...) dict abort
   if has_key(self,'getvar') && self.getvar('rails_model') != ''
     return self.getvar('rails_model')
   endif
-  let [root, _] = s:find_projection(filter(values(self.app().projections()), 'get(v:val, "affinity", "") ==# "model"'), f)
-  if root !=# ''
+  let [affinity, root] = self.find_affinity()
+  if affinity ==# 'model'
     return root
-  endif
-  let [root, _] = s:find_projection(filter(values(self.app().projections()), 'get(v:val, "affinity", "") ==# "collection"'), f)
-  if root !=# ''
+  elseif affinity ==# 'collection'
     return rails#singularize(root)
   endif
   if f =~ '\<app/models/.*_observer.rb$'
@@ -403,7 +423,7 @@ function! s:readable_model_name(...) dict abort
   return ""
 endfunction
 
-call s:add_methods('readable',['controller_name','model_name'])
+call s:add_methods('readable', ['find_affinity', 'controller_name', 'model_name'])
 
 function! s:readfile(path,...)
   let nr = bufnr('^'.a:path.'$')
@@ -2540,9 +2560,6 @@ function! s:define_navcommand(name, projection) abort
       return
     endif
   endif
-  if has_key(projection, 'affinity') && empty(projection.default)
-    let projection.default = projection.affinity . '()'
-  endif
   if get(projection, 'command', 1) =~# '^0\=$'
     return
   endif
@@ -3008,7 +3025,7 @@ function! s:readable_open_command(cmd, argument, name, projections) dict abort
     endif
   endfor
   if empty(argument)
-    let defaults = filter(map(copy(a:projections), 'v:val.pattern'), 'v:val !~# "\\*\\|()"')
+    let defaults = filter(map(copy(a:projections), 'v:val.pattern'), 'v:val !~# "\\*"')
     if empty(defaults)
       return 'echoerr "E471: Argument required"'
     else
@@ -4300,14 +4317,33 @@ endfunction
 
 function! s:combine_projections(dest, src, ...) abort
   let extra = a:0 ? a:1 : {}
-  if type(a:src) == type([])
-    for projection in a:src
-      if !empty(get(projection, 'name', ''))
-        let a:dest[projection.name] = extend(copy(projection), extra)
+  if type(a:src) == type({})
+    call extend(a:dest, map(a:src, 'extend(copy(v:val), extra)'))
+    for [command, projection] in items(a:src)
+      let nested = extend({
+            \ 'name': command,
+            \ 'command': s:gsub(command, '[[:space:][:punct:]]', '')
+            \ }, projection)
+      for key in ['prefix', 'suffix', 'format', 'default']
+        if has_key(nested, key)
+          call remove(nested, key)
+        endif
+      endfor
+      for [prefix, suffix] in s:projection_pairs(projection)
+        let a:dest[prefix . '*' . suffix] = copy(nested)
+        if type(get(nested, 'template', '')) == type({})
+          let a:dest[prefix . '*' . suffix].template = get(nested.template, prefix)
+        endif
+        if type(get(projection, 'default', [])) ==# type('')
+          let a:dest[prefix . projection.default . suffix] = copy(nested)
+        endif
+      endfor
+      if type(get(projection, 'default', '')) ==# type([])
+        for default in projection.default
+          let a:dest[prefix . default . suffix] = copy(nested)
+        endfor
       endif
     endfor
-  elseif type(a:src) == type({})
-    call extend(a:dest, map(a:src, 'extend(copy(v:val), extra)'))
   endif
   return a:dest
 endfunction
@@ -4349,18 +4385,6 @@ endfunction
 
 call s:add_methods('app', ['config', 'gems', 'has_gem', 'engines', 'projections'])
 
-function! s:find_projection(projections, filename) abort
-  let f = a:filename
-  for c in a:projections
-    for [prefix, suffix] in s:projection_pairs(c)
-      if s:startswith(f, prefix) && f[-strlen(suffix) : - 1] ==# suffix
-        return [f[strlen(prefix) : -strlen(suffix)-1], c]
-      endif
-    endfor
-  endfor
-  return ['', {}]
-endfunction
-
 function! s:expand_placeholders(string, placeholders)
   let ph = extend({'%': '%'}, a:placeholders)
   let value = substitute(a:string, '%\([^: ]\)', '\=get(ph, submatch(1), "\n")', 'g')
@@ -4368,26 +4392,24 @@ function! s:expand_placeholders(string, placeholders)
 endfunction
 
 function! s:readable_projected(key, ...) dict abort
-  let projections = self.app().projections()
-  if has_key(projections, self.name())
-    let projection = projections[self.name()]
-    let placeholders = {}
-  else
-    let [root, projection] = s:find_projection(values(projections), self.name())
-    let projected = {}
-    if empty(projection)
-      return []
-    else
-      let placeholders = {
+  let f = self.name()
+  let all = self.app().projections()
+  let mine = []
+  if has_key(all, f)
+    let mine += map(s:split(get(all[f], a:key, '')), 's:expand_placeholders(v:val, a:0 ? a:1 : 0)')
+  endif
+  for pattern in reverse(sort(filter(keys(all), 'v:val =~# "*"'), s:function('rails#lencmp')))
+    let [prefix, suffix] = split(pattern, '*')
+    if s:startswith(f, prefix) && f[-strlen(suffix) : - 1] ==# suffix
+      let root = f[strlen(prefix) : -strlen(suffix)-1]
+      let ph = extend({
             \ 's': root,
             \ 'p': rails#pluralize(root),
-            \ '%': '%'}
+            \ '%': '%'}, a:0 ? a:1 : {})
+      let mine += map(s:split(get(all[pattern], a:key, '')), 's:expand_placeholders(v:val, ph)')
     endif
-  endif
-  if a:0
-    call extend(placeholders, a:1)
-  endif
-  return filter(map(s:split(get(projection, a:key, '')), 's:expand_placeholders(v:val, placeholders)'), '!empty(v:val)')
+  endfor
+  return filter(mine, '!empty(v:val)')
 endfunction
 
 call s:add_methods('readable', ['projected'])
