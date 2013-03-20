@@ -2034,16 +2034,16 @@ function! s:RailsFind()
   let res = s:findamethod('require','\1')
   if res != ""|return res.(fnamemodify(res,':e') == '' ? '.rb' : '')|endif
 
-  let res = s:findamethod('belongs_to\|has_one\|embedded_in\|embeds_one\|composed_of\|validates_associated\|scaffold','app/models/\1.rb')
+  let res = s:findamethod('belongs_to\|has_one\|embedded_in\|embeds_one\|composed_of\|validates_associated\|scaffold','\1.rb')
   if res != ""|return res|endif
 
-  let res = rails#singularize(s:findamethod('has_many\|has_and_belongs_to_many\|embeds_many','app/models/\1'))
+  let res = rails#singularize(s:findamethod('has_many\|has_and_belongs_to_many\|embeds_many','\1'))
   if res != ""|return res.".rb"|endif
 
-  let res = rails#singularize(s:findamethod('create_table\|change_table\|drop_table\|rename_table\|\%(add\|remove\)_\%(column\|index\|timestamps\|reference\|belongs_to\)\|rename_column\|remove_columns\|rename_index','app/models/\1'))
+  let res = rails#singularize(s:findamethod('create_table\|change_table\|drop_table\|rename_table\|\%(add\|remove\)_\%(column\|index\|timestamps\|reference\|belongs_to\)\|rename_column\|remove_columns\|rename_index','\1'))
   if res != ""|return res.".rb"|endif
 
-  let res = rails#singularize(s:findasymbol('through','app/models/\1'))
+  let res = rails#singularize(s:findasymbol('through','\1'))
   if res != ""|return res.".rb"|endif
 
   let res = s:findamethod('fixtures','fixtures/\1')
@@ -2051,19 +2051,19 @@ function! s:RailsFind()
     return RailsFilePath() =~ '\<spec/' ? 'spec/'.res : res
   endif
 
-  let res = s:findamethod('\%(\w\+\.\)\=resources','app/controllers/\1_controller.rb')
+  let res = s:findamethod('\%(\w\+\.\)\=resources','\1_controller.rb')
   if res != ""|return res|endif
 
-  let res = s:findamethod('\%(\w\+\.\)\=resource','app/controllers/\1')
+  let res = s:findamethod('\%(\w\+\.\)\=resource','\1')
   if res != ""|return rails#pluralize(res)."_controller.rb"|endif
 
-  let res = s:findasymbol('to','app/controllers/\1')
+  let res = s:findasymbol('to','\1')
   if res =~ '#'|return s:sub(res,'#','_controller.rb#')|endif
 
-  let res = s:findamethod('root\s*\%(:to\s*=>\|\<to:\)\s*','app/controllers/\1')
+  let res = s:findamethod('root\s*\%(:to\s*=>\|\<to:\)\s*','\1')
   if res =~ '#'|return s:sub(res,'#','_controller.rb#')|endif
 
-  let res = s:findamethod('\%(match\|get\|put\|patch\|post\|delete\|redirect\)\s*(\=\s*[:''"][^''"]*[''"]\=\s*\%(\%(,\s*:to\s*\)\==>\|,\s*to:\)\s*','app/controllers/\1')
+  let res = s:findamethod('\%(match\|get\|put\|patch\|post\|delete\|redirect\)\s*(\=\s*[:''"][^''"]*[''"]\=\s*\%(\%(,\s*:to\s*\)\==>\|,\s*to:\)\s*','\1')
   if res =~ '#'|return s:sub(res,'#','_controller.rb#')|endif
 
   if !buffer.type_name('controller', 'mailer')
@@ -2079,10 +2079,10 @@ function! s:RailsFind()
   let res = s:findasymbol('layout','\=s:findlayout(submatch(1))')
   if res != ""|return res|endif
 
-  let res = s:findamethod('helper','app/helpers/\1_helper.rb')
+  let res = s:findamethod('helper','\1_helper.rb')
   if res != ""|return res|endif
 
-  let res = s:findasymbol('controller','app/controllers/\1_controller.rb')
+  let res = s:findasymbol('controller','\1_controller.rb')
   if res != ""|return res|endif
 
   let res = s:findasymbol('action','\1')
@@ -2152,7 +2152,7 @@ endfunction
 
 function! s:app_route_names() dict
   if self.cache.needs("named_routes")
-    let exec = "ActionController::Routing::Routes.named_routes.each {|n,r| puts %{#{n} app/controllers/#{r.requirements[:controller]}_controller.rb##{r.requirements[:action]}}}"
+    let exec = "ActionController::Routing::Routes.named_routes.each {|n,r| puts %{#{n} #{r.requirements[:controller]}_controller.rb##{r.requirements[:action]}}}"
     let string = self.eval(exec)
     let routes = {}
     for line in split(string,"\n")
@@ -2195,7 +2195,7 @@ function! s:RailsIncludefind(str,...)
   if line =~# '\<\(require\|load\)\s*(\s*$'
     return str
   elseif str =~# '^\l\w*#\w\+$'
-    return 'app/controllers/'.s:sub(str,'#','_controller.rb#')
+    return s:sub(str,'#','_controller.rb#')
   endif
   let str = rails#underscore(str)
   let fpat = '\(\s*\%("\f*"\|:\f*\|'."'\\f*'".'\)\s*,\s*\)*'
@@ -2208,9 +2208,9 @@ function! s:RailsIncludefind(str,...)
   elseif line =~# '\<layout\s*(\=\s*' || line =~# ':layout\s*=>\s*'
     let str = s:findview(s:sub(str,'^/=','layouts/'))
   elseif line =~# ':controller\s*=>\s*'
-    let str = 'app/controllers/'.str.'_controller.rb'
+    let str = str.'_controller.rb'
   elseif line =~# '\<helper\s*(\=\s*'
-    let str = 'app/helpers/'.str.'_helper.rb'
+    let str = str.'_helper.rb'
   elseif line =~# '\<fixtures\s*(\='.fpat
     if RailsFilePath() =~# '\<spec/'
       let str = s:sub(str,'^/@!','spec/fixtures/')
@@ -2231,9 +2231,9 @@ function! s:RailsIncludefind(str,...)
       let str .= '.js'
     endif
   elseif line =~# '\<\(has_one\|belongs_to\)\s*(\=\s*'
-    let str = 'app/models/'.str.'.rb'
+    let str = str.'.rb'
   elseif line =~# '\<has_\(and_belongs_to_\)\=many\s*(\=\s*'
-    let str = 'app/models/'.rails#singularize(str).'.rb'
+    let str = rails#singularize(str).'.rb'
   elseif line =~# '\<def\s\+' && expand("%:t") =~# '_controller\.rb'
     let str = s:findview(str)
   elseif str =~# '_\%(path\|url\)$' || (line =~# ':as\s*=>\s*$' && rails#buffer().type_name('config-routes'))
@@ -2245,14 +2245,14 @@ function! s:RailsIncludefind(str,...)
     if file == ""
       let str = s:sub(str,'^formatted_','')
       if str =~# '^\%(new\|edit\)_'
-        let str = 'app/controllers/'.s:sub(rails#pluralize(str),'^(new|edit)_(.*)','\2_controller.rb#\1')
+        let str = s:sub(rails#pluralize(str),'^(new|edit)_(.*)','\2_controller.rb#\1')
       elseif str ==# rails#singularize(str)
         " If the word can't be singularized, it's probably a link to the show
         " method.  We should verify by checking for an argument, but that's
         " difficult the way things here are currently structured.
-        let str = 'app/controllers/'.rails#pluralize(str).'_controller.rb#show'
+        let str = rails#pluralize(str).'_controller.rb#show'
       else
-        let str = 'app/controllers/'.str.'_controller.rb#index'
+        let str = str.'_controller.rb#index'
       endif
     else
       let str = file
