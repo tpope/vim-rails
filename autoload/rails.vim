@@ -1539,21 +1539,13 @@ function! s:BufScriptWrappers()
   command! -buffer       -nargs=1 -range=0 -complete=customlist,s:Complete_ruby Rpp           :execute rails#app().output_command(<count>==<line2>?<count>:-1, 'require %{pp}; pp begin '.<q-args>.' end')
 endfunction
 
-function! s:app_gems() dict abort
-  if self.has('bundler') && exists('*bundler#project')
-    return bundler#project(self.path()).gems()
-  else
-    return {}
-  endif
-endfunction
-
 function! s:app_generators() dict abort
   if self.cache.needs('generators')
     let paths = [self.path('vendor/plugins/*'), self.path('lib'), expand("~/.rails")]
     if !empty(self.gems())
       let gems = values(self.gems())
-      let paths += map(values(self.gems()), 'v:val . "/lib/rails"')
-      let paths += map(values(self.gems()), 'v:val . "/lib"')
+      let paths += map(gems, 'v:val . "/lib/rails"')
+      let paths += map(gems, 'v:val . "/lib"')
       let builtin = []
     else
       let builtin = ['assets', 'controller', 'generator', 'helper', 'integration_test', 'jbuilder', 'jbuilder_scaffold_controller', 'mailer', 'migration', 'model', 'resource', 'scaffold', 'scaffold_controller', 'task']
@@ -1771,7 +1763,7 @@ function! s:app_generator_command(bang,...) dict
   return ''
 endfunction
 
-call s:add_methods('app', ['gems','generators','script_command','output_command','server_command','generator_command'])
+call s:add_methods('app', ['generators','script_command','output_command','server_command','generator_command'])
 
 function! s:Complete_script(ArgLead,CmdLine,P)
   let cmd = s:sub(a:CmdLine,'^\u\w*\s+','')
@@ -4265,6 +4257,14 @@ function! s:app_config(...) dict abort
   endif
 endfunction
 
+function! s:app_gems() dict abort
+  if self.has('bundler') && exists('*bundler#project')
+    return bundler#project(self.path()).gems()
+  else
+    return {}
+  endif
+endfunction
+
 function! s:app_has_gem(gem) dict abort
   if self.has('bundler') && exists('*bundler#project')
     let project = bundler#project(self.path())
@@ -4275,6 +4275,15 @@ function! s:app_has_gem(gem) dict abort
     endif
   else
     return 0
+  endif
+endfunction
+
+function! s:app_engines() dict abort
+  let gems = escape(join(values(self.gems()),','), ' ')
+  if empty(gems)
+    return []
+  else
+    return sort(map(finddir('app', gems, -1), 'fnamemodify(v:val, ":h")'))
   endif
 endfunction
 
@@ -4327,7 +4336,7 @@ function! s:app_projections() dict abort
   return dict
 endfunction
 
-call s:add_methods('app', ['config', 'has_gem', 'projections'])
+call s:add_methods('app', ['config', 'gems', 'has_gem', 'engines', 'projections'])
 
 function! s:find_projection(projections, filename) abort
   let f = a:filename
@@ -4436,7 +4445,7 @@ function! RailsBufInit(path)
   return b:rails_root
 endfunction
 
-function! s:SetBasePath()
+function! s:SetBasePath() abort
   let self = rails#buffer()
   if self.app().path() =~ '://'
     return
@@ -4485,8 +4494,8 @@ function! s:SetBasePath()
     let path += ['spec', 'spec/controllers', 'spec/helpers', 'spec/mailers', 'spec/models', 'spec/views', 'spec/lib', 'spec/features', 'spec/requests', 'spec/integration']
   endif
   let path += ['vendor/plugins/*/lib', 'vendor/plugins/*/test', 'vendor/rails/*/lib', 'vendor/rails/*/test']
-  call map(path,'self.app().path(v:val)')
-  call self.setvar('&path',(add_dot ? '.,' : '').s:pathjoin(s:uniq(path + [self.app().path()] + old_path)))
+  let engine_paths = map(copy(self.app().engines()), 'v:val . "/app/*"')
+  call self.setvar('&path',(add_dot ? '.,' : '').s:pathjoin(s:uniq(path + [self.app().path()] + old_path + engine_paths)))
 endfunction
 
 function! s:BufSettings()
