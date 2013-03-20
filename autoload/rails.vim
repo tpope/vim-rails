@@ -2546,16 +2546,30 @@ function! s:define_navcommand(name, projection) abort
   if get(projection, 'command', 1) =~# '^0\=$'
     return
   endif
-  if get(projection, 'check', 0)
-    let keep = 0
-    for [prefix, suffix] in s:projection_pairs(projection)
-      if rails#app().has_path(s:sub(prefix, '/[^/]*$', '/'))
-        let keep = 1
+  let found = []
+  for [prefix, suffix] in s:projection_pairs(projection)
+    if !get(projection, 'check', 0) || rails#app().has_path(s:sub(prefix, '/[^/]*$', '/'))
+      let found += [{'pattern': prefix . '*' . suffix, 'affinity': get(projection, 'affinity', '')}]
+      if type(get(projection, 'template', '')) == type({})
+        let found[-1].template = get(projection.template, prefix, '')
+      else
+        let found[-1].template = s:split(get(projection, 'template', ''))
       endif
-    endfor
-    if !keep
-      return
     endif
+  endfor
+  if empty(found)
+    return
+  endif
+  if empty(get(projection, 'default', ''))
+    " no-op
+  elseif type(projection.default) == type([])
+    for default in projection.default
+      let found += [{'pattern': default, 'default': 1, 'affinity': ''}]
+    endfor
+  elseif type(projection.default) == type('')
+    for x in copy(found)
+      let found += [{'pattern': s:sub(x.pattern, '\*', projection.default), 'affinity': ''}]
+    endfor
   endif
   if type(get(projection, 'command', 1)) ==# type('')
     let name = projection.command
@@ -2571,18 +2585,20 @@ function! s:define_navcommand(name, projection) abort
           \ '-complete=customlist,'.s:sid.'CommandList ' .
           \ prefix . name . ' :execute s:CommandEdit(' .
           \ string((prefix =~# 'D' ? '<line1>' : '') . s:sub(prefix, '^R', '') . "<bang>") . ',' .
-          \ string(a:name) . ',' . string(projection) . ',<f-args>)'
+          \ string(a:name) . ',' . string(found) . ',<f-args>)'
   endfor
 endfunction
 
 function! s:CommandList(A,L,P)
   let cmd = matchstr(a:L,'\C[A-Z]\w\+')
-  let g:cmd = cmd
   exe cmd." &"
-  let command = s:last_options
   let matches = []
-  for [prefix, suffix] in s:projection_pairs(command)
-    let results = rails#app().relglob(prefix, command.glob, suffix)
+  for pattern in map(copy(s:last_projections), 'v:val.pattern')
+    if pattern !~# '\*'
+      next
+    endif
+    let [prefix, suffix] = split(pattern, '\*')
+    let results = rails#app().relglob(prefix, '**/*', suffix)
     if suffix =~# '\.rb$' && a:A =~# '^\u'
       let matches += map(results, 'rails#camelize(v:val)')
     else
@@ -2592,12 +2608,12 @@ function! s:CommandList(A,L,P)
   return s:completion_filter(matches, a:A)
 endfunction
 
-function! s:CommandEdit(cmd, name, options, ...)
+function! s:CommandEdit(cmd, name, projections, ...)
   if a:0 && a:1 == "&"
-    let s:last_options = a:options
+    let s:last_projections = a:projections
     return ''
   else
-    return rails#buffer().open_command(a:cmd, a:0 ? a:1 : '', a:name, a:options)
+    return rails#buffer().open_command(a:cmd, a:0 ? a:1 : '', a:name, a:projections)
   endif
 endfunction
 
@@ -2674,10 +2690,9 @@ function! s:migrationEdit(cmd,...)
     if offset <= -12 * 60 * 60
       let offset += 86400
     endif
-    return rails#buffer().open_command(a:cmd, strftime('%Y%m%d%H%M%S', ts - offset).'_'.arg, 'migration', {
-          \ 'template': 'class ' . rails#camelize(matchstr(arg, '[^!]*')) . " < ActiveRecord::Migration\nend",
-          \ 'prefix': 'db/migrate/',
-          \ 'suffix': '.rb'})
+    let template = 'class ' . rails#camelize(matchstr(arg, '[^!]*')) . " < ActiveRecord::Migration\nend"
+    return rails#buffer().open_command(a:cmd, strftime('%Y%m%d%H%M%S', ts - offset).'_'.arg, 'migration',
+          \ [{'pattern': 'db/migrate/*.rb', 'template': template}])
   endif
   let migr = arg == "." ? "db/migrate" : rails#app().migration(arg)
   if migr != ''
@@ -2722,8 +2737,8 @@ function! s:localeEdit(cmd,...)
   if c =~# '\.'
     return s:edit(a:cmd,rails#app().find_file(c,'config/locales',[],'config/locales/'.c))
   else
-    return rails#buffer().open_command(a:cmd, c, 'locale', {
-          \ 'format': ['config/locales/%s.yml', 'config/locales/%s.rb']})
+    return rails#buffer().open_command(a:cmd, c, 'locale',
+          \ [{'pattern': 'config/locales/*.yml'}, {'pattern': 'config/locales/*.rb'}]})
   endif
 endfunction
 
@@ -2841,18 +2856,16 @@ function! s:controllerEdit(cmd,...)
     let template = "class %SController < ApplicationController\nend"
     let suffix = "_controller".suffix
   endif
-  return rails#buffer().open_command(a:cmd, controller . jump, 'controller', {
-        \ 'template': template,
-        \ 'prefix': 'app/controllers/',
-        \ 'suffix': suffix})
+  return rails#buffer().open_command(a:cmd, controller . jump, 'controller',
+        \ [{'template': template, 'pattern': 'app/controllers/*'.suffix}])
 endfunction
 
 function! s:mailerEdit(cmd,...)
-  return rails#buffer().open_command(a:cmd, a:0 ? a:1 : '', 'mailer', {
-        \ 'prefix': ['app/mailers/', 'app/models/'],
-        \ 'suffix': '.rb',
-        \ 'template': "class %S < ActionMailer::Base\nend",
-        \ 'affinity': 'controller'})
+  let template = "class %S < ActionMailer::Base\nend"
+  return rails#buffer().open_command(a:cmd, a:0 ? a:1 : '', 'mailer', [
+        \ {'pattern': 'app/mailers/*.rb', 'template': template, 'affinity': 'controller'},
+        \ {'pattern': 'app/models/*.rb', 'template': template, 'affinity': 'controller'}
+        \ ])
 endfunction
 
 function! s:stylesheetEdit(cmd,...)
@@ -2891,11 +2904,9 @@ endfunction
 
 function! s:specEdit(cmd,...) abort
   let describe = s:sub(s:sub(rails#camelize(a:0 ? a:1 : ''), '^[^:]*::', ''), '!.*', '')
-  return rails#buffer().open_command(a:cmd, a:0 ? a:1 : '', 'spec', {
-        \ 'prefix': 'spec/',
-        \ 'suffix': '_spec.rb',
-        \ 'template': "require 'spec_helper'\n\ndescribe ".describe." do\nend",
-        \ 'default': ['spec/spec_helper.rb']})
+  return rails#buffer().open_command(a:cmd, a:0 ? a:1 : '', 'spec', [
+        \ {'pattern': 'spec/*_spec.rb', 'template': "require 'spec_helper'\n\ndescribe ".describe." do\nend"},
+        \ {'pattern': 'spec/spec_helper.rb'}])
 endfunction
 
 " }}}1
@@ -2957,7 +2968,7 @@ endfunction
 
 let s:seen_projection_deprecations = {}
 
-function! s:readable_open_command(cmd, argument, name, options) dict abort
+function! s:readable_open_command(cmd, argument, name, projections) dict abort
   let depr = ''
   if &verbose && has_key(a:options, 'deprecation') && !has_key(s:seen_projection_deprecations, a:options.deprecation)
     let s:seen_projection_deprecations[a:options.deprecation] = 1
@@ -2965,59 +2976,55 @@ function! s:readable_open_command(cmd, argument, name, options) dict abort
   endif
   let cmd = s:editcmdfor(a:cmd)
   let djump = ''
-  let default = get(a:options, 'default', get(a:options, 'affinity', '').'()')
   if a:argument =~ '[#!]\|:\d*\%(:in\)\=$'
     let djump = matchstr(a:argument,'!.*\|#\zs.*\|:\zs\d*\ze\%(:in\)\=$')
-    let root = s:sub(a:argument,'[#!].*|:\d*%(:in)=$','')
-  elseif a:argument ==# '' && type(default) == type('')
-    if default ==# "both()"
-      let root = self.model_name(0) !=# '' ? self.model_name(0) : self.controller_name(0)
-    elseif default ==# "model()"
-      let root = self.model_name(1)
-    elseif default ==# "controller()" || default ==# "collection()"
-      let root = self.controller_name(1)
-    elseif default =~# '()$'
-      let root = ''
-    else
-      let root = default
-    endif
-  elseif a:argument ==# '' && type(default) == type([])
-    for file in default
-      if self.app().has_path(file)
-        return cmd . ' ' . s:fnameescape(self.app().path(file)) . depr
-      endif
-    endfor
-    return cmd . ' ' . s:fnameescape(self.app().path(a:default[0]))
+    let argument = s:sub(a:argument,'[#!].*|:\d*%(:in)=$','')
   else
-    let root = a:argument
+    let argument = a:argument
   endif
-  if root ==# ''
-    return 'echoerr "E471: Argument required"'
-  endif
-  let pairs = s:projection_pairs(a:options)
-  for [prefix, suffix] in pairs
-    if root ==# '.' && self.app().has_path(prefix)
-      return cmd . ' ' . s:fnameescape(rails#app().path(prefix))
+
+  for projection in a:projections
+    if projection.pattern =~# '\*'
+      if !empty(argument)
+        let root = argument
+      elseif get(projection, 'affinity', '') ==# '\%(model\|resource\)$'
+        let root = self.model_name(1)
+      elseif get(projection, 'affinity', '') =~# '^\%(controller\|collection\)$'
+        let root = self.controller_name(1)
+      endif
+      let file = s:sub(projection.pattern, '\*', argument)
+    elseif empty(argument) && projection.pattern !~# '\*'
+      let file = projection.pattern
+    else
+      let file = ''
     endif
-    let file = self.app().path(prefix . (suffix =~# '\.rb$' ? rails#underscore(root) : root) . suffix)
-    if filereadable(file)
-      return cmd . ' ' . s:fnameescape(simplify(file)) . '|exe ' . s:sid . 'djump('.string(djump) . ')' . depr
+    if !empty(file) && self.app().has_path(file)
+      let file = self.app().path(file)
+      return cmd . ' ' . s:fnameescape(file) . '|exe ' . s:sid . 'djump('.string(djump) . ')' . depr
     endif
   endfor
+  if empty(argument)
+    let defaults = filter(map(copy(a:projections), 'v:val.pattern'), 'v:val =~# "\\*"')
+    if empty(defaults)
+      return 'echoerr "E471: Argument required"'
+    else
+      return cmd . ' ' . s:fnameescape(defaults[0]) . depr
+    endif
+  endif
   if djump !~# '^!'
     return 'echoerr '.string('No such '.tr(a:name, '_', ' ').' '.root)
   endif
-  for [prefix, suffix] in pairs
+  for projection in a:projections
+    if projection.pattern !~# '\*'
+      continue
+    endif
+    let [prefix, suffix] = split(projection.pattern, '\*')
     if self.app().has_path(prefix)
       let file = self.app().path(prefix . (suffix =~# '\.rb$' ? rails#underscore(root) : root) . suffix)
       if !isdirectory(fnamemodify(file, ':h'))
         call mkdir(fnamemodify(file, ':h'), 'p')
       endif
-      if type(get(a:options, 'template', '')) == type({})
-        let template = s:split(get(a:options.template, prefix, ''))
-      else
-        let template = s:split(get(a:options, 'template', ''))
-      endif
+      let template = s:split(get(projection, 'template', ''))
       let placeholders = {
             \ 's': rails#underscore(root),
             \ 'S': rails#camelize(root),
