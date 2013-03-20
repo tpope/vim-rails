@@ -2386,7 +2386,7 @@ function! s:BufProjectionCommands()
   endif
   call s:addfilecmds("stylesheet")
   call s:addfilecmds("javascript")
-  for [name, command] in items(rails#app().projections())
+  for [name, command] in items(rails#app().commands())
     call s:define_navcommand(name, command)
   endfor
 endfunction
@@ -2552,46 +2552,49 @@ function! s:Navcommand(bang,...)
 endfunction
 
 function! s:define_navcommand(name, projection) abort
-  let projection = extend({'default': '', 'glob': '**/*'}, a:projection)
-  if !has_key(projection, 'format')
-    let projection.prefix = s:split(get(projection, 'prefix', []))
-    let projection.suffix = s:split(get(projection, 'suffix', ['.rb']))
-    if empty(projection.prefix)
-      return
-    endif
-  endif
-  if get(projection, 'command', 1) =~# '^0\=$'
-    return
-  endif
-  let found = []
-  for [prefix, suffix] in s:projection_pairs(projection)
-    if !get(projection, 'check', 0) || rails#app().has_path(s:sub(prefix, '/[^/]*$', '/'))
-      let found += [{'pattern': prefix . '*' . suffix, 'affinity': get(projection, 'affinity', '')}]
-      if type(get(projection, 'template', '')) == type({})
-        let found[-1].template = get(projection.template, prefix, '')
-      else
-        let found[-1].template = s:split(get(projection, 'template', ''))
+  let name = s:gsub(a:name, '[[:space:][:punct:]]', '')
+  if type(a:projection) == type({})
+    let projection = extend({'default': '', 'glob': '**/*'}, a:projection)
+    if !has_key(projection, 'format')
+      let projection.prefix = s:split(get(projection, 'prefix', []))
+      let projection.suffix = s:split(get(projection, 'suffix', ['.rb']))
+      if empty(projection.prefix)
+        return
       endif
     endif
-  endfor
-  if empty(found)
-    return
-  endif
-  if empty(get(projection, 'default', ''))
-    " no-op
-  elseif type(projection.default) == type([])
-    for default in projection.default
-      let found += [{'pattern': default, 'default': 1, 'affinity': ''}]
+    if get(projection, 'command', 1) =~# '^0\=$'
+      return
+    endif
+    let found = []
+    for [prefix, suffix] in s:projection_pairs(projection)
+      if !get(projection, 'check', 0) || rails#app().has_path(s:sub(prefix, '/[^/]*$', '/'))
+        let found += [{'pattern': prefix . '*' . suffix, 'affinity': get(projection, 'affinity', '')}]
+        if type(get(projection, 'template', '')) == type({})
+          let found[-1].template = get(projection.template, prefix, '')
+        else
+          let found[-1].template = s:split(get(projection, 'template', ''))
+        endif
+      endif
     endfor
-  elseif type(projection.default) == type('')
-    for x in copy(found)
-      let found += [{'pattern': s:sub(x.pattern, '\*', projection.default), 'affinity': ''}]
-    endfor
-  endif
-  if type(get(projection, 'command', 1)) ==# type('')
-    let name = projection.command
+    if empty(found)
+      return
+    endif
+    if empty(get(projection, 'default', ''))
+      " no-op
+    elseif type(projection.default) == type([])
+      for default in projection.default
+        let found += [{'pattern': default, 'default': 1, 'affinity': ''}]
+      endfor
+    elseif type(projection.default) == type('')
+      for x in copy(found)
+        let found += [{'pattern': s:sub(x.pattern, '\*', projection.default), 'affinity': ''}]
+      endfor
+    endif
+    if type(get(projection, 'command', 1)) ==# type('')
+      let name = projection.command
+    endif
   else
-    let name = s:gsub(a:name, '[[:space:][:punct:]]', '')
+    let found = a:projection
   endif
   if name !~# '^[a-z]\+$'
     return s:error("E182: Invalid command name ".name)
@@ -4318,30 +4321,34 @@ endfunction
 function! s:combine_projections(dest, src, ...) abort
   let extra = a:0 ? a:1 : {}
   if type(a:src) == type({})
-    call extend(a:dest, map(a:src, 'extend(copy(v:val), extra)'))
-    for [command, projection] in items(a:src)
-      let nested = extend({
-            \ 'name': command,
-            \ 'command': s:gsub(command, '[[:space:][:punct:]]', '')
-            \ }, projection)
-      for key in ['prefix', 'suffix', 'format', 'default']
-        if has_key(nested, key)
-          call remove(nested, key)
-        endif
-      endfor
-      for [prefix, suffix] in s:projection_pairs(projection)
-        let a:dest[prefix . '*' . suffix] = copy(nested)
-        if type(get(nested, 'template', '')) == type({})
-          let a:dest[prefix . '*' . suffix].template = get(nested.template, prefix)
-        endif
-        if type(get(projection, 'default', [])) ==# type('')
-          let a:dest[prefix . projection.default . suffix] = copy(nested)
-        endif
-      endfor
-      if type(get(projection, 'default', '')) ==# type([])
-        for default in projection.default
-          let a:dest[prefix . default . suffix] = copy(nested)
+    for [pattern, original] in items(a:src)
+      let projection = extend(copy(original), extra)
+      if has_key(projection, 'prefix') || has_key(projection, 'format')
+        let nested = extend({
+              \ 'name': pattern,
+              \ 'command': s:gsub(pattern, '[[:space:][:punct:]]', '')
+              \ }, projection)
+        for key in ['prefix', 'suffix', 'format', 'default']
+          if has_key(nested, key)
+            call remove(nested, key)
+          endif
         endfor
+        for [prefix, suffix] in s:projection_pairs(projection)
+          let a:dest[prefix . '*' . suffix] = copy(nested)
+          if type(get(nested, 'template', '')) == type({})
+            let a:dest[prefix . '*' . suffix].template = get(nested.template, prefix)
+          endif
+          if type(get(projection, 'default', [])) ==# type('')
+            let a:dest[prefix . projection.default . suffix] = copy(nested)
+          endif
+        endfor
+        if type(get(projection, 'default', '')) ==# type([])
+          for default in projection.default
+            let a:dest[prefix . default . suffix] = copy(nested)
+          endfor
+        endif
+      else
+        let a:dest[pattern] = projection
       endif
     endfor
   endif
@@ -4383,7 +4390,26 @@ function! s:app_projections() dict abort
   return dict
 endfunction
 
-call s:add_methods('app', ['config', 'gems', 'has_gem', 'engines', 'projections'])
+function! s:app_commands() dict abort
+  let all = self.projections()
+  let commands = {}
+  for pattern in reverse(sort(keys(all), function('rails#lencmp')))
+    let projection = all[pattern]
+    for name in map(s:split(get(projection, 'command', '')), 's:sub(v:val, "[[:punct:][:space:]]", "")')
+      let command = {
+            \ 'pattern': pattern,
+            \ 'affinity': get(projection, 'affinity', ''),
+            \ 'template': get(projection, 'template', '')}
+      if !has_key(commands, name)
+        let commands[name] = []
+      endif
+      call extend(commands[name], [command])
+    endfor
+  endfor
+  return commands
+endfunction
+
+call s:add_methods('app', ['config', 'gems', 'has_gem', 'engines', 'projections', 'commands'])
 
 function! s:expand_placeholders(string, placeholders)
   let ph = extend({'%': '%'}, a:placeholders)
