@@ -1734,16 +1734,16 @@ function! s:app_server_command(bang,arg) dict
 endfunction
 
 function! s:color_efm(pre, before, after)
-   return a:pre . '%\S%#  %#' . a:before . "\e[0m %#" . a:after . ',' .
-         \ a:pre . '  %#'.a:before.' %#'.a:after . ','
+   return a:pre . '%\S%#  %#' . a:before . "\e[0m  %#" . a:after . ',' .
+         \ a:pre . '   %#'.a:before.' %#'.a:after . ','
 endfunction
 
 let s:efm_generate =
       \ s:color_efm('%-G', 'invoke', '%f') .
       \ s:color_efm('%-G', 'conflict', '%f') .
       \ s:color_efm('%-G', 'run', '%f') .
-      \ s:color_efm('%-G', 'create', '  ') .
-      \ s:color_efm('%-G', 'exist', '  ') .
+      \ s:color_efm('%-G', 'create', ' ') .
+      \ s:color_efm('%-G', 'exist', ' ') .
       \ s:color_efm('Overwrite%.%#', '%m', '%f') .
       \ s:color_efm('', '%m', '%f') .
       \ '%-G%.%#'
