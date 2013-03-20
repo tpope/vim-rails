@@ -3019,14 +3019,14 @@ function! s:readable_open_command(cmd, argument, name, options) dict abort
         let template = s:split(get(a:options, 'template', ''))
       endif
       let placeholders = {
-            \ '%s': rails#underscore(root),
-            \ '%S': rails#camelize(root),
-            \ '%h': toupper(root[0]) . tr(rails#underscore(root), '_', ' ')[1:-1],
-            \ '%%': '%'}
+            \ 's': rails#underscore(root),
+            \ 'S': rails#camelize(root),
+            \ 'h': toupper(root[0]) . tr(rails#underscore(root), '_', ' ')[1:-1],
+            \ }
       if suffix =~# '\.js\>'
-        let placeholders['%S'] = s:gsub(placeholders['%S'], '::', '.')
+        let placeholders.S = s:gsub(placeholders.S, '::', '.')
       endif
-      call map(template, 'substitute(v:val, "%.", "\\=get(placeholders, submatch(0), submatch(0))", "g")')
+      call map(template, 's:expand_placeholders(v:val, placeholders)')
       call map(template, 's:gsub(v:val, "\t", "  ")')
       return cmd . ' ' . s:fnameescape(simplify(file)) . '|call setline(1, '.string(template).')' . '|set nomod' . depr
     endif
@@ -4351,7 +4351,8 @@ function! s:find_projection(projections, filename) abort
 endfunction
 
 function! s:expand_placeholders(string, placeholders)
-  let value = substitute(a:string, '%\([^: ]\)', '\=get(a:placeholders, submatch(1), "\n")', 'g')
+  let ph = extend({'%': '%'}, a:placeholders)
+  let value = substitute(a:string, '%\([^: ]\)', '\=get(ph, submatch(1), "\n")', 'g')
   return value =~# '\n' ? '' : value
 endfunction
 
