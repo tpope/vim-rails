@@ -1010,20 +1010,16 @@ function! rails#new_app_command(bang,...) abort
 
   let temp = tempname()
   try
-    exe '!rails' join(map(copy(args),'s:rquote(v:val)'),' ') &shellpipe temp
+    if &shellpipe =~# '%s'
+      let pipe = s:sub(&shellpipe, '%s', temp, 'g')
+    else
+      let pipe = &shellpipe . ' ' . temp
+    endif
+    exe '!rails' join(map(copy(args),'s:rquote(v:val)'),' ') pipe
   catch /^Vim:Interrupt/
   endtry
 
-  if filereadable(expand(args[1]))
-    let lines = readfile(temp)
-    if get(lines, 0, '') =~# ' $'
-      let pos = '2cc'
-      let lines[0] .= '.'
-      call writefile(lines, temp)
-    else
-      let pos = 'cfirst'
-    endif
-
+  if isdirectory(expand(args[1]))
     let old_errorformat = &l:errorformat
     let chdir = exists("*haslocaldir") && haslocaldir() ? 'lchdir' : 'chdir'
     let cwd = getcwd()
@@ -1031,7 +1027,7 @@ function! rails#new_app_command(bang,...) abort
       exe chdir s:fnameescape(expand(args[1]))
       let &l:errorformat = s:efm_generate
       exe 'cgetfile' temp
-      exe pos
+      return 'cfirst'
     finally
       let &l:errorformat = old_errorformat
       exe chdir s:fnameescape(cwd)
@@ -1746,6 +1742,8 @@ let s:efm_generate =
       \ s:color_efm('%-G', 'invoke', '%f') .
       \ s:color_efm('%-G', 'conflict', '%f') .
       \ s:color_efm('%-G', 'run', '%f') .
+      \ s:color_efm('%-G', 'create', '  ') .
+      \ s:color_efm('%-G', 'exist', '  ') .
       \ s:color_efm('Overwrite%.%#', '%m', '%f') .
       \ s:color_efm('', '%m', '%f') .
       \ '%-G%.%#'
