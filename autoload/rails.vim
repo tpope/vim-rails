@@ -2984,7 +2984,9 @@ function! s:readable_open_command(cmd, argument, name, projections) dict abort
   endif
 
   for projection in a:projections
-    if projection.pattern =~# '\*'
+    if argument ==# '.' && projection.pattern =~# '\*'
+      let file = split(projection.pattern, '\*')[0]
+    elseif projection.pattern =~# '\*'
       if !empty(argument)
         let root = argument
       elseif get(projection, 'affinity', '') =~# '\%(model\|resource\)$'
