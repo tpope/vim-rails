@@ -2595,7 +2595,7 @@ function! s:CommandList(A,L,P)
   let matches = []
   for pattern in map(copy(s:last_projections), 'v:val.pattern')
     if pattern !~# '\*'
-      next
+      continue
     endif
     let [prefix, suffix] = split(pattern, '\*')
     let results = rails#app().relglob(prefix, '**/*', suffix)
