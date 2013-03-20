@@ -774,7 +774,8 @@ the same, but with Vim's |line-continuation| syntax:
 	      \     "class %SUploader < CarrierWave::Uploader::Base",
 	      \     "end"
 	      \   ],
-	      \   "alternate": "test/unit/%s_uploader_test.rb"
+	      \   "alternate": "test/unit/%s_uploader_test.rb",
+	      \   "keywords": "process version"
 	      \ },
 	      \ "fabricator": {
 	      \   "format": [
@@ -859,6 +860,9 @@ available options are as follows:
 	Provides a list of directories to add to 'path'.  When omitted,
 	defaults to adding each format starting with "app/" and ending with
 	".rb".  A useful value is [] to disable this behavior entirely.
+						*rails-projection-keywords*
+"keywords" ~
+	Provides a whitespace delimited list of keywords to syntax highlight.
 
 If the "format" is omitted, the name of the projection will be treated as a
 file name, and you can provide literal values (without %s placeholders) for

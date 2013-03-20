@@ -3627,6 +3627,15 @@ function! s:BufSyntax()
     let javascript_functions = "$ jQuery"
     let classes = s:gsub(join(rails#app().user_classes(),' '),'::',' ')
     if &syntax == 'ruby'
+      let keywords = split(join(buffer.projected('keywords'), ' '))
+      let special = filter(copy(keywords), 'v:val =~# ''^\h\k*[?!]$''')
+      let regular = filter(copy(keywords), 'v:val =~# ''^\h\k*$''')
+      if !empty(special)
+        exe 'syn match rubyRailsMethod "\<\%('.join(special, '\|').'\)"'
+      endif
+      if !empty(regular)
+        exe 'syn keyword rubyRailsMethod '.join(regular, ' ')
+      endif
       if classes != ''
         exe "syn keyword rubyRailsUserClass ".classes." containedin=rubyClassDeclaration,rubyModuleDeclaration,rubyClass,rubyModule"
       endif
