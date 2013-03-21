@@ -1820,7 +1820,8 @@ function! s:Complete_script(ArgLead,CmdLine,P)
       return s:migrationList(a:ArgLead,"","")
     elseif target ==# 'mailer'
       return s:mailerList(a:ArgLead,"","")
-    elseif target =~# '^\w*\%(model\|resource\)$' || target =~# '\w*scaffold\%(_controller\)\=$' || target ==# 'mailer'
+      return s:completion_filter(rails#app().relglob("app/mailers/","**/*",".rb"),a:ArgLead)
+    elseif target =~# '^\w*\%(model\|resource\)$' || target =~# '\w*scaffold\%(_controller\)\=$'
       return s:completion_filter(rails#app().relglob('app/models/','**/*','.rb'), a:ArgLead)
     else
       return []
@@ -2303,6 +2304,85 @@ endfunction
 " }}}1
 " Projection Commands {{{1
 
+function! s:app_commands() dict abort
+  let commands = {}
+
+  let commands.environment = [
+        \ {'pattern': 'config/environments/*.rb'},
+        \ {'pattern': 'config/application.rb'},
+        \ {'pattern': 'config/environment.rb'}]
+  let commands.helper = [{
+        \ 'pattern': 'app/helpers/*_helper.rb',
+        \ 'template': "module %SHelper\nend",
+        \ 'affinity': 'controller'}]
+  let commands.initializer = [
+        \ {'pattern': 'config/initializers/*.rb'},
+        \ {'pattern': 'config/routes.rb'}]
+  let commands.lib = [
+        \ {'pattern': 'lib/*.rb'},
+        \ {'pattern': 'Gemfile'}]
+  let commands.mailer = [
+        \ {'pattern': 'app/mailers/*.rb', 'template': "class %S < ActionMailer::Base\nend", 'affinity': 'controller'},
+        \ {'pattern': 'app/models/*.rb', 'template': "class %S < ActionMailer::Base\nend", 'affinity': 'controller', 'complete': 0}]
+  let commands.model = [{
+        \ 'pattern': 'app/models/*.rb',
+        \ 'template': "class %S\nend",
+        \ 'affinity': 'model'}]
+  let commands.task = [
+        \ {'pattern': 'lib/tasks/*.rake'},
+        \ {'pattern': 'Rakefile'}]
+
+  let commands['unittest'] = map(filter([
+        \ ['test', 'test/unit/*_test.rb', "require 'test_helper'\n\nclass %STest < ActiveSupport::TestCase\nend", 'model', 1],
+        \ ['test', 'test/models/*_test.rb', "require 'test_helper'\n\nclass %STest < ActiveSupport::TestCase\nend", 'model', 1],
+        \ ['test', 'test/helpers/*_test.rb', "require 'test_helper'\n\nclass %STest < ActionView::TestCase\nend", '', 1],
+        \ ['test', 'test/helpers/*_helper_test.rb', "require 'test_helper'\n\nclass %SHelperTest < ActionView::TestCase\nend", 'controller', 0],
+        \ ['spec', 'spec/models/*_spec.rb', "require 'spec_helper'\n\ndescribe %S do\nend", 'model', 1],
+        \ ['spec', 'spec/helpers/*_spec.rb', "require 'spec_helper'\n\ndescribe %S do\nend", '', 1],
+        \ ['spec', 'spec/helpers/*_helper_spec.rb', "require 'spec_helper'\n\ndescribe %SHelper do\nend", 'controller', 0]],
+        \ 'rails#app().has(v:val[0])'),
+        \ '{"pattern": v:val[1], "template": v:val[2], "affinity": v:val[3], "complete": v:val[4]}')
+  let commands['functionaltest'] = map(filter([
+        \ ['test', 'test/functional/*_test.rb', "require 'test_helper'\n\nclass %STest < ActionController::TestCase\nend", '', 1],
+        \ ['test', 'test/functional/*_controller_test.rb', "require 'test_helper'\n\nclass %SControllerTest < ActionController::TestCase\nend", 'controller', 0],
+        \ ['test', 'test/controllers/*_test.rb', "require 'test_helper'\n\nclass %STest < ActionController::TestCase\nend", '', 1],
+        \ ['test', 'test/controllers/*_controller_test.rb', "require 'test_helper'\n\nclass %SControllerTest < ActionController::TestCase\nend", 'controller', 0],
+        \ ['test', 'test/mailers/', "require 'test_helper'\n\nclass %STest < ActionMailer::TestCase\nend", 'model', 1],
+        \ ['spec', 'spec/controllers/*_spec.rb', "require 'spec_helper'\n\ndescribe %S do\nend", '', 1],
+        \ ['spec', 'spec/controllers/*_controller_spec.rb', "require 'spec_helper'\n\ndescribe %SController do\nend", 'controller', 0],
+        \ ['spec', 'spec/mailers/*_spec.rb', "require 'spec_helper'\n\ndescribe %S do\nend", 'controller', 0]],
+        \ 'rails#app().has(v:val[0])'),
+        \ '{"pattern": v:val[1], "template": v:val[2], "affinity": v:val[3], "complete": v:val[4]}')
+  let commands['integrationtest'] = map(filter([
+        \ ['test', 'test/integration/*_test.rb', "require 'test_helper'\n\nclass %STest < ActionDispatch::IntegrationTest\nend"],
+        \ ['spec', 'spec/features/*_spec.rb', "require 'spec_helper'\n\ndescribe \"%h\" do\nend"],
+        \ ['spec', 'spec/requests/*_spec.rb', "require 'spec_helper'\n\ndescribe \"%h\" do\nend"],
+        \ ['spec', 'spec/integration/*_spec.rb', "require 'spec_helper'\n\ndescribe \"%h\" do\nend"],
+        \ ['cucumber', 'features/*.feature', "Feature: %h"],
+        \ ['turnip', 'spec/acceptance/*.feature', "Feature: %h"]],
+        \ 'rails#app().has(v:val[0])'),
+        \ '{"pattern": v:val[1], "template": v:val[2]}')
+
+  let all = self.projections()
+  for pattern in reverse(sort(keys(all), function('rails#lencmp')))
+    let projection = all[pattern]
+    for name in map(s:split(get(projection, 'command', '')), 's:sub(v:val, "[[:punct:][:space:]]", "")')
+      let command = {
+            \ 'pattern': pattern,
+            \ 'affinity': get(projection, 'affinity', ''),
+            \ 'template': get(projection, 'template', '')}
+      if !has_key(commands, name)
+        let commands[name] = []
+      endif
+      call extend(commands[name], [command])
+    endfor
+  endfor
+  call filter(commands, '!empty(v:val)')
+  return commands
+endfunction
+
+call s:add_methods('app', ['commands'])
+
 function! s:addfilecmds(type)
   let l = s:sub(a:type,'^.','\l&')
   for prefix in ['E', 'S', 'V', 'T', 'D', 'R', 'RE', 'RS', 'RV', 'RT', 'RD']
@@ -2312,79 +2392,8 @@ function! s:addfilecmds(type)
 endfunction
 
 function! s:BufProjectionCommands()
-  call s:define_navcommand('environment', {
-        \ 'format': 'config/environments/%s.rb',
-        \ 'default': ['config/application.rb', 'config/environment.rb']})
-  call s:define_navcommand('helper', {
-        \ 'format': 'app/helpers/%s_helper.rb',
-        \ 'template': "module %SHelper\nend",
-        \ 'affinity': 'controller'})
-  call s:define_navcommand('initializer', {
-        \ 'format': 'config/initializers/%s.rb',
-        \ 'default': ['config/routes.rb']})
-  call s:define_navcommand('lib', {
-        \ 'format': 'lib/%s.rb',
-        \ 'default': ['Gemfile']})
-  call s:define_navcommand('model', {
-        \ 'format': 'app/models/%s.rb',
-        \ 'template': "class %S\nend",
-        \ 'affinity': 'model'})
-  call s:define_navcommand('task', {
-        \ 'format': 'lib/tasks/%s.rake',
-        \ 'default': ['Rakefile']})
-  let tests = filter([
-        \ ['test', 'test/unit/%s_test.rb', 'test/functional/%s_test.rb'],
-        \ ['test', 'test/models/%s_test.rb', 'test/controllers/%s_test.rb'],
-        \ ['test', 'test/helpers/%s_test.rb', 'test/mailers/%s_test.rb'],
-        \ ['spec', 'spec/models/%s_spec.rb', 'spec/controllers/%s_spec.rb'],
-        \ ['spec', 'spec/helpers/%s_spec.rb', 'spec/mailers/%s_spec.rb']],
-        \ 'rails#app().has(v:val[0])')
-  if !empty(tests)
-    call s:define_navcommand('unit test', {
-          \ 'format': map(copy(tests), 'v:val[1]'),
-          \ 'template': {
-          \   'test/unit/': "require 'test_helper'\n\nclass %STest < ActiveSupport::TestCase\nend",
-          \   'test/models/': "require 'test_helper'\n\nclass %STest < ActiveSupport::TestCase\nend",
-          \   'test/helpers/': "require 'test_helper'\n\nclass %STest < ActionView::TestCase\nend",
-          \   'spec/models/': "require 'spec_helper'\n\ndescribe %S do\nend",
-          \   'spec/helpers/': "require 'spec_helper'\n\ndescribe %S do\nend"},
-          \ 'affinity': 'model'})
-    call s:define_navcommand('functional test', {
-          \ 'format': map(copy(tests), 'v:val[2]'),
-          \ 'template': {
-          \   'test/functional/': "require 'test_helper'\n\nclass %STest < ActionController::TestCase\nend",
-          \   'test/controllers/': "require 'test_helper'\n\nclass %STest < ActionController::TestCase\nend",
-          \   'test/mailers/': "require 'test_helper'\n\nclass %STest < ActionMailer::TestCase\nend",
-          \   'spec/models/': "require 'spec_helper'\n\ndescribe %S do\nend",
-          \   'spec/helpers/': "require 'spec_helper'\n\ndescribe %S do\nend"},
-          \ 'affinity': 'controller'})
-  endif
-  let integration_tests = map(filter([
-        \ ['test', 'test/integration/%s_test.rb'],
-        \ ['spec', 'spec/features/%s_spec.rb'],
-        \ ['spec', 'spec/requests/%s_spec.rb'],
-        \ ['spec', 'spec/integration/%s_spec.rb'],
-        \ ['cucumber', 'features/%s.feature'],
-        \ ['turnip', 'spec/acceptance/%s.feature']],
-        \ 'rails#app().has(v:val[0])'), 'v:val[1]')
-  if !empty(integration_tests)
-    call s:define_navcommand('integration test', {
-          \ 'format': integration_tests,
-          \ 'template': {
-          \   'test/integration/': "require 'test_helper'\n\nclass %STest < ActionDispatch::IntegrationTest\nend",
-          \   'spec/requests/': "require 'spec_helper'\n\ndescribe \"%h\" do\nend",
-          \   'spec/features/': "require 'spec_helper'\n\ndescribe \"%h\" do\nend",
-          \   'spec/integration/': "require 'spec_helper'\n\ndescribe \"%h\" do\nend",
-          \   'features/': "Feature: %h",
-          \   'spec/acceptance/': "Feature: %h"},
-          \ 'default': [
-          \   'test/test_helper.rb',
-          \   'features/support/env.rb',
-          \   'spec/spec_helper.rb']})
-  endif
   call s:addfilecmds("view")
   call s:addfilecmds("controller")
-  call s:addfilecmds("mailer")
   call s:addfilecmds("migration")
   call s:addfilecmds("schema")
   call s:addfilecmds("layout")
@@ -2458,10 +2467,6 @@ function! s:controllerList(A,L,P)
   let con = rails#app().relglob("app/controllers/","**/*",".rb")
   call map(con,'s:sub(v:val,"_controller$","")')
   return s:autocamelize(con,a:A)
-endfunction
-
-function! s:mailerList(A,L,P)
-  return s:autocamelize(rails#app().relglob("app/mailers/","**/*",".rb"),a:A)
 endfunction
 
 function! s:viewList(A,L,P)
@@ -2561,60 +2566,19 @@ function! s:Navcommand(bang,...)
 endfunction
 
 function! s:define_navcommand(name, projection) abort
-  let name = s:gsub(a:name, '[[:space:][:punct:]]', '')
-  if type(a:projection) == type({})
-    let projection = extend({'default': '', 'glob': '**/*'}, a:projection)
-    if !has_key(projection, 'format')
-      let projection.prefix = s:split(get(projection, 'prefix', []))
-      let projection.suffix = s:split(get(projection, 'suffix', ['.rb']))
-      if empty(projection.prefix)
-        return
-      endif
-    endif
-    if get(projection, 'command', 1) =~# '^0\=$'
-      return
-    endif
-    let found = []
-    for [prefix, suffix] in s:projection_pairs(projection)
-      if !get(projection, 'check', 0) || rails#app().has_path(s:sub(prefix, '/[^/]*$', '/'))
-        let found += [{'pattern': prefix . '*' . suffix, 'affinity': get(projection, 'affinity', '')}]
-        if type(get(projection, 'template', '')) == type({})
-          let found[-1].template = get(projection.template, prefix, '')
-        elseif has_key(projection, 'template')
-          let found[-1].template = projection.template
-        endif
-      endif
-    endfor
-    if empty(found)
-      return
-    endif
-    if empty(get(projection, 'default', ''))
-      " no-op
-    elseif type(projection.default) == type([])
-      for default in projection.default
-        let found += [{'pattern': default, 'default': 1, 'affinity': ''}]
-      endfor
-    elseif type(projection.default) == type('')
-      for x in copy(found)
-        let found += [{'pattern': s:sub(x.pattern, '\*', projection.default), 'affinity': ''}]
-      endfor
-    endif
-    if type(get(projection, 'command', 1)) ==# type('')
-      let name = projection.command
-    endif
-  else
-    let found = a:projection
+  if empty(a:projection)
+    return
   endif
-  if name !~# '^[a-z]\+$'
+  if a:name !~# '^[a-z]\+$'
     return s:error("E182: Invalid command name ".name)
   endif
   for prefix in ['E', 'S', 'V', 'T', 'D', 'R', 'RE', 'RS', 'RV', 'RT', 'RD']
     exe 'command! -buffer -bar -bang -nargs=* ' .
           \ (prefix =~# 'D' ? '-range=0 ' : '') .
           \ '-complete=customlist,'.s:sid.'CommandList ' .
-          \ prefix . name . ' :execute s:CommandEdit(' .
+          \ prefix . a:name . ' :execute s:CommandEdit(' .
           \ string((prefix =~# 'D' ? '<line1>' : '') . s:sub(prefix, '^R', '') . "<bang>") . ',' .
-          \ string(a:name) . ',' . string(found) . ',<f-args>)'
+          \ string(a:name) . ',' . string(a:projection) . ',<f-args>)'
   endfor
 endfunction
 
@@ -2622,11 +2586,11 @@ function! s:CommandList(A,L,P)
   let cmd = matchstr(a:L,'\C[A-Z]\w\+')
   exe cmd." &"
   let matches = []
-  for pattern in map(copy(s:last_projections), 'v:val.pattern')
-    if pattern !~# '\*'
+  for projection in s:last_projections
+    if projection.pattern !~# '\*' || !get(projection, 'complete', 1)
       continue
     endif
-    let [prefix, suffix; _] = split(pattern, '\*', 1)
+    let [prefix, suffix; _] = split(projection.pattern, '\*', 1)
     let results = rails#app().relglob(prefix, '**/*', suffix)
     if suffix =~# '\.rb$' && a:A =~# '^\u'
       let matches += map(results, 'rails#camelize(v:val)')
@@ -2887,14 +2851,6 @@ function! s:controllerEdit(cmd,...)
   endif
   return rails#buffer().open_command(a:cmd, controller . jump, 'controller',
         \ [{'template': template, 'pattern': 'app/controllers/*'.suffix}])
-endfunction
-
-function! s:mailerEdit(cmd,...)
-  let template = "class %S < ActionMailer::Base\nend"
-  return rails#buffer().open_command(a:cmd, a:0 ? a:1 : '', 'mailer', [
-        \ {'pattern': 'app/mailers/*.rb', 'template': template, 'affinity': 'controller'},
-        \ {'pattern': 'app/models/*.rb', 'template': template, 'affinity': 'controller'}
-        \ ])
 endfunction
 
 function! s:stylesheetEdit(cmd,...)
@@ -4403,26 +4359,7 @@ function! s:app_projections() dict abort
   return dict
 endfunction
 
-function! s:app_commands() dict abort
-  let all = self.projections()
-  let commands = {}
-  for pattern in reverse(sort(keys(all), function('rails#lencmp')))
-    let projection = all[pattern]
-    for name in map(s:split(get(projection, 'command', '')), 's:sub(v:val, "[[:punct:][:space:]]", "")')
-      let command = {
-            \ 'pattern': pattern,
-            \ 'affinity': get(projection, 'affinity', ''),
-            \ 'template': get(projection, 'template', '')}
-      if !has_key(commands, name)
-        let commands[name] = []
-      endif
-      call extend(commands[name], [command])
-    endfor
-  endfor
-  return commands
-endfunction
-
-call s:add_methods('app', ['config', 'gems', 'has_gem', 'engines', 'projections', 'commands'])
+call s:add_methods('app', ['config', 'gems', 'has_gem', 'engines', 'projections'])
 
 function! s:expand_placeholders(string, placeholders)
   let ph = extend({'%': '%'}, a:placeholders)
