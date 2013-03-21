@@ -751,7 +751,7 @@ they are part of a Rails application).
 A 'completefunc' is provided (if not already set).  It is very simple, as it
 uses syntax highlighting to make its guess.  See |i_CTRL-X_CTRL-U|.
 
-PROJECTIONS			*rails-config/projections.json* *rails-projections*
+PROJECTIONS		*rails-config/projections.json* *rails-projections*
 
 The bulk of rails.vim features support core Rails conventions and a just a
 handful of popular additions (such as RSpec).  Projections let you teach
@@ -764,87 +764,46 @@ There are four primary ways to define projections:
 3. Per bundled gem, in |g:rails_gem_projections|.
 4. Inside a bundled gem, in lib/rails/projections.json.
 
-The JSON files are exactly what you would expect.  The Vim syntax is basically
-the same, but with Vim's |line-continuation| syntax:
+Vim syntax looks a lot like JSON, but with a funky |line-continuation| syntax:
 >
 	let g:rails_projections = {
-	      \ "uploader": {
-	      \   "format": "app/uploaders/%s_uploader.rb",
-	      \   "template": [
-	      \     "class %SUploader < CarrierWave::Uploader::Base",
-	      \     "end"
-	      \   ],
-	      \   "alternate": "test/unit/%s_uploader_test.rb",
+	      \ "app/uploaders/*_uploader.rb": {
+	      \   "command": "uploader",
+	      \   "template":
+	      \     "class %SUploader < CarrierWave::Uploader::Base\nend",
+	      \   "test": [
+	      \     "test/unit/%s_uploader_test.rb",
+	      \     "spec/models/%s_uploader_spec.rb"
+	      \   ]
 	      \   "keywords": "process version"
 	      \ },
-	      \ "fabricator": {
-	      \   "format": [
-	      \     "test/fabricators/%s_fabricator.rb",
-	      \     "spec/fabricators/%s_fabricator.rb"
-	      \   ],
-	      \   "affinity": "model",
-	      \   "template": "Fabricator :%s do\nend",
-	      \   "alternate": "app/models/%s.rb",
-	      \   "related": "db/schema.rb#%p",
-	      \   "test": [
-	      \     "test/models/%s_test.rb",
-	      \     "spec/models/%s_spec.rb"
-	      \   ]
-	      \ }
+	      \ "features/support/*.rb": {"command": "support"},
+	      \ "features/support/env.rb": {"command": support"}}
 
-The above configuration causes :Ruploader and :Rfabricator navigation commands
-to be created, and affect the behaviors of several commands.  You can include
-spaces in the key ("functional test") for friendlier error messages; they will
-be stripped when creating a navigation command.  Exact definitions of the
-available options are as follows:
+Keys can be either literal file names or globs containing a single asterisk.
+In the latter case, you can use placeholders in the values to plug in some
+variant of the variable portion:
 
-						*rails-projection-format*
-"format" ~
-	Defines where the file can be found.  This must contain %s for the
-	"root" of the filename.  This is where the argument to the created
-	navigation command will be plugged in, and also controls several
-	behaviors below.  You can also give a list of multiple formats.  With
-	the global option, if none of the given containing directories in the
-	given formats exist, the command won't be created.  Projections in
-	config/*.json and gems are unaffected by this requirement.
-						*rails-projection-affinity*
-"affinity" ~
-	Provide this if the root of your file name corresponds to either
-	a model or controller.  The root of a helper generally corresponds to
-	a controller, for example, so a "helper" projection would have an
-	"affinity" of "controller".  You can also provide "collection" if it
-	corresponds to a plural model (e.g., fixtures).  Providing this lets
-	you use other affiliated commands without an argument, and determines
-	the default if "default" is not specified.
-						*rails-projection-default*
-"default" ~
-	Controls the default destination of the navigation command if no
-	argument is given.  This can either be a string, which will be plugged
-	in to the given "format" as the root, or a list of one or more files
-	to consider.
-						*rails-projection-template*
-"template" ~
-	If you provide a ! after the argument to the navigation command (that
-	is, :Ruploader foo!, NOT :Ruploader! foo), and a new file is created,
-	this will be used as the body of the file.  You can give either a
-	string or a list of lines.  Provide %s wherever you want the root of
-	the file name and %S wherever you want the camel case version.
+%s: original
+%p: pluralized
+%S: camelized
+%h: humanized
+
+The full list of available options is as follows:
+
 						*rails-projection-alternate*
 "alternate" ~
-	Determines the destination of the |rails-:A| command.  Provide %s
-	wherever you want the root of the file name and %p where you want a
-	pluralized version.  If this is a list, the first readable file will
-	be used.
+	Determines the destination of the |rails-:A| command.  If this is a
+	list, the first readable file will be used.
 						*rails-projection-related*
 "related" ~
-	Determines the destination of the |rails-:R| and :.A commands.  Takes
-	the same placeholders as the "alternate" above, plus %m for the
-	current method, if it exists.
+	Determines the destination of the |rails-:R| and :.A commands.  In
+	addition to the standard placeholders, %m can be used for the current
+	method.
 						*rails-projection-test*
 "test" ~
 	Determines the default test file to run with |rails-:Rrunner| and
-	|rails-:Rake|.  Also serves as a default for "alternate", and accepts
-	the same placeholders.
+	|rails-:Rake|.  Also serves as a default for "alternate".
 						*rails-projection-task*
 "task" ~
 	Determines the default rake task to run.  Provide %l or %m to
@@ -857,16 +816,33 @@ available options are as follows:
 	Determines the |:compiler| plugin to use with |rails-:Rrunner|.
 						*rails-projection-path*
 "path" ~
-	Provides a list of directories to add to 'path'.  When omitted,
-	defaults to adding each format starting with "app/" and ending with
-	".rb".  A useful value is [] to disable this behavior entirely.
+	Pass a 1 (or true in JSON) if the part of the projection up to the *
+	should be added to 'path'.  Setting this enables |gf| support.
 						*rails-projection-keywords*
 "keywords" ~
 	Provides a whitespace delimited list of keywords to syntax highlight.
-
-If the "format" is omitted, the name of the projection will be treated as a
-file name, and you can provide literal values (without %s placeholders) for
-most attributes.  No navigation command will be created.
+						*rails-projection-format*
+"command" ~
+	Names a navigation command to be created.  Use the same name on
+	multiple projections to combine them into a single command.  Glob
+	keys are used when the command is given an argument, and literal file
+	keys are used when no argument is given.  See the "features/support"
+	entries above for an example :Rsupport that defaults to env.
+						*rails-projection-affinity*
+"affinity" ~
+	Provide this if the root of your file name corresponds to either
+	a model or controller.  The root of a helper generally corresponds to
+	a controller, for example, so a "helper" projection would have an
+	"affinity" of "controller".  You can also provide "collection" if it
+	corresponds to a plural model (e.g., fixtures), or "resource" if it
+	corresponds to a singular controller.  Providing this lets you use
+	other affiliated commands without an argument, and determines the
+	default if a command has no literal file name.
+						*rails-projection-template*
+"template" ~
+	If you provide a ! after the argument to the navigation command (that
+	is, :Ruploader foo!, NOT :Ruploader! foo), and a new file is created,
+	this will be used as the body.
 
 CONFIGURATION					*rails-configuration*
 
@@ -963,19 +939,16 @@ bundled (requires bundler.vim).
 >
 	let g:rails_gem_projections = {
 	      \ "active_model_serializers": {
-	      \   "serializer": {
-	      \     "format": "app/serializers/%s_serializer.rb",
-	      \     "template": [
-	      \       "class %SSerializer < ActiveModel::Serializer",
-	      \       "end"
-	      \     ],
+	      \   "app/serializers/*_serializer.rb": {
+	      \     "command": "serializer",
 	      \     "affinity": "model"}},
 	      \ "fabrication": {
-	      \   "fabricator": {
-	      \     "format": "spec/fabricators/%s_fabricator.rb",
+	      \   "spec/fabricators/*_fabricator.rb": {
+	      \     "command": "fabricator",
 	      \     "affinity": "model",
 	      \     "alternate": "app/models/%s.rb",
 	      \     "related": "db/schema.rb#%p",
+	      \     "test": "spec/models/%s_spec.rb",
 	      \     "template": "Fabricator :%s do\nend"}}}
 <
 See |rails-projections|.  Generally, you should prefer these gem projections
