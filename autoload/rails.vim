@@ -4539,25 +4539,9 @@ function! s:SetBasePath() abort
   let path += get(g:, 'rails_path', [])
   let path += ['app/models/concerns', 'app/controllers/concerns', 'app/controllers', 'app/helpers', 'app/mailers', 'app/models']
 
-  for projection in values(self.app().projections())
-    let type = type(get(projection, 'path', 0))
-    if (type == type([]) || type == type('')) && !empty(projection.path)
-      for [prefix, suffix] in s:projection_pairs(projection)
-        let dir = matchstr(prefix, '.*/')
-        if !get(projection, 'check', 0) || self.app().has_path(dir)
-          let path += s:split(projection.path)
-          break
-        endif
-      endfor
-    elseif get(projection, 'path', 1) isnot 0 && !empty(get(projection, 'path', 1))
-      for [prefix, suffix] in s:projection_pairs(projection)
-        if prefix =~# '^app/' && suffix =~# '\.rb$'
-          let dir = matchstr(prefix, '.*\ze/')
-          if !get(projection, 'check', 0) || self.app().has_path(dir . '/')
-            let path += [dir]
-          endif
-        endif
-      endfor
+  for [key, projection] in items(self.app().projections())
+    if get(projection, 'path', 0) is 1
+      let path += split(key, '*')[0]
     endif
   endfor
 
