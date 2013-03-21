@@ -58,6 +58,11 @@ function! s:uniq(list) abort
   return a:list
 endfunction
 
+function! s:getlist(arg, key)
+  let value = get(a:arg, a:key, [])
+  return type(value) == type([]) ? copy(value) : [value]
+endfunction
+
 function! s:split(arg, ...)
   return type(a:arg) == type([]) ? copy(a:arg) : split(a:arg, a:0 ? a:1 : "\n")
 endfunction
@@ -2575,8 +2580,8 @@ function! s:define_navcommand(name, projection) abort
         let found += [{'pattern': prefix . '*' . suffix, 'affinity': get(projection, 'affinity', '')}]
         if type(get(projection, 'template', '')) == type({})
           let found[-1].template = get(projection.template, prefix, '')
-        else
-          let found[-1].template = s:split(get(projection, 'template', ''))
+        elseif has_key(projection, 'template')
+          let found[-1].template = projection.template
         endif
       endif
     endfor
@@ -3053,15 +3058,16 @@ function! s:readable_open_command(cmd, argument, name, projections) dict abort
         call mkdir(fnamemodify(file, ':h'), 'p')
       endif
       let template = s:split(get(projection, 'template', ''))
-      let placeholders = {
+      let ph = {
             \ 's': rails#underscore(root),
             \ 'S': rails#camelize(root),
             \ 'h': toupper(root[0]) . tr(rails#underscore(root), '_', ' ')[1:-1],
-            \ }
+            \ 'p': rails#pluralize(root),
+            \ '%': '%'}
       if suffix =~# '\.js\>'
         let placeholders.S = s:gsub(placeholders.S, '::', '.')
       endif
-      call map(template, 's:expand_placeholders(v:val, placeholders)')
+      call map(template, 's:expand_placeholders(v:val, ph)')
       call map(template, 's:gsub(v:val, "\t", "  ")')
       return cmd . ' ' . s:fnameescape(simplify(file)) . '|call setline(1, '.string(template).')' . '|set nomod' . depr
     endif
@@ -4332,6 +4338,9 @@ function! s:combine_projections(dest, src, ...) abort
               \ 'name': pattern,
               \ 'command': s:gsub(pattern, '[[:space:][:punct:]]', '')
               \ }, projection)
+        if type(get(nested, 'template', '')) == type([])
+          let nested.template = join(nested.template, "\n")
+        endif
         for key in ['prefix', 'suffix', 'format', 'default']
           if has_key(nested, key)
             call remove(nested, key)
@@ -4426,7 +4435,7 @@ function! s:readable_projected(key, ...) dict abort
   let all = self.app().projections()
   let mine = []
   if has_key(all, f)
-    let mine += map(s:split(get(all[f], a:key, '')), 's:expand_placeholders(v:val, a:0 ? a:1 : 0)')
+    let mine += map(s:getlist(all[f], a:key), 's:expand_placeholders(v:val, a:0 ? a:1 : 0)')
   endif
   for pattern in reverse(sort(filter(keys(all), 'v:val =~# "*"'), s:function('rails#lencmp')))
     let [prefix, suffix; _] = split(pattern, '\*', 1)
@@ -4434,9 +4443,14 @@ function! s:readable_projected(key, ...) dict abort
       let root = f[strlen(prefix) : -strlen(suffix)-1]
       let ph = extend({
             \ 's': root,
+            \ 'S': rails#camelize(root),
+            \ 'h': toupper(root[0]) . tr(rails#underscore(root), '_', ' ')[1:-1],
             \ 'p': rails#pluralize(root),
             \ '%': '%'}, a:0 ? a:1 : {})
-      let mine += map(s:split(get(all[pattern], a:key, '')), 's:expand_placeholders(v:val, ph)')
+      if suffix =~# '\.js\>'
+        let placeholders.S = s:gsub(placeholders.S, '::', '.')
+      endif
+      let mine += map(s:getlist(all[pattern], a:key), 's:expand_placeholders(v:val, ph)')
     endif
   endfor
   return filter(mine, '!empty(v:val)')
