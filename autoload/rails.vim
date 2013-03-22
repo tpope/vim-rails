@@ -2347,7 +2347,7 @@ function! s:app_commands() dict abort
         \ {'pattern': 'lib/tasks/*.rake'},
         \ {'pattern': 'Rakefile'}]
 
-  let commands['unittest'] = map(filter([
+  let commands['unit test'] = map(filter([
         \ ['test', 'test/unit/*_test.rb', "require 'test_helper'\n\nclass %STest < ActiveSupport::TestCase\nend", 'model', 1],
         \ ['test', 'test/models/*_test.rb', "require 'test_helper'\n\nclass %STest < ActiveSupport::TestCase\nend", 'model', 1],
         \ ['test', 'test/helpers/*_test.rb', "require 'test_helper'\n\nclass %STest < ActionView::TestCase\nend", '', 1],
@@ -2357,7 +2357,7 @@ function! s:app_commands() dict abort
         \ ['spec', 'spec/helpers/*_helper_spec.rb', "require 'spec_helper'\n\ndescribe %SHelper do\nend", 'controller', 0]],
         \ 'rails#app().has(v:val[0])'),
         \ '{"pattern": v:val[1], "template": v:val[2], "affinity": v:val[3], "complete": v:val[4]}')
-  let commands['functionaltest'] = map(filter([
+  let commands['functional test'] = map(filter([
         \ ['test', 'test/functional/*_test.rb', "require 'test_helper'\n\nclass %STest < ActionController::TestCase\nend", '', 1],
         \ ['test', 'test/functional/*_controller_test.rb', "require 'test_helper'\n\nclass %SControllerTest < ActionController::TestCase\nend", 'controller', 0],
         \ ['test', 'test/controllers/*_test.rb', "require 'test_helper'\n\nclass %STest < ActionController::TestCase\nend", '', 1],
@@ -2368,7 +2368,7 @@ function! s:app_commands() dict abort
         \ ['spec', 'spec/mailers/*_spec.rb', "require 'spec_helper'\n\ndescribe %S do\nend", 'controller', 0]],
         \ 'rails#app().has(v:val[0])'),
         \ '{"pattern": v:val[1], "template": v:val[2], "affinity": v:val[3], "complete": v:val[4]}')
-  let commands['integrationtest'] = map(filter([
+  let commands['integration test'] = map(filter([
         \ ['test', 'test/integration/*_test.rb', "require 'test_helper'\n\nclass %STest < ActionDispatch::IntegrationTest\nend"],
         \ ['spec', 'spec/features/*_spec.rb', "require 'spec_helper'\n\ndescribe \"%h\" do\nend"],
         \ ['spec', 'spec/requests/*_spec.rb', "require 'spec_helper'\n\ndescribe \"%h\" do\nend"],
@@ -2595,14 +2595,15 @@ function! s:define_navcommand(name, projection, ...) abort
   if empty(a:projection)
     return
   endif
-  if a:name !~# '^[a-z]\+$'
+  let name = s:gsub(a:name, '[[:punct:][:space:]]', '')
+  if name !~# '^[a-z]\+$'
     return s:error("E182: Invalid command name ".name)
   endif
   for prefix in ['E', 'S', 'V', 'T', 'D', 'R', 'RE', 'RS', 'RV', 'RT', 'RD']
     exe 'command! -buffer -bar -bang -nargs=* ' .
           \ (prefix =~# 'D' ? '-range=0 ' : '') .
           \ '-complete=customlist,'.s:sid.'CommandList ' .
-          \ prefix . a:name . ' :execute s:CommandEdit(' .
+          \ prefix . name . ' :execute s:CommandEdit(' .
           \ string((prefix =~# 'D' ? '<line1>' : '') . s:sub(prefix, '^R', '') . "<bang>") . ',' .
           \ string(a:name) . ',' . string(a:projection) . ',<f-args>)' .
           \ (a:0 ? '|' . a:1 : '')
@@ -4332,8 +4333,7 @@ function! s:combine_projections(dest, src, ...) abort
       let projection = extend(copy(original), extra)
       if has_key(projection, 'prefix') || has_key(projection, 'format')
         let nested = extend({
-              \ 'name': pattern,
-              \ 'command': s:gsub(pattern, '[[:space:][:punct:]]', '')
+              \ 'command': pattern,
               \ }, projection)
         if type(get(nested, 'template', '')) == type([])
           let nested.template = join(nested.template, "\n")
