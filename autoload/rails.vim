@@ -4477,10 +4477,11 @@ function! s:SetBasePath() abort
   let path += ['app/models/concerns', 'app/controllers/concerns', 'app/controllers', 'app/helpers', 'app/mailers', 'app/models']
 
   for [key, projection] in items(self.app().projections())
-    if get(projection, 'path', 0) is 1
+    if get(projection, 'path', 0) is 1 || get(projection, 'autoload', 0) is 1
       let path += split(key, '*')[0]
     endif
   endfor
+  let path += filter(self.projected('path'), 'type(v:val) == type("")')
 
   let path += ['app/*', 'app/views']
   if self.controller_name() != ''
