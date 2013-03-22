@@ -1238,27 +1238,31 @@ endfunction
 function! s:readable_test_file_candidates() dict abort
   let f = self.name()
   let projected = self.projected('test')
-  if !empty(projected)
-    return projected
-  endif
   if self.type_name('view')
-    return [fnamemodify(f,':s?\<app/?spec/?')."_spec.rb",
+    let tests = [
+          \ fnamemodify(f,':s?\<app/?spec/?')."_spec.rb",
           \ fnamemodify(f,':r:s?\<app/?spec/?')."_spec.rb",
           \ fnamemodify(f,':r:r:s?\<app/?spec/?')."_spec.rb",
           \ s:sub(s:sub(dest,'<app/views/','test/functional/'),'/[^/]*$','_controller_test.rb')]
     return [spec_format, spec_handler, spec_bare, test]
   elseif self.type_name('controller-api')
-    return [s:sub(s:sub(f,'/controllers/','/apis/'),'_controller\.rb$','_api.rb')]
+    let tests = [
+          \ s:sub(s:sub(f,'/controllers/','/apis/'),'_controller\.rb$','_api.rb')]
   elseif self.type_name('api')
-    return [s:sub(s:sub(f,'/apis/','/controllers/'),'_api\.rb$','_controller.rb')]
+    let tests = [
+          \ s:sub(s:sub(f,'/apis/','/controllers/'),'_api\.rb$','_controller.rb')]
   elseif self.type_name('lib')
-    return [s:sub(f,'<lib/(.*)\.rb$','test/lib/\1_test.rb'),
+    let tests = [
+          \ s:sub(f,'<lib/(.*)\.rb$','test/lib/\1_test.rb'),
           \ s:sub(f,'<lib/(.*)\.rb$','test/unit/\1_test.rb'),
           \ s:sub(f,'<lib/(.*)\.rb$','spec/lib/\1_spec.rb')]
   elseif self.type_name('fixtures') && f =~# '\<spec/'
-    return ['spec/models/' . self.model_name() . '_spec.rb']
+    let tests = [
+          \ 'spec/models/' . self.model_name() . '_spec.rb']
   elseif self.type_name('fixtures')
-    return ['test/models/' . self.model_name() . '_test.rb', 'test/unit/' . self.model_name() . '_test.rb']
+    let tests = [
+          \ 'test/models/' . self.model_name() . '_test.rb',
+          \ 'test/unit/' . self.model_name() . '_test.rb']
   elseif f =~# '\<app/.*\.rb'
     let file = fnamemodify(f,":r")
     let test_file = s:sub(file,'<app/','test/') . '_test.rb'
@@ -1268,13 +1272,24 @@ function! s:readable_test_file_candidates() dict abort
           \ '<test/models/', 'test/unit/'),
           \ '<test/mailers/', 'test/functional/'),
           \ '<test/controllers/', 'test/functional/')
-    return s:uniq([test_file, old_test_file, spec_file])
+    let tests = s:uniq([test_file, old_test_file, spec_file])
   elseif f =~# '\<\(test\|spec\)/\%(\1_helper\.rb$\|support\>\)' || f =~# '\<features/.*\.rb$'
-    return matchstr(f, '.*\<\%(test\|spec\|features\)\>')
+    let tests = [matchstr(f, '.*\<\%(test\|spec\|features\)\>')]
   elseif self.type_name('test', 'spec', 'cucumber')
-    return [f]
+    let tests = [f]
+  else
+    let tests = []
   endif
-  return []
+  if !self.app().has('test')
+    call filter(tests, 'v:val !~# "^test/"')
+  endif
+  if !self.app().has('spec')
+    call filter(tests, 'v:val !~# "^spec/"')
+  endif
+  if !self.app().has('cucumber')
+    call filter(tests, 'v:val !~# "^cucumber/"')
+  endif
+  return projected + tests
 endfunction
 
 function! s:readable_test_file() dict abort
