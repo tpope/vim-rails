@@ -4493,6 +4493,9 @@ function! s:SetBasePath() abort
   if self.app().has('spec')
     let path += ['spec', 'spec/controllers', 'spec/helpers', 'spec/mailers', 'spec/models', 'spec/views', 'spec/lib', 'spec/features', 'spec/requests', 'spec/integration']
   endif
+  if self.app().has('cucumber')
+    let path += ['features']
+  endif
   let path += ['vendor/plugins/*/lib', 'vendor/plugins/*/test', 'vendor/rails/*/lib', 'vendor/rails/*/test']
   let engine_paths = map(copy(self.app().engines()), 'v:val . "/app/*"')
   call self.setvar('&path',(add_dot ? '.,' : '').s:pathjoin(s:uniq(path + [self.app().path()] + old_path + engine_paths)))
