@@ -4451,7 +4451,9 @@ function! RailsBufInit(path)
   call s:BufSettings()
   call s:BufMappings()
   call s:BufCommands()
-  runtime! macros/rails.vim
+  if !empty(findfile('macros/rails.vim', escape(&runtimepath, ' ')))
+    runtime! macros/rails.vim
+  endif
   silent doautocmd User Rails
   call s:BufProjectionCommands()
   call s:BufAbbreviations()
