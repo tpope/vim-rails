@@ -2554,33 +2554,41 @@ function! s:specList(A,L,P)
 endfunction
 
 function! s:Navcommand(bang,...)
-  let command = {'prefix': [], 'deprecation': ':Rnavcommand is deprecated.  See :help config/projections.json for replacement.', 'check': 1}
-  let i = 0
-  while i < a:0
-    let i += 1
-    let arg = a:{i}
+  let prefixes = []
+  let suffix = '.rb'
+  let affinity = ''
+  for arg in a:000
     if arg =~# '^-suffix='
       let suffix = matchstr(arg,'-suffix=\zs.*')
-      let command.suffix = suffix
     elseif arg =~# '^-default='
-      let command.default = matchstr(arg,'-default=\zs.*')
-    elseif arg =~# '^-\%(glob\|filter\)='
-      let command.glob = matchstr(arg,'-\w*=\zs.*')
+      let default = matchstr(arg,'-default=\zs.*')
+      if default =~# '()$'
+        let affinity = default[0:-3]
+        unlet default
+      endif
     elseif arg !~# '^-'
       if !exists('name')
         let name = arg
       else
-        let command.prefix += [s:sub(arg, '/=$', '/')]
+        let prefixes += [s:sub(arg, '/=$', '/')]
       endif
     endif
-  endwhile
+  endfor
   if !exists('name') || name !~# '^[a-z]\+$'
     return s:error("E182: Invalid command name")
   endif
-  return s:define_navcommand(name, command)
+  if empty(prefixes)
+    return ''
+  endif
+  let command = map(prefixes, '{"pattern": v:val . "*" . suffix, "affinity": affinity}')
+  if exists('default')
+    let command += [{"pattern": default}]
+  endif
+  let deprecation = ':Rnavcommand is deprecated.  See :help config/projections.json for replacement.'
+  return s:define_navcommand(name, command, 'call s:warn('.string(deprecation).')')
 endfunction
 
-function! s:define_navcommand(name, projection) abort
+function! s:define_navcommand(name, projection, ...) abort
   if empty(a:projection)
     return
   endif
@@ -2593,7 +2601,8 @@ function! s:define_navcommand(name, projection) abort
           \ '-complete=customlist,'.s:sid.'CommandList ' .
           \ prefix . a:name . ' :execute s:CommandEdit(' .
           \ string((prefix =~# 'D' ? '<line1>' : '') . s:sub(prefix, '^R', '') . "<bang>") . ',' .
-          \ string(a:name) . ',' . string(a:projection) . ',<f-args>)'
+          \ string(a:name) . ',' . string(a:projection) . ',<f-args>)' .
+          \ (a:0 ? '|' . a:1 : '')
   endfor
 endfunction
 
@@ -2966,14 +2975,7 @@ function! s:projection_pairs(options)
   return pairs
 endfunction
 
-let s:seen_projection_deprecations = {}
-
 function! s:readable_open_command(cmd, argument, name, projections) dict abort
-  let depr = ''
-  if &verbose && has_key(a:options, 'deprecation') && !has_key(s:seen_projection_deprecations, a:options.deprecation)
-    let s:seen_projection_deprecations[a:options.deprecation] = 1
-    let depr = '|echohl WarningMsg|echon '.string(a:options.deprecation).'|echohl NONE'
-  endif
   let cmd = s:editcmdfor(a:cmd)
   let djump = ''
   if a:argument =~ '[#!]\|:\d*\%(:in\)\=$'
@@ -3004,7 +3006,7 @@ function! s:readable_open_command(cmd, argument, name, projections) dict abort
     endif
     if !empty(file) && self.app().has_path(file)
       let file = self.app().path(file)
-      return cmd . ' ' . s:fnameescape(file) . '|exe ' . s:sid . 'djump('.string(djump) . ')' . depr
+      return cmd . ' ' . s:fnameescape(file) . '|exe ' . s:sid . 'djump('.string(djump) . ')'
     endif
   endfor
   if empty(argument)
@@ -3012,7 +3014,7 @@ function! s:readable_open_command(cmd, argument, name, projections) dict abort
     if empty(defaults)
       return 'echoerr "E471: Argument required"'
     else
-      return cmd . ' ' . s:fnameescape(defaults[0]) . depr
+      return cmd . ' ' . s:fnameescape(defaults[0])
     endif
   endif
   if djump !~# '^!'
@@ -3040,7 +3042,7 @@ function! s:readable_open_command(cmd, argument, name, projections) dict abort
       endif
       call map(template, 's:expand_placeholders(v:val, ph)')
       call map(template, 's:gsub(v:val, "\t", "  ")')
-      return cmd . ' ' . s:fnameescape(simplify(file)) . '|call setline(1, '.string(template).')' . '|set nomod' . depr
+      return cmd . ' ' . s:fnameescape(simplify(file)) . '|call setline(1, '.string(template).')' . '|set nomod'
     endif
   endfor
   return 'echoerr '.string("Couldn't find destination directory for ".a:name.' '.a:argument)
