@@ -4308,6 +4308,19 @@ function! s:app_engines() dict abort
   endif
 endfunction
 
+function! s:extend_projection(dest, src)
+  for key in keys(a:src)
+    if !has_key(a:dest, key) || key ==# 'affinity'
+      let a:dest[key] = a:src[key]
+    elseif type(a:src[key]) == type({}) && type(a:dest[key]) == type({})
+      call extend(a:dest[key], a:src[key])
+    else
+      let a:dest[key] = s:uniq(s:getlist(a:src, key) + s:getlist(a:dest, key))
+    endif
+  endfor
+  return a:dest
+endfunction
+
 function! s:combine_projections(dest, src, ...) abort
   let extra = a:0 ? a:1 : {}
   if type(a:src) == type({})
@@ -4341,7 +4354,7 @@ function! s:combine_projections(dest, src, ...) abort
           endfor
         endif
       else
-        let a:dest[pattern] = projection
+        let a:dest[pattern] = s:extend_projection(get(a:dest, pattern, {}), projection)
       endif
     endfor
   endif
