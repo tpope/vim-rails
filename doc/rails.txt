@@ -814,10 +814,6 @@ The full list of available options is as follows:
 						*rails-projection-compiler*
 "compiler" ~
 	Determines the |:compiler| plugin to use with |rails-:Rrunner|.
-						*rails-projection-path*
-"path" ~
-	Pass a 1 (or true in JSON) if the part of the projection up to the *
-	should be added to 'path'.  Setting this enables |gf| support.
 						*rails-projection-keywords*
 "keywords" ~
 	Provides a whitespace delimited list of keywords to syntax highlight.
