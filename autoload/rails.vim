@@ -4309,16 +4309,17 @@ function! s:app_engines() dict abort
 endfunction
 
 function! s:extend_projection(dest, src)
+  let dest = copy(a:dest)
   for key in keys(a:src)
-    if !has_key(a:dest, key) || key ==# 'affinity'
-      let a:dest[key] = a:src[key]
-    elseif type(a:src[key]) == type({}) && type(a:dest[key]) == type({})
-      call extend(a:dest[key], a:src[key])
+    if !has_key(dest, key) || key ==# 'affinity'
+      let dest[key] = a:src[key]
+    elseif type(a:src[key]) == type({}) && type(dest[key]) == type({})
+      let dest[key] = extend(copy(dest[key]), a:src[key])
     else
-      let a:dest[key] = s:uniq(s:getlist(a:src, key) + s:getlist(a:dest, key))
+      let dest[key] = s:uniq(s:getlist(a:src, key) + s:getlist(dest, key))
     endif
   endfor
-  return a:dest
+  return dest
 endfunction
 
 function! s:combine_projections(dest, src, ...) abort
