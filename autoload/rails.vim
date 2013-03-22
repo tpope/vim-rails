@@ -4136,8 +4136,15 @@ function! s:BufAbbreviations()
     Rabbrev AS::  ActiveSupport
     Rabbrev AM::  ActionMailer
     Rabbrev AO::  ActiveModel
-    for pairs in items(type(get(g:, 'rails_abbreviations', 0)) == type({}) ? g:rails_abbreviations : {}) + items(rails#app().config('abbreviations'))
+    for pairs in
+          \ items(type(get(g:, 'rails_abbreviations', 0)) == type({}) ? g:rails_abbreviations : {}) +
+          \ items(rails#app().config('abbreviations'))
       call call(function(s:sid.'Abbrev'), [0, pairs[0]] + s:split(pairs[1]))
+    endfor
+    for hash in reverse(rails#buffer().projected('abbreviations'))
+      for pairs in items(hash)
+        call call(function(s:sid.'Abbrev'), [0, pairs[0]] + s:split(pairs[1]))
+      endfor
     endfor
   endif
 endfunction
@@ -4362,6 +4369,9 @@ endfunction
 call s:add_methods('app', ['config', 'gems', 'has_gem', 'engines', 'projections'])
 
 function! s:expand_placeholders(string, placeholders)
+  if type(a:string) !=# type('')
+    return a:string
+  endif
   let ph = extend({'%': '%'}, a:placeholders)
   let value = substitute(a:string, '%\([^: ]\)', '\=get(ph, submatch(1), "\n")', 'g')
   return value =~# '\n' ? '' : value

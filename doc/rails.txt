@@ -666,8 +666,8 @@ an abbreviation ending with "(", you may define where to insert the
 parenthesis by splitting the expansion into two parts (divided by an unescaped
 space).
 
-You can also define abbrevations in either |g:rails_abbreviations| or
-|config/editor.json| as a hash:
+You can also define abbreviations as a hash in |g:rails_abbreviations| or by
+using |rails-projection-abbreviations|:
 >
 	let g:rails_abbreviations = {
 		\ "AE::": "ActiveResource",
@@ -821,6 +821,11 @@ The full list of available options is as follows:
 						*rails-projection-keywords*
 "keywords" ~
 	Provides a whitespace delimited list of keywords to syntax highlight.
+						*rails-projection-abbreviations*
+"abbreviations" ~
+	Provides a dictionary of abbreviations to define.  See
+	|rails-abbreviations|.  You might consider setting this in a "*"
+	projection.
 						*rails-projection-format*
 "command" ~
 	Names a navigation command to be created.  Use the same name on
