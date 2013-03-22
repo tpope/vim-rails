@@ -2374,7 +2374,10 @@ function! s:app_commands() dict abort
         \ ['spec', 'spec/requests/*_spec.rb', "require 'spec_helper'\n\ndescribe \"%h\" do\nend"],
         \ ['spec', 'spec/integration/*_spec.rb', "require 'spec_helper'\n\ndescribe \"%h\" do\nend"],
         \ ['cucumber', 'features/*.feature', "Feature: %h"],
-        \ ['turnip', 'spec/acceptance/*.feature', "Feature: %h"]],
+        \ ['turnip', 'spec/acceptance/*.feature', "Feature: %h"],
+        \ ['test', 'test/test_helper.rb', ""],
+        \ ['cucumber', 'features/support/env.rb', ""],
+        \ ['spec', 'spec/spec_helper.rb', ""]],
         \ 'rails#app().has(v:val[0])'),
         \ '{"pattern": v:val[1], "template": v:val[2]}')
 
