@@ -2384,7 +2384,7 @@ function! s:app_commands() dict abort
   let all = self.projections()
   for pattern in reverse(sort(keys(all), function('rails#lencmp')))
     let projection = all[pattern]
-    for name in map(s:split(get(projection, 'command', '')), 's:sub(v:val, "[[:punct:][:space:]]", "")')
+    for name in s:split(get(projection, 'command', ''))
       let command = {
             \ 'pattern': pattern,
             \ 'affinity': get(projection, 'affinity', ''),
