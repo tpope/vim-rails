@@ -2554,7 +2554,7 @@ function! s:specList(A,L,P)
 endfunction
 
 function! s:Navcommand(bang,...)
-  let command = {'prefix': [], 'deprecation': ':Rnavcommand is deprecated.  See :help config/editor.json for replacement.', 'check': 1}
+  let command = {'prefix': [], 'deprecation': ':Rnavcommand is deprecated.  See :help config/projections.json for replacement.', 'check': 1}
   let i = 0
   while i < a:0
     let i += 1
