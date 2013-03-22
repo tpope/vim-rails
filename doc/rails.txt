@@ -760,11 +760,11 @@ rails.vim about app specific and gem specific behavior.
 There are four primary ways to define projections:
 
 1. Globally, in |g:rails_projections|.
-2. Per app, in config/projections.json or nested in |config/editor.json|.
+2. Per app, in config/projections.json.
 3. Per bundled gem, in |g:rails_gem_projections|.
 4. Inside a bundled gem, in lib/rails/projections.json.
 
-Vim syntax looks a lot like JSON, but with a funky |line-continuation| syntax:
+Vim syntax looks a lot like JSON, but with funky |line-continuation|:
 >
 	let g:rails_projections = {
 	      \ "app/uploaders/*_uploader.rb": {
@@ -851,29 +851,9 @@ The full list of available options is as follows:
 
 CONFIGURATION					*rails-configuration*
 
-In addition to the crude hammer of global settings (described below),
-rails.vim provides a few different mechanisms for granular configuration.
-
-						*rails-config/editor.json*
-This file provides for application specific configuration and is intended to
-be checked into version control.  Example:
->
-	{
-	  "abbreviations": {
-	    "FB::": "FooBar"
-	  },
-	  "projections": {
-	    "service": {
-	      "format": "app/services/%s_service.rb",
-	      "template": "class %SService < AbstractService\nend",
-	      "alternate": "test/functional/%s_service_test.rb"
-	    }
-	  }
-	}
-<
-See |rails-abbreviations| and |rails-projections| for explanations of the
-respective sections.  You can also put projections in
-|config/projections.json|.
+In addition to projections (described above) and the crude hammer of global
+settings (described below), rails.vim provides a few different mechanisms for
+configuration.
 
 					*rails-:autocmd* *rails-autocommands*
 If you would like to set your own custom Vim settings whenever a Rails file is
@@ -895,7 +875,7 @@ Rails file is loaded.
 
 						*config/rails.vim*
 This file used to be sourced automatically from the root of the application,
-but has been superseded by |config/editor.json| and |config/projections.json|.
+but has been superseded by |rails-projections|.
 
 						*rails-:Rset*
 :Rset			This command has been superseded by
@@ -917,18 +897,10 @@ JavaScript files, since ctags has a tendency to choke on those.
 >
 	let g:rails_ctags_arguments = ['--languages=-javascript']
 <
-						*g:rails_default_config*
-If |config/editor.json| is missing, g:rails_default_config is used instead.
-Useful, in particular, for providing a default set of projections without
-polluting the namespace of every single project.
->
-	let g:rails_default_config = {
-	      \ "projections": {...}}
-<
 						*g:rails_projections*  >
 Defines the set of globally available projections.  See |rails-projections|.
-Generally, it is advisable to use |g:rails_gem_projections| or
-|config/editor.json| instead where possible.
+Where possible, it is generally advisable to use |g:rails_gem_projections| or
+|config/projections.json| instead.
 
 						*g:rails_gem_projections*
 This is a dictionary where the keys are gem names and the values are
