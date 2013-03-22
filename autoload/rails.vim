@@ -329,7 +329,7 @@ call s:add_methods('readable',['end_of','last_opening_line','last_method_line','
 function! s:readable_find_affinity() dict abort
   let f = self.name()
   let all = self.app().projections()
-  for pattern in reverse(sort(filter(keys(all), 'v:val =~# "*"'), s:function('rails#lencmp')))
+  for pattern in reverse(sort(filter(keys(all), 'v:val =~# "^[^*]*\\*[^*]*$"'), s:function('rails#lencmp')))
     if !has_key(all[pattern], 'affinity')
       continue
     endif
@@ -4418,7 +4418,7 @@ function! s:readable_projected(key, ...) dict abort
   if has_key(all, f)
     let mine += map(s:getlist(all[f], a:key), 's:expand_placeholders(v:val, a:0 ? a:1 : 0)')
   endif
-  for pattern in reverse(sort(filter(keys(all), 'v:val =~# "*"'), s:function('rails#lencmp')))
+  for pattern in reverse(sort(filter(keys(all), 'v:val =~# "^[^*]*\\*[^*]*$"'), s:function('rails#lencmp')))
     let [prefix, suffix; _] = split(pattern, '\*', 1)
     if s:startswith(f, prefix) && s:endswith(f, suffix)
       let root = f[strlen(prefix) : -strlen(suffix)-1]
