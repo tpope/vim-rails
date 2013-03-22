@@ -878,21 +878,14 @@ respective sections.  You can also put projections in
 					*rails-:autocmd* *rails-autocommands*
 If you would like to set your own custom Vim settings whenever a Rails file is
 loaded, you can use an autocommand like the following in your vimrc: >
+
 	autocmd User Rails		silent! Rlcd
 	autocmd User Rails		map <buffer> <F9> :Rake<CR>
-You can also have autocommands that only apply to certain types of files.
-These are based off the information shown when running the |:Rails!|
-command, with hyphens changed to periods. A few examples: >
-	autocmd User Rails.controller*	iabbr <buffer> wsn wsdl_service_name
-	autocmd User Rails.model.arb*	iabbr <buffer> vfo validates_format_of
-	autocmd User Rails.view.erb*    imap  <buffer> <C-Z> <%=  %><C-O>3h
-End all such Rails autocommands with asterisks, even if you have an exact
-specification, to allow for more specific subtypes to be added in the future.
-There is also a filename matching syntax: >
-	autocmd User Rails/config/environment.rb Rabbrev c config
-	autocmd User Rails/**/foo_bar.rb         Rabbrev FB:: FooBar
-Use the filetype based syntax whenever possible, reserving the filename based
-syntax for more advanced cases.
+
+There used to be autocommands that fire based on the "type" or file name of
+the buffer, but they have been removed.  If you still need to execute code for
+certain file types only, use the bare User Rails event above and check
+rails#buffer().relative() for the path relative to the Rails root.
 
 						*macros/rails.vim*
 If you have several commands to run on initialization for all file types, they

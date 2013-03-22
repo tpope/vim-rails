@@ -4451,20 +4451,8 @@ function! RailsBufInit(path)
   call s:BufSettings()
   call s:BufMappings()
   call s:BufCommands()
-  let t = rails#buffer().type_name()
-  let t = "-".t
-  let f = '/'.RailsFilePath()
-  if f =~ '[ !#$%\,]'
-    let f = ''
-  endif
   runtime! macros/rails.vim
   silent doautocmd User Rails
-  if t != '-'
-    exe "silent doautocmd User Rails".s:gsub(t,'-','.')
-  endif
-  if f != ''
-    exe "silent doautocmd User Rails".f
-  endif
   call s:BufProjectionCommands()
   call s:BufAbbreviations()
   return b:rails_root
