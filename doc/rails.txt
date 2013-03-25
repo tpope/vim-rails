@@ -96,7 +96,7 @@ actually edit a file from a Rails application.
 		# GET /users
 		# PUT /users/1
 <
-			If it's not using the right browser, define a :OpenURL
+			If it's not using the right browser, define an OpenURL
 			command:
 >
 		:command -bar -nargs=1 OpenURL :!open <args>
