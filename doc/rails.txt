@@ -56,14 +56,8 @@ actually edit a file from a Rails application.
 			is active for the current buffer, also show the type
 			of Rails file detected.
 
-						*rails-:Rcd*
-:Rcd [{directory}]	|:cd| to /path/to/railsapp/{directory}.
-
-						*rails-:Rlcd*
-:Rlcd [{directory}]	|:lcd| to /path/to/railsapp/{directory}.
-
 						*rails-:Redit*
-:Redit {file}		Obsolete alias for |:R|.
+:Redit {file}		Obsolete alias for |:R| or |:A|.
 
 						*rails-:Rfind*
 :Rfind [{file}]		Obsolete alias for |:find|.
@@ -105,12 +99,6 @@ actually edit a file from a Rails application.
 :Rpreview! [{path}]	Like :Rpreview, but open the path inside Vim using
 			|netrw| instead.
 
-						*rails-:Rtags*
-:Rtags			Calls ctags -R on the current application root.
-			Exuberant ctags must be installed.  Additional
-			arguments can be passed to ctags with
-			|g:rails_ctags_arguments|.
-
 						*rails-:Rrefresh*
 :Rrefresh		Refreshes certain cached settings.  Most noticeably,
 			this clears the cached list of classes that are syntax
@@ -118,6 +106,18 @@ actually edit a file from a Rails application.
 
 						*rails-:Rrefresh!*
 :Rrefresh!		As above, and also reloads rails.vim.
+
+						*rails-:Cd* *rails-:Rcd*
+:Cd [{directory}]	|:cd| to /path/to/railsapp/{directory}.
+
+						*rails-:Lcd* *rails-:Rlcd*
+:Lcd [{directory}]	|:lcd| to /path/to/railsapp/{directory}.
+
+						*rails-:Ctags* *rails-:Rtags*
+:Ctags			Calls ctags -R on the current application root.
+			Exuberant ctags must be installed.  Additional
+			arguments can be passed to ctags with
+			|g:rails_ctags_arguments|.
 
 NAVIGATION					*rails-navigation*
 
@@ -227,134 +227,135 @@ controller name.
 
 Each of the following commands has variants for splitting, vertical splitting,
 opening in a new tab, and reading the file into the current buffer.  For
-:Rmodel, those variants would be :RSmodel, :RVmodel, :RTmodel, and :RDmodel.
-There is also :REmodel which is a synonym for :Rmodel (future versions might
-allow customization of the behavior of :Rmodel).  They also allow for jumping
-to methods or line numbers using the same syntax as |:R|, and file creation
-(with a bit of boilerplate) can be forced by adding a ! after the filename
-(not after the command itself!).
+:Emodel, those variants would be :Smodel, :Vmodel, :Tmodel, and :Dmodel.
+They also allow for jumping to methods or line numbers using the same syntax
+as |:R|, and file creation (with a bit of boilerplate) can be forced by adding
+a ! after the filename (not after the command itself!).
 
-:Rcontroller					|rails-:Rcontroller|
-:Renvironment					|rails-:Renvironment|
-:Rfixtures					|rails-:Rfixtures|
-:Rfunctionaltest				|rails-:Rfunctionaltest|
-:Rhelper					|rails-:Rhelper|
-:Rinitializer					|rails-:Rinitializer|
-:Rintegrationtest				|rails-:Rintegrationtest|
-:Rjavascript					|rails-:Rjavascript|
-:Rlayout					|rails-:Rlayout|
-:Rlib						|rails-:Rlib|
-:Rlocale					|rails-:Rlocale|
-:Rmailer					|rails-:Rmailer|
-:Rmigration					|rails-:Rmigration|
-:Rmodel						|rails-:Rmodel|
-:Rschema					|rails-:Rschema|
-:Rspec						|rails-:Rspec|
-:Rstylesheet					|rails-:Rstylesheet|
-:Rtask						|rails-:Rtask|
-:Runittest					|rails-:Runittest|
-:Rview						|rails-:Rview|
+There are also "classic" versions of these commands that start with :R (e.g.,
+:Rmodel, :RSmodel, :RVmodel, :RTmodel, and :RDmodel).
 
-						*rails-:Rcontroller*
-:Rcontroller [{name}]	Edit the specified or current controller.
+:Econtroller					|rails-:Econtroller|
+:Eenvironment					|rails-:Eenvironment|
+:Efixtures					|rails-:Efixtures|
+:Efunctionaltest				|rails-:Efunctionaltest|
+:Ehelper					|rails-:Ehelper|
+:Einitializer					|rails-:Einitializer|
+:Eintegrationtest				|rails-:Eintegrationtest|
+:Ejavascript					|rails-:Ejavascript|
+:Elayout					|rails-:Elayout|
+:Elib						|rails-:Elib|
+:Elocale					|rails-:Elocale|
+:Emailer					|rails-:Emailer|
+:Emigration					|rails-:Emigration|
+:Emodel						|rails-:Emodel|
+:Eschema					|rails-:Eschema|
+:Espec						|rails-:Espec|
+:Estylesheet					|rails-:Estylesheet|
+:Etask						|rails-:Etask|
+:Eunittest					|rails-:Eunittest|
+:Eview						|rails-:Eview|
 
-						*rails-:Renvironment*
-:Renvironment [{name}]  Edit the config/environments file specified.  With no
+				*rails-:Econtroller* *rails-:Rcontroller*
+:Econtroller [{name}]	Edit the specified or current controller.
+
+				*rails-:Eenvironment* *rails-:Renvironment*
+:Eenvironment [{name}]  Edit the config/environments file specified.  With no
 			argument, defaults to editing config/application.rb
 			or config/environment.rb.
 
-						*rails-:Rfixtures*
-:Rfixtures [{name}]	Edit the fixtures for the given or current model.  If
+				*rails-:Efixtures* *rails-:Rfixtures*
+:Efixtures [{name}]	Edit the fixtures for the given or current model.  If
 			an argument is given, it must be pluralized, like the
 			final filename (this may change in the future).  If
 			omitted, the current model is pluralized.  An optional
 			extension can be given, to distinguish between YAML
 			and CSV fixtures.
 
-						*rails-:Rfunctionaltest*
-:Rfunctionaltest [{name}]
+			*rails-:Efunctionaltest* *rails-:Rfunctionaltest*
+:Efunctionaltest [{name}]
 			Edit the functional test or controller spec for the
 			specified or current controller.
 
-						*rails-:Rhelper*
-:Rhelper [{name}]	Edit the helper for the specified name or current
+				*rails-:Ehelper* *rails-:Rhelper*
+:Ehelper [{name}]	Edit the helper for the specified name or current
 			controller.
 
-						*rails-:Rinitializer*
-:Rinitializer [{name}]  Edit the config/initializers file specified.  With no
+				*rails-:Einitializer* *rails-:Rinitializer*
+:Einitializer [{name}]  Edit the config/initializers file specified.  With no
 			argument, defaults to editing config/routes.rb.
 
-						*rails-:Rintegrationtest*
-:Rintegrationtest [{name}]
+			*rails-:Eintegrationtest* *rails-:Rintegrationtest*
+:Eintegrationtest [{name}]
 			Edit the integration test, integration spec, or
 			cucumber feature specified.  With no argument,
 			defaults to editing test/test_helper.rb.
 
-						*rails-:Rjavascript*
-:Rjavascript [{name}]	Edit the JavaScript for the specified name or current
+				*rails-:Ejavascript* *rails-:Rjavascript*
+:Ejavascript [{name}]	Edit the JavaScript for the specified name or current
 			controller.  Also supports CoffeeScript in
 			app/scripts/.
 
-						*rails-:Rlayout*
-:Rlayout [{name}]	Edit the specified layout.  Defaults to the layout for
+				*rails-:Elayout* *rails-:Rlayout*
+:Elayout [{name}]	Edit the specified layout.  Defaults to the layout for
 			the current controller, or the application layout if
 			that cannot be found.  A new layout will be created if
 			an extension is given.
 
-						*rails-:Rlib*
-:Rlib [{name}]		Edit the library from the lib directory for the
+				*rails-:Elib* *rails-:Rlib*
+:Elib [{name}]		Edit the library from the lib directory for the
 			specified name.  With no argument, defaults to editing
 			the application Gemfile (a task formally handled by
 			the defunct :Rplugin).
 
-						*rails-:Rlocale*
-:Rlocale [{name}]	Edit the config/locale file specified, optionally
+				*rails-:Elocale* *rails-:Rlocale*
+:Elocale [{name}]	Edit the config/locale file specified, optionally
 			adding a yml or rb extension if none is given.  With
 			no argument, checks config/environment.rb for the
 			default locale.
 
-						*rails-:Rmailer*
-:Rmailer [{name}]	Edit the mailer specified.  This looks in both
+				*rails-:Emailer* *rails-:Rmailer*
+:Emailer [{name}]	Edit the mailer specified.  This looks in both
 			app/mailers for Rails 3 and app/models for older
 			versions of Rails but only tab completes the former.
 
-						*rails-:Rmigration*
-:Rmigration [{pattern}]	If {pattern} is a number, find the migration for that
+				*rails-:Emigration* *rails-:Rmigration*
+:Emigration [{pattern}]	If {pattern} is a number, find the migration for that
 			particular set of digits, zero-padding if necessary.
 			Otherwise, find the newest migration containing the
 			given pattern.  Omitting the pattern selects the
 			latest migration.  Give a numeric argument of 0 to edit
 			db/seeds.rb.
 
-						*rails-:Rmodel*
-:Rmodel [{name}]	Edit the specified or current model.
+				*rails-:Emodel* *rails-:Rmodel*
+:Emodel [{name}]	Edit the specified or current model.
 
-						*rails-:Rspec*
-:Rspec [{name}]		Edit the given spec.  With no argument, defaults to
+				*rails-:Espec* *rails-:Rspec*
+:Espec [{name}]		Edit the given spec.  With no argument, defaults to
 			editing spec/spec_helper.rb (If you want to jump to
 			the spec for the given file, use |:A| instead).  This
 			command is only defined if there is a spec folder in
 			the root of the application.
 
-						*rails-:Rschema*
-:Rschema [{table}]	Edit the schema and optionally jump to the specified
+				*rails-:Eschema* *rails-:Rschema*
+:Eschema [{table}]	Edit the schema and optionally jump to the specified
 			table.
 
-						*rails-:Rstylesheet*
-:Rstylesheet [{name}]	Edit the stylesheet for the specified name or current
+				*rails-:Estylesheet* *rails-:Rstylesheet*
+:Estylesheet [{name}]	Edit the stylesheet for the specified name or current
 			controller.  Also supports Sass and SCSS.
 
-						*rails-:Rtask*
-:Rtask [{name}]		Edit the .rake file from lib/tasks for the specified
+				*rails-:Etask* *rails-:Rtask*
+:Etask [{name}]		Edit the .rake file from lib/tasks for the specified
 			name.  If no argument is given, the application
 			Rakefile is edited.
 
-						*rails-:Runittest*
-:Runittest [{name}]	Edit the unit test or model spec for the specified
+				*rails-:Eunittest* *rails-:Runittest*
+:Eunittest [{name}]	Edit the unit test or model spec for the specified
 			name or current model.
 
-						*rails-:Rview*
-:Rview [[{controller}/]{view}]
+				*rails-:Eview* *rails-:Rview*
+:Eview [[{controller}/]{view}]
 			Edit the specified view.  The controller will default
 			sensibly, and the view name can be omitted when
 			editing a method of a controller.  If a view name is
@@ -615,9 +616,9 @@ detected, so all navigation commands should work as expected inside a spec
 file.  :Rake in a spec runs just that spec, and in a model, controller, or
 helper, runs the associated spec.
 
-|:Runittest| and |:Rfunctionaltest| lead double lives, handling model/helper
+|:Eunittest| and |:Efunctionaltest| lead double lives, handling model/helper
 and controller/mailer specs respectively.  For view specs, you can use
-|:Rspec|, or define your own navigation commands:
+|:Espec|, or define your own navigation commands:
 >
 	Rnavcommand specview spec/views -glob=**/* -suffix=_spec.rb
 <
@@ -824,7 +825,7 @@ The full list of available options is as follows:
 	multiple projections to combine them into a single command.  Glob
 	keys are used when the command is given an argument, and literal file
 	keys are used when no argument is given.  See the "features/support"
-	entries above for an example :Rsupport that defaults to env.
+	entries above for an example :Esupport that defaults to env.
 						*rails-projection-affinity*
 "affinity" ~
 	Provide this if the root of your file name corresponds to either
@@ -838,7 +839,7 @@ The full list of available options is as follows:
 						*rails-projection-template*
 "template" ~
 	If you provide a ! after the argument to the navigation command (that
-	is, :Ruploader foo!, NOT :Ruploader! foo), and a new file is created,
+	is, :Euploader foo!, NOT :Euploader! foo), and a new file is created,
 	this will be used as the body.
 
 CONFIGURATION					*rails-configuration*
@@ -851,7 +852,7 @@ configuration.
 If you would like to set your own custom Vim settings whenever a Rails file is
 loaded, you can use an autocommand like the following in your vimrc: >
 
-	autocmd User Rails		silent! Rlcd
+	autocmd User Rails		silent! Lcd
 	autocmd User Rails		map <buffer> <F9> :Rake<CR>
 
 There used to be autocommands that fire based on the "type" or file name of
@@ -884,7 +885,7 @@ This variable was formerly used to globally disable abbreviations.  Use
 g:rails_no_abbreviations if you want to do that.
 
 						*g:rails_ctags_arguments*
-Additional arguments to pass to ctags from |:Rtags|.  Defaults to ignoring
+Additional arguments to pass to ctags from |:Ctags|.  Defaults to ignoring
 JavaScript files, since ctags has a tendency to choke on those.
 >
 	let g:rails_ctags_arguments = ['--languages=-javascript']
