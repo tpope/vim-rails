@@ -3039,7 +3039,7 @@ function! s:readable_open_command(cmd, argument, name, projections) dict abort
             \ 'o': rails#singularize(root),
             \ '%': '%'}
       if suffix =~# '\.js\>'
-        let placeholders.S = s:gsub(placeholders.S, '::', '.')
+        let ph.S = s:gsub(ph.S, '::', '.')
       endif
       call map(template, 's:expand_placeholders(v:val, ph)')
       call map(template, 's:gsub(v:val, "\t", "  ")')
@@ -4427,7 +4427,7 @@ function! s:readable_projected(key, ...) dict abort
             \ 'o': rails#singularize(root),
             \ '%': '%'}, a:0 ? a:1 : {})
       if suffix =~# '\.js\>'
-        let placeholders.S = s:gsub(placeholders.S, '::', '.')
+        let ph.S = s:gsub(ph.S, '::', '.')
       endif
       let mine += map(s:getlist(all[pattern], a:key), 's:expand_placeholders(v:val, ph)')
     endif
