@@ -1401,7 +1401,7 @@ function! s:readable_default_rake_task(...) dict abort
       endif
     elseif test =~# '^spec\>'
       return 'spec SPEC='.s:rquote(with_line)
-    elseif test =~# '^feature\>'
+    elseif test =~# '^features\>'
       return 'cucumber FEATURE='.s:rquote(with_line)
     else
       let task = matchstr(test, '^\w*')
@@ -1657,7 +1657,7 @@ function! s:readable_runner_command(bang, count, arg) dict abort
       endif
     elseif arg =~# '^spec/.*\%(_spec\.rb\|\.feature\)$'
       let compiler = 'rspec'
-    elseif arg =~# '^features/.*\.features$'
+    elseif arg =~# '^features/.*\.feature$'
       let compiler = 'cucumber'
     else
       let compiler = 'ruby'
