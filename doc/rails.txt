@@ -124,7 +124,7 @@ NAVIGATION					*rails-navigation*
 Navigation is where the real power of this plugin lies.  Efficient use of the
 following features will greatly ease navigating the Rails file structure.
 
-The 'path' has been modified to include all the best places to be.
+The standard Rails load path is prepended to 'path', enabling |:find| to work:
 >
 	:find application_controller.rb
 <
