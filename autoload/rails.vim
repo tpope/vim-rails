@@ -3036,6 +3036,7 @@ function! s:readable_open_command(cmd, argument, name, projections) dict abort
             \ 'S': rails#camelize(root),
             \ 'h': toupper(root[0]) . tr(rails#underscore(root), '_', ' ')[1:-1],
             \ 'p': rails#pluralize(root),
+            \ 'o': rails#singularize(root),
             \ '%': '%'}
       if suffix =~# '\.js\>'
         let placeholders.S = s:gsub(placeholders.S, '::', '.')
@@ -4423,6 +4424,7 @@ function! s:readable_projected(key, ...) dict abort
             \ 'S': rails#camelize(root),
             \ 'h': toupper(root[0]) . tr(rails#underscore(root), '_', ' ')[1:-1],
             \ 'p': rails#pluralize(root),
+            \ 'o': rails#singularize(root),
             \ '%': '%'}, a:0 ? a:1 : {})
       if suffix =~# '\.js\>'
         let placeholders.S = s:gsub(placeholders.S, '::', '.')
