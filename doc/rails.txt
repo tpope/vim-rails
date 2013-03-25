@@ -248,7 +248,6 @@ to methods or line numbers using the same syntax as |:R|, and file creation
 :Rmailer					|rails-:Rmailer|
 :Rmigration					|rails-:Rmigration|
 :Rmodel						|rails-:Rmodel|
-:Rplugin					|rails-:Rplugin|
 :Rschema					|rails-:Rschema|
 :Rspec						|rails-:Rspec|
 :Rstylesheet					|rails-:Rstylesheet|
@@ -304,11 +303,9 @@ to methods or line numbers using the same syntax as |:R|, and file creation
 
 						*rails-:Rlib*
 :Rlib [{name}]		Edit the library from the lib directory for the
-			specified name.  If the current file is part of a
-			plugin, the libraries from that plugin can be
-			specified as well.  With no argument, defaults to
-			editing the application Gemfile (a task formally
-			handled by the defunct :Rplugin).
+			specified name.  With no argument, defaults to editing
+			the application Gemfile (a task formally handled by
+			the defunct :Rplugin).
 
 						*rails-:Rlocale*
 :Rlocale [{name}]	Edit the config/locale file specified, optionally
@@ -349,10 +346,8 @@ to methods or line numbers using the same syntax as |:R|, and file creation
 
 						*rails-:Rtask*
 :Rtask [{name}]		Edit the .rake file from lib/tasks for the specified
-			name.  If the current file is part of a plugin, the
-			tasks for that plugin can be specified as well.  If no
-			argument is given, either the current plugin's
-			Rakefile or the application Rakefile will be edited.
+			name.  If no argument is given, the application
+			Rakefile is edited.
 
 						*rails-:Runittest*
 :Runittest [{name}]	Edit the unit test or model spec for the specified
