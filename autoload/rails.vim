@@ -2383,8 +2383,7 @@ function! s:app_commands() dict abort
     for name in s:split(get(projection, 'command', ''))
       let command = {
             \ 'pattern': pattern,
-            \ 'affinity': get(projection, 'affinity', ''),
-            \ 'template': get(projection, 'template', '')}
+            \ 'affinity': get(projection, 'affinity', '')}
       if !has_key(commands, name)
         let commands[name] = []
       endif
@@ -3026,22 +3025,21 @@ function! s:readable_open_command(cmd, argument, name, projections) dict abort
     endif
     let [prefix, suffix; _] = split(projection.pattern, '\*', 1)
     if self.app().has_path(prefix)
-      let file = self.app().path(prefix . (suffix =~# '\.rb$' ? rails#underscore(root) : root) . suffix)
+      let relative = prefix . (suffix =~# '\.rb$' ? rails#underscore(root) : root) . suffix
+      let file = self.app().path(relative)
       if !isdirectory(fnamemodify(file, ':h'))
         call mkdir(fnamemodify(file, ':h'), 'p')
       endif
-      let template = s:split(get(projection, 'template', ''))
+      if has_key(projection, 'template')
+      let template = s:split(projection.template)
       let ph = {
-            \ 's': rails#underscore(root),
-            \ 'S': rails#camelize(root),
-            \ 'h': toupper(root[0]) . tr(rails#underscore(root), '_', ' ')[1:-1],
-            \ 'p': rails#pluralize(root),
-            \ 'o': rails#singularize(root),
-            \ '%': '%'}
-      if suffix =~# '\.js\>'
-        let ph.S = s:gsub(ph.S, '::', '.')
+              \ 'S': rails#camelize(root),
+              \ 'h': toupper(root[0]) . tr(rails#underscore(root), '_', ' ')[1:-1]}
+        call map(template, 's:expand_placeholders(v:val, ph)')
+      else
+        let projected = self.app().file(relative).projected('template')
+        let template = s:split(get(projected, 0, ''))
       endif
-      call map(template, 's:expand_placeholders(v:val, ph)')
       call map(template, 's:gsub(v:val, "\t", "  ")')
       return cmd . ' ' . s:fnameescape(simplify(file)) . '|call setline(1, '.string(template).')' . '|set nomod'
     endif
@@ -4404,8 +4402,8 @@ function! s:expand_placeholders(string, placeholders)
     return a:string
   endif
   let ph = extend({'%': '%'}, a:placeholders)
-  let value = substitute(a:string, '%\([^: ]\)', '\=get(ph, submatch(1), "\n")', 'g')
-  return value =~# '\n' ? '' : value
+  let value = substitute(a:string, '%\([^: ]\)', '\=get(ph, submatch(1), "\001")', 'g')
+  return value =~# "\001" ? '' : value
 endfunction
 
 function! s:readable_projected(key, ...) dict abort
