@@ -782,7 +782,7 @@ variant of the variable portion:
 
 %s: original
 %p: pluralized
-%o: singularized ("one")
+%i: singularized
 %S: camelized
 %h: humanized
 
