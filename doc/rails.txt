@@ -795,19 +795,19 @@ The full list of available options is as follows:
 						*rails-projection-related*
 "related" ~
 	Determines the destination of the |rails-:R| and :.A commands.  In
-	addition to the standard placeholders, %m can be used for the current
-	method.
+	addition to the standard placeholders, %d can be used for the current
+	'define' match (typically a method).
 						*rails-projection-test*
 "test" ~
 	Determines the default test file to run with |rails-:Rrunner| and
 	|rails-:Rake|.  Also serves as a default for "alternate".
 						*rails-projection-task*
 "task" ~
-	Determines the default rake task to run.  Provide %l or %m to
-	substitute the current line or method name, or just a bare % (like
-	|:_%|) to substitute the current file name.  If a list with two tasks
-	is provided, the first will be used when a line number is given, and
-	the second when it's omitted.
+	Determines the default rake task to run.  Provide %l or %d to
+	substitute the current line or 'define' match (typically a method), or
+	just a bare % (like |:_%|) to substitute the current file name.  If a
+	list with two tasks is provided, the first will be used when a line
+	number is given, and the second when it's omitted.
 						*rails-projection-compiler*
 "compiler" ~
 	Determines the |:compiler| plugin to use with |rails-:Rrunner|.

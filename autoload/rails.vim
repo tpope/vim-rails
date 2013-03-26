@@ -1324,6 +1324,7 @@ function! s:readable_default_rake_task(...) dict abort
     let last = self.last_method(lnum)
     if !empty(last)
       let placeholders.m = last
+      let placeholders.d = last
     endif
   endif
   let tasks = self.projected('task', placeholders)
@@ -3144,6 +3145,7 @@ function! s:readable_alternate_candidates(...) dict abort
     let lastmethod = self.last_method(a:1)
     if !empty(lastmethod)
       let placeholders.m = lastmethod
+      let placeholders.d = lastmethod
     endif
     let projected = self.projected('related', placeholders)
     if !empty(projected)
