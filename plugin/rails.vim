@@ -78,9 +78,9 @@ endfunction
 
 augroup railsPluginDetect
   autocmd!
+  autocmd BufNewFile,BufRead * call s:Detect(expand("<afile>:p"))
   autocmd VimEnter * if expand("<amatch>") == "" && !exists("b:rails_root") | call s:Detect(getcwd()) | endif | if exists("b:rails_root") | silent doau User BufEnterRails | endif
-  autocmd BufNewFile,BufRead * if empty(&filetype) | call s:Detect(expand("<afile>:p")) | endif
-  autocmd FileType * if !exists("b:rails_root") | call s:Detect(expand("%:p")) | endif | if exists("b:rails_root") | silent doau User BufEnterRails | endif
+  autocmd FileType netrw if !exists("b:rails_root") | call s:Detect(expand("%:p")) | endif | if exists("b:rails_root") | silent doau User BufEnterRails | endif
   autocmd BufEnter * if exists("b:rails_root")|silent doau User BufEnterRails|endif
   autocmd BufLeave * if exists("b:rails_root")|silent doau User BufLeaveRails|endif
   autocmd Syntax railslog if s:autoload()|call rails#log_syntax()|endif
