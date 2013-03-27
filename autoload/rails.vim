@@ -4376,12 +4376,6 @@ function! s:app_projections() dict abort
     if !has_key(s:projections_for_gems, gem_path)
       let gem_projections = {}
       for path in ['lib/', 'lib/rails/']
-        for file in findfile(path.'editor.json', gem_path, -1)
-          try
-            call s:combine_projections(gem_projections, get(rails#json_parse(readfile(self.path(file))), 'projections'))
-          catch
-          endtry
-        endfor
         for file in findfile(path.'projections.json', gem_path, -1)
           try
             call s:combine_projections(gem_projections, rails#json_parse(readfile(self.path(file))))
