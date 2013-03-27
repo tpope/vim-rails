@@ -9,9 +9,10 @@ features:
   context and knows about partials, fixtures, and much more.  There are
   two commands, `:A` (alternate) and `:R` (related) for easy jumping
   between files, including favorites like model to schema, template to
-  helper, and controller to functional test.  For more advanced usage,
-  `:Rmodel`, `:Rview`, `:Rcontroller`, and several other commands are
-  provided.  `:help rails-navigation`
+  helper, and controller to functional test.  Commands like `:Emodel`,
+  `:Eview`, `:Econtroller`, are provided to `:edit` files by type, along
+  with `S`, `V`, and `T` variants for `:split`, `:vsplit`, and
+  `:tabedit`.  `:help rails-navigation`
 
 * Enhanced syntax highlighting.  From `has_and_belongs_to_many` to
   `distance_of_time_in_words`, it's here.  For easy completion of these
