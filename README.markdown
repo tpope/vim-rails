@@ -57,7 +57,6 @@ then simply copy and paste:
     git clone git://github.com/tpope/vim-rails.git
     git clone git://github.com/tpope/vim-bundler.git
 
-
 You don't strictly need [bundler.vim][], but it helps.
 
 Once help tags have been generated, you can view the manual with
