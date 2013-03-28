@@ -12,7 +12,9 @@ features:
   helper, and controller to functional test.  Commands like `:Emodel`,
   `:Eview`, `:Econtroller`, are provided to `:edit` files by type, along
   with `S`, `V`, and `T` variants for `:split`, `:vsplit`, and
-  `:tabedit`.  `:help rails-navigation`
+  `:tabedit`.  Throw a bang on the end (`:Emodel foo!`) to automatically
+  create the file with the standard boilerplate if it doesn't exist.
+  `:help rails-navigation`
 
 * Enhanced syntax highlighting.  From `has_and_belongs_to_many` to
   `distance_of_time_in_words`, it's here.  For easy completion of these
