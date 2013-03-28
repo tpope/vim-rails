@@ -770,11 +770,11 @@ Vim syntax looks a lot like JSON, but with funky |line-continuation|:
 	      \   "test": [
 	      \     "test/unit/%s_uploader_test.rb",
 	      \     "spec/models/%s_uploader_spec.rb"
-	      \   ]
+	      \   ],
 	      \   "keywords": "process version"
 	      \ },
 	      \ "features/support/*.rb": {"command": "support"},
-	      \ "features/support/env.rb": {"command": support"}}
+	      \ "features/support/env.rb": {"command": "support"}}
 
 Keys can be either literal file names or globs containing a single asterisk.
 In the latter case, you can use placeholders in the values to plug in some
