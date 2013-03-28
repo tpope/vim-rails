@@ -38,6 +38,11 @@ features:
   appropriate `include` declaration left behind.
   `:help rails-:Rextract`
 
+* Fully customizable. Define "projections" at the global, app, or gem
+  level to define navigation commands and override the alternate file,
+  default rake task, syntax highlighting, abbreviations, and more.
+  `:help rails-projections`.
+
 * Integration with other plugins.  If
   [dbext.vim](http://www.vim.org/scripts/script.php?script_id=356) is
   installed, it will be transparently configured to reflect
