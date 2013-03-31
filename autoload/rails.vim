@@ -1323,7 +1323,6 @@ function! s:readable_default_rake_task(...) dict abort
     let placeholders.l = lnum
     let last = self.last_method(lnum)
     if !empty(last)
-      let placeholders.m = last
       let placeholders.d = last
     endif
   endif
@@ -3143,7 +3142,6 @@ function! s:readable_alternate_candidates(...) dict abort
   if a:0 && a:1
     let lastmethod = self.last_method(a:1)
     if !empty(lastmethod)
-      let placeholders.m = lastmethod
       let placeholders.d = lastmethod
     endif
     let projected = self.projected('related', placeholders)
@@ -4362,7 +4360,6 @@ function! s:readable_projected(key, ...) dict abort
             \ 'S': rails#camelize(root),
             \ 'h': toupper(root[0]) . tr(rails#underscore(root), '_', ' ')[1:-1],
             \ 'p': rails#pluralize(root),
-            \ 'o': rails#singularize(root),
             \ 'i': rails#singularize(root),
             \ '%': '%'}, a:0 ? a:1 : {})
       if suffix =~# '\.js\>'
