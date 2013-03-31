@@ -4283,33 +4283,7 @@ function! s:combine_projections(dest, src, ...) abort
   if type(a:src) == type({})
     for [pattern, original] in items(a:src)
       let projection = extend(copy(original), extra)
-      if has_key(projection, 'prefix') || has_key(projection, 'format')
-        let nested = extend({
-              \ 'command': pattern,
-              \ }, projection)
-        if type(get(nested, 'template', '')) == type([])
-          let nested.template = join(nested.template, "\n")
-        endif
-        for key in ['prefix', 'suffix', 'format', 'default']
-          if has_key(nested, key)
-            call remove(nested, key)
-          endif
-        endfor
-        for [prefix, suffix] in s:projection_pairs(projection)
-          let a:dest[prefix . '*' . suffix] = copy(nested)
-          if type(get(nested, 'template', '')) == type({})
-            let a:dest[prefix . '*' . suffix].template = get(nested.template, prefix)
-          endif
-          if type(get(projection, 'default', [])) ==# type('')
-            let a:dest[prefix . projection.default . suffix] = copy(nested)
-          endif
-        endfor
-        if type(get(projection, 'default', '')) ==# type([])
-          for default in projection.default
-            let a:dest[prefix . default . suffix] = copy(nested)
-          endfor
-        endif
-      else
+      if !has_key(projection, 'prefix') && !has_key(projection, 'format')
         let a:dest[pattern] = s:extend_projection(get(a:dest, pattern, {}), projection)
       endif
     endfor
