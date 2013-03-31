@@ -4234,49 +4234,6 @@ function! rails#json_parse(string) abort
   throw "invalid JSON: ".string
 endfunction
 
-function! s:app_config(...) dict abort
-  if self.cache.needs('config')
-    call self.cache.set('config', 0)
-
-    let projections = {}
-    if self.has_path('config/projections.json')
-      try
-        let projections = rails#json_parse(readfile(self.path('config/projections.json')))
-      catch /^invalid JSON:/
-      endtry
-    endif
-
-    if self.has_path('config/editor.json')
-      try
-        let config = rails#json_parse(readfile(self.path('config/editor.json')))
-        if !has_key(config, 'projections')
-          let config.projections = projections
-        endif
-        call self.cache.set('config', config)
-      catch /^invalid JSON:/
-        call s:error("Couldn't parse config/editor.json")
-      endtry
-    elseif !empty(projections)
-      call self.cache.set('config', {'projections': projections})
-    endif
-
-  endif
-  if type(self.cache.get('config')) == type({})
-    let config = self.cache.get('config')
-  elseif exists('g:rails_default_config')
-    let config = g:rails_default_config
-  else
-    let config = {}
-  endif
-  if a:0
-    let default = a:0 > 1 ? a:2 : {}
-    let value = get(config, a:1, default)
-    return type(value) == type(default) ? value : default
-  else
-    return config
-  endif
-endfunction
-
 function! s:app_gems() dict abort
   if self.has('bundler') && exists('*bundler#project')
     return bundler#project(self.path()).gems()
@@ -4385,11 +4342,26 @@ function! s:app_projections() dict abort
     endif
     call s:combine_projections(dict, s:projections_for_gems[gem_path])
   endif
-  call s:combine_projections(dict, get(self.config(), 'projections', ''))
+  if self.cache.needs('projections')
+    call self.cache.set('config', {})
+
+    let projections = {}
+    if self.has_path('config/projections.json')
+      try
+        let projections = rails#json_parse(readfile(self.path('config/projections.json')))
+        if type(projections) == type({})
+          call self.cache.set('projections', projections)
+        endif
+      catch /^invalid JSON:/
+      endtry
+    endif
+  endif
+
+  call s:combine_projections(dict, self.cache.get('projections'))
   return dict
 endfunction
 
-call s:add_methods('app', ['config', 'gems', 'has_gem', 'engines', 'projections'])
+call s:add_methods('app', ['gems', 'has_gem', 'engines', 'projections'])
 
 function! s:expand_placeholders(string, placeholders)
   if type(a:string) !=# type('')
