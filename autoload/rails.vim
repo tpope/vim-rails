@@ -2556,34 +2556,16 @@ function! s:Navcommand(bang,...)
   let suffix = '.rb'
   let affinity = ''
   for arg in a:000
-    if arg =~# '^-suffix='
-      let suffix = matchstr(arg,'-suffix=\zs.*')
-    elseif arg =~# '^-default='
-      let default = matchstr(arg,'-default=\zs.*')
-      if default =~# '()$'
-        let affinity = default[0:-3]
-        unlet default
-      endif
-    elseif arg !~# '^-'
-      if !exists('name')
-        let name = arg
-      else
-        let prefixes += [s:sub(arg, '/=$', '/')]
-      endif
+    if arg =~# '^[a-z]\+$'
+      for prefix in ['E', 'S', 'V', 'T', 'D', 'R', 'RE', 'RS', 'RV', 'RT', 'RD']
+        exe 'command! -buffer -bar -bang -nargs=* ' .
+              \ (prefix =~# 'D' ? '-range=0 ' : '') .
+              \ prefix . arg . ' :echoerr ' .
+              \ string(':Rnavcommand has been removed.  See :help rails-projections')
+      endfor
+      break
     endif
   endfor
-  if !exists('name') || name !~# '^[a-z]\+$'
-    return s:error("E182: Invalid command name")
-  endif
-  if empty(prefixes)
-    return ''
-  endif
-  let command = map(prefixes, '{"pattern": v:val . "*" . suffix, "affinity": affinity}')
-  if exists('default')
-    let command += [{"pattern": default}]
-  endif
-  let deprecation = ':Rnavcommand is deprecated.  See :help config/projections.json for replacement.'
-  return s:define_navcommand(name, command, 'call s:warn('.string(deprecation).')')
 endfunction
 
 function! s:define_navcommand(name, projection, ...) abort
