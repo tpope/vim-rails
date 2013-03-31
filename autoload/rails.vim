@@ -1965,7 +1965,7 @@ function! s:Edit(count,cmd,...)
     let str = ""
     let i = 1
     while i < a:0
-      let str .= "`=a:".i."` "
+      let str .= s:escarg(a:{i}) . " "
       let i += 1
     endwhile
     let file = a:{i}
