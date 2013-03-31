@@ -819,7 +819,7 @@ The full list of available options is as follows:
 	Provides a dictionary of abbreviations to define.  See
 	|rails-abbreviations|.  You might consider setting this in a "*"
 	projection.
-						*rails-projection-format*
+						*rails-projection-command*
 "command" ~
 	Names a navigation command to be created.  Use the same name on
 	multiple projections to combine them into a single command.  Glob
