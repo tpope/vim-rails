@@ -2634,14 +2634,13 @@ function! s:CommandEdit(cmd, name, projections, ...)
   endif
 endfunction
 
-function! s:EditSimpleRb(cmd,name,target,prefix,suffix,...)
+function! s:LegacyCommandEdit(cmd,name,target,prefix,suffix)
   let cmd = s:findcmdfor(a:cmd)
   if a:target == ""
     return s:error("E471: Argument required")
   endif
-  let f = a:0 ? a:target : rails#underscore(a:target)
-  let jump = matchstr(f,'[#!].*\|:\d*\%(:in\)\=$')
-  let f = s:sub(f,'[#!].*|:\d*%(:in)=$','')
+  let jump = matchstr(a:target, '[#!].*\|:\d*\%(:in\)\=$')
+  let f = s:sub(a:target, '[#!].*|:\d*%(:in)=$', '')
   if jump =~ '^!'
     let cmd = s:editcmdfor(cmd)
   endif
@@ -2650,7 +2649,7 @@ function! s:EditSimpleRb(cmd,name,target,prefix,suffix,...)
   else
     let f .= a:suffix.jump
   endif
-  let f = s:gsub(a:prefix,'\n',f.'\n').f
+  let f = a:prefix.f
   return s:findedit(cmd,f)
 endfunction
 
@@ -2880,17 +2879,17 @@ endfunction
 function! s:stylesheetEdit(cmd,...)
   let name = a:0 ? a:1 : s:controller(1)
   if rails#app().has('sass') && rails#app().has_file('public/stylesheets/sass/'.name.'.sass')
-    return s:EditSimpleRb(a:cmd,"stylesheet",name,"public/stylesheets/sass/",".sass",1)
+    return s:LegacyCommandEdit(a:cmd,"stylesheet",name,"public/stylesheets/sass/",".sass")
   elseif rails#app().has('sass') && rails#app().has_file('public/stylesheets/sass/'.name.'.scss')
-    return s:EditSimpleRb(a:cmd,"stylesheet",name,"public/stylesheets/sass/",".scss",1)
+    return s:LegacyCommandEdit(a:cmd,"stylesheet",name,"public/stylesheets/sass/",".scss")
   elseif rails#app().has('lesscss') && rails#app().has_file('app/stylesheets/'.name.'.less')
-    return s:EditSimpleRb(a:cmd,"stylesheet",name,"app/stylesheets/",".less",1)
+    return s:LegacyCommandEdit(a:cmd,"stylesheet",name,"app/stylesheets/",".less")
   else
     let types = rails#app().relglob('app/assets/stylesheets/'.name,'.*','')
     if !empty(types)
-      return s:EditSimpleRb(a:cmd,'stylesheet',name,'app/assets/stylesheets/',types[0],1)
+      return s:LegacyCommandEdit(a:cmd,'stylesheet',name,'app/assets/stylesheets/',types[0])
     else
-      return s:EditSimpleRb(a:cmd,'stylesheet',name,'public/stylesheets/','.css',1)
+      return s:LegacyCommandEdit(a:cmd,'stylesheet',name,'public/stylesheets/','.css')
     endif
   endif
 endfunction
@@ -2898,15 +2897,15 @@ endfunction
 function! s:javascriptEdit(cmd,...)
   let name = a:0 ? a:1 : s:controller(1)
   if rails#app().has('coffee') && rails#app().has_file('app/scripts/'.name.'.coffee')
-    return s:EditSimpleRb(a:cmd,'javascript',name,'app/scripts/','.coffee',1)
+    return s:LegacyCommandEdit(a:cmd,'javascript',name,'app/scripts/','.coffee')
   elseif rails#app().has('coffee') && rails#app().has_file('app/scripts/'.name.'.js')
-    return s:EditSimpleRb(a:cmd,'javascript',name,'app/scripts/','.js',1)
+    return s:LegacyCommandEdit(a:cmd,'javascript',name,'app/scripts/','.js')
   else
     let types = rails#app().relglob('app/assets/javascripts/'.name,'.*','')
     if !empty(types)
-      return s:EditSimpleRb(a:cmd,'javascript',name,'app/assets/javascripts/',types[0],1)
+      return s:LegacyCommandEdit(a:cmd,'javascript',name,'app/assets/javascripts/',types[0])
     else
-      return s:EditSimpleRb(a:cmd,'javascript',name,'public/javascripts/','.js',1)
+      return s:LegacyCommandEdit(a:cmd,'javascript',name,'public/javascripts/','.js')
     endif
   endif
 endfunction
