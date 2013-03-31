@@ -4317,7 +4317,7 @@ function! s:app_projections() dict abort
     call s:combine_projections(dict, s:projections_for_gems[gem_path])
   endif
   if self.cache.needs('projections')
-    call self.cache.set('config', {})
+    call self.cache.set('projections', {})
 
     let projections = {}
     if self.has_path('config/projections.json')
