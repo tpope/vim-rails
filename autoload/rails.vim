@@ -4219,7 +4219,7 @@ function! s:Abbrev(bang,...) abort
 endfunction
 
 " }}}1
-" Settings {{{1
+" Projections {{{1
 
 function! rails#json_parse(string) abort
   let [null, false, true] = ['', 0, 1]
