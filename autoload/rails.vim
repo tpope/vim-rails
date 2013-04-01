@@ -1664,7 +1664,7 @@ function! s:readable_runner_command(bang, count, arg) dict abort
     endif
 
     let compiler = get(file.projected('compiler'), 0, compiler)
-    if compiler ==# 'testrb'
+    if compiler ==# 'testrb' || compiler ==# 'minitest'
       let compiler = 'rubyunit'
     elseif empty(findfile('compiler/'.compiler.'.vim', escape(&rtp, ' ')))
       let compiler = 'ruby'
@@ -1677,6 +1677,8 @@ function! s:readable_runner_command(bang, count, arg) dict abort
       let extra = ''
     elseif &makeprg =~# '^\%(testrb\|rspec\|cucumber\)\>' && self.app().has_path('.zeus.sock')
       let &l:makeprg = 'zeus ' . &l:makeprg
+    elseif compiler ==# 'rubyunit'
+      let &l:makeprg = 'ruby -Itest'
     elseif self.app().has_path('bin/' . &l:makeprg)
       let &l:makeprg = self.app().ruby_script_command('bin/' . &l:makeprg)
     elseif &l:makeprg !~# '^bundle\>' && self.app().has('bundler')
