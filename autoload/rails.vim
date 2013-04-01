@@ -1664,7 +1664,9 @@ function! s:readable_runner_command(bang, count, arg) dict abort
     endif
 
     let compiler = get(file.projected('compiler'), 0, compiler)
-    if empty(findfile('compiler/'.compiler.'.vim', escape(&rtp, ' ')))
+    if compiler ==# 'testrb'
+      let compiler = 'rubyunit'
+    elseif empty(findfile('compiler/'.compiler.'.vim', escape(&rtp, ' ')))
       let compiler = 'ruby'
     endif
 
