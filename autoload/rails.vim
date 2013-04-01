@@ -2739,7 +2739,7 @@ function! s:localeEdit(cmd,...)
     return s:edit(a:cmd,rails#app().find_file(c,'config/locales',[],'config/locales/'.c))
   else
     return rails#buffer().open_command(a:cmd, c, 'locale',
-          \ [{'pattern': 'config/locales/*.yml'}, {'pattern': 'config/locales/*.rb'}]})
+          \ [{'pattern': 'config/locales/*.yml'}, {'pattern': 'config/locales/*.rb'}])
   endif
 endfunction
 
