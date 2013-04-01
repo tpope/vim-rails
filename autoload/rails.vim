@@ -1243,8 +1243,7 @@ function! s:readable_test_file_candidates() dict abort
           \ fnamemodify(f,':s?\<app/?spec/?')."_spec.rb",
           \ fnamemodify(f,':r:s?\<app/?spec/?')."_spec.rb",
           \ fnamemodify(f,':r:r:s?\<app/?spec/?')."_spec.rb",
-          \ s:sub(s:sub(dest,'<app/views/','test/functional/'),'/[^/]*$','_controller_test.rb')]
-    return [spec_format, spec_handler, spec_bare, test]
+          \ s:sub(s:sub(f,'<app/views/','test/functional/'),'/[^/]*$','_controller_test.rb')]
   elseif self.type_name('controller-api')
     let tests = [
           \ s:sub(s:sub(f,'/controllers/','/apis/'),'_controller\.rb$','_api.rb')]
