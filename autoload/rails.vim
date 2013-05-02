@@ -1386,9 +1386,9 @@ function! s:readable_default_rake_task(...) dict abort
           let opts = ' TESTOPTS=-n'.method
         endif
       endif
-      if test =~# '^test/unit\>'
+      if test =~# '^test/\%(unit\|models\)\>'
         return 'test:units TEST='.s:rquote(test).opts
-      elseif test =~# '^test/functional\>'
+      elseif test =~# '^test/\%(functional\|controllers\)\>'
         return 'test:functionals TEST='.s:rquote(test).opts
       elseif test =~# '^test/integration\>'
         return 'test:integration TEST='.s:rquote(test).opts
