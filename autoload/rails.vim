@@ -1340,7 +1340,7 @@ function! s:readable_default_rake_task(...) dict abort
     let line = getline(mnum)
     " We can't grab the namespace so only run tasks at the start of the line
     if line =~# '^\%(task\|file\)\>'
-      return self.last_method(a:lnum)
+      return self.last_method(lnum)
     else
       return matchstr(self.getline(1),'\C# rake \zs.*')
     endif
