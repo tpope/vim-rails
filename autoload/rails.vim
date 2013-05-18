@@ -1165,7 +1165,7 @@ let g:rails#rake_errorformat = '%D(in\ %f),'
       \.'%m\ [%f:%l]:'
 
 function! s:make(bang, args, ...)
-  if exists(':Make')
+  if exists(':Make') == 2
     exe 'Make'.(a:bang ? '! ' : ' ').a:args
   else
     exe 'make! '.a:args
