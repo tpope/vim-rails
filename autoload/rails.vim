@@ -915,7 +915,7 @@ function! s:app_start_rails_command(cmd, ...) dict abort
         \ }, title, title)
   call s:push_chdir(1)
   try
-    if exists(':Start')
+    if exists(':Start') == 2
       exe 'Start'.(a:0 && a:1 ? '!' : '').' -title=rails\ '.title.' '.cmd
     elseif has("win32")
       exe "!start ".cmd
@@ -1013,7 +1013,7 @@ function! s:Log(bang,arg)
     exe "cgetfile ".lf
     clast
   else
-    if exists(":Tail")
+    if exists(":Tail") == 2
       Tail  `=rails#app().path(lf)`
     else
       pedit `=rails#app().path(lf)`
@@ -1165,7 +1165,7 @@ let g:rails#rake_errorformat = '%D(in\ %f),'
       \.'%m\ [%f:%l]:'
 
 function! s:make(bang, args, ...)
-  if exists(':Make')
+  if exists(':Make') == 2
     exe 'Make'.(a:bang ? '! ' : ' ').a:args
   else
     exe 'make! '.a:args
@@ -1418,7 +1418,7 @@ call s:add_methods('readable', ['test_file_candidates', 'test_file', 'default_ra
 " Preview {{{1
 
 function! s:initOpenURL()
-  if !exists(":OpenURL")
+  if !exists(":OpenURL") == 2
     if has("gui_mac") || has("gui_macvim") || exists("$SECURITYSESSIONID")
       command -bar -nargs=1 OpenURL :!open <args>
     elseif has("gui_win32")
@@ -1538,7 +1538,7 @@ function! s:Preview(bang, lnum, uri) abort
     let uri = 'http://'.binding.'/'.s:sub(uri,'^/','')
   endif
   call s:initOpenURL()
-  if exists(':OpenURL') && !a:bang
+  if (exists(':OpenURL') == 2) && !a:bang
     exe 'OpenURL '.uri
   else
     " Work around bug where URLs ending in / get handled as FTP
@@ -1763,7 +1763,7 @@ function! s:app_server_command(bang,arg) dict
       return
     endif
   endif
-  if exists(':Start') || has('win32')
+  if (exists(':Start') == 2) || has('win32')
     call self.start_rails_command('server '.a:arg, 1)
   else
     call self.execute_rails_command('server '.a:arg.' -d')
@@ -4475,7 +4475,7 @@ function! s:BufSettings()
       call self.setvar('surround_69',  "\1expr: \1\rend")
       call self.setvar('surround_101', "\r\nend")
     endif
-    if exists(':UltiSnipsAddFiletypes')
+    if exists(':UltiSnipsAddFiletypes') == 2
       UltiSnipsAddFiletypes rails
     endif
   elseif ft =~# 'yaml\>' || fnamemodify(self.name(),':e') ==# 'yml'
