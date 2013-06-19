@@ -780,7 +780,7 @@ function! s:readable_calculate_file_type() dict abort
     let r = "db-migration"
   elseif f=~ '\<db/schema\.rb$'
     let r = "db-schema"
-  elseif f =~ '\.rake$' || f =~ '\<\%(Rake\|Cap\)file$' || f =~ '\<config/deploy\.rb$'
+  elseif f =~ '\.rake$' || f =~ '\<\%(Rake\|Cap\)file$' || f =~ '\<config/deploy\.rb$' || f =~ '\<config/deploy/.*\.rb$'
     let r = "task"
   elseif f =~ '\<log/.*\.log$'
     let r = "log"
