@@ -2324,6 +2324,10 @@ function! s:app_commands() dict abort
         \ {'pattern': 'config/environments/*.rb'},
         \ {'pattern': 'config/application.rb'},
         \ {'pattern': 'config/environment.rb'}]
+  let commands.g  = [
+        \ {'pattern': 'Gemfile'}]
+  let commands.gem  = [
+        \ {'pattern': 'Gemfile'}]
   let commands.helper = [{
         \ 'pattern': 'app/helpers/*_helper.rb',
         \ 'template': "module %SHelper\nend",
