@@ -1082,7 +1082,7 @@ function! s:app_tags_command() dict
     call s:error("ctags not found")
     return ''
   endif
-  let args = s:split(get(g:, 'rails_ctags_arguments', '--languages=-javascript'))
+  let args = s:split(get(g:, 'rails_ctags_arguments', '--languages=-javascript --regex-ruby="/^[ \t]*(attr_accessor|has_many|belongs_to|has_one|scope|alias|alias_method|named_scope)[ \t(]+:([A-Za-z_]+).*$/\2/f,function/"'))
   exe '!'.cmd.' -f '.s:escarg(self.path("tags")).' -R --langmap="ruby:+.rake.builder.jbuilder.rjs" '.join(args,' ').' '.s:escarg(self.path())
   return ''
 endfunction
