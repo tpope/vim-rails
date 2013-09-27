@@ -3734,7 +3734,9 @@ function! s:BufSyntax()
       unlet! b:current_syntax
       let removenorend = !exists("g:html_no_rendering")
       let g:html_no_rendering = 1
+      let isk = &l:iskeyword
       syn include @htmlTop syntax/xhtml.vim
+      let &l:iskeyword = isk
       if removenorend
           unlet! g:html_no_rendering
       endif
