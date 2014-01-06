@@ -706,7 +706,7 @@ function! s:readable_calculate_file_type() dict abort
     else
       let r = "controller"
     endif
-  elseif f =~ '_api\.rb'
+  elseif f =~ '\<app/apis/.*_api\.rb'
     let r = "api"
   elseif f =~ '\<test/test_helper\.rb$'
     let r = "test"
