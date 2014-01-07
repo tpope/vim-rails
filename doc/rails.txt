@@ -370,13 +370,12 @@ RAKE						*rails-rake*
 Rake integration happens through the :Rake command.
 
 						*rails-:Rake*
-:[range]Rake {targets}	Calls |:make!| {targets} (with 'makeprg' being rake,
-			or `bundle exec rake` if bundler.vim is active) and
-			opens the quickfix window if there were any errors.
-			An argument of "-" reruns the last task.  If {targets}
-			are omitted, :Rake defaults to something sensible as
-			described below.  Giving a line number argument may
-			affect that default.
+:[range]Rake {targets}	Calls |:make!| {targets} (with 'makeprg' being rake)
+			and opens the quickfix window if there were any
+			errors.  An argument of "-" reruns the last task.  If
+			{targets} are omitted, :Rake defaults to something
+			sensible as described below.  Giving a line number
+			argument may affect that default.
 
 						*rails-:Rake!*
 :[range]Rake! {targets}	Called with a bang, :Rake will forgo opening the
