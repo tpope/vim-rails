@@ -833,7 +833,7 @@ function! s:app_default_locale() dict abort
     let candidates = map(filter(
           \ s:readfile(self.path('config/application.rb')) + s:readfile(self.path('config/environment.rb')),
           \ 'v:val =~ "^ *config.i18n.default_locale = :[\"'']\\=[A-Za-z-]\\+[\"'']\\= *$"'
-          \ ), 'matchstr(v:val,"[A-Za-z-]\\+[\"'']\\= *$")')
+          \ ), 'matchstr(v:val,"[A-Za-z-]\\+\\ze[\"'']\\= *$")')
     call self.cache.set('default_locale', get(candidates, 0, 'en'))
   endif
   return self.cache.get('default_locale')
