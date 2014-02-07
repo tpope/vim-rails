@@ -746,8 +746,12 @@ function! s:readable_calculate_file_type() dict abort
     let r = "test-functional"
   elseif f =~ '\<test/integration/.*_test\.rb$'
     let r = "test-integration"
+  elseif f =~ '\<test/lib/.*_test\.rb$'
+    let r = "test-lib"
   elseif f =~ '\<test/\w*s/.*_test\.rb$'
     let r = s:sub(f,'.*<test/(\w*)s/.*','test-\1')
+  elseif f =~ '\<test/.*_test\.rb'
+    let r = "test"
   elseif f =~ '\<spec/lib/.*_spec\.rb$'
     let r = 'spec-lib'
   elseif f =~ '\<lib/.*\.rb$'
@@ -770,8 +774,6 @@ function! s:readable_calculate_file_type() dict abort
     endif
   elseif f =~ '\<\%(test\|spec\)/\%(factories\|fabricators\)\>'
     let r = "fixtures-replacement"
-  elseif f =~ '\<test/.*_test\.rb'
-    let r = "test"
   elseif f =~ '\<spec/.*_spec\.rb'
     let r = "spec"
   elseif f =~ '\<spec/support/.*\.rb'
@@ -3219,7 +3221,9 @@ function! s:readable_alternate_candidates(...) dict abort
     return ['db/schema.rb', 'db/'.s:environment().'_structure.sql']
   elseif self.type_name('test')
     let app_file = s:sub(s:sub(f, '<test/', 'app/'), '_test\.rb$', '.rb')
-    if app_file =~# '\<app/unit/helpers/'
+    if app_file =~# '\<app/lib/'
+      return [s:sub(app_file,'<app/lib/','lib/')]
+    elseif app_file =~# '\<app/unit/helpers/'
       return [s:sub(app_file,'<app/unit/helpers/','app/helpers/')]
     elseif app_file =~# '\<app/functional/.*_controller\.rb'
       return [s:sub(app_file,'<app/functional/','app/controllers/')]
