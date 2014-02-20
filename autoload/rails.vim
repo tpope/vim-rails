@@ -2622,7 +2622,7 @@ function! s:CommandEdit(cmd, name, projections, ...)
   endif
 endfunction
 
-function! s:LegacyCommandEdit(cmd,name,target,prefix,suffix)
+function! s:LegacyCommandEdit(cmd, target, prefix, suffix)
   let cmd = s:findcmdfor(a:cmd)
   if a:target == ""
     return s:error("E471: Argument required")
@@ -2867,17 +2867,21 @@ endfunction
 function! s:stylesheetEdit(cmd,...)
   let name = a:0 ? a:1 : s:controller(1)
   if rails#app().has('sass') && rails#app().has_file('public/stylesheets/sass/'.name.'.sass')
-    return s:LegacyCommandEdit(a:cmd,"stylesheet",name,"public/stylesheets/sass/",".sass")
+    return s:LegacyCommandEdit(a:cmd,name,"public/stylesheets/sass/",".sass")
   elseif rails#app().has('sass') && rails#app().has_file('public/stylesheets/sass/'.name.'.scss')
-    return s:LegacyCommandEdit(a:cmd,"stylesheet",name,"public/stylesheets/sass/",".scss")
+    return s:LegacyCommandEdit(a:cmd,name,"public/stylesheets/sass/",".scss")
   elseif rails#app().has('lesscss') && rails#app().has_file('app/stylesheets/'.name.'.less')
-    return s:LegacyCommandEdit(a:cmd,"stylesheet",name,"app/stylesheets/",".less")
+    return s:LegacyCommandEdit(a:cmd,name,"app/stylesheets/",".less")
   else
     let types = rails#app().relglob('app/assets/stylesheets/'.name,'.*','')
     if !empty(types)
-      return s:LegacyCommandEdit(a:cmd,'stylesheet',name,'app/assets/stylesheets/',types[0])
+      return s:LegacyCommandEdit(a:cmd,name,'app/assets/stylesheets/',types[0])
+    elseif !isdirectory(rails#app().path('app/assets/stylesheets'))
+      return s:LegacyCommandEdit(a:cmd,name,'public/stylesheets/','.css')
+    elseif rails#app().has_gem('sass-rails')
+      return s:LegacyCommandEdit(a:cmd,name,'app/assets/stylesheets/','.css.scss')
     else
-      return s:LegacyCommandEdit(a:cmd,'stylesheet',name,'public/stylesheets/','.css')
+      return s:LegacyCommandEdit(a:cmd,name,'app/assets/stylesheets/','.css')
     endif
   endif
 endfunction
@@ -2885,15 +2889,19 @@ endfunction
 function! s:javascriptEdit(cmd,...)
   let name = a:0 ? a:1 : s:controller(1)
   if rails#app().has('coffee') && rails#app().has_file('app/scripts/'.name.'.coffee')
-    return s:LegacyCommandEdit(a:cmd,'javascript',name,'app/scripts/','.coffee')
+    return s:LegacyCommandEdit(a:cmd,name,'app/scripts/','.coffee')
   elseif rails#app().has('coffee') && rails#app().has_file('app/scripts/'.name.'.js')
-    return s:LegacyCommandEdit(a:cmd,'javascript',name,'app/scripts/','.js')
+    return s:LegacyCommandEdit(a:cmd,name,'app/scripts/','.js')
   else
     let types = rails#app().relglob('app/assets/javascripts/'.name,'.*','')
     if !empty(types)
-      return s:LegacyCommandEdit(a:cmd,'javascript',name,'app/assets/javascripts/',types[0])
+      return s:LegacyCommandEdit(a:cmd,name,'app/assets/javascripts/',types[0])
+    elseif !isdirectory(rails#app().path('app/assets/javascripts'))
+      return s:LegacyCommandEdit(a:cmd,name,'public/javascripts/','.js')
+    elseif rails#app().has_gem('coffee-rails')
+      return s:LegacyCommandEdit(a:cmd,name,'app/assets/javascripts/','.js.coffee')
     else
-      return s:LegacyCommandEdit(a:cmd,'javascript',name,'public/javascripts/','.js')
+      return s:LegacyCommandEdit(a:cmd,name,'app/assets/javascripts/','.js')
     endif
   endif
 endfunction
