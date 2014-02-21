@@ -843,15 +843,12 @@ endfunction
 
 function! s:app_stylesheet_suffix() dict abort
   if self.cache.needs('stylesheet_suffix')
-    if self.has_gem('sass-rails')
-      let candidates = map(filter(
-            \ s:readfile(self.path('config/application.rb')),
-            \ 'v:val =~ "^ *config.sass.preferred_syntax *= *:[A-Za-z-]\\+ *$"'
-            \ ), 'matchstr(v:val,"[A-Za-z-]\\+\\ze *$")')
-      call self.cache.set('stylesheet_suffix', '.css.'.get(candidates, 0, 'scss'))
-    else
-      call self.cache.set('stylesheet_suffix', '.css')
-    endif
+    let default = self.has_gem('sass-rails') ? '.css.scss' : '.css'
+    let candidates = map(filter(
+          \ s:readfile(self.path('config/application.rb')),
+          \ 'v:val =~ "^ *config.sass.preferred_syntax *= *:[A-Za-z-]\\+ *$"'
+          \ ), '".css.".matchstr(v:val,"[A-Za-z-]\\+\\ze *$")')
+    call self.cache.set('stylesheet_suffix', get(candidates, 0, default))
   endif
   return self.cache.get('stylesheet_suffix')
 endfunction
