@@ -841,6 +841,21 @@ function! s:app_default_locale() dict abort
   return self.cache.get('default_locale')
 endfunction
 
+function! s:app_stylesheet_suffix() dict abort
+  if self.cache.needs('stylesheet_suffix')
+    if self.has_gem('sass-rails')
+      let candidates = map(filter(
+            \ s:readfile(self.path('config/application.rb')),
+            \ 'v:val =~ "^ *config.sass.preferred_syntax *= *:[A-Za-z-]\\+ *$"'
+            \ ), 'matchstr(v:val,"[A-Za-z-]\\+\\ze *$")')
+      call self.cache.set('stylesheet_suffix', '.css.'.get(candidates, 0, 'scss'))
+    else
+      call self.cache.set('stylesheet_suffix', '.css')
+    endif
+  endif
+  return self.cache.get('stylesheet_suffix')
+endfunction
+
 function! s:app_has(feature) dict
   let map = {
         \'test': 'test/',
@@ -867,7 +882,7 @@ function! s:app_test_suites() dict
   return filter(['test','spec'],'self.has(v:val)')
 endfunction
 
-call s:add_methods('app',['default_locale','environments','file','has','test_suites'])
+call s:add_methods('app',['default_locale','environments','file','has','stylesheet_suffix','test_suites'])
 call s:add_methods('file',['path','name','lines','getline'])
 call s:add_methods('buffer',['app','number','path','name','lines','getline','type_name'])
 call s:add_methods('readable',['app','relative','absolute','spec','calculate_file_type','type_name','line_count'])
@@ -2878,10 +2893,8 @@ function! s:stylesheetEdit(cmd,...)
       return s:LegacyCommandEdit(a:cmd,name,'app/assets/stylesheets/',types[0])
     elseif !isdirectory(rails#app().path('app/assets/stylesheets'))
       return s:LegacyCommandEdit(a:cmd,name,'public/stylesheets/','.css')
-    elseif rails#app().has_gem('sass-rails')
-      return s:LegacyCommandEdit(a:cmd,name,'app/assets/stylesheets/','.css.scss')
     else
-      return s:LegacyCommandEdit(a:cmd,name,'app/assets/stylesheets/','.css')
+      return s:LegacyCommandEdit(a:cmd,name,'app/assets/stylesheets/',rails#app().stylesheet_suffix())
     endif
   endif
 endfunction
@@ -4550,6 +4563,7 @@ augroup railsPluginAuto
   autocmd BufWritePost */test/test_helper.rb      call rails#cache_clear("user_assertions")
   autocmd BufWritePost */config/routes.rb         call rails#cache_clear("named_routes")
   autocmd BufWritePost */config/application.rb    call rails#cache_clear("default_locale")
+  autocmd BufWritePost */config/application.rb    call rails#cache_clear("stylesheet_suffix")
   autocmd BufWritePost */config/environments/*.rb call rails#cache_clear("environments")
   autocmd BufWritePost */tasks/**.rake            call rails#cache_clear("rake_tasks")
   autocmd BufWritePost */generators/**            call rails#cache_clear("generators")
