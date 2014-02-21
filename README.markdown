@@ -101,6 +101,11 @@ Rails application.
 All of them.  A few features like syntax highlighting tend to reflect the
 latest version only.
 
+> Didn't rails.vim used to handle indent settings?
+
+It got yanked after increasing contention over JavaScript.  Check out
+[sleuth.vim](https://github.com/tpope/vim-sleuth).
+
 ## Self-Promotion
 
 Like rails.vim? Follow the repository on
