@@ -3647,7 +3647,6 @@ function! s:BufSyntax()
   if !exists("g:rails_no_syntax")
     let buffer = rails#buffer()
     let javascript_functions = "$ jQuery"
-    let classes = s:gsub(join(rails#app().user_classes(),' '),'::',' ')
     if &syntax == 'ruby'
       let keywords = split(join(buffer.projected('keywords'), ' '))
       let special = filter(copy(keywords), 'v:val =~# ''^\h\k*[?!]$''')
@@ -3658,8 +3657,9 @@ function! s:BufSyntax()
       if !empty(regular)
         exe 'syn keyword rubyRailsMethod '.join(regular, ' ')
       endif
-      if classes != ''
-        exe "syn keyword rubyRailsUserClass ".classes." containedin=rubyClassDeclaration,rubyModuleDeclaration,rubyClass,rubyModule"
+      let classes = join(rails#app().user_classes(),'\|')
+      if !empty(classes)
+        exe 'syn match rubyRailsUserClass +\<\%('.classes.'\)\>+ containedin=rubyClassDeclaration,rubyModuleDeclaration,rubyClass,rubyModule'
       endif
       if buffer.type_name() == ''
         syn keyword rubyRailsMethod params request response session headers cookies flash
