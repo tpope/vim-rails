@@ -3647,6 +3647,7 @@ function! s:BufSyntax()
   if !exists("g:rails_no_syntax")
     let buffer = rails#buffer()
     let javascript_functions = "$ jQuery"
+    let classes = join(rails#app().user_classes(),'\|')
     if &syntax == 'ruby'
       let keywords = split(join(buffer.projected('keywords'), ' '))
       let special = filter(copy(keywords), 'v:val =~# ''^\h\k*[?!]$''')
@@ -3657,7 +3658,6 @@ function! s:BufSyntax()
       if !empty(regular)
         exe 'syn keyword rubyRailsMethod '.join(regular, ' ')
       endif
-      let classes = join(rails#app().user_classes(),'\|')
       if !empty(classes)
         exe 'syn match rubyRailsUserClass +\<\%('.classes.'\)\>+ containedin=rubyClassDeclaration,rubyModuleDeclaration,rubyClass,rubyModule'
       endif
@@ -3778,8 +3778,8 @@ function! s:BufSyntax()
 
     elseif &syntax =~# '^eruby\>' || &syntax == 'haml'
       syn case match
-      if classes != ''
-        exe 'syn keyword '.&syntax.'RailsUserClass '.classes.' contained containedin=@'.&syntax.'RailsRegions'
+      if !empty(classes)
+        exe 'syn match '.&syntax.'RailsUserClass +\<\%('.classes.'\)\>+ containedin=@'.&syntax.'RailsRegions'
       endif
       if &syntax == 'haml'
         exe 'syn cluster hamlRailsRegions contains=hamlRubyCodeIncluded,hamlRubyCode,hamlRubyHash,@hamlEmbeddedRuby,rubyInterpolation'
