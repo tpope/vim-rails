@@ -63,6 +63,9 @@ function! s:Detect(filename)
     endif
     let ofn = fn
     let fn = fnamemodify(ofn,':h')
+    if fn == '/'
+      let fn = ''
+    endif
   endwhile
   return 0
 endfunction
