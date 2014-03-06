@@ -4500,9 +4500,6 @@ function! s:BufSettings()
   call self.setvar('&includeexpr','RailsIncludeexpr()')
   call self.setvar('&suffixesadd', s:sub(self.getvar('&suffixesadd'),'^$','.rb'))
   let ft = self.getvar('&filetype')
-  if ft =~# '^\%(e\=ruby\|haml\)\>' && exists('+completefunc') && self.getvar('&completefunc') ==# '' && &g:completefunc ==# ''
-    call self.setvar('&completefunc','syntaxcomplete#Complete')
-  endif
   if ft =~# '^ruby\>'
     call self.setvar('&define',self.define_pattern())
     " This really belongs in after/ftplugin/ruby.vim but we'll be nice

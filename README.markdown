@@ -17,9 +17,7 @@ features:
   `:help rails-navigation`
 
 * Enhanced syntax highlighting.  From `has_and_belongs_to_many` to
-  `distance_of_time_in_words`, it's here.  For easy completion of these
-  long method names, `'completefunc'` is set to enable syntax based
-  completion on CTRL-X CTRL-U.
+  `distance_of_time_in_words`, it's here.
 
 * Interface to rake.  Use `:Rake` to run the current test, spec, or
   feature.  Use `:.Rake` to do a focused run of just the method,

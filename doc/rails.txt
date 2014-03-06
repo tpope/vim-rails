@@ -730,10 +730,6 @@ and *.rjs are treated as Ruby files, and files that have been falsely
 identified as Mason sources are changed back to eRuby files (but only when
 they are part of a Rails application).
 
-					*rails-'completefunc'*	*rails-'cfu'*
-A 'completefunc' is provided (if not already set).  It is very simple, as it
-uses syntax highlighting to make its guess.  See |i_CTRL-X_CTRL-U|.
-
 PROJECTIONS		*rails-config/projections.json* *rails-projections*
 
 The bulk of rails.vim features support core Rails conventions and a just a
