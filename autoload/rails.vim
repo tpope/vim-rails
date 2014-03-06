@@ -659,7 +659,7 @@ function! s:buffer_name() dict abort
   if s:startswith(tolower(f),s:gsub(tolower(app.path()),'\\ @!','/')) || f == ""
     return strpart(f,strlen(app.path())+1)
   else
-    if !exists("s:path_warn")
+    if !exists("s:path_warn") && &verbose
       let s:path_warn = 1
       call s:warn("File ".f." does not appear to be under the Rails root ".self.app().path().". Please report to the rails.vim author!")
     endif
