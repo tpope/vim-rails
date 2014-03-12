@@ -2444,6 +2444,10 @@ endfunction
 function! s:completion_filter(results,A)
   let results = sort(type(a:results) == type("") ? split(a:results,"\n") : copy(a:results))
   call filter(results,'v:val !~# "\\~$"')
+  if a:A =~# '\*'
+    let regex = s:gsub(a:A,'\*','.*')
+    return filter(copy(results),'v:val =~# "^".regex')
+  endif
   let filtered = filter(copy(results),'s:startswith(v:val,a:A)')
   if !empty(filtered) | return filtered | endif
   let prefix = s:sub(a:A,'(.*[/]|^)','&_')
