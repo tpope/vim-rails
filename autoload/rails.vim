@@ -3916,7 +3916,6 @@ function! rails#log_syntax()
   syn match   railslogError       '\<[45]\d\d \u[A-Za-z0-9 ]*\>'
   syn match   railslogError       '^DEPRECATION WARNING\>'
   syn keyword railslogHTTP        OPTIONS GET HEAD POST PUT DELETE TRACE CONNECT
-  syn region  railslogStackTrace  start=":\d\+:in `\w\+'$" end="^\s*$" keepend fold
   hi def link railslogEscapeMN    railslogEscape
   hi def link railslogEscapeSQL   railslogEscape
   hi def link railslogEscape      Ignore
