@@ -3889,20 +3889,15 @@ function! rails#log_syntax()
   if has('conceal')
     syn match railslogEscape      '\e\[[0-9;]*m' conceal
     syn match railslogEscapeMN    '\e\[[0-9;]*m' conceal nextgroup=railslogModelNum,railslogEscapeMN skipwhite contained
-    syn match railslogEscapeSQL   '\e\[[0-9;]*m' conceal nextgroup=railslogSQL,railslogEscapeSQL skipwhite contained
   else
     syn match railslogEscape      '\e\[[0-9;]*m'
     syn match railslogEscapeMN    '\e\[[0-9;]*m' nextgroup=railslogModelNum,railslogEscapeMN skipwhite contained
-    syn match railslogEscapeSQL   '\e\[[0-9;]*m' nextgroup=railslogSQL,railslogEscapeSQL skipwhite contained
   endif
   syn match   railslogRender      '\%(^\s*\%(\e\[[0-9;]*m\)\=\)\@<=\%(Started\|Processing\|Rendering\|Rendered\|Redirected\|Completed\)\>'
   syn match   railslogComment     '^\s*# .*'
   syn match   railslogModel       '\%(^\s*\%(\e\[[0-9;]*m\)*\)\@<=\u\%(\w\|:\)* \%(Load\%( Including Associations\| IDs For Limited Eager Loading\)\=\|Columns\|Count\|Create\|Update\|Destroy\|Delete all\)\>' skipwhite nextgroup=railslogModelNum,railslogEscapeMN
   syn match   railslogModel       '\%(^\s*\%(\e\[[0-9;]*m\)*\)\@<=\%(SQL\|CACHE\)\>' skipwhite nextgroup=railslogModelNum,railslogEscapeMN
-  syn region  railslogModelNum    start='(' end=')' contains=railslogNumber contained skipwhite nextgroup=railslogSQL,railslogEscapeSQL
-  syn match   railslogSQL         '\u[^\e]*' contained
-  " Destroy generates multiline SQL, ugh
-  syn match   railslogSQL         '\%(^ \%(\e\[[0-9;]*m\)\=\)\@<=\%(FROM\|WHERE\|ON\|AND\|OR\|ORDER\) .*$'
+  syn region  railslogModelNum    start='(' end=')' contains=railslogNumber contained skipwhite
   syn match   railslogNumber      '\<\d\+\>%'
   syn match   railslogNumber      '[ (]\@<=\<\d\+\.\d\+\>\.\@!'
   syn match   railslogNumber      '[ (]\@<=\<\d\+\.\d\+ms\>'
@@ -3918,12 +3913,10 @@ function! rails#log_syntax()
   syn match   railslogError       '^DEPRECATION WARNING\>'
   syn keyword railslogHTTP        OPTIONS GET HEAD POST PUT PATCH DELETE TRACE CONNECT
   hi def link railslogEscapeMN    railslogEscape
-  hi def link railslogEscapeSQL   railslogEscape
   hi def link railslogEscape      Ignore
   hi def link railslogComment     Comment
   hi def link railslogRender      Keyword
   hi def link railslogModel       Type
-  hi def link railslogSQL         PreProc
   hi def link railslogNumber      Number
   hi def link railslogString      String
   hi def link railslogSessionID   Constant
