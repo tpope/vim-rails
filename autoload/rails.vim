@@ -1406,6 +1406,8 @@ function! s:readable_default_rake_task(...) dict abort
         return 'test:functionals TEST='.s:rquote(test).opts
       elseif test =~# '^test/integration\>'
         return 'test:integration TEST='.s:rquote(test).opts
+      elseif test =~# '^test/helpers\>'
+        return 'test:helpers TEST='.s:rquote(test).opts
       elseif test ==# 'test'
         return 'test'
       else
