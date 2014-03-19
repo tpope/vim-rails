@@ -42,15 +42,12 @@ endfunction
 " }}}1
 " Detection {{{1
 
-function! s:Detect(filename)
+function! s:Detect(filename) abort
   if exists('b:rails_root')
     return s:BufInit(b:rails_root)
   endif
   let fn = substitute(fnamemodify(a:filename,":p"),'\c^file://','','')
-  let sep = matchstr(fn,'^[^\\/]\{3,\}\zs[\\/]')
-  if sep != ""
-    let fn = getcwd().sep.fn
-  endif
+  let sep = exists('+shellslash') && !&shellslash ? '\\' : '/'
   if isdirectory(fn)
     let fn = fnamemodify(fn,':s?[\/]$??')
   else
