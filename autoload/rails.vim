@@ -3758,28 +3758,6 @@ function! s:BufSyntax()
       syn match   railsConditionsSpecial +?\|:\h\w*+ contained
       syn cluster rubyNotTop add=railsOrderSpecial,railsConditionsSpecial
 
-      " XHTML highlighting inside %Q<>
-      unlet! b:current_syntax
-      let removenorend = !exists("g:html_no_rendering")
-      let g:html_no_rendering = 1
-      let isk = &l:iskeyword
-      syn include @htmlTop syntax/xhtml.vim
-      let &l:iskeyword = isk
-      if removenorend
-          unlet! g:html_no_rendering
-      endif
-      let b:current_syntax = "ruby"
-      " Restore syn sync, as best we can
-      if !exists("g:ruby_minlines")
-        let g:ruby_minlines = 50
-      endif
-      syn sync fromstart
-      exe "syn sync minlines=" . g:ruby_minlines
-      syn case match
-      syn region  rubyString   matchgroup=rubyStringDelimiter start=+%Q\=<+ end=+>+ contains=@htmlTop,@rubyStringSpecial
-      syn cluster htmlArgCluster add=@rubyStringSpecial
-      syn cluster htmlPreProc    add=@rubyStringSpecial
-
     elseif &syntax =~# '^eruby\>' || &syntax == 'haml'
       syn case match
       if !empty(classes)
