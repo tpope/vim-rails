@@ -54,15 +54,12 @@ function! s:Detect(filename) abort
     let fn = fnamemodify(fn,':s?\(.*\)[\/][^\/]*$?\1?')
   endif
   let ofn = ""
-  while fn != ofn
+  while fn != ofn && fn !=# '/'
     if filereadable(fn . "/config/environment.rb")
       return s:BufInit(resolve(fn))
     endif
     let ofn = fn
     let fn = fnamemodify(ofn,':h')
-    if fn == '/'
-      let fn = ''
-    endif
   endwhile
   return 0
 endfunction
