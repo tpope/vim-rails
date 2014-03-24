@@ -2665,8 +2665,6 @@ function! s:app_migration(file) dict
       return 'db/seeds.rb'
     elseif self.has_file('db/schema.rb')
       return 'db/schema.rb'.suffix
-    elseif self.has_file('db/'.s:environment().'_structure.sql')
-      return 'db/'.s:environment().'_structure.sql'.suffix
     elseif suffix ==# ''
       return 'db/seeds.rb'
     else
@@ -2724,9 +2722,13 @@ endfunction
 
 function! s:schemaEdit(cmd,...)
   let cmd = s:findcmdfor(a:cmd)
-  let schema = 'db/'.s:environment().'_structure.sql'
-  if rails#app().has_file('db/schema.rb') || !rails#app().has_file(schema)
-    let schema = 'db/schema.rb'
+  let schema = 'db/schema.rb'
+  if !rails#app().has_file('db/schema.rb')
+    if rails#app().has_file('db/structure.sql')
+      let schema = 'db/structure.sql'
+    elseif rails#app().has_file('db/'.s:environment().'_structure.sql')
+      let schema = 'db/'.s:environment().'_structure.sql'
+    endif
   endif
   return s:findedit(cmd,schema.(a:0 ? '#'.a:1 : ''))
 endfunction
@@ -3237,10 +3239,10 @@ function! s:readable_alternate_candidates(...) dict abort
       let to_replace = 'app/assets/javascripts'
     endif
     return [s:sub(s:sub(f, to_replace, 'spec/javascripts'), '.js', '_spec.js')."\n"]
-  elseif self.type_name('db-schema') || f =~# '^db/\w\+_structure.sql$'
+  elseif self.type_name('db-schema') || f =~# '^db/\w*structure.sql$'
     return ['db/seeds.rb']
   elseif f ==# 'db/seeds.rb'
-    return ['db/schema.rb', 'db/'.s:environment().'_structure.sql']
+    return ['db/schema.rb', 'db/structure.sql', 'db/'.s:environment().'_structure.sql']
   elseif self.type_name('test')
     let app_file = s:sub(s:sub(f, '<test/', 'app/'), '_test\.rb$', '.rb')
     if app_file =~# '\<app/lib/'
