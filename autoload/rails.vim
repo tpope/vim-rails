@@ -4475,6 +4475,7 @@ function! s:SetBasePath() abort
     let path += ['features']
   endif
   let path += ['vendor/plugins/*/lib', 'vendor/plugins/*/test', 'vendor/rails/*/lib', 'vendor/rails/*/test']
+  call map(path, 'rails#app().path(v:val)')
   let engine_paths = map(copy(self.app().engines()), 'v:val . "/app/*"')
   call self.setvar('&path',(add_dot ? '.,' : '').s:pathjoin(s:uniq(path + [self.app().path()] + old_path + engine_paths)))
 endfunction
