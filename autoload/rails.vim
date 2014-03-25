@@ -4261,12 +4261,17 @@ function! s:app_has_gem(gem) dict abort
 endfunction
 
 function! s:app_engines() dict abort
-  let gems = escape(join(values(self.gems()),','), ' ')
-  if empty(gems)
-    return []
-  else
-    return sort(map(finddir('app', gems, -1), 'fnamemodify(v:val, ":h")'))
+  return []
+  if self.cache.needs('engines') || self.cache.get('engines')[1] isnot# self.gems()
+    let gems = self.gems()
+    let gempath = escape(join(values(gems),','), ' ')
+    if empty(gempath)
+      call self.cache.set('engines', [[], gems])
+    else
+      call self.cache.set('engines', [sort(map(finddir('app', gempath, -1), 'fnamemodify(v:val, ":h")')), gems])
+    endif
   endif
+  return self.cache.get('engines')[0]
 endfunction
 
 function! s:extend_projection(dest, src)
