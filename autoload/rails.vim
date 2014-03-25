@@ -4446,7 +4446,6 @@ function! s:SetBasePath() abort
   if self.app().path() =~ '://'
     return
   endif
-  let transformed_path = s:pathsplit(s:pathjoin([self.app().path()]))[0]
   let add_dot = self.getvar('&path') =~# '^\.\%(,\|$\)'
   let old_path = s:pathsplit(s:sub(self.getvar('&path'),'^\.%(,|$)',''))
 
