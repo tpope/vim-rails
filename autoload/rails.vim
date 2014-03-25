@@ -1129,7 +1129,7 @@ function! s:RefreshBuffer()
     let oldroot = b:rails_root
     unlet! b:rails_root
     let b:rails_refresh = 0
-    call RailsBufInit(oldroot)
+    call rails#buffer_init(oldroot)
     unlet! b:rails_refresh
   endif
 endfunction
@@ -1559,7 +1559,7 @@ function! s:Preview(bang, lnum, uri) abort
         setlocal filetype=xhtml
       endif
     endif
-    call RailsBufInit(rails#app().path())
+    call rails#buffer_init(rails#app().path())
     map <buffer> <silent> q :bwipe<CR>
     wincmd p
     if !a:bang
@@ -3649,7 +3649,7 @@ endfunction
 
 call s:add_methods('app', ['user_classes','user_assertions'])
 
-function! s:BufSyntax()
+function! rails#buffer_syntax()
   if !exists("g:rails_no_syntax")
     let buffer = rails#buffer()
     let javascript_functions = "$ jQuery"
@@ -4393,7 +4393,7 @@ endfunction
 " }}}1
 " Detection {{{1
 
-function! RailsBufInit(path)
+function! rails#buffer_init(path)
   let firsttime = !(exists("b:rails_root") && b:rails_root == a:path)
   let b:rails_root = a:path
   if !has_key(s:apps,a:path)
@@ -4558,7 +4558,7 @@ augroup railsPluginAuto
   autocmd BufWritePost */tasks/**.rake            call rails#cache_clear("rake_tasks")
   autocmd BufWritePost */generators/**            call rails#cache_clear("generators")
   autocmd FileType * if exists("b:rails_root") | call s:BufSettings() | endif
-  autocmd Syntax ruby,eruby,yaml,haml,javascript,coffee,railslog,sass,scss if exists("b:rails_root") | call s:BufSyntax() | endif
+  autocmd Syntax ruby,eruby,yaml,haml,javascript,coffee,railslog,sass,scss if exists("b:rails_root") | call rails#buffer_syntax() | endif
 augroup END
 
 " }}}1

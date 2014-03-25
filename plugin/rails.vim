@@ -18,33 +18,12 @@ function! s:error(str)
   let v:errmsg = a:str
 endfunction
 
-function! s:autoload(...)
-  if !exists("g:autoloaded_rails") && v:version >= 700
-    runtime! autoload/rails.vim
-  endif
-  if exists("g:autoloaded_rails")
-    if a:0
-      exe a:1
-    endif
-    return 1
-  endif
-  if !exists("g:rails_no_autoload_warning")
-    let g:rails_no_autoload_warning = 1
-    if v:version >= 700
-      call s:error("Disabling rails.vim: autoload/rails.vim is missing")
-    else
-      call s:error("Disabling rails.vim: Vim version 7 or higher required")
-    endif
-  endif
-  return ""
-endfunction
-
 " }}}1
 " Detection {{{1
 
 function! s:Detect(filename) abort
   if exists('b:rails_root')
-    return s:BufInit(b:rails_root)
+    return rails#buffer_init(b:rails_root)
   endif
   let fn = substitute(fnamemodify(a:filename,":p"),'\c^file://','','')
   let sep = exists('+shellslash') && !&shellslash ? '\\' : '/'
@@ -59,18 +38,12 @@ function! s:Detect(filename) abort
       throw 'Rails app detection bug'
     endif
     if filereadable(fn . "/config/environment.rb")
-      return s:BufInit(resolve(fn))
+      return rails#buffer_init(resolve(fn))
     endif
     let ofn = fn
     let fn = fnamemodify(ofn,':h')
   endwhile
   return 0
-endfunction
-
-function! s:BufInit(path)
-  if s:autoload()
-    return RailsBufInit(a:path)
-  endif
 endfunction
 
 " }}}1
@@ -83,10 +56,10 @@ augroup railsPluginDetect
   autocmd FileType netrw if !exists("b:rails_root") | call s:Detect(expand("%:p")) | endif | if exists("b:rails_root") | silent doau User BufEnterRails | endif
   autocmd BufEnter * if exists("b:rails_root")|silent doau User BufEnterRails|endif
   autocmd BufLeave * if exists("b:rails_root")|silent doau User BufLeaveRails|endif
-  autocmd Syntax railslog if s:autoload()|call rails#log_syntax()|endif
+  autocmd Syntax railslog call rails#log_syntax()
 augroup END
 
-command! -bar -bang -nargs=* -complete=dir Rails :if s:autoload()|execute rails#new_app_command(<bang>0,<f-args>)|endif
+command! -bar -bang -nargs=* -complete=dir Rails execute rails#new_app_command(<bang>0,<f-args>)
 
 " }}}1
 " abolish.vim support {{{1
