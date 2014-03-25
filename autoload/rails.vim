@@ -203,9 +203,6 @@ function! s:readable_end_of(lnum) dict abort
   if a:lnum == 0
     return 0
   endif
-  if self.name() =~# '\.yml$'
-    return -1
-  endif
   let cline = self.getline(a:lnum)
   let spc = matchstr(cline,'^\s*')
   let endpat = '\<end\>'
@@ -238,7 +235,11 @@ function! s:readable_last_opening_line(start,pattern,limit) dict abort
   while line > a:limit && self.getline(line) !~ a:pattern
     let line -= 1
   endwhile
-  let lend = self.end_of(line)
+  if self.name() =~# '\.\%(rb\|rake\)$'
+    let lend = self.end_of(line)
+  else
+    let lend = -1
+  endif
   if line > a:limit && (lend < 0 || lend >= a:start)
     return line
   else
@@ -1936,7 +1937,7 @@ function! s:djump(def)
     let def = matchstr(def,'[^.]*')
     let v:errmsg = ''
     silent! exe "djump ".def
-    if ext != '' && (v:errmsg == '' || v:errmsg =~ '^E387')
+    if ext != '' && expand('%:e') ==# 'rb' && (v:errmsg == '' || v:errmsg =~ '^E387')
       let rpat = '\C^\s*\%(mail\>.*\|respond_to\)\s*\%(\<do\|{\)\s*|\zs\h\k*\ze|'
       let end = s:endof(line('.'))
       let rline = search(rpat,'',end)
