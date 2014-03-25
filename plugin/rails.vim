@@ -55,6 +55,9 @@ function! s:Detect(filename) abort
   endif
   let ofn = ""
   while fn != ofn && fn !=# '/'
+    if fn ==# '.'
+      throw 'Rails app detection bug'
+    endif
     if filereadable(fn . "/config/environment.rb")
       return s:BufInit(resolve(fn))
     endif
