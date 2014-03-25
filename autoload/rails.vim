@@ -1936,8 +1936,17 @@ function! s:djump(def)
     let ext = matchstr(def,'\.\zs.*')
     let def = matchstr(def,'[^.]*')
     let v:errmsg = ''
-    silent! exe "djump ".def
-    if ext != '' && expand('%:e') ==# 'rb' && (v:errmsg == '' || v:errmsg =~ '^E387')
+    let include = &include
+    try
+      setlocal include=
+      exe 'djump '.def
+    catch /^Vim(djump):E387/
+    catch
+      let error = 1
+    finally
+      let &include = include
+    endtry
+    if !empty(ext) && expand('%:e') ==# 'rb' && !exists('error')
       let rpat = '\C^\s*\%(mail\>.*\|respond_to\)\s*\%(\<do\|{\)\s*|\zs\h\k*\ze|'
       let end = s:endof(line('.'))
       let rline = search(rpat,'',end)
