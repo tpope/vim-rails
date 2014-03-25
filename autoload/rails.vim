@@ -596,7 +596,7 @@ function! s:buffer_app() dict abort
   if self.getvar('rails_root') != ''
     return rails#app(self.getvar('rails_root'))
   else
-    return 0
+    throw 'Not in a Rails app'
   endif
 endfunction
 
