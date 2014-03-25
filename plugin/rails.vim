@@ -21,11 +21,11 @@ endfunction
 " }}}1
 " Detection {{{1
 
-function! s:Detect(filename) abort
+function! RailsDetect(...) abort
   if exists('b:rails_root')
-    return rails#buffer_init(b:rails_root)
+    return 1
   endif
-  let fn = substitute(fnamemodify(a:filename,":p"),'\c^file://','','')
+  let fn = substitute(fnamemodify(a:0 ? a:1 : '', ":p"),'\c^file://','','')
   let sep = exists('+shellslash') && !&shellslash ? '\\' : '/'
   if isdirectory(fn)
     let fn = fnamemodify(fn,':s?[\/]$??')
@@ -38,7 +38,8 @@ function! s:Detect(filename) abort
       throw 'Rails app detection bug'
     endif
     if filereadable(fn . "/config/environment.rb")
-      return rails#buffer_init(resolve(fn))
+      let b:rails_root = resolve(fn)
+      return 1
     endif
     let ofn = fn
     let fn = fnamemodify(ofn,':h')
@@ -46,17 +47,37 @@ function! s:Detect(filename) abort
   return 0
 endfunction
 
+function! s:Activate(filename) abort
+  if RailsDetect(a:filename)
+    call rails#buffer_init()
+    return 1
+  endif
+endfunction
+
 " }}}1
 " Initialization {{{1
 
 augroup railsPluginDetect
   autocmd!
-  autocmd BufNewFile,BufRead * call s:Detect(expand("<afile>:p"))
-  autocmd VimEnter * if expand("<amatch>") == "" && !exists("b:rails_root") | call s:Detect(getcwd()) | endif | if exists("b:rails_root") | silent doau User BufEnterRails | endif
-  autocmd FileType netrw if !exists("b:rails_root") | call s:Detect(expand("%:p")) | endif | if exists("b:rails_root") | silent doau User BufEnterRails | endif
+  autocmd BufNewFile,BufReadPost *
+        \ if s:Activate(expand("<afile>:p")) && empty(&filetype) |
+        \   call rails#buffer_settings() |
+        \ endif
+  autocmd VimEnter *
+        \ if empty(expand("<amatch>")) && s:Activate(getcwd()) |
+        \   call rails#buffer_settings() |
+        \   silent doau User BufEnterRails |
+        \ endif
+  autocmd FileType netrw
+        \ if s:Activate(expand("%:p")) |
+        \   silent doau User BufEnterRails |
+        \ endif
+  autocmd FileType * if RailsDetect() | call rails#buffer_settings() | endif
+  autocmd Syntax railslog call rails#log_syntax()
+  autocmd Syntax ruby,eruby,yaml,haml,javascript,coffee,sass,scss
+        \ if RailsDetect() | call rails#buffer_syntax() | endif
   autocmd BufEnter * if exists("b:rails_root")|silent doau User BufEnterRails|endif
   autocmd BufLeave * if exists("b:rails_root")|silent doau User BufLeaveRails|endif
-  autocmd Syntax railslog call rails#log_syntax()
 augroup END
 
 command! -bar -bang -nargs=* -complete=dir Rails execute rails#new_app_command(<bang>0,<f-args>)

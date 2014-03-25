@@ -572,10 +572,16 @@ function! rails#pluralize(word)
 endfunction
 
 function! rails#app(...)
-  let root = a:0 ? a:1 : RailsRoot()
-  " TODO: populate dynamically
-  " TODO: normalize path
-  return get(s:apps,root,0)
+  let root = a:0 ? a:1 : get(b:, 'rails_root', '')
+  if !empty(root)
+    if !has_key(s:apps, root)
+      let s:apps[root] = deepcopy(s:app_prototype)
+      let s:apps[root].root = root
+      let s:apps[root]._root = root
+    endif
+    return s:apps[root]
+  endif
+  return {}
 endfunction
 
 function! rails#buffer(...)
@@ -1126,10 +1132,9 @@ endfunction
 
 function! s:RefreshBuffer()
   if exists("b:rails_refresh") && b:rails_refresh
-    let oldroot = b:rails_root
-    unlet! b:rails_root
     let b:rails_refresh = 0
-    call rails#buffer_init(oldroot)
+    call rails#buffer_init()
+    let &filetype = &filetype
     unlet! b:rails_refresh
   endif
 endfunction
@@ -1549,7 +1554,9 @@ function! s:Preview(bang, lnum, uri) abort
     " Work around bug where URLs ending in / get handled as FTP
     let url = uri.(uri =~ '/$' ? '?' : '')
     silent exe 'pedit '.url
+    let root = rails#app().path()
     wincmd w
+    let b:rails_root = root
     if &filetype ==# ''
       if uri =~ '\.css$'
         setlocal filetype=css
@@ -1559,7 +1566,7 @@ function! s:Preview(bang, lnum, uri) abort
         setlocal filetype=xhtml
       endif
     endif
-    call rails#buffer_init(rails#app().path())
+    call rails#buffer_init()
     map <buffer> <silent> q :bwipe<CR>
     wincmd p
     if !a:bang
@@ -4393,28 +4400,18 @@ endfunction
 " }}}1
 " Detection {{{1
 
-function! rails#buffer_init(path)
-  let firsttime = !(exists("b:rails_root") && b:rails_root == a:path)
-  let b:rails_root = a:path
-  if !has_key(s:apps,a:path)
-    let s:apps[a:path] = deepcopy(s:app_prototype)
-    let s:apps[a:path].root = a:path
-    let s:apps[a:path]._root = a:path
-  endif
-  let app = s:apps[a:path]
+function! rails#buffer_init()
+  let app = rails#app()
   let buffer = rails#buffer()
   " Apparently rails#buffer().calculate_file_type() can be slow if the
   " underlying file system is slow (even though it doesn't really do anything
   " IO related).  This caching is a temporary hack; if it doesn't cause
   " problems it should probably be refactored.
   let b:rails_cached_file_type = buffer.calculate_file_type()
-  if expand('%:t') =~ '\.yml\.example$'
+  if expand('%:t') =~ '\.yml\.example$' && &filetype !=# 'yaml'
     setlocal filetype=yaml
-  elseif expand('%:e') =~ '^\%(rjs\|rxml\|builder\|jbuilder\)$'
-    setlocal filetype=ruby
-  elseif firsttime
-    " Activate custom syntax
-    let &syntax = &syntax
+  elseif expand('%:e') =~# '^\%(rjs\|rxml\|builder\|jbuilder\)$' && &filetype !=# 'ruby'
+    " setlocal filetype=ruby
   endif
   if expand('%:e') == 'log'
     nnoremap <buffer> <silent> R :checktime<CR>
@@ -4429,8 +4426,6 @@ function! rails#buffer_init(path)
     setlocal readonly nomodifiable
     $
   endif
-  call s:BufSettings()
-  call s:BufMappings()
   call s:BufCommands()
   if !empty(findfile('macros/rails.vim', escape(&runtimepath, ' ')))
     runtime! macros/rails.vim
@@ -4480,12 +4475,13 @@ function! s:SetBasePath() abort
   call self.setvar('&path',(add_dot ? '.,' : '').s:pathjoin(s:uniq(path + [self.app().path()] + old_path + engine_paths)))
 endfunction
 
-function! s:BufSettings()
+function! rails#buffer_settings()
   if !exists('b:rails_root')
     return ''
   endif
   let self = rails#buffer()
   call s:SetBasePath()
+  call s:BufMappings()
   let rp = s:gsub(self.app().path(),'[ ,]','\\&')
   if stridx(&tags,rp.'/tags') == -1
     let &l:tags = rp . '/tags,' . rp . '/tmp/tags,' . &tags
@@ -4557,7 +4553,6 @@ augroup railsPluginAuto
   autocmd BufWritePost */config/environments/*.rb call rails#cache_clear("environments")
   autocmd BufWritePost */tasks/**.rake            call rails#cache_clear("rake_tasks")
   autocmd BufWritePost */generators/**            call rails#cache_clear("generators")
-  autocmd FileType * if exists("b:rails_root") | call s:BufSettings() | endif
   autocmd Syntax ruby,eruby,yaml,haml,javascript,coffee,railslog,sass,scss if exists("b:rails_root") | call rails#buffer_syntax() | endif
 augroup END
 
