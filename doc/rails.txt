@@ -749,7 +749,7 @@ Vim syntax looks a lot like JSON, but with funky |line-continuation|:
 	      \ "app/uploaders/*_uploader.rb": {
 	      \   "command": "uploader",
 	      \   "template":
-	      \     "class %SUploader < CarrierWave::Uploader::Base\nend",
+	      \     ["class %SUploader < CarrierWave::Uploader::Base", "end"],
 	      \   "test": [
 	      \     "test/unit/%s_uploader_test.rb",
 	      \     "spec/models/%s_uploader_spec.rb"
@@ -823,7 +823,7 @@ The full list of available options is as follows:
 "template" ~
 	If you provide a ! after the argument to the navigation command (that
 	is, :Euploader foo!, NOT :Euploader! foo), and a new file is created,
-	this will be used as the body.
+	this will be used as an array of lines to populate the body.
 
 CONFIGURATION					*rails-configuration*
 
