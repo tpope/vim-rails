@@ -1932,8 +1932,7 @@ function! s:djump(def)
   elseif def != ''
     let ext = matchstr(def,'\.\zs.*')
     let def = matchstr(def,'[^.]*')
-    let v:errmsg = ''
-    let include = &include
+    let include = &l:include
     try
       setlocal include=
       exe 'djump '.def
@@ -1941,7 +1940,7 @@ function! s:djump(def)
     catch
       let error = 1
     finally
-      let &include = include
+      let &l:include = include
     endtry
     if !empty(ext) && expand('%:e') ==# 'rb' && !exists('error')
       let rpat = '\C^\s*\%(mail\>.*\|respond_to\)\s*\%(\<do\|{\)\s*|\zs\h\k*\ze|'
@@ -1956,7 +1955,7 @@ function! s:djump(def)
             exe 'djump '.def
           catch
           finally
-            let &include = include
+            let &l:include = include
           endtry
         endif
       endif
