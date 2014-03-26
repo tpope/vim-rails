@@ -25,17 +25,21 @@ function! RailsDetect(...) abort
   if exists('b:rails_root')
     return 1
   endif
-  let fn = substitute(fnamemodify(a:0 ? a:1 : '', ":p"),'\c^file://','','')
+  let fn = substitute(fnamemodify(a:0 ? a:1 : expand('%'), ":p"),'\c^file://','','')
   let sep = exists('+shellslash') && !&shellslash ? '\\' : '/'
-  if isdirectory(fn)
+  if fn =~# ':[\\/][\\/]'
+    return 0
+  elseif isdirectory(fn)
     let fn = fnamemodify(fn,':s?[\/]$??')
   else
     let fn = fnamemodify(fn,':s?\(.*\)[\/][^\/]*$?\1?')
   endif
   let ofn = ""
+  let fns = []
   while fn != ofn && fn !=# '/'
+    call add(fns, fn)
     if fn ==# '.'
-      throw 'Rails app detection bug'
+      throw 'Rails app detection bug: '.string(fns)[1: -1]
     endif
     if filereadable(fn . "/config/environment.rb")
       let b:rails_root = resolve(fn)
