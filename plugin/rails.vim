@@ -57,6 +57,10 @@ endfunction
 " }}}1
 " Initialization {{{1
 
+if !exists('g:did_load_ftplugin')
+  filetype plugin on
+endif
+
 augroup railsPluginDetect
   autocmd!
   autocmd BufNewFile,BufReadPost *
