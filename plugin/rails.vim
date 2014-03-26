@@ -27,12 +27,13 @@ function! RailsDetect(...) abort
   endif
   let fn = substitute(fnamemodify(a:0 ? a:1 : expand('%'), ":p"),'\c^file://','','')
   let sep = exists('+shellslash') && !&shellslash ? '\\' : '/'
-  if fn =~# ':[\\/][\\/]'
-    return 0
-  elseif isdirectory(fn)
+  if isdirectory(fn)
     let fn = fnamemodify(fn,':s?[\/]$??')
   else
     let fn = fnamemodify(fn,':s?\(.*\)[\/][^\/]*$?\1?')
+    if !isdirectory(fn)
+      return 0
+    endif
   endif
   let ofn = ""
   let fns = []
