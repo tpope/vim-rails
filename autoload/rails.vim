@@ -4362,6 +4362,12 @@ function! s:expand_placeholders(string, placeholders)
         \ '{pluralize}': '%p',
         \ '{singular}': '%i',
         \ '{singularize}': '%i',
+        \ '{humanize}': '%h',
+        \ '{humancase}': '%h',
+        \ '{line}': '%l',
+        \ '{lnum}': '%l',
+        \ '{define}': '%d',
+        \ '{file}': '%%',
         \ '{open}': '{',
         \ '{close}': '}'}
   let value = substitute(a:string, '{[^{}]*}', '\=get(transitional, submatch(0), submatch(0))', 'g')
