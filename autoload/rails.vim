@@ -1951,7 +1951,13 @@ function! s:djump(def)
         let variable = matchstr(getline(rline),rpat)
         let success = search('\C^\s*'.variable.'\s*\.\s*\zs'.ext.'\>','',end)
         if !success
-          silent! exe "djump ".def
+          try
+            setlocal include=
+            exe 'djump '.def
+          catch
+          finally
+            let &include = include
+          endtry
         endif
       endif
     endif
