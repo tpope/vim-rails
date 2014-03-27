@@ -52,13 +52,6 @@ function! RailsDetect(...) abort
   return 0
 endfunction
 
-function! s:Activate(filename) abort
-  if RailsDetect(a:filename)
-    call rails#buffer_init()
-    return 1
-  endif
-endfunction
-
 " }}}1
 " Initialization {{{1
 
@@ -72,19 +65,19 @@ augroup railsPluginDetect
   autocmd BufLeave * if exists("b:rails_root")|silent doau User BufLeaveRails|endif
 
   autocmd BufNewFile,BufReadPost *
-        \ if s:Activate(expand("<afile>:p")) && empty(&filetype) |
-        \   call rails#buffer_settings() |
+        \ if RailsDetect(expand("<afile>:p")) && empty(&filetype) |
+        \   call rails#buffer_setup() |
         \ endif
   autocmd VimEnter *
-        \ if empty(expand("<amatch>")) && s:Activate(getcwd()) |
-        \   call rails#buffer_settings() |
+        \ if empty(expand("<amatch>")) && RailsDetect(getcwd()) |
+        \   call rails#buffer_setup() |
         \   silent doau User BufEnterRails |
         \ endif
   autocmd FileType netrw
-        \ if s:Activate(expand("%:p")) |
+        \ if RailsDetect() |
         \   silent doau User BufEnterRails |
         \ endif
-  autocmd FileType * if RailsDetect() | call rails#buffer_settings() | endif
+  autocmd FileType * if RailsDetect() | call rails#buffer_setup() | endif
 
   autocmd BufNewFile,BufReadPost *.yml.example set filetype=yaml
   autocmd BufNewFile,BufReadPost *.rjs,*.rxml,*.builder,*.jbuilder,*.ruby

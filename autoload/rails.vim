@@ -1133,7 +1133,7 @@ endfunction
 function! s:RefreshBuffer()
   if exists("b:rails_refresh") && b:rails_refresh
     let b:rails_refresh = 0
-    call rails#buffer_init()
+    call rails#buffer_setup()
     let &filetype = &filetype
     unlet! b:rails_refresh
   endif
@@ -1566,7 +1566,7 @@ function! s:Preview(bang, lnum, uri) abort
         setlocal filetype=xhtml
       endif
     endif
-    call rails#buffer_init()
+    call rails#buffer_setup()
     map <buffer> <silent> q :bwipe<CR>
     wincmd p
     if !a:bang
@@ -4431,24 +4431,6 @@ endfunction
 " }}}1
 " Detection {{{1
 
-function! rails#buffer_init()
-  let app = rails#app()
-  let buffer = rails#buffer()
-  " Apparently rails#buffer().calculate_file_type() can be slow if the
-  " underlying file system is slow (even though it doesn't really do anything
-  " IO related).  This caching is a temporary hack; if it doesn't cause
-  " problems it should probably be refactored.
-  let b:rails_cached_file_type = buffer.calculate_file_type()
-  call s:BufCommands()
-  if !empty(findfile('macros/rails.vim', escape(&runtimepath, ' ')))
-    runtime! macros/rails.vim
-  endif
-  silent doautocmd User Rails
-  call s:BufProjectionCommands()
-  call s:BufAbbreviations()
-  return b:rails_root
-endfunction
-
 function! s:SetBasePath() abort
   let self = rails#buffer()
   if self.app().path() =~ '://'
@@ -4488,13 +4470,21 @@ function! s:SetBasePath() abort
   call self.setvar('&path',(add_dot ? '.,' : '').s:pathjoin(s:uniq(path + [self.app().path()] + old_path + engine_paths)))
 endfunction
 
-function! rails#buffer_settings()
+function! rails#buffer_setup() abort
   if !exists('b:rails_root')
     return ''
   endif
   let self = rails#buffer()
-  call s:SetBasePath()
+  let b:rails_cached_file_type = self.calculate_file_type()
   call s:BufMappings()
+  call s:BufCommands()
+  if !empty(findfile('macros/rails.vim', escape(&runtimepath, ' ')))
+    runtime! macros/rails.vim
+  endif
+  silent doautocmd User Rails
+  call s:BufProjectionCommands()
+  call s:BufAbbreviations()
+  call s:SetBasePath()
   let rp = s:gsub(self.app().path(),'[ ,]','\\&')
   if stridx(&tags,rp.'/tags') == -1
     let &l:tags = rp . '/tags,' . rp . '/tmp/tags,' . &tags
