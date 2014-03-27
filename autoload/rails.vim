@@ -4439,11 +4439,6 @@ function! rails#buffer_init()
   " IO related).  This caching is a temporary hack; if it doesn't cause
   " problems it should probably be refactored.
   let b:rails_cached_file_type = buffer.calculate_file_type()
-  if expand('%:t') =~ '\.yml\.example$' && &filetype !=# 'yaml'
-    setlocal filetype=yaml
-  elseif expand('%:e') =~# '^\%(rjs\|rxml\|builder\|jbuilder\)$' && &filetype !=# 'ruby'
-    " setlocal filetype=ruby
-  endif
   call s:BufCommands()
   if !empty(findfile('macros/rails.vim', escape(&runtimepath, ' ')))
     runtime! macros/rails.vim
