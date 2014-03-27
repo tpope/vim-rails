@@ -4558,7 +4558,6 @@ augroup railsPluginAuto
   autocmd BufWritePost */config/environments/*.rb call rails#cache_clear("environments")
   autocmd BufWritePost */tasks/**.rake            call rails#cache_clear("rake_tasks")
   autocmd BufWritePost */generators/**            call rails#cache_clear("generators")
-  autocmd Syntax ruby,eruby,yaml,haml,javascript,coffee,railslog,sass,scss if exists("b:rails_root") | call rails#buffer_syntax() | endif
 augroup END
 
 " }}}1
