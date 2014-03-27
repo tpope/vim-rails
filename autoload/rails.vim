@@ -1011,15 +1011,7 @@ function! s:BufCommands()
 endfunction
 
 function! s:Log(bang,arg)
-  if a:arg == ""
-    let lf = "log/".s:environment().".log"
-  else
-    let lf = "log/".a:arg.".log"
-  endif
-  let size = getfsize(rails#app().path(lf))
-  if size >= 1048576
-    call s:warn("Log file is ".((size+512)/1024)."KB.  Consider :Rake log:clear")
-  endif
+  let lf = 'log/' . (empty(a:arg) ? s:environment() : a:arg) . '.log'
   if a:bang
     exe "cgetfile ".lf
     clast
