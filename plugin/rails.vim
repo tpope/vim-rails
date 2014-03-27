@@ -68,6 +68,9 @@ endif
 
 augroup railsPluginDetect
   autocmd!
+  autocmd BufEnter * if exists("b:rails_root")|silent doau User BufEnterRails|endif
+  autocmd BufLeave * if exists("b:rails_root")|silent doau User BufLeaveRails|endif
+
   autocmd BufNewFile,BufReadPost *
         \ if s:Activate(expand("<afile>:p")) && empty(&filetype) |
         \   call rails#buffer_settings() |
@@ -82,11 +85,12 @@ augroup railsPluginDetect
         \   silent doau User BufEnterRails |
         \ endif
   autocmd FileType * if RailsDetect() | call rails#buffer_settings() | endif
+
+  autocmd BufReadPost *.log if RailsDetect() | set filetype=railslog | endif
+  autocmd FileType railslog call rails#log_setup()
   autocmd Syntax railslog call rails#log_syntax()
   autocmd Syntax ruby,eruby,yaml,haml,javascript,coffee,sass,scss
         \ if RailsDetect() | call rails#buffer_syntax() | endif
-  autocmd BufEnter * if exists("b:rails_root")|silent doau User BufEnterRails|endif
-  autocmd BufLeave * if exists("b:rails_root")|silent doau User BufLeaveRails|endif
 augroup END
 
 command! -bar -bang -nargs=* -complete=dir Rails execute rails#new_app_command(<bang>0,<f-args>)

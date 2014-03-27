@@ -3919,6 +3919,20 @@ function! rails#log_syntax()
   hi def link railslogHTTP        Special
 endfunction
 
+function! rails#log_setup() abort
+  nnoremap <buffer> <silent> R :checktime<CR>
+  nnoremap <buffer> <silent> G :checktime<Bar>$<CR>
+  nnoremap <buffer> <silent> q :bwipe<CR>
+  setlocal modifiable noswapfile autoread
+  if exists('+concealcursor')
+    setlocal concealcursor=nc conceallevel=2
+  else
+    silent %s/\%(\e\[[0-9;]*m\|\r$\)//ge
+  endif
+  setlocal readonly nomodifiable
+  $
+endfunction
+
 " }}}1
 " Mappings {{{1
 
@@ -4429,19 +4443,6 @@ function! rails#buffer_init()
     setlocal filetype=yaml
   elseif expand('%:e') =~# '^\%(rjs\|rxml\|builder\|jbuilder\)$' && &filetype !=# 'ruby'
     " setlocal filetype=ruby
-  endif
-  if expand('%:e') == 'log'
-    nnoremap <buffer> <silent> R :checktime<CR>
-    nnoremap <buffer> <silent> G :checktime<Bar>$<CR>
-    nnoremap <buffer> <silent> q :bwipe<CR>
-    setlocal modifiable filetype=railslog noswapfile autoread foldmethod=syntax
-    if exists('+concealcursor')
-      setlocal concealcursor=nc conceallevel=2
-    else
-      silent %s/\%(\e\[[0-9;]*m\|\r$\)//ge
-    endif
-    setlocal readonly nomodifiable
-    $
   endif
   call s:BufCommands()
   if !empty(findfile('macros/rails.vim', escape(&runtimepath, ' ')))
