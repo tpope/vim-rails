@@ -4105,6 +4105,7 @@ function! s:BufAbbreviations()
       Rabbrev rp( render :partial\ =>\ 
       Rabbrev rt( render :text\ =>\ 
       Rabbrev rx( render :xml\ =>\ 
+      " ))))))
     endif
     if buffer.type_name('view','helper')
       Rabbrev dotiw distance_of_time_in_words
@@ -4113,6 +4114,7 @@ function! s:BufAbbreviations()
     if buffer.type_name('controller')
       Rabbrev re(  redirect_to
       Rabbrev rst( respond_to
+      " ))
     endif
     if buffer.type_name() ==# 'model' || buffer.type_name('model-arb')
       Rabbrev bt(    belongs_to
@@ -4130,6 +4132,7 @@ function! s:BufAbbreviations()
       Rabbrev vn(    validates_numericality_of
       Rabbrev vp(    validates_presence_of
       Rabbrev vu(    validates_uniqueness_of
+      " )))))))))))))))
     endif
     if buffer.type_name('db-migration','db-schema')
       Rabbrev mac(  add_column
@@ -4139,6 +4142,7 @@ function! s:BufAbbreviations()
       Rabbrev mcht( change_table
       Rabbrev mrnt( rename_table
       Rabbrev mdt(  drop_table
+      " )))))))
     endif
     if buffer.type_name('test')
       Rabbrev ase(  assert_equal
@@ -4147,6 +4151,7 @@ function! s:BufAbbreviations()
       Rabbrev asr(  assert_raise
       Rabbrev asre( assert_response
       Rabbrev art(  assert_redirected_to
+      " ))))))
     endif
     Rabbrev logd( logger.debug
     Rabbrev logi( logger.info
@@ -4160,6 +4165,7 @@ function! s:BufAbbreviations()
     Rabbrev AS::  ActiveSupport
     Rabbrev AM::  ActionMailer
     Rabbrev AO::  ActiveModel
+    " )))))
     for pairs in
           \ items(type(get(g:, 'rails_abbreviations', 0)) == type({}) ? g:rails_abbreviations : {})
       call call(function(s:sid.'Abbrev'), [0, pairs[0]] + s:split(pairs[1]))
