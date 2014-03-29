@@ -3269,9 +3269,9 @@ function! s:readable_alternate_candidates(...) dict abort
   elseif self.type_name('spec-view')
     return [s:sub(s:sub(f,'<spec/','app/'),'_spec\.rb$','')]
   elseif self.type_name('spec-lib')
-    return [s:sub(s:sub(f,'<spec/',''),'_spec\.rb$','')]
+    return [s:sub(s:sub(f,'<spec/',''),'_spec\.rb$','.rb')]
   elseif self.type_name('spec')
-    return [s:sub(s:sub(f,'<spec/','app/'),'_spec\.rb$','')]
+    return [s:sub(s:sub(f,'<spec/','app/'),'_spec\.rb$','.rb')]
   else
     return self.test_file_candidates()
   endif
