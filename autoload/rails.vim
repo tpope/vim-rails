@@ -3658,10 +3658,10 @@ function! rails#buffer_syntax()
     let buffer = rails#buffer()
     let javascript_functions = "$ jQuery"
     let classes = join(rails#app().user_classes(),'\|')
+    let keywords = split(join(buffer.projected('keywords'), ' '))
+    let special = filter(copy(keywords), 'v:val =~# ''^\h\k*[?!]$''')
+    let regular = filter(copy(keywords), 'v:val =~# ''^\h\k*$''')
     if &syntax == 'ruby'
-      let keywords = split(join(buffer.projected('keywords'), ' '))
-      let special = filter(copy(keywords), 'v:val =~# ''^\h\k*[?!]$''')
-      let regular = filter(copy(keywords), 'v:val =~# ''^\h\k*$''')
       if !empty(special)
         exe 'syn match rubyRailsMethod "\<\%('.join(special, '\|').'\)"'
       endif
@@ -3766,6 +3766,12 @@ function! rails#buffer_syntax()
 
     elseif &syntax =~# '^eruby\>' || &syntax == 'haml'
       syn case match
+      if !empty(special)
+        exe 'syn match '.&syntax.'RailsMethod "\<\%('.join(special, '\|').'\)"'
+      endif
+      if !empty(regular)
+        exe 'syn keyword '.&syntax.'RailsMethod '.join(regular, ' ')
+      endif
       if !empty(classes)
         exe 'syn match '.&syntax.'RailsUserClass +\<\%('.classes.'\)\>+ containedin=@'.&syntax.'RailsRegions'
       endif
