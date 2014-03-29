@@ -4008,20 +4008,22 @@ function! s:app_dbext_settings(environment) dict
   return cache[a:environment]
 endfunction
 
-function! s:BufDatabase(...)
+function! s:BufDatabase(level, ...)
   if exists("s:lock_database") || !exists('g:loaded_dbext') || !exists('b:rails_root')
     return
   endif
   let self = rails#app()
-  if (a:0 && a:1 > 1)
+  if a:level > 1
     call self.cache.clear('dbext_settings')
+  elseif exists('g:rails_no_dbext')
+    return
   endif
-  if (a:0 > 1 && a:2 != '')
-    let env = a:2
+  if (a:0 && !empty(a:1))
+    let env = a:1
   else
     let env = s:environment()
   endif
-  if (!self.cache.has('dbext_settings') || !has_key(self.cache.get('dbext_settings'),env)) && (a:0 ? a:1 : 0) <= 0
+  if (!self.cache.has('dbext_settings') || !has_key(self.cache.get('dbext_settings'),env)) && a:level <= 0
     return
   endif
   let dict = self.dbext_settings(env)
