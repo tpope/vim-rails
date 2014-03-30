@@ -3661,15 +3661,16 @@ function! rails#buffer_syntax()
     let keywords = split(join(buffer.projected('keywords'), ' '))
     let special = filter(copy(keywords), 'v:val =~# ''^\h\k*[?!]$''')
     let regular = filter(copy(keywords), 'v:val =~# ''^\h\k*$''')
+    let containedin = ' containedin=rubyClassDeclaration,rubyModuleDeclaration,rubyClass,rubyModule'
     if &syntax == 'ruby'
       if !empty(special)
-        exe 'syn match rubyRailsMethod "\<\%('.join(special, '\|').'\)"'
+        exe 'syn match rubyRailsMethod "\<\%('.join(special, '\|').'\)"' containedin
       endif
       if !empty(regular)
-        exe 'syn keyword rubyRailsMethod '.join(regular, ' ')
+        exe 'syn keyword rubyRailsMethod '.join(regular, ' ') containedin
       endif
       if !empty(classes)
-        exe 'syn match rubyRailsUserClass +\<\%('.classes.'\)\>+ containedin=rubyClassDeclaration,rubyModuleDeclaration,rubyClass,rubyModule'
+        exe 'syn match rubyRailsUserClass +\<\%('.classes.'\)\>+' containedin
       endif
       if buffer.type_name() == ''
         syn keyword rubyRailsMethod params request response session headers cookies flash
