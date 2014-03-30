@@ -3765,15 +3765,16 @@ function! rails#buffer_syntax()
       syn cluster rubyNotTop add=railsOrderSpecial,railsConditionsSpecial
 
     elseif &syntax =~# '^eruby\>' || &syntax == 'haml'
+      let containedin = 'containedin=@'.&syntax.'RailsRegions'
       syn case match
       if !empty(special)
-        exe 'syn match '.&syntax.'RailsMethod "\<\%('.join(special, '\|').'\)"'
+        exe 'syn match '.&syntax.'RailsMethod "\<\%('.join(special, '\|').'\)"' containedin
       endif
       if !empty(regular)
-        exe 'syn keyword '.&syntax.'RailsMethod '.join(regular, ' ')
+        exe 'syn keyword '.&syntax.'RailsMethod '.join(regular, ' ') containedin
       endif
       if !empty(classes)
-        exe 'syn match '.&syntax.'RailsUserClass +\<\%('.classes.'\)\>+ containedin=@'.&syntax.'RailsRegions'
+        exe 'syn match '.&syntax.'RailsUserClass +\<\%('.classes.'\)\>+' containedin
       endif
       if &syntax == 'haml'
         exe 'syn cluster hamlRailsRegions contains=hamlRubyCodeIncluded,hamlRubyCode,hamlRubyHash,@hamlEmbeddedRuby,rubyInterpolation'
