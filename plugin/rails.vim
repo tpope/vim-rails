@@ -89,6 +89,8 @@ augroup railsPluginDetect
   autocmd Syntax ruby,eruby,yaml,haml,javascript,coffee,sass,scss
         \ if RailsDetect() | call rails#buffer_syntax() | endif
 
+  autocmd User ProjectileDetect
+        \ if RailsDetect() | call projectile#append(b:rails_root, {}) | endif
 augroup END
 
 command! -bar -bang -nargs=* -complete=dir Rails execute rails#new_app_command(<bang>0,<f-args>)
