@@ -37,11 +37,8 @@ function! RailsDetect(...) abort
   endif
   let ofn = ""
   let fns = []
-  while fn != ofn && fn !=# '/'
+  while fn != ofn && fn !=# '/' && fn !=# '.'
     call add(fns, fn)
-    if fn ==# '.'
-      throw 'Rails app detection bug: '.string(fns)[1: -2]
-    endif
     if filereadable(fn . "/config/environment.rb")
       let b:rails_root = resolve(fn)
       return 1
