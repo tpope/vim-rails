@@ -3664,7 +3664,6 @@ function! rails#buffer_syntax()
   if !exists("g:rails_no_syntax")
     let buffer = rails#buffer()
     let javascript_functions = "$ jQuery"
-    let classes = join(rails#app().user_classes(),'\|')
     let keywords = split(join(buffer.projected('keywords'), ' '))
     let special = filter(copy(keywords), 'v:val =~# ''^\h\k*[?!]$''')
     let regular = filter(copy(keywords), 'v:val =~# ''^\h\k*$''')
@@ -3674,9 +3673,6 @@ function! rails#buffer_syntax()
       endif
       if !empty(regular)
         exe 'syn keyword rubyRailsMethod '.join(regular, ' ')
-      endif
-      if !empty(classes)
-        exe 'syn match rubyRailsUserClass +\<\%('.classes.'\)\>+ containedin=rubyClassDeclaration,rubyModuleDeclaration,rubyClass,rubyModule'
       endif
       if buffer.type_name() == ''
         syn keyword rubyRailsMethod params request response session headers cookies flash
@@ -3780,9 +3776,6 @@ function! rails#buffer_syntax()
       if !empty(regular)
         exe 'syn keyword '.&syntax.'RailsMethod '.join(regular, ' ') containedin
       endif
-      if !empty(classes)
-        exe 'syn match '.&syntax.'RailsUserClass +\<\%('.classes.'\)\>+' containedin
-      endif
       if &syntax == 'haml'
         exe 'syn cluster hamlRailsRegions contains=hamlRubyCodeIncluded,hamlRubyCode,hamlRubyHash,@hamlEmbeddedRuby,rubyInterpolation'
       else
@@ -3813,9 +3806,6 @@ function! rails#buffer_syntax()
       syn region  yamlRailsExpression matchgroup=yamlRailsDelimiter start="<%="    end="%>" contains=@rubyTop           containedin=ALLBUT,@yamlRailsRegions,yamlRailsComment
       syn region  yamlRailsComment    matchgroup=yamlRailsDelimiter start="<%#"    end="%>" contains=rubyTodo,@Spell    containedin=ALLBUT,@yamlRailsRegions,yamlRailsComment keepend
       syn match yamlRailsMethod '\.\@<!\<\(h\|html_escape\|u\|url_encode\)\>' contained containedin=@yamlRailsRegions
-      if classes != ''
-        exe "syn keyword yamlRailsUserClass ".classes." contained containedin=@yamlRailsRegions"
-      endif
       let b:current_syntax = "yaml"
     elseif &syntax == "html"
       syn case match
