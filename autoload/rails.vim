@@ -1134,11 +1134,11 @@ endfunction
 " }}}1
 " Rake {{{1
 
-function! s:app_rake_tasks() dict
+function! s:app_rake_tasks() dict abort
   if self.cache.needs('rake_tasks')
     call s:push_chdir()
     try
-      let output = system(self.has_path('bin/rake') ? self.ruby_script_command('bin/rake -T') : 'rake -T')
+      let output = system(self.rake_command().' -T')
       let lines = split(output, "\n")
     finally
       call s:pop_command()
@@ -1148,7 +1148,7 @@ function! s:app_rake_tasks() dict
     endif
     call map(lines,'matchstr(v:val,"^rake\\s\\+\\zs\\S*")')
     call filter(lines,'v:val != ""')
-    call self.cache.set('rake_tasks',lines)
+    call self.cache.set('rake_tasks',s:uniq(['default'] + lines))
   endif
   return self.cache.get('rake_tasks')
 endfunction
@@ -1186,15 +1186,7 @@ function! s:Rake(bang,lnum,arg)
   try
     call s:push_chdir(1)
     let b:current_compiler = 'rake'
-    if rails#app().has_path('.zeus.sock') && executable('zeus')
-      let &l:makeprg = 'zeus rake'
-    elseif rails#app().has_path('bin/rake')
-      let &l:makeprg = rails#app().ruby_script_command('bin/rake')
-    elseif rails#app().has('bundler')
-      let &l:makeprg = 'bundle exec rake'
-    else
-      let &l:makeprg = 'rake'
-    endif
+    let &l:makeprg = rails#app().rake_command()
     let &l:errorformat = g:rails#rake_errorformat
     let arg = a:arg
     if &filetype =~# '^ruby\>' && arg == ''
@@ -1410,11 +1402,24 @@ function! s:readable_default_rake_task(...) dict abort
   endif
 endfunction
 
+function! s:app_rake_command() dict abort
+  if self.has_path('.zeus.sock') && executable('zeus')
+    return 'zeus rake'
+  elseif self.has_path('bin/rake')
+    return self.ruby_script_command('bin/rake')
+  elseif self.has('bundler')
+    return 'bundle exec rake'
+  else
+    return 'rake'
+  endif
+endfunction
+
 function! rails#complete_rake(A,L,P)
   return s:completion_filter(rails#app().rake_tasks(),a:A)
 endfunction
 
 call s:add_methods('readable', ['test_file_candidates', 'test_file', 'default_rake_task'])
+call s:add_methods('app', ['rake_command'])
 
 " }}}1
 " Preview {{{1
