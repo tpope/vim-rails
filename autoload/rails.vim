@@ -3765,7 +3765,7 @@ function! rails#buffer_syntax()
       syn cluster rubyNotTop add=railsOrderSpecial,railsConditionsSpecial
 
     elseif &syntax =~# '^eruby\>' || &syntax == 'haml'
-      let containedin = 'containedin=@'.&syntax.'RailsRegions'
+      let containedin = 'contained containedin=@'.&syntax.'RailsRegions'
       syn case match
       if !empty(special)
         exe 'syn match '.&syntax.'RailsMethod "\<\%('.join(special, '\|').'\)"' containedin
