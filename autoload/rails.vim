@@ -3663,7 +3663,6 @@ call s:add_methods('app', ['user_classes','user_assertions'])
 function! rails#buffer_syntax()
   if !exists("g:rails_no_syntax")
     let buffer = rails#buffer()
-    let javascript_functions = "$ jQuery"
     let keywords = split(join(buffer.projected('keywords'), ' '))
     let special = filter(copy(keywords), 'v:val =~# ''^\h\k*[?!]$''')
     let regular = filter(copy(keywords), 'v:val =~# ''^\h\k*$''')
@@ -3791,9 +3790,6 @@ function! rails#buffer_syntax()
       endif
       exe 'syn keyword '.&syntax.'RailsRenderMethod render contained containedin=@'.&syntax.'RailsRegions'
       exe 'syn case match'
-      set isk+=$
-      exe 'syn keyword javascriptRailsFunction contained '.javascript_functions
-      exe 'syn cluster htmlJavaScript add=javascriptRailsFunction'
     elseif &syntax == "yaml"
       syn case match
       unlet! b:current_syntax
@@ -3807,16 +3803,6 @@ function! rails#buffer_syntax()
       syn region  yamlRailsComment    matchgroup=yamlRailsDelimiter start="<%#"    end="%>" contains=rubyTodo,@Spell    containedin=ALLBUT,@yamlRailsRegions,yamlRailsComment keepend
       syn match yamlRailsMethod '\.\@<!\<\(h\|html_escape\|u\|url_encode\)\>' contained containedin=@yamlRailsRegions
       let b:current_syntax = "yaml"
-    elseif &syntax == "html"
-      syn case match
-      set isk+=$
-      exe "syn keyword javascriptRailsFunction contained ".javascript_functions
-      syn cluster htmlJavaScript add=javascriptRailsFunction
-    elseif &syntax == "javascript" || &syntax == "coffee"
-      " The syntax file included with Vim incorrectly sets syn case ignore.
-      syn case match
-      set isk+=$
-      exe "syn keyword javascriptRailsFunction ".javascript_functions
 
     elseif &syntax == "scss" || &syntax == "sass"
       syn match sassFunction "\<\%(\%(asset\|image\|font\|video\|audio\|javascript\|stylesheet\)-\%(url\|path\)\)\>(\@=" contained
