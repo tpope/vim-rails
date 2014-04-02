@@ -4488,6 +4488,8 @@ function! rails#buffer_setup() abort
     endif
     if exists(':UltiSnipsAddFiletypes') == 2
       UltiSnipsAddFiletypes rails
+    elseif exists(':SnipMateLoadScope') == 2
+      SnipMateLoadScope rails
     endif
   elseif ft =~# 'yaml\>' || fnamemodify(self.name(),':e') ==# 'yml'
     call self.setvar('&define',self.define_pattern())
