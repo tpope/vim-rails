@@ -4523,6 +4523,14 @@ function! rails#buffer_setup() abort
       endif
     endif
   endif
+  if self.type_name('test', 'spec', 'cucumber')
+    call self.setvar('dispatch', ':Rrunner')
+  else
+    call self.setvar('dispatch', ':Rake')
+  endif
+  if empty(self.getvar('start'))
+    call self.setvar('start', ':Rserver')
+  endif
 endfunction
 
 " }}}1
