@@ -1663,9 +1663,9 @@ function! s:readable_runner_command(bang, count, arg) dict abort
           let extra = ''
         endif
       endif
-    elseif arg =~# '^spec/.*\%(_spec\.rb\|\.feature\)$'
+    elseif arg =~# '^spec\%(/.*\%(_spec\.rb\|\.feature\)\)\=$'
       let compiler = 'rspec'
-    elseif arg =~# '^features/.*\.feature$'
+    elseif arg =~# '^features\%(/.*\.feature\)\=$'
       let compiler = 'cucumber'
     else
       let compiler = 'ruby'
