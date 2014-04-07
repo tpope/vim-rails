@@ -1125,7 +1125,6 @@ endfunction
 function! s:RefreshBuffer()
   if exists("b:rails_refresh") && b:rails_refresh
     let b:rails_refresh = 0
-    call rails#buffer_setup()
     let &filetype = &filetype
     unlet! b:rails_refresh
   endif
