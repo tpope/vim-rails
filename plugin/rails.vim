@@ -25,28 +25,15 @@ function! RailsDetect(...) abort
   if exists('b:rails_root')
     return 1
   endif
-  let fn = substitute(fnamemodify(a:0 ? a:1 : expand('%'), ":p"),'\c^file://','','')
-  let sep = exists('+shellslash') && !&shellslash ? '\\' : '/'
-  if isdirectory(fn)
-    let fn = fnamemodify(fn,':s?[\/]$??')
-  else
-    let fn = fnamemodify(fn,':s?\(.*\)[\/][^\/]*$?\1?')
-    if !isdirectory(fn)
-      return 0
-    endif
+  let fn = fnamemodify(a:0 ? a:1 : expand('%'), ':p')
+  if !isdirectory(fn)
+    let fn = fnamemodify(fn, ':h')
   endif
-  let ofn = ""
-  let fns = []
-  while fn != ofn && fn !=# '/' && fn !=# '.'
-    call add(fns, fn)
-    if filereadable(fn . "/config/environment.rb")
-      let b:rails_root = resolve(fn)
-      return 1
-    endif
-    let ofn = fn
-    let fn = fnamemodify(ofn,':h')
-  endwhile
-  return 0
+  let file = findfile('config/environment.rb', escape(fn, ', ').';')
+  if !empty(file)
+    let b:rails_root = fnamemodify(file, ':p:h:h')
+    return 1
+  endif
 endfunction
 
 " }}}1
