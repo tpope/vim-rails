@@ -1473,7 +1473,7 @@ function! s:readable_preview_urls(lnum) dict abort
     let start += 1
   endwhile
   if has_key(self,'getvar') && self.getvar('rails_preview') != ''
-    let url += [self.getvar('rails_preview')]
+    let urls += [self.getvar('rails_preview')]
   endif
   if self.name() =~ '^public/stylesheets/sass/'
     let urls = urls + [s:sub(s:sub(self.name(),'^public/stylesheets/sass/','/stylesheets/'),'\.s[ac]ss$','.css')]
@@ -1489,11 +1489,20 @@ function! s:readable_preview_urls(lnum) dict abort
     let urls = urls + [s:sub(s:sub(self.name(),'^app/scripts/','/javascripts/'),'\.coffee$','.js')]
   elseif self.controller_name() != '' && self.controller_name() != 'application'
     if self.type_name('controller') && self.last_method(a:lnum) != ''
-      let urls += ['/'.self.controller_name().'/'.self.last_method(a:lnum).'/']
+      let handler = self.controller_name().'#'.self.last_method(a:lnum)
     elseif self.type_name('controller','view-layout','view-partial')
-      let urls += ['/'.self.controller_name().'/']
+      let handler = self.controller_name().'#index'
     elseif self.type_name('view')
-      let urls += ['/'.s:controller().'/'.fnamemodify(self.name(),':t:r:r').'/']
+      let handler = self.controller_name().'#'.fnamemodify(self.name(),':t:r:r')
+    endif
+    if exists('handler')
+      call self.app().route_names()
+      for route in values(self.app().cache.get('named_routes'))
+        if route.method ==# 'GET' && route.handler ==# handler
+          let urls += [s:gsub(s:gsub(route.path, '\([^()]*\)', ''), ':\w+', '1')]
+
+        endif
+      endfor
     endif
   endif
   return urls

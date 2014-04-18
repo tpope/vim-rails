@@ -79,12 +79,11 @@ actually edit a file from a Rails application.
 			some netstat/lsof trickery to the current server pid.
 			If no server is running, Pow is consulted, and if all
 			else fails, a default of localhost:3000 is used.  If
-			[path] is omitted, a sensible default is used
-			(considers the current controller/template, but does
-			not take routing into account).  The default is
-			overridden by comments like the following that are
-			either before the current method call or at the top of
-			the file: >
+			[path] is omitted, a default is used based on the
+			current file and the application's routes.  The
+			default is overridden by comments like the following
+			that are either before the current method call or at
+			the top of the file: >
 
 		# GET /users
 		# PUT /users/1
