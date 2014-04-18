@@ -2213,23 +2213,23 @@ function! s:RailsFind()
   return res
 endfunction
 
-function! s:app_named_route_file(route) dict
+function! s:app_named_route_file(route) dict abort
   call self.route_names()
   if self.cache.has("named_routes") && has_key(self.cache.get("named_routes"),a:route)
-    return self.cache.get("named_routes")[a:route]
+    return s:sub(self.cache.get("named_routes")[a:route].handler, '#', '_controller.rb#')
   endif
   return ""
 endfunction
 
-function! s:app_route_names() dict
+function! s:app_route_names() dict abort
   if self.cache.needs("named_routes")
-    let exec = "ActionController::Routing::Routes.named_routes.each {|n,r| puts %{#{n} #{r.requirements[:controller]}_controller.rb##{r.requirements[:action]}}}"
-    let string = self.eval(exec)
     let routes = {}
-    for line in split(string,"\n")
-      let route = split(line," ")
-      let name = route[0]
-      let routes[name] = route[1]
+    for line in split(system(self.rake_command().' routes'), "\n")
+      let matches = matchlist(line, '^ \+\(\w\+\) \+\(\u\+\) \+\(\S\+\) \+\(\w\+#\w\+\)')
+      if !empty(matches)
+        let [_, name, method, path, handler; __] = matches
+        let routes[name] = {'method': method, 'path': path, 'handler': handler}
+      endif
     endfor
     call self.cache.set("named_routes",routes)
   endif
@@ -2238,10 +2238,6 @@ function! s:app_route_names() dict
 endfunction
 
 call s:add_methods('app', ['route_names','named_route_file'])
-
-function! RailsNamedRoutes()
-  return rails#app().route_names()
-endfunction
 
 function! s:RailsIncludefind(str,...)
   if a:str ==# "ApplicationController"
