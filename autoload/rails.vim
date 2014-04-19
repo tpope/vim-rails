@@ -3884,7 +3884,7 @@ function! rails#log_syntax()
   endif
   syn match   railslogRender      '\%(^\s*\%(\e\[[0-9;]*m\)\=\)\@<=\%(Started\|Processing\|Rendering\|Rendered\|Redirected\|Completed\)\>'
   syn match   railslogComment     '^\s*# .*'
-  syn match   railslogModel       '\%(^\s*\%(\e\[[0-9;]*m\)*\)\@<=\u\%(\w\|:\)* \%(Load\%( Including Associations\| IDs For Limited Eager Loading\)\=\|Columns\|Count\|Create\|Update\|Destroy\|Delete all\)\>' skipwhite nextgroup=railslogModelNum,railslogEscapeMN
+  syn match   railslogModel       '\%(^\s*\%(\e\[[0-9;]*m\)*\)\@<=\u\%(\w\|:\)* \%(Load\%( Including Associations\| IDs For Limited Eager Loading\)\=\|Columns\|Exists\|Count\|Create\|Update\|Destroy\|Delete all\)\>' skipwhite nextgroup=railslogModelNum,railslogEscapeMN
   syn match   railslogModel       '\%(^\s*\%(\e\[[0-9;]*m\)*\)\@<=\%(SQL\|CACHE\)\>' skipwhite nextgroup=railslogModelNum,railslogEscapeMN
   syn region  railslogModelNum    start='(' end=')' contains=railslogNumber contained skipwhite
   syn match   railslogNumber      '\<\d\+\>%'
