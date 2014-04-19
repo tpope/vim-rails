@@ -1404,8 +1404,8 @@ function! s:readable_default_rake_task(...) dict abort
   endif
 endfunction
 
-function! s:app_rake_command() dict abort
-  if self.has_path('.zeus.sock') && executable('zeus')
+function! s:app_rake_command(...) dict abort
+  if get(a:, 1) !=# 'static' && self.has_path('.zeus.sock') && executable('zeus')
     return 'zeus rake'
   elseif self.has_path('bin/rake')
     return self.ruby_script_command('bin/rake')

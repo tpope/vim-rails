@@ -74,7 +74,10 @@ augroup railsPluginDetect
         \ if RailsDetect() | call rails#buffer_syntax() | endif
 
   autocmd User ProjectileDetect
-        \ if RailsDetect() | call projectile#append(b:rails_root, {}) | endif
+        \ if RailsDetect() |
+        \   call projectile#append(b:rails_root,
+        \     {'*': {'make': split(rails#app().rake_command('static'))}}) |
+        \ endif
 augroup END
 
 command! -bar -bang -nargs=* -complete=dir Rails execute rails#new_app_command(<bang>0,<f-args>)
