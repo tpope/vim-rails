@@ -4540,9 +4540,13 @@ function! rails#buffer_setup() abort
     endif
   endif
   if self.type_name('test', 'spec', 'cucumber')
-    call self.setvar('dispatch', ':Rrunner')
-  else
+    call self.setvar('dispatch', ':Runner')
+  elseif self.name() ==# 'Rakefile'
+    call self.setvar('dispatch', ':Rake default')
+  elseif self.name() =~# '^\%(app\|config\|db\|lib\|log\)'
     call self.setvar('dispatch', ':Rake')
+  elseif self.name() =~# '^public'
+    call self.setvar('dispatch', ':Preview')
   endif
   if empty(self.getvar('start'))
     call self.setvar('start', ':Rserver')
