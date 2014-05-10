@@ -73,9 +73,9 @@ augroup railsPluginDetect
   autocmd Syntax ruby,eruby,yaml,haml,javascript,coffee,sass,scss
         \ if RailsDetect() | call rails#buffer_syntax() | endif
 
-  autocmd User ProjectileDetect
-        \ if RailsDetect() |
-        \   call projectile#append(b:rails_root,
+  autocmd User ProjectionistDetect
+        \ if RailsDetect(get(g:, 'projectionist_file', '')) |
+        \   call projectionist#append(b:rails_root,
         \     {'*': {'make': split(rails#app().rake_command('static'))}}) |
         \ endif
 augroup END
