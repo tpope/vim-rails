@@ -1420,7 +1420,7 @@ function! s:app_rake_command(...) dict abort
 endfunction
 
 function! rails#complete_rake(A,L,P)
-  return s:completion_filter(rails#app().rake_tasks(),a:A)
+  return s:completion_filter(rails#app().rake_tasks(), a:A, ':')
 endfunction
 
 call s:add_methods('readable', ['test_file_candidates', 'test_file', 'default_rake_task'])
@@ -2467,7 +2467,10 @@ function! s:BufProjectionCommands()
   endfor
 endfunction
 
-function! s:completion_filter(results,A)
+function! s:completion_filter(results, A, ...) abort
+  if exists('*projectionist#completion_filter')
+    return projectionist#completion_filter(a:results, a:A, a:0 ? a:1 : '/')
+  endif
   let results = sort(type(a:results) == type("") ? split(a:results,"\n") : copy(a:results))
   call filter(results,'v:val !~# "\\~$"')
   if a:A =~# '\*'
