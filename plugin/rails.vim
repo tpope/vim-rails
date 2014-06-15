@@ -42,6 +42,9 @@ endfunction
 if !exists('g:did_load_ftplugin')
   filetype plugin on
 endif
+if !exists('g:loaded_projectionist')
+  runtime! plugin/projectionist.vim
+endif
 
 augroup railsPluginDetect
   autocmd!
