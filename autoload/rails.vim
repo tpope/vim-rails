@@ -1813,6 +1813,7 @@ let s:efm_generate =
       \ s:color_efm('%-G', 'create', ' ') .
       \ s:color_efm('%-G', 'exist', ' ') .
       \ s:color_efm('Overwrite%.%#', '%m', '%f') .
+      \ s:color_efm('', '%m', '   %f') .
       \ s:color_efm('', '%m', '%f') .
       \ '%-G%.%#'
 
