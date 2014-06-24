@@ -1826,17 +1826,17 @@ function! s:app_generator_command(bang,...) dict
     let &l:makeprg = self.prepare_rails_command(cmd)
     let &l:errorformat = s:efm_generate
     call s:push_chdir(1)
-    if a:bang
-      make!
-    else
-      make
-    endif
+    noautocmd make!
   finally
     call s:pop_command()
     let &l:errorformat = old_errorformat
     let &l:makeprg = old_makeprg
   endtry
-  return ''
+  if a:bang || empty(getqflist())
+    return ''
+  else
+    return 'cfirst'
+  endif
 endfunction
 
 call s:add_methods('app', ['generators','script_command','output_command','server_command','generator_command'])
