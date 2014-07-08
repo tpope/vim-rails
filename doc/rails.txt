@@ -849,6 +849,9 @@ Ruby files.
 >
 	let g:rails_ctags_arguments = ['--languages=ruby']
 <
+This option is ignored if a ctags configuration file named .ctags is found in
+the root of the project.
+
 						*g:rails_projections*  >
 Defines the set of globally available projections.  See |rails-projections|.
 Where possible, it is generally advisable to use |g:rails_gem_projections| or
