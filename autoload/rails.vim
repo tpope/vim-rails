@@ -1099,7 +1099,7 @@ function! s:app_tags_command() dict abort
     else
       let args = s:split(get(g:, 'rails_ctags_arguments', '--languages=ruby'))
     endif
-    exe '!'.cmd.' -f '.s:escarg(self.path("tags")).' -R '.join(args,' ')
+    exe '!'.cmd.' -R '.join(args,' ')
   finally
     execute cd fnameescape(cwd)
   endtry
