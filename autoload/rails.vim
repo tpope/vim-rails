@@ -1329,9 +1329,12 @@ function! s:readable_default_rake_task(...) dict abort
   let placeholders = {}
   if lnum
     let placeholders.l = lnum
+    let placeholders.lnum = lnum
+    let placeholders.line = lnum
     let last = self.last_method(lnum)
     if !empty(last)
       let placeholders.d = last
+      let placeholders.define = last
     endif
   endif
   let tasks = self.projected('task', placeholders)
@@ -3092,8 +3095,11 @@ function! s:readable_open_command(cmd, argument, name, projections) dict abort
       if has_key(projection, 'template')
       let template = s:split(projection.template)
       let ph = {
-              \ 'S': rails#camelize(root),
-              \ 'h': toupper(root[0]) . tr(rails#underscore(root), '_', ' ')[1:-1]}
+            \ 'match': root,
+            \ 'file': file,
+            \ 'project': self.app().path(),
+            \ 'S': rails#camelize(root),
+            \ 'h': toupper(root[0]) . tr(rails#underscore(root), '_', ' ')[1:-1]}
         call map(template, 's:expand_placeholders(v:val, ph)')
       else
         let projected = self.app().file(relative).projected('template')
@@ -4403,30 +4409,88 @@ endfunction
 
 call s:add_methods('app', ['gems', 'has_gem', 'engines', 'projections'])
 
+let s:transformations = {}
+
+function! s:transformations.dot(input, o) abort
+  return substitute(a:input, '/', '.', 'g')
+endfunction
+
+function! s:transformations.underscore(input, o) abort
+  return substitute(a:input, '/', '_', 'g')
+endfunction
+
+function! s:transformations.colons(input, o) abort
+  return substitute(a:input, '/', '::', 'g')
+endfunction
+
+function! s:transformations.hyphenate(input, o) abort
+  return tr(a:input, '_', '-')
+endfunction
+
+function! s:transformations.blank(input, o) abort
+  return tr(a:input, '_-', '  ')
+endfunction
+
+function! s:transformations.uppercase(input, o) abort
+  return toupper(a:input)
+endfunction
+
+function! s:transformations.camelcase(input, o) abort
+  return substitute(a:input, '[_-]\(.\)', '\u\1', 'g')
+endfunction
+
+function! s:transformations.capitalize(input, o) abort
+  return substitute(a:input, '\%(^\|/\)\zs\(.\)', '\u\1', 'g')
+endfunction
+
+function! s:transformations.dirname(input, o) abort
+  return substitute(a:input, '.[^\/]*$', '', '')
+endfunction
+
+function! s:transformations.basename(input, o) abort
+  return substitute(a:input, '.*[\/]', '', '')
+endfunction
+
+function! s:transformations.plural(input, o) abort
+  return rails#pluralize(a:input)
+endfunction
+
+function! s:transformations.singular(input, o) abort
+  return rails#singularize(a:input)
+endfunction
+
+function! s:transformations.open(input, o) abort
+  return '{'
+endfunction
+
+function! s:transformations.close(input, o) abort
+  return '}'
+endfunction
+
+function! s:expand_placeholder(placeholder, expansions) abort
+  let transforms = split(a:placeholder[1:-2], '|')
+  if has_key(a:expansions, get(transforms, 0, '}'))
+    let value = a:expansions[remove(transforms, 0)]
+  elseif has_key(a:expansions, 'match')
+    let value = a:expansions.match
+  else
+    return "\001"
+  endif
+  for transform in transforms
+    if !has_key(s:transformations, transform)
+      return "\001"
+    endif
+    let value = s:transformations[transform](value, a:expansions)
+  endfor
+  return value
+endfunction
+
 function! s:expand_placeholders(string, placeholders)
   if type(a:string) !=# type('')
     return a:string
   endif
   let ph = extend({'%': '%'}, a:placeholders)
-  let transitional = {
-        \ '{}': '%s',
-        \ '{capitalize|camelcase|colons}': '%S',
-        \ '{capitalize|camelcase|dot}': '%S',
-        \ '{camelcase|capitalize|colons}': '%S',
-        \ '{camelcase|capitalize|dot}': '%S',
-        \ '{plural}': '%p',
-        \ '{pluralize}': '%p',
-        \ '{singular}': '%i',
-        \ '{singularize}': '%i',
-        \ '{capitalize|blank}': '%h',
-        \ '{underscore|capitalize|blank}': '%h',
-        \ '{line}': '%l',
-        \ '{lnum}': '%l',
-        \ '{define}': '%d',
-        \ '{file}': '%%',
-        \ '{open}': '{',
-        \ '{close}': '}'}
-  let value = substitute(a:string, '{[^{}]*}', '\=get(transitional, submatch(0), submatch(0))', 'g')
+  let value = substitute(a:string, '{[^{}]*}', '\=s:expand_placeholder(submatch(0), ph)', 'g')
   let value = substitute(value, '%\([^: ]\)', '\=get(ph, submatch(1), "\001")', 'g')
   return value =~# "\001" ? '' : value
 endfunction
@@ -4443,6 +4507,9 @@ function! s:readable_projected(key, ...) dict abort
     if s:startswith(f, prefix) && s:endswith(f, suffix)
       let root = f[strlen(prefix) : -strlen(suffix)-1]
       let ph = extend({
+            \ 'match': root,
+            \ 'file': self.path(),
+            \ 'project': self.app().path(),
             \ 's': root,
             \ 'S': rails#camelize(root),
             \ 'h': toupper(root[0]) . tr(rails#underscore(root), '_', ' ')[1:-1],
