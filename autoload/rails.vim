@@ -1365,10 +1365,8 @@ function! s:readable_default_rake_task(...) dict abort
         return "db:migrate:down VERSION=".ver
       elseif method == "up" || lnum == line('$')
         return "db:migrate:up VERSION=".ver
-      elseif lnum > 0
-        return "db:migrate:down db:migrate:up VERSION=".ver
       else
-        return "db:migrate VERSION=".ver
+        return "db:migrate:down db:migrate:up VERSION=".ver
       endif
     else
       return 'db:migrate'
