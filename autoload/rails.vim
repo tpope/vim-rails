@@ -3064,7 +3064,7 @@ function! s:readable_open_command(cmd, argument, name, projections) dict abort
       let file = ''
     endif
     if !empty(file) && self.app().has_path(file)
-      let file = self.app().path(file)
+      let file = fnamemodify(self.app().path(file), ':.')
       return cmd . ' ' . s:fnameescape(file) . '|exe ' . s:sid . 'djump('.string(djump) . ')'
     endif
   endfor
@@ -3104,7 +3104,8 @@ function! s:readable_open_command(cmd, argument, name, projections) dict abort
         let template = s:split(get(projected, 0, ''))
       endif
       call map(template, 's:gsub(v:val, "\t", "  ")')
-      return cmd . ' ' . s:fnameescape(simplify(file)) . '|call setline(1, '.string(template).')' . '|set nomod'
+      let file = fnamemodify(simplify(file), ':.')
+      return cmd . ' ' . s:fnameescape(file) . '|call setline(1, '.string(template).')' . '|set nomod'
     endif
   endfor
   return 'echoerr '.string("Couldn't find destination directory for ".a:name.' '.a:argument)
