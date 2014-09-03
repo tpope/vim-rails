@@ -1048,7 +1048,7 @@ function! rails#new_app_command(bang,...) abort
   let temp = tempname()
   try
     if &shellpipe =~# '%s'
-      let pipe = s:sub(&shellpipe, '%s', temp, 'g')
+      let pipe = s:sub(&shellpipe, '\%s', temp)
     else
       let pipe = &shellpipe . ' ' . temp
     endif
