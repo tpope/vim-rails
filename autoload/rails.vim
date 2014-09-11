@@ -1608,7 +1608,7 @@ endfunction
 " Script Wrappers {{{1
 
 function! s:BufScriptWrappers()
-  command! -buffer -bang -bar -nargs=* -complete=customlist,s:Complete_script   Rscript       :execute empty(<q-args>) ? rails#app().script_command(<bang>0, 'console') ? rails#app().script_command(<bang>0,<f-args>)
+  command! -buffer -bang -bar -nargs=* -complete=customlist,s:Complete_script   Rscript       :execute empty(<q-args>) ? rails#app().script_command(<bang>0, 'console') : rails#app().script_command(<bang>0,<f-args>)
   command! -buffer -bang -bar -nargs=* -complete=customlist,s:Complete_environments Console   :Rails<bang> console <args>
   command! -buffer -bang -bar -nargs=* -complete=customlist,s:Complete_script   Rails         :execute rails#app().script_command(<bang>0,<f-args>)
   command! -buffer -bang -bar -nargs=* -complete=customlist,s:Complete_generate Rgenerate     :execute rails#app().generator_command(<bang>0,'generate',<f-args>)
