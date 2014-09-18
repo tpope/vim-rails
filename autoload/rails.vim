@@ -2817,9 +2817,14 @@ function! s:readable_resolve_view(name, ...) dict abort
   let pre = 'app/views/'
   if name !~# '/'
     let controller = self.controller_name(1)
+    let found = ''
     if controller != ''
-      let name = controller.'/'.name
+      let found = call(self.resolve_view, [controller.'/'.name] + a:000, self)
     endif
+    if empty(found)
+      let found = call(self.resolve_view, ['application/'.name] + a:000, self)
+    endif
+    return found
   endif
   if name =~# '/' && !self.app().has_path(fnamemodify('app/views/'.name, ':h'))
     return ''
@@ -4555,7 +4560,7 @@ function! s:SetBasePath() abort
 
   let path += ['app/*', 'app/views']
   if self.controller_name() != ''
-    let path += ['app/views/'.self.controller_name(), 'public']
+    let path += ['app/views/'.self.controller_name(), 'app/views/application', 'public']
   endif
   if self.app().has('test')
     let path += ['test', 'test/unit', 'test/functional', 'test/integration', 'test/controllers', 'test/helpers', 'test/mailers', 'test/models']
