@@ -1016,15 +1016,15 @@ function! s:BufCommands()
 endfunction
 
 function! s:Log(bang,arg)
-  let lf = 'log/' . (empty(a:arg) ? s:environment() : a:arg) . '.log'
+  let lf = rails#app().path('log/' . (empty(a:arg) ? s:environment() : a:arg) . '.log')
   if a:bang
-    exe "cgetfile ".lf
+    exe 'cgetfile' s:fnameescape(lf)
     clast
   else
     if exists(":Tail") == 2
-      Tail  `=rails#app().path(lf)`
+      exe 'Tail'  lf
     else
-      pedit `=rails#app().path(lf)`
+      exe 'pedit' lf
     endif
   endif
 endfunction
