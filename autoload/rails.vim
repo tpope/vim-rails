@@ -1022,9 +1022,9 @@ function! s:Log(bang,arg)
     clast
   else
     if exists(":Tail") == 2
-      exe 'Tail'  lf
+      exe 'Tail'  s:fnameescape(lf)
     else
-      exe 'pedit' lf
+      exe 'pedit' s:fnameescape(lf)
     endif
   endif
 endfunction
