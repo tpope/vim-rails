@@ -2400,6 +2400,9 @@ function! s:app_commands() dict abort
   let commands.mailer = [
         \ {'pattern': 'app/mailers/*.rb', 'template': "class %S < ActionMailer::Base\nend", 'affinity': 'controller'},
         \ {'pattern': 'app/models/*.rb', 'template': "class %S < ActionMailer::Base\nend", 'affinity': 'controller', 'complete': 0}]
+  let commands.job = [{
+        \ 'pattern': 'app/jobs/*_job.rb',
+        \ 'template': "class %SJob < ActiveJob::Base\nend"}]
   let commands.model = [{
         \ 'pattern': 'app/models/*.rb',
         \ 'template': "class %S\nend",
