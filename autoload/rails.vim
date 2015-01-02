@@ -948,17 +948,6 @@ function! s:app_execute_rails_command(cmd) dict abort
   return ''
 endfunction
 
-function! s:app_lightweight_ruby_eval(ruby,...) dict abort
-  let def = a:0 ? a:1 : ""
-  if !executable("ruby")
-    return def
-  endif
-  let args = '-e '.s:rquote(a:ruby)
-  let cmd = self.ruby_command(args)
-  silent! let results = system(cmd)
-  return v:shell_error == 0 ? results : def
-endfunction
-
 function! s:app_eval(ruby,...) dict abort
   let def = a:0 ? a:1 : ""
   if !executable("ruby")
@@ -975,7 +964,7 @@ function! s:app_eval(ruby,...) dict abort
   return v:shell_error == 0 ? results : def
 endfunction
 
-call s:add_methods('app', ['ruby_command','ruby_script_command','prepare_rails_command','execute_rails_command','start_rails_command','lightweight_ruby_eval','eval'])
+call s:add_methods('app', ['ruby_command','ruby_script_command','prepare_rails_command','execute_rails_command','start_rails_command','eval'])
 
 " }}}1
 " Commands {{{1
@@ -4011,59 +4000,81 @@ endfunction
 " }}}1
 " Database {{{1
 
-function! s:extractdbvar(str,arg)
-  return matchstr("\n".a:str."\n",'\n'.a:arg.'=\zs.\{-\}\ze\n')
+function! s:extractdbvar(config, arg) abort
+  return get(a:config, a:arg, '')
 endfunction
 
-function! s:app_dbext_settings(environment) dict
-  if self.cache.needs('dbext_settings')
-    call self.cache.set('dbext_settings',{})
+function! rails#yaml_parse_file(file) abort
+  let json = system('ruby -e '.s:rquote('require %{yaml}; require %{json}; File.open(%q{'.a:file.'}) {|f| puts JSON.generate(YAML::load(f))}'))
+  if !v:shell_error && json =~# '^[[{]'
+    return rails#json_parse(json)
   endif
-  let cache = self.cache.get('dbext_settings')
-  if !has_key(cache,a:environment)
+  throw 'invalid YAML file: '.a:file
+endfunction
+
+function! s:app_db_config(environment) dict
+  let all = {}
+  if self.cache.has('db_config')
+    let all = self.cache.get('db_config')
+  elseif self.has_path('config/database.yml')
+    try
+      let all = rails#yaml_parse_file(self.path('config/database.yml'))
+      call self.cache.set('db_config', all)
+    catch /^invalid/
+    endtry
+  endif
+  return get(all, a:environment, {})
+endfunction
+
+function! s:app_dbext_settings(environment) dict abort
+  let config = self.db_config(a:environment)
+  if has_key(config, 'adapter')
     let dict = {}
-    if self.has_path("config/database.yml")
-      let cmdb = 'require %{yaml}; File.open(%q{'.self.path().'/config/database.yml}) {|f| y = YAML::load(f); e = y[%{'
-      let cmde = '}]; i=0; e=y[e] while e.respond_to?(:to_str) && (i+=1)<16; e.each{|k,v|puts k.to_s+%{=}+v.to_s}}'
-      let out = self.lightweight_ruby_eval(cmdb.a:environment.cmde)
-      let adapter = s:extractdbvar(out,'adapter')
-      let adapter = get({'mysql2': 'mysql', 'postgresql': 'pgsql', 'sqlite3': 'sqlite', 'sqlserver': 'sqlsrv', 'sybase': 'asa', 'oracle': 'ora', 'oracle_enhanced': 'ora'},adapter,adapter)
-      let dict['type'] = toupper(adapter)
-      let dict['user'] = s:extractdbvar(out,'username')
-      let dict['passwd'] = s:extractdbvar(out,'password')
-      if dict['passwd'] == '' && adapter == 'mysql'
+    let adapter = config.adapter
+    let adapter = get({
+          \ 'mysql2': 'mysql',
+          \ 'postgresql': 'pgsql',
+          \ 'sqlite3': 'sqlite',
+          \ 'sqlserver': 'sqlsrv',
+          \ 'sybase': 'asa',
+          \ 'oracle': 'ora',
+          \ 'oracle_enhanced': 'ora'},
+          \ adapter, adapter)
+    let dict.type = toupper(adapter)
+    let dict.user = get(config, 'username', '')
+    let dict.passwd = get(config, 'password', '')
+    if adapter == 'mysql'
+      if empty(dict.user)
+        let dict.user = 'root'
+      endif
+      if dict.passwd == ''
         " Hack to override password from .my.cnf
-        let dict['extra'] = ' --password='
-      else
-        let dict['extra'] = ''
+        let dict.extra = ' --password='
       endif
-      let dict['dbname'] = s:extractdbvar(out,'database')
-      if dict['dbname'] == ''
-        let dict['dbname'] = s:extractdbvar(out,'dbfile')
-      endif
-      if dict['dbname'] != '' && dict['dbname'] !~ '^:' && adapter =~? '^sqlite'
-        let dict['dbname'] = self.path(dict['dbname'])
-      endif
-      let dict['profile'] = ''
-      if adapter == 'ora'
-        let dict['srvname'] = s:extractdbvar(out,'database')
-      else
-        let dict['srvname'] = s:extractdbvar(out,'host')
-      endif
-      let dict['host'] = s:extractdbvar(out,'host')
-      let dict['port'] = s:extractdbvar(out,'port')
-      let dict['dsnname'] = s:extractdbvar(out,'dsn')
-      if dict['host'] =~? '^\cDBI:'
-        if dict['host'] =~? '\c\<Trusted[_ ]Connection\s*=\s*yes\>'
-          let dict['integratedlogin'] = 1
-        endif
-        let dict['host'] = matchstr(dict['host'],'\c\<\%(Server\|Data Source\)\s*=\s*\zs[^;]*')
-      endif
-      call filter(dict,'v:val != ""')
     endif
-    let cache[a:environment] = dict
+    let dict.dbname = get(config, 'database', get(config, 'dbfile', ''))
+    if len(dict.dbname) && dict.dbname !~ '^:' && adapter =~? '^sqlite'
+      let dict.dbname = self.path(dict.dbname)
+    endif
+    let dict.profile = ''
+    if adapter == 'ora'
+      let dict.srvname = get(config, 'database', '')
+    else
+      let dict.srvname = get(config, 'host', '')
+    endif
+    let dict.host = get(config, 'host', '')
+    let dict.port = get(config, 'port', '')
+    let dict.dsnname = get(config, 'dsn', '')
+    if dict.host =~? '^\cDBI:'
+      if dict.host =~? '\c\<Trusted[_ ]Connection\s*=\s*yes\>'
+        let dict.integratedlogin = 1
+      endif
+      let dict.host = matchstr(dict.host,'\c\<\%(Server\|Data Source\)\s*=\s*\zs[^;]*')
+    endif
+    call filter(dict,'len(v:val)')
+    return dict
   endif
-  return cache[a:environment]
+  return {}
 endfunction
 
 function! s:BufDatabase(level, ...)
@@ -4072,7 +4083,7 @@ function! s:BufDatabase(level, ...)
   endif
   let self = rails#app()
   if a:level > 1
-    call self.cache.clear('dbext_settings')
+    call self.cache.clear('db_config')
   elseif exists('g:rails_no_dbext')
     return
   endif
@@ -4081,7 +4092,7 @@ function! s:BufDatabase(level, ...)
   else
     let env = s:environment()
   endif
-  if (!self.cache.has('dbext_settings') || !has_key(self.cache.get('dbext_settings'),env)) && a:level <= 0
+  if (!self.cache.has('db_config') || !has_key(self.cache.get('db_config'),env)) && a:level <= 0
     return
   endif
   let dict = self.dbext_settings(env)
@@ -4099,7 +4110,7 @@ function! s:BufDatabase(level, ...)
   endif
 endfunction
 
-call s:add_methods('app', ['dbext_settings'])
+call s:add_methods('app', ['db_config', 'dbext_settings'])
 
 " }}}1
 " Abbreviations {{{1
@@ -4682,7 +4693,7 @@ augroup railsPluginAuto
   autocmd User BufEnterRails call s:resetomnicomplete()
   autocmd User BufEnterRails call s:BufDatabase(-1)
   autocmd User dbextPreConnection call s:BufDatabase(1)
-  autocmd BufWritePost */config/database.yml      call rails#cache_clear("dbext_settings")
+  autocmd BufWritePost */config/database.yml      call rails#cache_clear("db_config")
   autocmd BufWritePost */config/projections.json  call rails#cache_clear("projections")
   autocmd BufWritePost */test/test_helper.rb      call rails#cache_clear("user_assertions")
   autocmd BufWritePost */config/routes.rb         call rails#cache_clear("named_routes")
