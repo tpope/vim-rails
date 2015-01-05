@@ -4000,10 +4000,6 @@ endfunction
 " }}}1
 " Database {{{1
 
-function! s:extractdbvar(config, arg) abort
-  return get(a:config, a:arg, '')
-endfunction
-
 function! rails#yaml_parse_file(file) abort
   let json = system('ruby -e '.s:rquote('require %{yaml}; require %{json}; File.open(%q{'.a:file.'}) {|f| puts JSON.generate(YAML::load(f))}'))
   if !v:shell_error && json =~# '^[[{]'
@@ -4023,7 +4019,20 @@ function! s:app_db_config(environment) dict
     catch /^invalid/
     endtry
   endif
-  return get(all, a:environment, {})
+  if has_key(all, a:environment)
+    return all[a:environment]
+  elseif self.has_gem('rails-default-database')
+    let db = s:gsub(fnamemodify(self.path(), ':t'), '[^[:alnum:]]+', '_') .
+          \ '_' . a:environment
+    if self.has_gem('pg')
+      return {'adapter': 'postgresql', 'database': db}
+    elseif self.has_gem('mysql') || self.has_gem('mysql2')
+      return {'adapter': 'mysql', 'database': db}
+    elseif self.has_gem('sqlite3')
+      return {'adapter': 'sqlite3', 'database': 'db/'.a:environment.'.sqlite3'}
+    endif
+  endif
+  return {}
 endfunction
 
 function! s:app_dbext_settings(environment) dict abort
@@ -4092,10 +4101,13 @@ function! s:BufDatabase(level, ...)
   else
     let env = s:environment()
   endif
-  if (!self.cache.has('db_config') || !has_key(self.cache.get('db_config'),env)) && a:level <= 0
+  if !self.cache.has('db_config') && a:level <= 0
     return
   endif
   let dict = self.dbext_settings(env)
+  if empty(dict)
+    return
+  endif
   for key in ['type', 'profile', 'bin', 'user', 'passwd', 'dbname', 'srvname', 'host', 'port', 'dsnname', 'extra', 'integratedlogin']
     let b:dbext_{key} = get(dict,key,'')
   endfor
