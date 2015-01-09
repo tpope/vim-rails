@@ -571,15 +571,15 @@ function! rails#pluralize(word)
   return word
 endfunction
 
-function! rails#app(...)
+function! rails#app(...) abort
   let root = a:0 ? a:1 : get(b:, 'rails_root', '')
   if !empty(root)
-    if !has_key(s:apps, root)
+    if !has_key(s:apps, root) && filereadable(root . '/config/environment.rb')
       let s:apps[root] = deepcopy(s:app_prototype)
       let s:apps[root].root = root
       let s:apps[root]._root = root
     endif
-    return s:apps[root]
+    return get(s:apps, root, {})
   endif
   return {}
 endfunction
