@@ -2978,6 +2978,7 @@ function! s:specEdit(cmd,...) abort
   let describe = s:sub(s:sub(rails#camelize(a:0 ? a:1 : ''), '^[^:]*::', ''), '!.*', '')
   return rails#buffer().open_command(a:cmd, a:0 ? a:1 : '', 'spec', [
         \ {'pattern': 'spec/*_spec.rb', 'template': "require 'spec_helper'\n\ndescribe ".describe." do\nend"},
+        \ {'pattern': 'spec/rails_helper.rb'},
         \ {'pattern': 'spec/spec_helper.rb'}])
 endfunction
 
