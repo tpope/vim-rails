@@ -2208,17 +2208,17 @@ function! s:RailsFind()
   let res = s:findamethod('redirect_to\s*(\=\s*\%\(:action\s\+=>\|\<action:\)\s*','\1')
   if res != ""|return res|endif
 
-  let res = s:findfromview('stylesheet_link_tag','public/stylesheets/\1')
+  let res = s:findfromview('stylesheet_link_tag','\1')
   if res != '' && fnamemodify(res, ':e') == '' " Append the default extension iff the filename doesn't already contains an extension
     let res .= '.css'
   endif
-  if res != ""|return res|endif
+  if res != ""|return "app/assets/stylesheets/".res."\npublic/stylesheets/".res|endif
 
-  let res = s:sub(s:findfromview('javascript_include_tag','public/javascripts/\1'),'/defaults>','/application')
+  let res = s:sub(s:findfromview('javascript_include_tag','\1'),'/defaults>','/application')
   if res != '' && fnamemodify(res, ':e') == '' " Append the default extension iff the filename doesn't already contains an extension
     let res .= '.js'
   endif
-  if res != ""|return res|endif
+  if res != ""|return "app/assets/javascripts/".res."\npublic/javascripts/".res|endif
 
   if buffer.type_name('controller', 'mailer')
     let contr = s:controller()
