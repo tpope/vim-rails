@@ -2430,7 +2430,7 @@ function! s:app_commands() dict abort
         \ ['turnip', 'spec/acceptance/*.feature', "Feature: %h"],
         \ ['test', 'test/test_helper.rb', ""],
         \ ['cucumber', 'features/support/env.rb', ""],
-        \ ['spec', 'spec/rails_helper.rb', ""]],
+        \ ['spec', 'spec/rails_helper.rb', ""],
         \ ['spec', 'spec/spec_helper.rb', ""]],
         \ 'rails#app().has(v:val[0])'),
         \ '{"pattern": v:val[1], "template": v:val[2]}')
