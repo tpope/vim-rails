@@ -2228,7 +2228,7 @@ function! s:RailsFind()
       for ext in ['css', 'css.scss', 'css.sass', 'scss', 'sass']
         for name in [res.'.'.ext, res.'.'.ext.'.erb', rel.'.'.ext, rel.'.'.ext.'.erb']
           if filereadable(base.'/'.name)
-            return base.name
+            return base.'/'.name
           endif
         endfor
       endfor
