@@ -4089,6 +4089,71 @@ function! s:app_db_config(environment) dict
   return {}
 endfunction
 
+function! s:url_encode(str, ...) abort
+  return substitute(a:str, '[?@=&<>%#[:space:]' . (a:0 && a:1 == 'path' ? '' : ':/').']', '\=printf("%%%02X", char2nr(submatch(0)))', 'g')
+endfunction
+
+function! s:app_db_url(...) dict abort
+  let env = a:0 ? a:1 : s:environment()
+  if self.has_gem('dotenv') && filereadable(self.path('.env'))
+    for line in readfile(self.path('.env'))
+      let match = matchstr(line, '^\s*DATABASE_URL=[''"]\=\zs[^''" ]*')
+      if !empty(match)
+        return match
+      endif
+    endfor
+  endif
+  let config = copy(self.db_config(env))
+  if has_key(config, 'url')
+    return config.url
+  endif
+  if !has_key(config, 'adapter')
+    return ''
+  endif
+  let url = ''
+  let adapter = tr(remove(config, 'adapter'), '_', '-')
+  let url = adapter . ':'
+  if adapter =~# '^sqlite'
+    if has_key(config, 'database')
+      let path = remove(config, 'database')
+    endif
+    if !exists('path') || path ==# ':memory:'
+      let path = ''
+    elseif path !~# '^/\|^\w:[\/]\|^$'
+      let path = self.path(path)
+    endif
+    let url .= s:url_encode(tr(path, '\', '/'), 'path')
+  else
+    let url .= '//'
+    if has_key(config, 'username')
+      let url .= s:url_encode(remove(config, 'username'))
+    endif
+    if has_key(config, 'password')
+      let url .= ':' . s:url_encode(remove(config, 'password'))
+    endif
+    if url !~# '://$'
+      let url .= '@'
+    endif
+    if get(config, 'host') =~# '^[[:xdigit:]:]*:[[:xdigit:]]*$'
+      let url .= '[' . remove(config, 'host') . ']'
+    elseif has_key(config, 'host')
+      let url .= s:url_encode(remove(config, 'host'))
+    elseif url =~# '@$'
+      let url .= 'localhost'
+    endif
+    if has_key(config, 'port')
+      let url .= ':'.remove(config, 'port')
+    endif
+    if has_key(config, 'database')
+      let url .= '/' . s:url_encode(remove(config, 'database'))
+    endif
+  endif
+  if !empty(config)
+    let url .= '?' . join(map(items(config), 'v:val[0]."=".s:url_encode(v:val[1])'), '&')
+  endif
+  return url
+endfunction
+
 function! s:app_dbext_settings(environment) dict abort
   let config = self.db_config(a:environment)
   if has_key(config, 'adapter')
@@ -4176,7 +4241,7 @@ function! s:BufDatabase(level, ...)
   endif
 endfunction
 
-call s:add_methods('app', ['db_config', 'dbext_settings'])
+call s:add_methods('app', ['db_config', 'db_url', 'dbext_settings'])
 
 " }}}1
 " Abbreviations {{{1
