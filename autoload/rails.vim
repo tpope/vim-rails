@@ -4110,7 +4110,6 @@ function! s:app_db_url(...) dict abort
   if !has_key(config, 'adapter')
     return ''
   endif
-  let url = ''
   let adapter = tr(remove(config, 'adapter'), '_', '-')
   let url = adapter . ':'
   if adapter =~# '^sqlite'
@@ -4138,7 +4137,7 @@ function! s:app_db_url(...) dict abort
       let url .= '[' . remove(config, 'host') . ']'
     elseif has_key(config, 'host')
       let url .= s:url_encode(remove(config, 'host'))
-    elseif url =~# '@$'
+    elseif url =~# '@$' || has_key(config, 'port')
       let url .= 'localhost'
     endif
     if has_key(config, 'port')
