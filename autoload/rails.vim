@@ -2208,17 +2208,47 @@ function! s:RailsFind()
   let res = s:findamethod('redirect_to\s*(\=\s*\%\(:action\s\+=>\|\<action:\)\s*','\1')
   if res != ""|return res|endif
 
-  let res = s:findfromview('stylesheet_link_tag','\1')
-  if res != '' && fnamemodify(res, ':e') == '' " Append the default extension iff the filename doesn't already contains an extension
-    let res .= '.css'
+  let res = s:findfromview('image[_-]\%(\|path\|url\)\|\%(path\|url\)_to_image','\1')
+  if res != ""
+    return rails#app().resolve_asset(res)."\npublic/images/".res
   endif
-  if res != ""|return "app/assets/stylesheets/".res."\npublic/stylesheets/".res|endif
 
-  let res = s:sub(s:findfromview('javascript_include_tag','\1'),'/defaults>','/application')
-  if res != '' && fnamemodify(res, ':e') == '' " Append the default extension iff the filename doesn't already contains an extension
-    let res .= '.js'
+  let ssext = ['css', 'css.*', 'scss', 'sass']
+  let res = s:findfromview('stylesheet[_-]\%(link_tag\|path\|url\)\|\%(path\|url\)_to_stylesheet','\1')
+  if res != ""
+    return rails#app().resolve_asset(res, ssest)."\npublic/stylesheets/".res.".css"
   endif
-  if res != ""|return "app/assets/javascripts/".res."\npublic/javascripts/".res|endif
+  if buffer.type_name('stylesheet')
+    let res = s:findit('^\s*\*=\s*require\s*["'']\=\([^"'' ]*\)', '\1')
+    if res != ""|return rails#app().resolve_asset(res, ssext)."\napp/assets/stylesheets/".res.".css"|endif
+    let res = s:findit('^\s*@import\s*\%(url(\)\=["'']\=\([^"'' ]*\)', '\1')
+    if res != ""
+      let base = expand('%:h')
+      let rel = s:sub(res, '\ze[^/]*$', '_')
+      for ext in ['css', 'css.scss', 'css.sass', 'scss', 'sass']
+        for name in [res.'.'.ext, res.'.'.ext.'.erb', rel.'.'.ext, rel.'.'.ext.'.erb']
+          if filereadable(base.'/'.name)
+            return base.name
+          endif
+        endfor
+      endfor
+      let asset = rails#app().resolve_asset(res, ssext)
+      if empty(asset) && expand('%:e') =~# '^s[ac]ss$'
+        let asset = rails#app().resolve_asset(rel, ssext)
+      endif
+      return empty(asset) ? 'app/assets/stylesheets/'.res : asset
+    endif
+  endif
+
+  let jsext = ['js', 'js.*', 'jst', 'jst.*', 'coffee']
+  let res = s:sub(s:findfromview('javascript_\%(include_tag\|path\|url\)\|\%(path\|url\)_to_javascript','\1'),'/defaults>','/application')
+  if res != ""
+    return rails#app().resolve_asset(res, jsext)."\npublic/javascripts/".res.".js"
+  endif
+  if buffer.type_name('javascript')
+    let res = s:findit('^\s*//=\s*require\s*["'']\=\([^"'' ]*\)', '\1')
+    if res != ""|return rails#app().resolve_asset(res, jsext)."\napp/assets/javascripts/".res.".js"|endif
+  endif
 
   if buffer.type_name('controller', 'mailer')
     let contr = s:controller()
@@ -2855,7 +2885,30 @@ function! s:readable_resolve_layout(name, ...) dict abort
   return view
 endfunction
 
+function! s:app_resolve_asset(name, ...) dict abort
+  let paths = [self.path('app/assets/*'), self.path('lib/assets/*'), self.path('vendor/assets/*')]
+        \ + map(copy(self.engines()), 'v:val . "/app/assets/*"')
+        \ + map(values(self.gems()), 'v:val . "/vendor/assets/*"')
+  let path = join(map(paths, 'escape(v:val, " ,")'), ',')
+  let exact = findfile(a:name, path)
+  if !empty(exact)
+    return exact
+  endif
+  if a:0
+    for candidate in map(split(globpath(path, a:name . '.*'), "\n"), 'fnamemodify(v:val, ":p")')
+      for ext in a:1
+        let pat = '[\\/]'.s:gsub(s:gsub(a:name.'.'.ext, '\.', '\\.'), '\*', '.*') . '\%(\.erb\)\=$'
+        if candidate =~# pat
+          return candidate
+        endif
+      endfor
+    endfor
+  endif
+  return ''
+endfunction
+
 call s:add_methods('readable', ['resolve_view', 'resolve_layout'])
+call s:add_methods('app', ['resolve_asset'])
 
 function! s:findview(name)
   return rails#buffer().resolve_view(a:name, line('.'))
