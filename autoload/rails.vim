@@ -4365,7 +4365,6 @@ function! s:app_has_gem(gem) dict abort
 endfunction
 
 function! s:app_engines() dict abort
-  return []
   if self.cache.needs('engines') || self.cache.get('engines')[1] isnot# self.gems()
     let gems = self.gems()
     let gempath = escape(join(values(gems),','), ' ')
