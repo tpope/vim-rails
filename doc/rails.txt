@@ -720,10 +720,11 @@ Vim syntax looks a lot like JSON, but with funky |line-continuation|:
 	      \ "app/uploaders/*_uploader.rb": {
 	      \   "command": "uploader",
 	      \   "template":
-	      \     ["class %SUploader < CarrierWave::Uploader::Base", "end"],
+	      \     ["class {camelcase|capitalize|colons}Uploader < "
+	      \      . "CarrierWave::Uploader::Base", "end"],
 	      \   "test": [
-	      \     "test/unit/%s_uploader_test.rb",
-	      \     "spec/models/%s_uploader_spec.rb"
+	      \     "test/unit/{}_uploader_test.rb",
+	      \     "spec/models/{}_uploader_spec.rb"
 	      \   ],
 	      \   "keywords": "process version"
 	      \ },
@@ -731,14 +732,20 @@ Vim syntax looks a lot like JSON, but with funky |line-continuation|:
 	      \ "features/support/env.rb": {"command": "support"}}
 
 Keys can be either literal file names or globs containing a single asterisk.
-In the latter case, you can use placeholders in the values to plug in some
-variant of the variable portion:
+In the latter case, you can use {} placeholders in the values to plug in some
+transformation of the variable portion, based on those available in
+projectionist.vim.  See projectionist.vim's documentation for a comprehensive
+explanation, but you can probably get the gist from the list below.
 
-%s: original
-%p: pluralized
-%i: singularized
-%S: camelized
-%h: humanized
+Older versions of rails.vim used the following deprecated % expansions, shown
+here with their {} equivalents:
+
+`%s`: `{}` (Original)
+`%S`: `{camelcase|capitalize|colons}` (Ruby class name)
+`%S`: `{camelcase|capitalize|dot}` (JavaScript class name)
+`%p`: `{plural}`
+`%i`: `{singular}`
+`%h`: `{underscore|capitalize|blank}`
 
 The full list of available options is as follows:
 
