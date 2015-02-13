@@ -2324,7 +2324,7 @@ function! s:RailsIncludefind(str,...)
   endif
   let str = rails#underscore(str)
   let fpat = '\(\s*\%("\f*"\|:\f*\|'."'\\f*'".'\)\s*,\s*\)*'
-  if a:str =~# '\u'
+  if a:str =~# '\u' && &filetype !~# 'javascript\|coffee'
     " Classes should always be in .rb files
     let str .= '.rb'
   elseif line =~# ':partial\s*=>\s*' || (line =~# ':layout\s*=>\s*' && !rails#buffer().type_name('controller', 'mailer'))
