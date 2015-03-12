@@ -4386,6 +4386,7 @@ function! s:BufAbbreviations()
     Rabbrev AS::  ActiveSupport
     Rabbrev AM::  ActionMailer
     Rabbrev AO::  ActiveModel
+    Rabbrev AJ::  ActiveJob
     " )))))
     for pairs in
           \ items(type(get(g:, 'rails_abbreviations', 0)) == type({}) ? g:rails_abbreviations : {})
