@@ -843,7 +843,7 @@ function! s:app_stylesheet_suffix() dict abort
     let candidates = map(filter(
           \ s:readfile(self.path('config/application.rb')),
           \ 'v:val =~ "^ *config.sass.preferred_syntax *= *:[A-Za-z-]\\+ *$"'
-          \ ), '".css.".matchstr(v:val,"[A-Za-z-]\\+\\ze *$")')
+          \ ), '".".matchstr(v:val,"[A-Za-z-]\\+\\ze *$")')
     call self.cache.set('stylesheet_suffix', get(candidates, 0, default))
   endif
   return self.cache.get('stylesheet_suffix')
@@ -3021,7 +3021,7 @@ function! s:javascriptEdit(cmd,...)
     elseif !isdirectory(rails#app().path('app/assets/javascripts'))
       return s:LegacyCommandEdit(a:cmd,name,'public/javascripts/','.js')
     elseif rails#app().has_gem('coffee-rails')
-      return s:LegacyCommandEdit(a:cmd,name,'app/assets/javascripts/','.js.coffee')
+      return s:LegacyCommandEdit(a:cmd,name,'app/assets/javascripts/','.coffee')
     else
       return s:LegacyCommandEdit(a:cmd,name,'app/assets/javascripts/','.js')
     endif
