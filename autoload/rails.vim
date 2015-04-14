@@ -1259,7 +1259,7 @@ function! s:readable_test_file_candidates() dict abort
     let tests = [
           \ s:sub(f,'<lib/(.*)\.rb$','test/lib/\1_test.rb'),
           \ s:sub(f,'<lib/(.*)\.rb$','test/unit/\1_test.rb'),
-          \ s:sub(f,'<lib/(.*)\.rb$','spec/lib/\1_spec.rb')]
+          \ s:sub(f,'<(app/)?lib/(.*)\.rb$','spec/lib/\2_spec.rb')]
   elseif self.type_name('fixtures') && f =~# '\<spec/'
     let tests = [
           \ 'spec/models/' . self.model_name() . '_spec.rb']
@@ -3397,7 +3397,8 @@ function! s:readable_alternate_candidates(...) dict abort
   elseif self.type_name('spec-view')
     return [s:sub(s:sub(f,'<spec/','app/'),'_spec\.rb$','')]
   elseif self.type_name('spec-lib')
-    return [s:sub(s:sub(f,'<spec/',''),'_spec\.rb$','.rb')]
+    return [s:sub(s:sub(f,'<spec/','app/'),'_spec\.rb$','.rb'),
+          \ s:sub(s:sub(f,'<spec/',''),'_spec\.rb$','.rb')]
   elseif self.type_name('spec')
     return [s:sub(s:sub(f,'<spec/','app/'),'_spec\.rb$','.rb')]
   else
