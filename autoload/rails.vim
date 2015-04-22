@@ -1191,7 +1191,6 @@ function! s:Rake(bang,lnum,arg)
   let old_compiler = get(b:, 'current_compiler', '')
   try
     call s:push_chdir(1)
-    let b:current_compiler = 'rake'
     if !empty(findfile('compiler/rake.vim', escape(&rtp, ' ')))
       compiler rake
     else
@@ -1220,7 +1219,7 @@ function! s:Rake(bang,lnum,arg)
     let self.options['last_rake_task'] = arg
     let withrubyargs = '-r ./config/boot -r '.s:rquote(self.path('config/environment')).' -e "puts \%((in \#{Dir.getwd}))" '
     if arg =~# '^notes\>'
-      let &l:errorformat = '%-P%f:,\ \ *\ [%*[\ ]%l]\ [%t%*[^]]] %m,\ \ *\ [%*[\ ]%l] %m,%-Q'
+      let &l:errorformat = '%-P%f:,\ \ *\ [%\ %#%l]\ [%t%*[^]]] %m,\ \ *\ [%[\ ]%#%l] %m,%-Q'
       call s:make(a:bang, arg)
     elseif arg =~# '^\%(stats\|routes\|secret\|time:zones\|db:\%(charset\|collation\|fixtures:identify\>.*\|migrate:status\|version\)\)\%([: ]\|$\)'
       let &l:errorformat = '%D(in\ %f),%+G%.%#'
@@ -1810,7 +1809,7 @@ function! s:app_server_command(bang,arg) dict
 endfunction
 
 function! s:color_efm(pre, before, after)
-   return a:pre . '%\S%\+  %#' . a:before . "\e[0m  %#" . a:after . ',' .
+   return a:pre . '%\e%\S%\+  %#' . a:before . '%\e[0m  %#' . a:after . ',' .
          \ a:pre . '%\s %#'.a:before.'  %#'.a:after . ','
 endfunction
 
@@ -1818,11 +1817,9 @@ let s:efm_generate =
       \ s:color_efm('%-G', 'invoke', '%f') .
       \ s:color_efm('%-G', 'conflict', '%f') .
       \ s:color_efm('%-G', 'run', '%f') .
-      \ s:color_efm('%-G', 'create', ' ') .
-      \ s:color_efm('%-G', 'exist', ' ') .
-      \ s:color_efm('Overwrite%.%#', '%m', '%f') .
-      \ s:color_efm('', '%m', ' %f') .
-      \ s:color_efm('', '%m', '%f') .
+      \ s:color_efm('%-G', '%\w%\+', ' ') .
+      \ 'Overwrite%.%#%\S%\+  %#%m%\e[0m  %#%f,' .
+      \ s:color_efm('', '%m%\>', '%f') .
       \ '%-G%.%#'
 
 function! s:app_generator_command(bang,...) dict
