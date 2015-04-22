@@ -1177,8 +1177,12 @@ function! s:make(bang, args, ...)
     exe 'Make'.(a:bang ? '! ' : ' ').a:args
   else
     exe 'make! '.a:args
+    let qf = &l:buftype ==# 'quickfix'
     if !a:bang
       exe (a:0 ? a:1 : 'cwindow')
+      if !qf && &l:buftype ==# 'quickfix'
+        wincmd p
+      endif
     endif
   endif
 endfunction
