@@ -4821,6 +4821,11 @@ function! rails#buffer_setup() abort
       endif
     endif
   endif
+
+  compiler rails
+  let &l:makeprg = self.app().rake_command('static')
+  let &l:errorformat .= ',chdir '.escape(self.app().path(), ',')
+
   if self.type_name('test', 'spec', 'cucumber')
     call self.setvar('dispatch', ':Runner')
   elseif self.name() ==# 'Rakefile'
