@@ -1137,6 +1137,23 @@ endfunction
 " }}}1
 " Rake {{{1
 
+function! s:qf_pre() abort
+  let dir = substitute(matchstr(','.&l:errorformat, ',chdir \zs\%(\\.\|[^,]\)*'), '\\,' ,',', 'g')
+  let cwd = getcwd()
+  if !empty(dir) && dir !=# cwd
+    let cd = exists('*haslocaldir') && haslocaldir() ? 'lcd' : 'cd'
+    execute 'lcd' fnameescape(dir)
+    let s:qf_post = cd . ' ' . fnameescape(cwd)
+  endif
+endfunction
+
+augroup railsPluginMake
+  autocmd!
+  autocmd QuickFixCmdPre  *make* call s:qf_pre()
+  autocmd QuickFixCmdPost *make*
+        \ if exists('s:qf_post') | execute remove(s:, 'qf_post') | endif
+augroup END
+
 function! s:app_rake_tasks() dict abort
   if self.cache.needs('rake_tasks')
     call s:push_chdir()
@@ -1194,7 +1211,6 @@ function! s:Rake(bang,lnum,arg)
   let old_errorformat = &l:errorformat
   let old_compiler = get(b:, 'current_compiler', '')
   try
-    call s:push_chdir(1)
     if !empty(findfile('compiler/rake.vim', escape(&rtp, ' ')))
       compiler rake
     else
@@ -1202,6 +1218,7 @@ function! s:Rake(bang,lnum,arg)
       let b:current_compiler = 'rake'
     endif
     let &l:makeprg = rails#app().rake_command()
+    let &l:errorformat .= ',chdir '.escape(self.path(), ',')
     let arg = a:arg
     if &filetype =~# '^ruby\>' && arg == ''
       let mnum = s:lastmethodline(lnum)
@@ -1238,7 +1255,6 @@ function! s:Rake(bang,lnum,arg)
     if empty(b:current_compiler)
       unlet b:current_compiler
     endif
-    call s:pop_command()
   endtry
 endfunction
 
@@ -1665,7 +1681,6 @@ function! s:readable_runner_command(bang, count, arg) dict abort
   let old_makeprg = &l:makeprg
   let old_errorformat = &l:errorformat
   let old_compiler = get(b:, 'current_compiler', '')
-  call s:push_chdir(1)
   try
     if !empty(a:arg)
       let arg = a:arg
@@ -1724,11 +1739,12 @@ function! s:readable_runner_command(bang, count, arg) dict abort
       let &l:makeprg = 'bundle exec ' . &l:makeprg
     endif
 
+    let &l:errorformat .= ',chdir '.escape(self.app().path(), ',')
+
     call s:make(a:bang, arg . extra)
     return ''
 
   finally
-    call s:pop_command()
     let &l:errorformat = old_errorformat
     let &l:makeprg = old_makeprg
     let b:current_compiler = old_compiler
@@ -1837,11 +1853,9 @@ function! s:app_generator_command(bang,...) dict
   let old_errorformat = &l:errorformat
   try
     let &l:makeprg = self.prepare_rails_command(cmd)
-    let &l:errorformat = s:efm_generate
-    call s:push_chdir(1)
+    let &l:errorformat = s:efm_generate . ',chdir '.escape(self.path(), ',')
     noautocmd make!
   finally
-    call s:pop_command()
     let &l:errorformat = old_errorformat
     let &l:makeprg = old_makeprg
   endtry
