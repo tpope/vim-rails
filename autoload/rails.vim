@@ -1889,6 +1889,8 @@ function! s:Complete_script(ArgLead, CmdLine, P) abort
     return s:completion_filter(app.environments())
   elseif cmd =~# '^\%(c\|console\)\s\+\(--\=\w\+\s\+\)\='.a:ArgLead."$"
     return s:completion_filter(app.environments()+["-s","--sandbox"],a:ArgLead)
+  elseif cmd =~# '^\%(db\|dbconsole\)\s\+\(--\=\w\+\s\+\)\='.a:ArgLead."$"
+    return s:completion_filter(app.environments()+["-p","--include-password"],a:ArgLead)
   elseif cmd =~# '^\%(s\|server\)\s\+.*-e\s\+'.a:ArgLead."$"
     return s:completion_filter(app.environments(),a:ArgLead)
   elseif cmd =~# '^\%(s\|server\)\s\+'
