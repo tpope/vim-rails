@@ -1851,48 +1851,49 @@ endfunction
 
 call s:add_methods('app', ['generators','script_command','output_command','server_command','generator_command'])
 
-function! s:Complete_script(ArgLead,CmdLine,P)
+function! s:Complete_script(ArgLead, CmdLine, P) abort
+  let app = rails#app()
   let cmd = s:sub(a:CmdLine,'^\u\w*\s+','')
   if cmd !~ '^[ A-Za-z0-9_=:-]*$'
     return []
   elseif cmd =~# '^\w*$'
     return s:completion_filter(['generate', 'console', 'server', 'dbconsole', 'application', 'destroy', 'plugin', 'runner'],a:ArgLead)
-  elseif cmd =~# '^\%(generate\|destroy\)\s\+'.a:ArgLead.'$'
-    return s:completion_filter(rails#app().generators(),a:ArgLead)
-  elseif cmd =~# '^\%(generate\|destroy\)\s\+\w\+\s\+'.a:ArgLead.'$'
+  elseif cmd =~# '^\%([gd]\|generate\|destroy\)\s\+'.a:ArgLead.'$'
+    return s:completion_filter(app.generators(),a:ArgLead)
+  elseif cmd =~# '^\%([gd]\|generate\|destroy\)\s\+\w\+\s\+'.a:ArgLead.'$'
     let target = matchstr(cmd,'^\w\+\s\+\%(\w\+:\)\=\zs\w\+\ze\s\+')
     if target =~# '^\w*controller$'
       return filter(s:controllerList(a:ArgLead,"",""),'v:val !=# "application"')
     elseif target ==# 'generator'
-      return s:completion_filter(map(rails#app().relglob('lib/generators/','*'),'s:sub(v:val,"/$","")'), a:ArgLead)
+      return s:completion_filter(map(app.relglob('lib/generators/','*'),'s:sub(v:val,"/$","")'), a:ArgLead)
     elseif target ==# 'helper'
-      return s:autocamelize(rails#app().relglob('app/helpers/','**/*','_helper.rb'),a:ArgLead)
+      return s:autocamelize(app.relglob('app/helpers/','**/*','_helper.rb'),a:ArgLead)
     elseif target ==# 'integration_test' || target ==# 'integration_spec' || target ==# 'feature'
       return s:autocamelize(
-            \ rails#app().relglob('test/integration/','**/*','_test.rb') +
-            \ rails#app().relglob('spec/features/', '**/*', '_spec.rb') +
-            \ rails#app().relglob('spec/requests/', '**/*', '_spec.rb') +
-            \ rails#app().relglob('features/', '**/*', '.feature'), a:ArgLead)
+            \ app.relglob('test/integration/','**/*','_test.rb') +
+            \ app.relglob('spec/features/', '**/*', '_spec.rb') +
+            \ app.relglob('spec/requests/', '**/*', '_spec.rb') +
+            \ app.relglob('features/', '**/*', '.feature'), a:ArgLead)
     elseif target ==# 'migration' || target ==# 'session_migration'
       return s:migrationList(a:ArgLead,"","")
     elseif target ==# 'mailer'
       return s:mailerList(a:ArgLead,"","")
-      return s:completion_filter(rails#app().relglob("app/mailers/","**/*",".rb"),a:ArgLead)
+      return s:completion_filter(app.relglob("app/mailers/","**/*",".rb"),a:ArgLead)
     elseif target =~# '^\w*\%(model\|resource\)$' || target =~# '\w*scaffold\%(_controller\)\=$'
-      return s:completion_filter(rails#app().relglob('app/models/','**/*','.rb'), a:ArgLead)
+      return s:completion_filter(app.relglob('app/models/','**/*','.rb'), a:ArgLead)
     else
       return []
     endif
-  elseif cmd =~# '^\%(generate\|destroy\)\s\+scaffold\s\+\w\+\s\+'.a:ArgLead.'$'
+  elseif cmd =~# '^\%([gd]\|generate\|destroy\)\s\+scaffold\s\+\w\+\s\+'.a:ArgLead.'$'
     return filter(s:controllerList(a:ArgLead,"",""),'v:val !=# "application"')
-    return s:completion_filter(rails#app().environments())
-  elseif cmd =~# '^\%(console\)\s\+\(--\=\w\+\s\+\)\='.a:ArgLead."$"
-    return s:completion_filter(rails#app().environments()+["-s","--sandbox"],a:ArgLead)
-  elseif cmd =~# '^\%(server\)\s\+.*-e\s\+'.a:ArgLead."$"
-    return s:completion_filter(rails#app().environments(),a:ArgLead)
-  elseif cmd =~# '^\%(server\)\s\+'
+    return s:completion_filter(app.environments())
+  elseif cmd =~# '^\%(c\|console\)\s\+\(--\=\w\+\s\+\)\='.a:ArgLead."$"
+    return s:completion_filter(app.environments()+["-s","--sandbox"],a:ArgLead)
+  elseif cmd =~# '^\%(s\|server\)\s\+.*-e\s\+'.a:ArgLead."$"
+    return s:completion_filter(app.environments(),a:ArgLead)
+  elseif cmd =~# '^\%(s\|server\)\s\+'
     if a:ArgLead =~# '^--environment='
-      return s:completion_filter(map(copy(rails#app().environments()),'"--environment=".v:val'),a:ArgLead)
+      return s:completion_filter(map(copy(app.environments()),'"--environment=".v:val'),a:ArgLead)
     else
       return filter(["-p","-b","-c","-d","-u","-e","-P","-h","--port=","--binding=","--config=","--daemon","--debugger","--environment=","--pid=","--help"],'s:startswith(v:val,a:ArgLead)')
     endif
