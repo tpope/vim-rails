@@ -1614,8 +1614,8 @@ function! s:BufScriptWrappers()
   command! -buffer -bang -bar -nargs=* -complete=customlist,s:Complete_generate Generate      :execute rails#app().generator_command(<bang>0,'generate',<f-args>)
   command! -buffer -bar -nargs=*       -complete=customlist,s:Complete_destroy  Rdestroy      :execute rails#app().generator_command(1,'destroy',<f-args>)
   command! -buffer -bar -nargs=*       -complete=customlist,s:Complete_destroy  Destroy       :execute rails#app().generator_command(1,'destroy',<f-args>)
-  command! -buffer -bar -nargs=? -bang -complete=customlist,s:Complete_server   Rserver       :execute rails#app().server_command(<bang>0,<q-args>)
-  command! -buffer -bar -nargs=? -bang -complete=customlist,s:Complete_server   Server        :execute rails#app().server_command(<bang>0,<q-args>)
+  command! -buffer -bar -nargs=? -bang -complete=customlist,s:Complete_server   Rserver       :execute rails#app().server_command(<bang>0, 1, <q-args>)
+  command! -buffer -bar -nargs=? -bang -complete=customlist,s:Complete_server   Server        :execute rails#app().server_command(0, <bang>0, <q-args>)
   command! -buffer -bang -nargs=? -range=0 -complete=customlist,s:Complete_edit Rrunner       :execute rails#buffer().runner_command(<bang>0, <count>?<line1>:0, <q-args>)
   command! -buffer -bang -nargs=? -range=0 -complete=customlist,s:Complete_edit Runner        :execute rails#buffer().runner_command(<bang>0, <count>?<line1>:0, <q-args>)
   command! -buffer       -nargs=1 -range=0 -complete=customlist,s:Complete_ruby Rp            :execute rails#app().output_command(<count>==<line2>?<count>:-1, 'p begin '.<q-args>.' end')
@@ -1757,7 +1757,7 @@ function! s:app_output_command(count, code) dict
   return ''
 endfunction
 
-function! rails#get_binding_for(pid)
+function! rails#get_binding_for(pid) abort
   if empty(a:pid)
     return ''
   endif
@@ -1783,13 +1783,11 @@ function! rails#get_binding_for(pid)
   return ''
 endfunction
 
-function! s:app_server_command(bang,arg) dict
-  if a:arg =~# '--help'
-    call self.execute_rails_command('server '.a:arg)
-    return ''
-  endif
-  let pidfile = self.path('tmp/pids/server.pid')
-  if a:bang && executable("ruby")
+function! s:app_server_command(kill, bg, arg) dict abort
+  let arg = empty(a:arg) ? '' : ' '.a:arg
+  let flags = ' -d\| --daemon\| --help'
+  if a:kill || a:arg =~# '^ *[!-]$' || (a:bg && arg =~# flags)
+    let pidfile = self.path('tmp/pids/server.pid')
     let pid = get(s:readfile(pidfile), 0, 0)
     if pid
       echo "Killing server with pid ".pid
@@ -1799,15 +1797,20 @@ function! s:app_server_command(bang,arg) dict
       endif
       call system("ruby -e 'Process.kill(9,".pid.")'")
       sleep 100m
+    else
+      echo "No server running"
     endif
-    if a:arg == "-"
+    if a:arg =~# '^ *[-!]$'
       return
     endif
   endif
-  if (exists(':Start') == 2) || has('win32')
-    call self.start_rails_command('server '.a:arg, 1)
+  if exists(':Start') == 0 && !has('win32') && arg !~# flags
+    let arg .= ' -d'
+  endif
+  if a:arg =~# flags
+    call self.execute_rails_command('server '.a:arg)
   else
-    call self.execute_rails_command('server '.a:arg.' -d')
+    call self.start_rails_command('server '.a:arg, a:bg)
   endif
   return ''
 endfunction
@@ -4833,7 +4836,7 @@ function! rails#buffer_setup() abort
     call self.setvar('dispatch', ':Preview')
   endif
   if empty(self.getvar('start'))
-    call self.setvar('start', ':Rserver')
+    call self.setvar('start', ':Server')
   endif
 endfunction
 
