@@ -1860,7 +1860,7 @@ function! rails#complete_rails(ArgLead, CmdLine, P, ...) abort
     let app = a:1
   else
     let manifest = findfile('config/environment.rb', escape(getcwd(), ' ,;').';')
-    let app = empty(manifest) ? {} : rails#app(fnamemodify(manifest, ':h:h'))
+    let app = empty(manifest) ? {} : rails#app(fnamemodify(manifest, ':p:h:h'))
   endif
   let cmd = s:sub(a:CmdLine,'^\u\w*\s+','')
   if cmd =~# '^new\s\+'
