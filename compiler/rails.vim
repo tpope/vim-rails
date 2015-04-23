@@ -31,6 +31,9 @@ CompilerSet errorformat^=
       \%\\&%\\s\ %#%m%\\>\ \ %#%f,
       \Overwrite%.%#%\\S%\\+\ \ %#%m%\\x1b[0m\ \ %#%f,
       \%-GOverwrite%.%#\"h\"%.%#,
+      \%+GCurrent\ version:%.%#,
+      \%+G\ %#Prefix\ %#Verb%.%#,
+      \%+G\ %#Code\ LOC:\ %.%#,
       \%+EUsage:\ rails\ %.%#,
       \%+EType\ 'rails'\ for\ help.
 
