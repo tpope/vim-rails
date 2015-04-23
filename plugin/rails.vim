@@ -86,7 +86,7 @@ augroup railsPluginDetect
         \ endif
 augroup END
 
-command! -bar -bang -nargs=* -complete=dir Rails execute rails#new_app_command(<bang>0,<f-args>)
+command! -bar -bang -nargs=* -complete=customlist,rails#complete_rails Rails execute rails#new_app_command(<bang>0,<f-args>)
 
 " }}}1
 " abolish.vim support {{{1

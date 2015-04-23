@@ -1852,10 +1852,21 @@ endfunction
 call s:add_methods('app', ['generators','script_command','output_command','server_command','generator_command'])
 
 function! s:Complete_script(ArgLead, CmdLine, P) abort
-  let app = rails#app()
+  return rails#complete_rails(a:ArgLead, a:CmdLine, a:P, rails#app())
+endfunction
+
+function! rails#complete_rails(ArgLead, CmdLine, P, ...) abort
+  if a:0
+    let app = a:1
+  else
+    let manifest = findfile('config/environment.rb', escape(getcwd(), ' ,;').';')
+    let app = empty(manifest) ? {} : rails#app(fnamemodify(manifest, ':h:h'))
+  endif
   let cmd = s:sub(a:CmdLine,'^\u\w*\s+','')
-  if cmd !~ '^[ A-Za-z0-9_=:-]*$'
-    return []
+  if cmd =~# '^new\s\+'
+    return split(glob(a:ArgLead.'*/'), "\n")
+  elseif empty(app)
+    return s:completion_filter(['new'], a:ArgLead)
   elseif cmd =~# '^\w*$'
     return s:completion_filter(['generate', 'console', 'server', 'dbconsole', 'application', 'destroy', 'plugin', 'runner'],a:ArgLead)
   elseif cmd =~# '^\%([gd]\|generate\|destroy\)\s\+'.a:ArgLead.'$'
