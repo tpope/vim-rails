@@ -1175,20 +1175,6 @@ endfunction
 
 call s:add_methods('app', ['rake_tasks'])
 
-let g:rails#rake_errorformat = '%D(in\ %f),'
-      \.'%\\s%#from\ %f:%l:%m,'
-      \.'%\\s%#from\ %f:%l:,'
-      \.'%\\s%##\ %f:%l:%m,'
-      \.'%\\s%##\ %f:%l,'
-      \.'%\\s%#[%f:%l:\ %#%m,'
-      \.'%\\s%#%f:%l:\ %#%m,'
-      \.'%\\s%#%f:%l:,'
-      \.'%m\ [%f:%l]:,'
-      \.'%+Erake\ aborted!,'
-      \.'%+EDon''t\ know\ how\ to\ build\ task\ %.%#,'
-      \.'%+Einvalid\ option:%.%#,'
-      \.'%+Irake\ %\\S%\\+%\\s%\\+#\ %.%#'
-
 function! s:make(bang, args, ...)
   if exists(':Make') == 2
     exe 'Make'.(a:bang ? '! ' : ' ').a:args
@@ -1211,12 +1197,7 @@ function! s:Rake(bang,lnum,arg)
   let old_errorformat = &l:errorformat
   let old_compiler = get(b:, 'current_compiler', '')
   try
-    if !empty(findfile('compiler/rake.vim', escape(&rtp, ' ')))
-      compiler rake
-    else
-      let &l:errorformat = g:rails#rake_errorformat
-      let b:current_compiler = 'rake'
-    endif
+    compiler rails
     let &l:makeprg = rails#app().rake_command()
     let &l:errorformat .= ',chdir '.escape(self.path(), ',')
     let arg = a:arg
