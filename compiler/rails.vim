@@ -34,7 +34,7 @@ CompilerSet errorformat^=
       \%+GCurrent\ version:%.%#,
       \%+G\ %#Prefix\ %#Verb%.%#,
       \%+G\ %#Code\ LOC:\ %.%#,
-      \%+EUsage:\ rails\ %.%#,
+      \%+EUsage:%.%#,
       \%+EType\ 'rails'\ for\ help.
 
 " -complete=customlist,rails#complete_rails
