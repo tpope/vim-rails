@@ -3880,6 +3880,8 @@ function! rails#buffer_syntax()
           syn keyword rubyRailsMethod polymorphic_path polymorphic_url
           if buffer.type_name('spec-view')
             syn keyword rubyRailsTestViewMethod render rendered assign
+          elseif buffer.type_name('spec-helper')
+            syn keyword RubyRailsTestHelperMethod helper
           endif
         endif
       endif
@@ -3964,6 +3966,7 @@ function! s:HiDefaults()
   hi def link rubyRailsFilterMethod           rubyRailsMethod
   hi def link rubyRailsTestControllerMethod   rubyRailsTestMethod
   hi def link rubyRailsTestViewMethod         rubyRailsTestMethod
+  hi def link rubyRailsTestHelperMethod       rubyRailsTestMethod
   hi def link rubyRailsTestMethod             rubyRailsMethod
   hi def link rubyRailsRakeMethod             rubyRailsMethod
   hi def link rubyRailsMethod                 railsMethod
