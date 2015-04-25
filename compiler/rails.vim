@@ -35,6 +35,7 @@ CompilerSet errorformat^=
       \%+G\ %#Prefix\ %#Verb%.%#,
       \%+G\ %#Code\ LOC:\ %.%#,
       \%+EUsage:%.%#,
+      \%+ECould\ not\ find\ generator%.%#,
       \%+EType\ 'rails'\ for\ help.
 
 " -complete=customlist,rails#complete_rails
