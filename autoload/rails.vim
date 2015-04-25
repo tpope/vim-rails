@@ -1651,10 +1651,20 @@ function! s:app_script_command(bang,...) dict
     return
   endif
   let str = join(map(copy(a:000), 's:rquote(v:val)'), ' ')
-  if a:bang || str =~# '^\%(c\|console\|db\|dbconsole\|s\|server\)\>'
+  if str =~# '^\%(c\|console\|db\|dbconsole\|s\|server\)\S\@!' && str !~# ' -d\| --daemon\| --help'
     return self.start_rails_command(str, a:bang)
   else
-    return self.execute_rails_command(str)
+    let [mp, efm, cc] = [&l:mp, &l:efm, get(b:, 'current_compiler', '')]
+    try
+      compiler rails
+      let &l:makeprg = self.prepare_rails_command(str)
+      let &l:errorformat .= ',chdir '.escape(self.path(), ',')
+      call s:make(a:bang, '')
+    finally
+      let [&l:mp, &l:efm, b:current_compiler] = [mp, efm, cc]
+      if empty(cc) | unlet! b:current_compiler | endif
+    endtry
+    return ''
   endif
 endfunction
 
