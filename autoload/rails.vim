@@ -1215,6 +1215,9 @@ function! s:Rake(bang,lnum,arg)
     if arg == ''
       let arg = rails#buffer().default_rake_task(lnum)
     endif
+    if arg == ''
+      let arg = '--tasks'
+    endif
     if !has_key(self,'options') | let self.options = {} | endif
     if arg == '-'
       let arg = get(self.options,'last_rake_task','')
@@ -4856,7 +4859,7 @@ function! rails#buffer_setup() abort
   if self.type_name('test', 'spec', 'cucumber')
     call self.setvar('dispatch', ':Runner')
   elseif self.name() ==# 'Rakefile'
-    call self.setvar('dispatch', ':Rake default')
+    call self.setvar('dispatch', ':Rake --tasks')
   elseif self.name() =~# '^\%(app\|config\|db\|lib\|log\)'
     call self.setvar('dispatch', ':Rake')
   elseif self.name() =~# '^public'
