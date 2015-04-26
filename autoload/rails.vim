@@ -1198,6 +1198,7 @@ function! s:Rake(bang,lnum,arg)
   let old_compiler = get(b:, 'current_compiler', '')
   try
     compiler rails
+    let b:current_compiler = 'rake'
     let &l:makeprg = rails#app().rake_command()
     let &l:errorformat .= ',chdir '.escape(self.path(), ',')
     let arg = a:arg
@@ -4848,6 +4849,7 @@ function! rails#buffer_setup() abort
   endif
 
   compiler rails
+  let b:current_compiler = 'rake'
   let &l:makeprg = self.app().rake_command('static')
   let &l:errorformat .= ',chdir '.escape(self.app().path(), ',')
 
