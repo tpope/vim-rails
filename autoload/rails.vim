@@ -1369,6 +1369,8 @@ function! s:readable_default_rake_task(...) dict abort
     endif
   elseif self.name() =~# '\<db/seeds\.rb$'
     return 'db:seed'
+  elseif self.name() =~# '\<db/'
+    return 'db:migrate:status'
   elseif self.type_name('controller') && lnum
     let lm = self.last_method(lnum)
     if lm != ''
@@ -2835,7 +2837,7 @@ function! s:schemaEdit(cmd,...)
       let schema = 'db/'.s:environment().'_structure.sql'
     endif
   endif
-  return s:findedit(cmd,schema.(a:0 ? '#'.a:1 : ''))
+  return s:findedit(cmd,schema.(a:0 && a:1 !=# '.' ? '#'.a:1 : ''))
 endfunction
 
 function! s:fixturesEdit(cmd,...)

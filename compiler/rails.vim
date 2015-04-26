@@ -34,6 +34,7 @@ CompilerSet errorformat^=
       \Overwrite%.%#%\\S%\\+\ \ %#%m%\\x1b[0m\ \ %#%f,
       \%-GOverwrite%.%#\"h\"%.%#,
       \%+GCurrent\ version:%.%#,
+      \%+G\ %#Status\ %#Migration\ ID%.%#,
       \%+G\ %#Prefix\ %#Verb%.%#,
       \%+G\ %#Code\ LOC:\ %.%#,
       \%+EUsage:%.%#,
