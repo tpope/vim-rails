@@ -1166,7 +1166,7 @@ function! s:app_rake_tasks() dict abort
     if v:shell_error != 0
       return []
     endif
-    call map(lines,'matchstr(v:val,"^rake\\s\\+\\zs\\S*")')
+    call map(lines,'matchstr(v:val,"^rake\\s\\+\\zs[^][ ]\\+")')
     call filter(lines,'v:val != ""')
     call self.cache.set('rake_tasks',s:uniq(['default'] + lines))
   endif
