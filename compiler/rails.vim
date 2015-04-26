@@ -23,6 +23,8 @@ runtime! compiler/rake.vim
 let current_compiler = "rails"
 
 CompilerSet makeprg=rails
+" CompilerSet makeprg=ruby\ bin/rails
+" CompilerSet makeprg=ruby\ script/rails
 
 CompilerSet errorformat^=
       \%\\S%\\+\ \ %#%[cefi]%[rxod]%[eir]%[a-z]%#%\\x1b[0m\ %\\+%\\S%\\+%$
