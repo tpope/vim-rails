@@ -2489,7 +2489,7 @@ function! s:app_commands() dict abort
         \ '{"pattern": v:val[1], "template": v:val[2]}')
 
   let all = self.projections()
-  for pattern in reverse(sort(keys(all), function('rails#lencmp')))
+  for pattern in sort(keys(all), function('rails#lencmp'))
     let projection = all[pattern]
     for name in s:split(get(projection, 'command', get(projection, 'type', get(projection, 'name', ''))))
       let command = {
@@ -2498,7 +2498,7 @@ function! s:app_commands() dict abort
       if !has_key(commands, name)
         let commands[name] = []
       endif
-      call extend(commands[name], [command])
+      call insert(commands[name], command)
     endfor
   endfor
   call filter(commands, '!empty(v:val)')
