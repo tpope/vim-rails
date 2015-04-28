@@ -1227,7 +1227,7 @@ function! s:Rake(bang,lnum,arg)
     if arg =~# '^notes\>'
       let &l:errorformat = '%-P%f:,\ \ *\ [%\ %#%l]\ [%t%*[^]]] %m,\ \ *\ [%[\ ]%#%l] %m,%-Q'
       call s:make(a:bang, arg)
-    elseif arg =~# '^\%(stats\|routes\|secret\|time:zones\|db:\%(charset\|collation\|fixtures:identify\>.*\|migrate:status\|version\)\)\%([: ]\|$\)'
+    elseif arg =~# '^\%(stats\|routes\|secret\|middleware\|time:zones\|db:\%(charset\|collation\|fixtures:identify\>.*\|migrate:status\|version\)\)\%([: ]\|$\)'
       let &l:errorformat = '%D(in\ %f),%+G%.%#'
       call s:make(a:bang, arg, 'copen')
     else
@@ -1359,30 +1359,28 @@ function! s:readable_default_rake_task(...) dict abort
     endif
   elseif self.type_name('db-migration')
     let ver = matchstr(self.name(),'\<db/migrate/0*\zs\d*\ze_')
-    if ver != ""
+    if !empty(ver)
       let method = self.last_method(lnum)
       if method == "down" || lnum == 1
         return "db:migrate:down VERSION=".ver
       elseif method == "up" || lnum == line('$')
         return "db:migrate:up VERSION=".ver
       else
-        return "db:migrate:down db:migrate:up VERSION=".ver
+        return "db:migrate:redo VERSION=".ver
       endif
     else
       return 'db:migrate'
     endif
   elseif self.name() =~# '\<db/seeds\.rb$'
     return 'db:seed'
-  elseif self.name() =~# '\<db/'
+  elseif self.name() =~# '\<db/\|\<config/database\.'
     return 'db:migrate:status'
+  elseif self.name() =~# '\<config\.ru$'
+    return 'middleware'
+  elseif self.name() =~# '\<README'
+    return 'about'
   elseif self.type_name('controller') && lnum
-    let lm = self.last_method(lnum)
-    if lm != ''
-      " rake routes doesn't support ACTION... yet...
-      return 'routes CONTROLLER='.self.controller_name().' ACTION='.lm
-    else
-      return 'routes CONTROLLER='.self.controller_name()
-    endif
+    return 'routes CONTROLLER='.self.controller_name()
   else
     let test = self.test_file()
     let with_line = test
@@ -4860,7 +4858,7 @@ function! rails#buffer_setup() abort
     call self.setvar('dispatch', ':Runner')
   elseif self.name() ==# 'Rakefile'
     call self.setvar('dispatch', ':Rake --tasks')
-  elseif self.name() =~# '^\%(app\|config\|db\|lib\|log\)'
+  elseif self.name() =~# '^\%(app\|config\|db\|lib\|log\|README\)'
     call self.setvar('dispatch', ':Rake')
   elseif self.name() =~# '^public'
     call self.setvar('dispatch', ':Preview')

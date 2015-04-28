@@ -393,7 +393,9 @@ view			test:functionals TEST=...	spec SPEC=...
 fixtures		db:fixtures:load FIXTURES=...
 migration		db:migrate:redo VERSION=...
 config/routes.rb	routes
+db/schema.rb		db:migrate:status
 db/seeds.rb		db:seed
+README			about
 
 Additionally, when :Rake is given a line number (e.g., :.Rake), the following
 additional tasks can be invoked:

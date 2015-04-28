@@ -37,6 +37,9 @@ CompilerSet errorformat^=
       \%+G\ %#Status\ %#Migration\ ID%.%#,
       \%+G\ %#Prefix\ %#Verb%.%#,
       \%+G\ %#Code\ LOC:\ %.%#,
+      \%+GAbout\ your\ application's\ environment,
+      \%+Grun\ %\\S%#::Application.routes,
+      \%+Eruby:%.%#(LoadError),
       \%+EUsage:%.%#,
       \%+ECould\ not\ find\ generator%.%#,
       \%+EType\ 'rails'\ for\ help.
