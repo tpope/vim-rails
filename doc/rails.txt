@@ -239,6 +239,7 @@ There are also "classic" versions of these commands that start with :R (e.g.,
 :Emailer					|rails-:Emailer|
 :Emigration					|rails-:Emigration|
 :Emodel						|rails-:Emodel|
+:Eprojections					|rails-:Eprojections|
 :Eschema					|rails-:Eschema|
 :Espec						|rails-:Espec|
 :Estylesheet					|rails-:Estylesheet|
@@ -319,6 +320,11 @@ There are also "classic" versions of these commands that start with :R (e.g.,
 
 				*rails-:Emodel* *rails-:Rmodel*
 :Emodel [{name}]	Edit the specified or current model.
+
+			*rails-:Eprojections* *rails-:Rprojections*
+:Eprojections
+			Edit the project-specific projections file. See
+			|rails-projections|.
 
 				*rails-:Espec* *rails-:Rspec*
 :Espec [{name}]		Edit the given spec.  With no argument, defaults to
