@@ -1523,9 +1523,20 @@ endfunction
 
 call s:add_methods('readable', ['preview_urls'])
 
+function! s:app_server_pid() dict abort
+  for type in ['server', 'unicorn']
+    let pidfile = self.path('tmp/pids/'.type.'.pid')
+    if filereadable(pidfile)
+      let pid = get(readfile(pidfile, 'b', 1), 0, 0)
+      if pid
+        return pid
+      endif
+    endif
+  endfor
+endfunction
+
 function! s:app_server_binding() dict abort
-  let pidfile = self.path('tmp/pids/server.pid')
-  let pid = get(readfile(pidfile, 'b', 1), 0, 0)
+  let pid = self.server_pid()
   if pid
     if self.cache.has('server')
       let old = self.cache.get('server')
@@ -1549,7 +1560,7 @@ function! s:app_server_binding() dict abort
   return ''
 endfunction
 
-call s:add_methods('app', ['server_binding'])
+call s:add_methods('app', ['server_pid', 'server_binding'])
 
 function! s:Preview(bang, lnum, uri) abort
   let binding = rails#app().server_binding()
@@ -1794,8 +1805,7 @@ function! s:app_server_command(kill, bg, arg) dict abort
   let arg = empty(a:arg) ? '' : ' '.a:arg
   let flags = ' -d\| --daemon\| --help'
   if a:kill || a:arg =~# '^ *[!-]$' || (a:bg && arg =~# flags)
-    let pidfile = self.path('tmp/pids/server.pid')
-    let pid = get(s:readfile(pidfile), 0, 0)
+    let pid = self.server_pid()
     if pid
       echo "Killing server with pid ".pid
       if !has("win32")
