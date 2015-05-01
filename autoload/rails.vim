@@ -1437,8 +1437,8 @@ call s:add_methods('app', ['rake_command'])
 " }}}1
 " Preview {{{1
 
-function! s:initOpenURL()
-  if !exists(":OpenURL") == 2
+function! s:initOpenURL() abort
+  if exists(":OpenURL") != 2
     if exists(":Browse") == 2
       command -bar -nargs=1 OpenURL :Browse <args>
     elseif has("gui_mac") || has("gui_macvim") || exists("$SECURITYSESSIONID")
