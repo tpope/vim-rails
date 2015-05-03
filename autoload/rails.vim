@@ -1215,9 +1215,6 @@ function! s:Rake(bang,lnum,arg)
     if arg == ''
       let arg = rails#buffer().default_rake_task(lnum)
     endif
-    if arg == ''
-      let arg = '--tasks'
-    endif
     if !has_key(self,'options') | let self.options = {} | endif
     if arg == '-'
       let arg = get(self.options,'last_rake_task','')
@@ -1316,13 +1313,13 @@ function! s:readable_default_rake_task(...) dict abort
 
   if self.getvar('&buftype') == 'quickfix'
     return '-'
-  elseif self.getline(lnum) =~# '# rake '
+  elseif self.getline(lnum) =~# '# rake \S'
     return matchstr(self.getline(lnum),'\C# rake \zs.*')
   elseif self.getline(self.last_method_line(lnum)-1) =~# '# rake '
     return matchstr(self.getline(self.last_method_line(lnum)-1),'\C# rake \zs.*')
   elseif self.getline(self.last_method_line(lnum)) =~# '# rake '
     return matchstr(self.getline(self.last_method_line(lnum)),'\C# rake \zs.*')
-  elseif self.getline(1) =~# '# rake ' && !lnum
+  elseif self.getline(1) =~# '# rake \S' && !lnum
     return matchstr(self.getline(1),'\C# rake \zs.*')
   endif
 
@@ -1388,7 +1385,7 @@ function! s:readable_default_rake_task(...) dict abort
       let with_line .= (lnum > 0 ? ':'.lnum : '')
     endif
     if empty(test)
-      return ''
+      return '--tasks'
     elseif test =~# '^test\>'
       let opts = ''
       if test ==# self.name()
