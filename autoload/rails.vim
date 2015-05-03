@@ -853,7 +853,7 @@ function! s:app_has(feature) dict
   let map = {
         \'test': 'test/',
         \'spec': 'spec/',
-        \'bundler': 'Gemfile',
+        \'bundler': 'Gemfile|gems.locked',
         \'cucumber': 'features/',
         \'turnip': 'spec/acceptance/',
         \'sass': 'public/stylesheets/sass/',
@@ -865,7 +865,8 @@ function! s:app_has(feature) dict
   let features = self.cache.get('features')
   if !has_key(features,a:feature)
     let path = get(map,a:feature,a:feature.'/')
-    let features[a:feature] = rails#app().has_path(path)
+    let features[a:feature] =
+          \ !empty(filter(split('path', '|'), 'self.has_path(v:val)'))
   endif
   return features[a:feature]
 endfunction
@@ -3369,6 +3370,10 @@ function! s:readable_alternate_candidates(...) dict abort
     return ['Gemfile.lock']
   elseif f ==# 'Gemfile.lock'
     return ['Gemfile']
+  elseif f ==# 'gems.rb'
+    return ['gems.locked']
+  elseif f ==# 'gems.locked'
+    return ['gems.rb']
   elseif f =~# '^db/migrate/'
     let migrations = sort(self.app().relglob('db/migrate/','*','.rb'))
     let me = matchstr(f,'\<db/migrate/\zs.*\ze\.rb$')
