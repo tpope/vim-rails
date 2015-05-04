@@ -866,7 +866,7 @@ function! s:app_has(feature) dict
   if !has_key(features,a:feature)
     let path = get(map,a:feature,a:feature.'/')
     let features[a:feature] =
-          \ !empty(filter(split('path', '|'), 'self.has_path(v:val)'))
+          \ !empty(filter(split(path, '|'), 'self.has_path(v:val)'))
   endif
   return features[a:feature]
 endfunction
