@@ -927,7 +927,8 @@ function! s:app_start_rails_command(cmd, ...) dict abort
   call s:push_chdir(1)
   try
     if exists(':Start') == 2
-      exe 'Start'.(a:0 && a:1 ? '!' : '').' -title=rails\ '.title.' '.cmd
+      let title = escape(fnamemodify(self.path(), ':t').' '.title, ' ')
+      exe 'Start'.(a:0 && a:1 ? '!' : '').' -title='.title.' '.cmd
     elseif has("win32")
       exe "!start ".cmd
     else
