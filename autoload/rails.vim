@@ -2438,6 +2438,10 @@ endfunction
 function! s:app_commands() dict abort
   let commands = {}
 
+  let commands.projections = [
+        \ {'pattern': 'config/projections.json'},
+        \ {'pattern': 'lib/projections.json'},
+        \ {'pattern': 'lib/rails/projections.json'}]
   let commands.environment = [
         \ {'pattern': 'config/environments/*.rb'},
         \ {'pattern': 'config/application.rb'},
