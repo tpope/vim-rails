@@ -6,7 +6,7 @@
 if exists('g:autoloaded_rails') || &cp
   finish
 endif
-let g:autoloaded_rails = '5.1'
+let g:autoloaded_rails = '5.2'
 
 " Utility Functions {{{1
 
