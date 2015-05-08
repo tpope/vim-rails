@@ -3526,7 +3526,7 @@ function! s:Extract(bang,...) range abort
     let erub2 = ''
   endif
   let spaces = matchstr(getline(first),"^ *")
-  let renderstr = "render '".fnamemodify(file,":r:r")."'"
+  let renderstr = 'render "'.fnamemodify(file,":r:r").'"'
   if ext =~? '^\%(rhtml\|erb\|dryml\)$'
     let renderstr = "<%= ".renderstr." %>"
   elseif ext == "rxml" || ext == "builder"
