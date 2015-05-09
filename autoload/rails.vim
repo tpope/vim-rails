@@ -854,6 +854,7 @@ function! s:app_has(feature) dict
         \'test': 'test/',
         \'spec': 'spec/',
         \'bundler': 'Gemfile|gems.locked',
+        \'rails3': 'config/application.rb',
         \'cucumber': 'features/',
         \'turnip': 'spec/acceptance/',
         \'sass': 'public/stylesheets/sass/',
@@ -2437,34 +2438,6 @@ endfunction
 
 function! s:app_commands() dict abort
   let commands = {}
-
-  let commands.environment = [
-        \ {'pattern': 'config/environments/*.rb'},
-        \ {'pattern': 'config/application.rb'},
-        \ {'pattern': 'config/environment.rb'}]
-  let commands.helper = [{
-        \ 'pattern': 'app/helpers/*_helper.rb',
-        \ 'template': "module %SHelper\nend",
-        \ 'affinity': 'controller'}]
-  let commands.initializer = [
-        \ {'pattern': 'config/initializers/*.rb'},
-        \ {'pattern': 'config/routes.rb'}]
-  let commands.lib = [
-        \ {'pattern': 'lib/*.rb'},
-        \ {'pattern': 'Gemfile'}]
-  let commands.mailer = [
-        \ {'pattern': 'app/mailers/*.rb', 'template': "class %S < ActionMailer::Base\nend", 'affinity': 'controller'},
-        \ {'pattern': 'app/models/*.rb', 'template': "class %S < ActionMailer::Base\nend", 'affinity': 'controller', 'complete': 0}]
-  let commands.job = [{
-        \ 'pattern': 'app/jobs/*_job.rb',
-        \ 'template': "class %SJob < ActiveJob::Base\nend"}]
-  let commands.model = [{
-        \ 'pattern': 'app/models/*.rb',
-        \ 'template': "class %S\nend",
-        \ 'affinity': 'model'}]
-  let commands.task = [
-        \ {'pattern': 'lib/tasks/*.rake'},
-        \ {'pattern': 'Rakefile'}]
 
   let commands['unit test'] = map(filter([
         \ ['test', 'test/unit/*_test.rb', "require 'test_helper'\n\nclass %STest < ActiveSupport::TestCase\nend", 'model', 1],
@@ -4573,10 +4546,39 @@ function! s:combine_projections(dest, src, ...) abort
   return a:dest
 endfunction
 
+let s:default_projections = {
+      \ 'config/environments/*.rb': {'type': 'environment'},
+      \ 'config/application.rb': {'type': 'environment'},
+      \ 'app/helpers/*_helper.rb': {
+      \   'type': 'helper',
+      \   'template': ["module {camelcase|capitalize|colons}Helper", "end"],
+      \   'affinity': 'controller'},
+      \ 'config/initializers/*.rb': {'type': 'initializer'},
+      \ 'config/routes.rb': {'type': 'initializer'},
+      \ 'app/jobs/*_job.rb': {
+      \   'type': 'job',
+      \   'template': "class {camelcase|capitalize|colons}Job < ActiveJob::Base\nend"},
+      \ 'lib/*.rb': {'type': 'lib'},
+      \ 'Gemfile': {'type': 'lib'},
+      \ 'gems.rb': {'type': 'lib'},
+      \ 'app/mailers/*.rb': {
+      \    'type': 'mailer',
+      \    'template': "class {camelcase|capitalize|colons} < ActionMailer::Base\nend",
+      \    'affinity': 'controller'},
+      \ 'app/models/*.rb': {
+      \    'type': 'model',
+      \    'template': "class %S\nend",
+      \    'affinity': 'model'},
+      \ 'lib/tasks/*.rake': {'type': 'task'},
+      \ 'Rakefile': {'type': 'task'}}
+
 let s:projections_for_gems = {}
 function! s:app_projections() dict abort
-  let dict = {}
-  call s:combine_projections(dict, get(g:, 'rails_projections', ''), {'check': 1})
+  let dict = deepcopy(s:default_projections)
+  if !self.has('rails3')
+    let dict['config/environment.rb'] = remove(dict, 'config/application.rb')
+  endif
+  call s:combine_projections(dict, get(g:, 'rails_projections', ''))
   for gem in keys(get(g:, 'rails_gem_projections', {}))
     if self.has_gem(gem)
       call s:combine_projections(dict, g:rails_gem_projections[gem])
