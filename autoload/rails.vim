@@ -2253,7 +2253,7 @@ function! s:RailsFind()
   let ssext = ['css', 'css.*', 'scss', 'sass']
   let res = s:findfromview('stylesheet[_-]\%(link_tag\|path\|url\)\|\%(path\|url\)_to_stylesheet','\1')
   if res != ""
-    return rails#app().resolve_asset(res, ssest)."\npublic/stylesheets/".res.".css"
+    return rails#app().resolve_asset(res, ssext)."\npublic/stylesheets/".res.".css"
   endif
   if buffer.type_name('stylesheet')
     let res = s:findit('^\s*\*=\s*require\s*["'']\=\([^"'' ]*\)', '\1')
