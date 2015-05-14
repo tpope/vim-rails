@@ -3102,8 +3102,7 @@ function! s:projection_pairs(options)
 endfunction
 
 function! s:r_warning(cmd) abort
-  if a:cmd =~# 'R\|^$' && !exists('s:r_warning')
-    let s:r_warning = 1
+  if a:cmd =~# 'R\|^$'
     let old = s:sub(a:cmd, '^$', 'R')
     let instead = s:sub(s:sub(a:cmd, '^R', ''), '^$', 'E')
     return '|echohl WarningMsg|echomsg ":'.old.' navigation commands are deprecated. Use :'.instead.' commands instead."|echohl None'
