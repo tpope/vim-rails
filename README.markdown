@@ -96,8 +96,9 @@ Rails application.
 
 > What Rails versions are supported?
 
-All of them.  A few features like syntax highlighting tend to reflect the
-latest version only.
+All of them, although you may notice a few minor breakages if you dip below
+3.0.  A few features like syntax highlighting tend to reflect the latest
+version only.
 
 > Didn't rails.vim used to handle indent settings?
 
