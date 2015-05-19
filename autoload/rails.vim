@@ -2503,7 +2503,6 @@ endfunction
 
 function! s:BufProjectionCommands()
   call s:addfilecmds("view")
-  call s:addfilecmds("controller")
   call s:addfilecmds("migration")
   call s:addfilecmds("schema")
   call s:addfilecmds("layout")
@@ -2973,28 +2972,6 @@ function! s:layoutEdit(cmd,...)
     let file = "app/views/layouts/application.html.erb"
   endif
   return s:edit(a:cmd,s:sub(file,'^/',''))
-endfunction
-
-function! s:controllerEdit(cmd,...)
-  let suffix = '.rb'
-  let template = "class %S < ApplicationController\nend"
-  if a:0 == 0
-    let controller = s:controller(1)
-    if rails#buffer().type_name() =~# '^view\%(-layout\|-partial\)\@!'
-      let jump = '#'.expand('%:t:r')
-    else
-      let jump = ''
-    endif
-  else
-    let controller = matchstr(a:1, '[^#!]*')
-    let jump = matchstr(a:1, '[#!].*')
-  endif
-  if rails#app().has_file("app/controllers/".controller."_controller.rb") || !rails#app().has_file("app/controllers/".controller.".rb")
-    let template = "class %SController < ApplicationController\nend"
-    let suffix = "_controller".suffix
-  endif
-  return rails#buffer().open_command(a:cmd, controller . jump, 'controller',
-        \ [{'template': template, 'pattern': 'app/controllers/*'.suffix}])
 endfunction
 
 function! s:stylesheetEdit(cmd,...)
@@ -4550,6 +4527,10 @@ endfunction
 let s:default_projections = {
       \ 'config/environments/*.rb': {'type': 'environment'},
       \ 'config/application.rb': {'type': 'environment'},
+      \ 'app/controllers/*_controller.rb': {
+      \   'type': 'controller',
+      \   'template': ["module {camelcase|capitalize|colons}Controller < ApplicationController", "end"],
+      \   'affinity': 'controller'},
       \ 'app/helpers/*_helper.rb': {
       \   'type': 'helper',
       \   'template': ["module {camelcase|capitalize|colons}Helper", "end"],
