@@ -82,7 +82,7 @@ augroup railsPluginDetect
   autocmd User ProjectionistDetect
         \ if RailsDetect(get(g:, 'projectionist_file', '')) |
         \   call projectionist#append(b:rails_root,
-        \     {'*': {}}) |
+        \     {'*': {"start": rails#app().static_rails_command('server')}}) |
         \ endif
 augroup END
 

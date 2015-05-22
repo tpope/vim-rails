@@ -4867,10 +4867,6 @@ function! rails#buffer_setup() abort
       call self.setvar('dispatch', ':Rake')
     endif
   endif
-
-  if empty(self.getvar('start'))
-    call self.setvar('start', ':Server')
-  endif
 endfunction
 
 " }}}1
