@@ -2182,6 +2182,7 @@ function! s:RailsFind()
   if buffer.type_name('javascript')
     let res = s:findit('^\s*//=\s*require\s*["'']\=\([^"'' ]*\)', '\1')
     if res != ""|return rails#app().resolve_asset(res, jsext)."\napp/assets/javascripts/".res.".js"|endif
+    return expand("<cfile>")
   endif
 
   let res = s:findit('\v\s*<require\s*\(=\s*File.dirname\(__FILE__\)\s*\+\s*[:'."'".'"](\f+)>.=',expand('%:h').'/\1')
