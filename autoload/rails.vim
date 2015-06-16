@@ -902,7 +902,7 @@ function! s:app_static_rails_command(cmd) dict abort
     let cmd = 'bin/rails '.a:cmd
   elseif self.has_path('script/rails')
     let cmd = 'script/rails '.a:cmd
-  elseif a:cmd =~# '^\S' && self.has_path('script/' . matchstr(a:cmd, '\S\+'))
+  elseif !self.has('rails3')
     let cmd = 'script/'.a:cmd
   elseif self.has('bundler')
     return 'bundle exec rails ' . a:cmd
@@ -1677,9 +1677,9 @@ function! s:app_script_command(bang,...) dict
     let [mp, efm, cc] = [&l:mp, &l:efm, get(b:, 'current_compiler', '')]
     try
       compiler rails
-      let &l:makeprg = self.prepare_rails_command(str)
+      let &l:makeprg = self.prepare_rails_command('$*')
       let &l:errorformat .= ',chdir '.escape(self.path(), ',')
-      call s:make(a:bang, '')
+      call s:make(a:bang, str)
     finally
       let [&l:mp, &l:efm, b:current_compiler] = [mp, efm, cc]
       if empty(cc) | unlet! b:current_compiler | endif
