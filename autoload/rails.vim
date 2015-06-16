@@ -2099,12 +2099,11 @@ function! s:Complete_cd(ArgLead, CmdLine, CursorPos)
   return filter(all,'s:startswith(v:val,a:ArgLead)')
 endfunction
 
-function! RailsIncludeexpr()
-  " Is this foolproof?
-  if mode() =~ '[iR]' || expand("<cfile>") != v:fname
-    return s:RailsIncludefind(v:fname)
+function! rails#includeexpr(fname) abort
+  if mode() =~# '[iR]' || expand('<cfile>') !=# a:fname
+    return s:RailsIncludefind(a:fname)
   else
-    return s:RailsIncludefind(v:fname,1)
+    return s:RailsIncludefind(a:fname, 1)
   endif
 endfunction
 
@@ -4794,7 +4793,7 @@ function! rails#buffer_setup() abort
   if stridx(&tags,rp.'/tags') == -1
     let &l:tags = rp . '/tags,' . rp . '/tmp/tags,' . &tags
   endif
-  call self.setvar('&includeexpr','RailsIncludeexpr()')
+  call self.setvar('&includeexpr','rails#includeexpr(v:fname)')
   call self.setvar('&suffixesadd', s:sub(self.getvar('&suffixesadd'),'^$','.rb'))
   let ft = self.getvar('&filetype')
   if ft =~# '^ruby\>'
