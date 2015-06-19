@@ -123,7 +123,11 @@ function! s:app_path(...) dict
 endfunction
 
 function! s:app_has_path(path) dict
-  return getftime(self.path(a:path)) != -1
+  if a:path =~# '\%(^\|:\)[\/]'
+    return getftime(a:path) != -1
+  else
+    return getftime(self.path(a:path)) != -1
+  endif
 endfunction
 
 function! s:app_has_file(file) dict
@@ -2150,6 +2154,11 @@ function! s:findfromview(func,repl)
   return s:findit('\s*\%(<%\)\==\=\s*\<\%('.a:func.'\)\s*(\=\s*[@:'."'".'"]\(\f\+\)\>['."'".'"]\=\s*\%(%>\s*\)\=',a:repl)
 endfunction
 
+function! s:findasset(path, ext, pre, post) abort
+  let asset = rails#app().resolve_asset(a:path, a:ext)
+  return len(asset) ? asset : rails#app().path(a:pre . a:path . a:post)
+endfunction
+
 function! s:RailsFind()
   if filereadable(expand("<cfile>"))
     return expand("<cfile>")
@@ -2162,10 +2171,12 @@ function! s:RailsFind()
   let ssext = ['css', 'css.*', 'scss', 'sass']
   if buffer.type_name('stylesheet')
     let res = s:findit('^\s*\*=\s*require\s*["'']\=\([^"'' ]*\)', '\1')
-    if res != ""|return rails#app().resolve_asset(res, ssext)."\napp/assets/stylesheets/".res.".css"|endif
+    if !empty(res)
+      return s:findasset(res, ssext, "app/assets/stylesheets/", ".css")
+    endif
     let res = s:findit('^\s*@import\s*\%(url(\)\=["'']\=\([^"'' ]*\)', '\1')
     if res != ""
-      let base = expand('%:h')
+      let base = expand('%:p:h')
       let rel = s:sub(res, '\ze[^/]*$', '_')
       for ext in ['css', 'css.scss', 'css.sass', 'scss', 'sass']
         for name in [res.'.'.ext, res.'.'.ext.'.erb', rel.'.'.ext, rel.'.'.ext.'.erb']
@@ -2185,7 +2196,9 @@ function! s:RailsFind()
   let jsext = ['js', 'js.*', 'jst', 'jst.*', 'coffee']
   if buffer.type_name('javascript')
     let res = s:findit('^\s*//=\s*require\s*["'']\=\([^"'' ]*\)', '\1')
-    if res != ""|return rails#app().resolve_asset(res, jsext)."\napp/assets/javascripts/".res.".js"|endif
+    if !empty(res)
+      return s:findasset(res, jsext, "app/assets/javascript/", ".js")
+    endif
     return expand("<cfile>")
   endif
 
@@ -2281,17 +2294,17 @@ function! s:RailsFind()
 
   let res = s:findfromview('image[_-]\%(\|path\|url\)\|\%(path\|url\)_to_image','\1')
   if res != ""
-    return rails#app().resolve_asset(res)."\npublic/images/".res
+    return s:findasset(res, [], 'public/images/', '')
   endif
 
   let res = s:findfromview('stylesheet[_-]\%(link_tag\|path\|url\)\|\%(path\|url\)_to_stylesheet','\1')
   if res != ""
-    return rails#app().resolve_asset(res, ssext)."\npublic/stylesheets/".res.".css"
+    return s:findasset(res, ssext, 'public/stylesheets/', '.css')
   endif
 
   let res = s:sub(s:findfromview('javascript_\%(include_tag\|path\|url\)\|\%(path\|url\)_to_javascript','\1'),'/defaults>','/application')
   if res != ""
-    return rails#app().resolve_asset(res, jsext)."\npublic/javascripts/".res.".js"
+    return s:findasset(res, jsext, 'public/javascripts/', '.js')
   endif
 
   if buffer.type_name('controller', 'mailer')
@@ -2859,7 +2872,6 @@ let s:view_types = split('rhtml,erb,rxml,builder,rjs,haml',',')
 
 function! s:readable_resolve_view(name, ...) dict abort
   let name = a:name
-  let pre = 'app/views/'
   if name !~# '/'
     let controller = self.controller_name(1)
     let found = ''
@@ -2874,13 +2886,13 @@ function! s:readable_resolve_view(name, ...) dict abort
   if name =~# '/' && !self.app().has_path(fnamemodify('app/views/'.name, ':h'))
     return ''
   elseif name =~# '\.[[:alnum:]_+]\+\.\w\+$' || name =~# '\.\%('.join(s:view_types,'\|').'\)$'
-    return pre.name
+    return self.app().path('app/views/'.name)
   else
     for format in ['.'.self.format(a:0 ? a:1 : 0), '']
       let found = self.app().relglob('', 'app/views/'.name.format.'.*')
       call sort(found, s:function('s:dotcmp'))
       if !empty(found)
-        return found[0]
+        return self.app().path(found[0])
       endif
     endfor
   endif
@@ -2907,9 +2919,9 @@ function! s:app_resolve_asset(name, ...) dict abort
   let path = join(map(paths, 'escape(v:val, " ,")'), ',')
   let exact = findfile(a:name, path)
   if !empty(exact)
-    return exact
+    return fnamemodify(exact, ':p')
   endif
-  if a:0
+  if a:0 && !empty(a:1)
     for candidate in map(split(globpath(path, a:name . '.*'), "\n"), 'fnamemodify(v:val, ":p")')
       for ext in a:1
         let pat = '[\\/]'.s:gsub(s:gsub(a:name.'.'.ext, '\.', '\\.'), '\*', '.*') . '\%(\.erb\)\=$'
@@ -2925,7 +2937,7 @@ endfunction
 call s:add_methods('readable', ['resolve_view', 'resolve_layout'])
 call s:add_methods('app', ['resolve_asset'])
 
-function! s:findview(name)
+function! s:findview(name) abort
   return rails#buffer().resolve_view(a:name, line('.'))
 endfunction
 
@@ -3179,7 +3191,7 @@ function! s:findedit(cmd,files,...) abort
   if len(files) == 1
     let file = files[0]
   else
-    let file = get(filter(copy(files),'rails#app().has_file(s:sub(v:val,"#.*|:\\d*$",""))'),0,get(files,0,''))
+    let file = get(filter(copy(files),'rails#app().has_path(s:sub(v:val,"#.*|:\\d*$",""))'),0,get(files,0,''))
   endif
   if file =~ '[#!]\|:\d*\%(:in\)\=$'
     let djump = matchstr(file,'!.*\|#\zs.*\|:\zs\d*\ze\%(:in\)\=$')
