@@ -2338,9 +2338,17 @@ endfunction
 
 function! s:app_route_names() dict abort
   if self.cache.needs("named_routes")
+    let cd = exists('*haslocaldir') && haslocaldir() ? 'lcd' : 'cd'
+    let cwd = getcwd()
     let routes = {}
-    for line in split(system(self.rake_command().' routes'), "\n")
-      let matches = matchlist(line, '^ \+\(\w\+\) \+\(\u\+\) \+\(\S\+\) \+\(\w\+#\w\+\)')
+    try
+      execute cd fnameescape(rails#app().path())
+      let output = system(self.rake_command().' routes')
+    finally
+      execute cd fnameescape(cwd)
+    endtry
+    for line in split(output, "\n")
+      let matches = matchlist(line, '^ \+\(\l\w*\) \{-\}\(\u*\) \+\(\S\+\) \+\(\w\+#\w\+\)')
       if !empty(matches)
         let [_, name, method, path, handler; __] = matches
         let routes[name] = {'method': method, 'path': path, 'handler': handler}
