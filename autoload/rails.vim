@@ -1979,19 +1979,19 @@ function! s:BufNavCommands()
   command! -buffer -bar -nargs=? -complete=customlist,s:Complete_cd Lcd  :lcd `=rails#app().path(<q-args>)`
   command! -buffer -bar -nargs=? -complete=customlist,s:Complete_cd Rcd   :cd `=rails#app().path(<q-args>)`
   command! -buffer -bar -nargs=? -complete=customlist,s:Complete_cd Rlcd :lcd `=rails#app().path(<q-args>)`
-  command! -buffer -bar -nargs=* -range=0 -complete=customlist,s:Complete_related A     :call s:Alternate('<bang>', <line1>,<line2>,<count>,<f-args>)
-  command! -buffer -bar -nargs=* -range=0 -complete=customlist,s:Complete_related AE    :call s:Alternate('E<bang>',<line1>,<line2>,<count>,<f-args>)
-  command! -buffer -bar -nargs=* -range=0 -complete=customlist,s:Complete_related AS    :call s:Alternate('S<bang>',<line1>,<line2>,<count>,<f-args>)
-  command! -buffer -bar -nargs=* -range=0 -complete=customlist,s:Complete_related AV    :call s:Alternate('V<bang>',<line1>,<line2>,<count>,<f-args>)
-  command! -buffer -bar -nargs=* -range=0 -complete=customlist,s:Complete_related AT    :call s:Alternate('T<bang>',<line1>,<line2>,<count>,<f-args>)
-  command! -buffer -bar -nargs=* -range=0 -complete=customlist,s:Complete_related AD    :call s:Alternate('D<bang>',<line1>,<line2>,<count>,<f-args>)
-  command! -buffer -bar -nargs=* -range=0 -complete=customlist,s:Complete_related AR    :call s:Alternate('D<bang>',<line1>,<line2>,<count>,<f-args>)
-  command! -buffer -bar -nargs=* -range=0 -complete=customlist,s:Complete_related R     :call s:Related('<bang>' ,<line1>,<line2>,<count>,<f-args>)
-  command! -buffer -bar -nargs=* -range=0 -complete=customlist,s:Complete_related RE    :call s:Related('E<bang>',<line1>,<line2>,<count>,<f-args>)
-  command! -buffer -bar -nargs=* -range=0 -complete=customlist,s:Complete_related RS    :call s:Related('S<bang>',<line1>,<line2>,<count>,<f-args>)
-  command! -buffer -bar -nargs=* -range=0 -complete=customlist,s:Complete_related RV    :call s:Related('V<bang>',<line1>,<line2>,<count>,<f-args>)
-  command! -buffer -bar -nargs=* -range=0 -complete=customlist,s:Complete_related RT    :call s:Related('T<bang>',<line1>,<line2>,<count>,<f-args>)
-  command! -buffer -bar -nargs=* -range=0 -complete=customlist,s:Complete_related RD    :call s:Related('D<bang>',<line1>,<line2>,<count>,<f-args>)
+  command! -buffer -bar -nargs=* -range=0 -complete=customlist,s:Complete_related A     :exe s:Alternate('E<bang>',<line1>,<line2>,<count>,<f-args>)
+  command! -buffer -bar -nargs=* -range=0 -complete=customlist,s:Complete_related AE    :exe s:Alternate('E<bang>',<line1>,<line2>,<count>,<f-args>)
+  command! -buffer -bar -nargs=* -range=0 -complete=customlist,s:Complete_related AS    :exe s:Alternate('S<bang>',<line1>,<line2>,<count>,<f-args>)
+  command! -buffer -bar -nargs=* -range=0 -complete=customlist,s:Complete_related AV    :exe s:Alternate('V<bang>',<line1>,<line2>,<count>,<f-args>)
+  command! -buffer -bar -nargs=* -range=0 -complete=customlist,s:Complete_related AT    :exe s:Alternate('T<bang>',<line1>,<line2>,<count>,<f-args>)
+  command! -buffer -bar -nargs=* -range=0 -complete=customlist,s:Complete_related AD    :exe s:Alternate('D<bang>',<line1>,<line2>,<count>,<f-args>)
+  command! -buffer -bar -nargs=* -range=0 -complete=customlist,s:Complete_related AR    :exe s:Alternate('D<bang>',<line1>,<line2>,<count>,<f-args>)
+  command! -buffer -bar -nargs=* -range=0 -complete=customlist,s:Complete_related R     :exe   s:Related('E<bang>',<line1>,<line2>,<count>,<f-args>)
+  command! -buffer -bar -nargs=* -range=0 -complete=customlist,s:Complete_related RE    :exe   s:Related('E<bang>',<line1>,<line2>,<count>,<f-args>)
+  command! -buffer -bar -nargs=* -range=0 -complete=customlist,s:Complete_related RS    :exe   s:Related('S<bang>',<line1>,<line2>,<count>,<f-args>)
+  command! -buffer -bar -nargs=* -range=0 -complete=customlist,s:Complete_related RV    :exe   s:Related('V<bang>',<line1>,<line2>,<count>,<f-args>)
+  command! -buffer -bar -nargs=* -range=0 -complete=customlist,s:Complete_related RT    :exe   s:Related('T<bang>',<line1>,<line2>,<count>,<f-args>)
+  command! -buffer -bar -nargs=* -range=0 -complete=customlist,s:Complete_related RD    :exe   s:Related('D<bang>',<line1>,<line2>,<count>,<f-args>)
 endfunction
 
 function! s:djump(def)
@@ -2057,22 +2057,7 @@ function! s:Find(count,cmd,...)
     let file = s:RailsFind()
     let tail = ""
   endif
-  call s:findedit((a:count==1?'' : a:count).a:cmd,file.tail,str)
-endfunction
-
-function! s:Edit(count,cmd,...)
-  if a:0
-    let str = ""
-    let i = 1
-    while i < a:0
-      let str .= s:escarg(a:{i}) . " "
-      let i += 1
-    endwhile
-    let file = a:{i}
-    call s:findedit(s:editcmdfor(a:cmd),file,str)
-  else
-    exe s:editcmdfor(a:cmd)
-  endif
+  return s:findedit((a:count==1?'' : a:count).a:cmd,file.tail,str)
 endfunction
 
 function! s:fuzzyglob(arg)
@@ -3245,10 +3230,15 @@ function! s:Alternate(cmd,line1,line2,count,...)
   if a:0
     if a:count && a:cmd !~# 'D'
       return call('s:Find',[1,a:line1.a:cmd]+a:000)
-    elseif a:count
-      return call('s:Edit',[1,a:line1.a:cmd]+a:000)
     else
-      return call('s:Edit',[1,a:cmd]+a:000)
+      let str = ""
+      let i = 1
+      while i < a:0
+        let str .= s:escarg(a:{i}) . " "
+        let i += 1
+      endwhile
+      let file = a:{i}
+      return s:findedit(s:editcmdfor((a:count ? a:count : '').a:cmd), file, str)
     endif
   else
     let file = get(b:, a:count ? 'rails_related' : 'rails_alternate')
@@ -3256,9 +3246,10 @@ function! s:Alternate(cmd,line1,line2,count,...)
       let file = rails#buffer().alternate(a:count)
     endif
     if !empty(file)
-      call s:findedit(a:cmd,file)
+      return s:findedit(a:cmd, file)
     else
       call s:warn("No alternate file is defined")
+      return ''
     endif
   endif
 endfunction
@@ -4064,10 +4055,10 @@ endfunction
 " Mappings {{{1
 
 function! s:BufMappings()
-  nnoremap <buffer> <silent> <Plug>RailsFind       :<C-U>call <SID>Find(v:count1,'E')<CR>
-  nnoremap <buffer> <silent> <Plug>RailsSplitFind  :<C-U>call <SID>Find(v:count1,'S')<CR>
-  nnoremap <buffer> <silent> <Plug>RailsVSplitFind :<C-U>call <SID>Find(v:count1,'V')<CR>
-  nnoremap <buffer> <silent> <Plug>RailsTabFind    :<C-U>call <SID>Find(v:count1,'T')<CR>
+  nnoremap <buffer> <silent> <Plug>RailsFind       :<C-U>exe <SID>Find(v:count1,'E')<CR>
+  nnoremap <buffer> <silent> <Plug>RailsSplitFind  :<C-U>exe <SID>Find(v:count1,'S')<CR>
+  nnoremap <buffer> <silent> <Plug>RailsVSplitFind :<C-U>exe <SID>Find(v:count1,'V')<CR>
+  nnoremap <buffer> <silent> <Plug>RailsTabFind    :<C-U>exe <SID>Find(v:count1,'T')<CR>
   if !hasmapto("<Plug>RailsFind")
     nmap <buffer> gf              <Plug>RailsFind
   endif
