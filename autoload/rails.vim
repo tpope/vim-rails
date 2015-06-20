@@ -119,15 +119,15 @@ function! s:push_chdir(...)
 endfunction
 
 function! s:app_path(...) dict
-  return join([self.root]+a:000,'/')
+  if a:0 && a:1 =~# '\%(^\|^\w*:\)[\/]'
+    return a:1
+  else
+    return join([self.root]+a:000,'/')
+  endif
 endfunction
 
 function! s:app_has_path(path) dict
-  if a:path =~# '\%(^\|:\)[\/]'
-    return getftime(a:path) != -1
-  else
-    return getftime(self.path(a:path)) != -1
-  endif
+  return getftime(self.path(a:path)) != -1
 endfunction
 
 function! s:app_has_file(file) dict
@@ -2038,11 +2038,11 @@ function! s:djump(def)
 endfunction
 
 function! s:Find(count,cmd,...)
-  let str = ""
+  let cmd = (a:count==1?'' : a:count) . a:cmd
   if a:0
     let i = 1
     while i < a:0
-      let str .= s:escarg(a:{i}) . " "
+      let cmd .= ' ' . s:escarg(a:{i})
       let i += 1
     endwhile
     let file = a:{i}
@@ -2057,7 +2057,7 @@ function! s:Find(count,cmd,...)
     let file = s:RailsFind()
     let tail = ""
   endif
-  return s:findedit((a:count==1?'' : a:count).a:cmd,file.tail,str)
+  return s:find(cmd, file . tail)
 endfunction
 
 function! s:fuzzyglob(arg)
@@ -2734,18 +2734,8 @@ function! s:LegacyCommandEdit(cmd, target, prefix, suffix)
   if a:target == ""
     return s:error("E471: Argument required")
   endif
-  let jump = matchstr(a:target, '[#!].*\|:\d*\%(:in\)\=$')
-  let f = s:sub(a:target, '[#!].*|:\d*%(:in)=$', '')
-  if jump =~ '^!'
-    let cmd = s:editcmdfor(cmd)
-  endif
-  if f == '.'
-    let f = s:sub(f,'\.$','')
-  else
-    let f .= a:suffix.jump
-  endif
-  let f = a:prefix.f
-  return s:findedit(cmd,f)
+  let f = a:prefix . s:sub(a:target, '\ze[#!:]|$', a:suffix)
+  return s:open(a:cmd, f)
 endfunction
 
 function! s:app_migration(file) dict
@@ -2805,7 +2795,7 @@ function! s:migrationEdit(cmd,...)
   endif
   let migr = arg == "." ? "db/migrate" : rails#app().migration(arg)
   if migr != ''
-    return s:findedit(cmd,migr)
+    return s:open(cmd, migr)
   else
     return s:error("Migration not found".(arg=='' ? '' : ': '.arg))
   endif
@@ -2821,7 +2811,7 @@ function! s:schemaEdit(cmd,...)
       let schema = 'db/'.s:environment().'_structure.sql'
     endif
   endif
-  return s:findedit(cmd,schema.(a:0 && a:1 !=# '.' ? '#'.a:1 : ''))
+  return s:open(cmd,schema.(a:0 && a:1 !=# '.' ? '#'.a:1 : ''))
 endfunction
 
 function! s:fixturesEdit(cmd,...)
@@ -2841,7 +2831,7 @@ function! s:fixturesEdit(cmd,...)
   if file =~ '\.\w\+$' && rails#app().find_file(c.e, dirs) ==# ''
     return s:edit(a:cmd,file)
   else
-    return s:findedit(a:cmd, rails#app().find_file(c.e, dirs, ['.yml', '.csv', '.rb'], file))
+    return s:open(a:cmd, rails#app().find_file(c.e, dirs, ['.yml', '.csv', '.rb'], file))
   endif
 endfunction
 
@@ -2955,21 +2945,19 @@ function! s:viewEdit(cmd, ...) abort
     return s:error("Cannot find view without controller")
   endif
   let found = rails#buffer().resolve_view(view, line('.'))
-  let djump = a:0 ? matchstr(a:1,'!.*\|#\zs.*\|:\zs\d*\ze\%(:in\)\=$') : ''
+  let djump = a:0 ? matchstr(a:1,'!.*\|#.*\|:\d*\ze\%(:in\)\=$') : ''
   if !empty(found)
-    call s:edit(a:cmd,found)
-    call s:djump(djump)
+    return s:edit(a:cmd,found.djump)
     return ''
   elseif a:0 && a:1 =~# '!'
     let file = 'app/views/'.view
     if !rails#app().has_path(fnamemodify(file, ':h'))
       call mkdir(rails#app().path(fnamemodify(file, ':h')), 'p')
     endif
-    call s:edit(a:cmd, file)
-    call s:djump(djump)
+    return s:edit(a:cmd, file.djump)
     return ''
   else
-    return s:findedit(a:cmd,view)
+    return s:open(a:cmd, view)
   endif
 endfunction
 
@@ -3128,7 +3116,7 @@ function! s:readable_open_command(cmd, argument, name, projections) dict abort
     endif
     if !empty(file) && self.app().has_path(file)
       let file = fnamemodify(self.app().path(file), ':.')
-      return cmd . ' ' . s:fnameescape(file) . '|exe ' . s:sid . 'djump('.string(djump) . ')'.s:r_warning(a:cmd)
+      return cmd . '+call\ '. s:sid . 'djump('.string(djump).') ' . s:fnameescape(file) . s:r_warning(a:cmd)
     endif
   endfor
   if empty(argument)
@@ -3176,54 +3164,34 @@ endfunction
 
 call s:add_methods('readable', ['open_command'])
 
-function! s:findedit(cmd,files,...) abort
-  let cmd = s:findcmdfor(a:cmd)
-  let files = type(a:files) == type([]) ? copy(a:files) : split(a:files,"\n")
-  if len(files) == 1
-    let file = files[0]
-  else
-    let file = get(filter(copy(files),'rails#app().has_path(s:sub(v:val,"#.*|:\\d*$",""))'),0,get(files,0,''))
-  endif
-  if file =~ '[#!]\|:\d*\%(:in\)\=$'
-    let djump = matchstr(file,'!.*\|#\zs.*\|:\zs\d*\ze\%(:in\)\=$')
-    let file = s:sub(file,'[#!].*|:\d*%(:in)=$','')
-  else
-    let djump = ''
-  endif
-  if file == ''
-    let testcmd = "edit"
-  elseif rails#app().has_path(file.'/')
-    let arg = file == "." ? rails#app().path() : rails#app().path(file)
-    let testcmd = s:editcmdfor(cmd).' '.(a:0 ? a:1 . ' ' : '').s:escarg(arg)
-    exe testcmd
-    return ''
-  elseif rails#app().path() =~ '://' || cmd =~ 'edit' || cmd =~ 'split'
-    if file !~ '^/' && file !~ '^\w:' && file !~ '://'
-      let file = s:escarg(rails#app().path(file))
+function! s:find(cmd, file) abort
+  let djump = matchstr(a:file,'!.*\|#\zs.*\|:\zs\d*\ze\%(:in\)\=$')
+  let file = s:fnameescape(s:sub(a:file,'[#!].*|:\d*%(:in)=$',''))
+  let cmd = (empty(a:cmd) ? '' : s:findcmdfor(a:cmd)) . ' '
+  if djump =~# '!'
+    if empty(a:cmd) || file !~# '\%(^\|:\)[\/]'
+      throw "Cannot create directory here"
+    else
+      if !isdirectory(fnamemodify(file, ':h'))
+        call mkdir(fnamemodify(file, ':h'), 'p')
+      endif
+      return s:editcmdfor(cmd) . file
     endif
-    let testcmd = s:editcmdfor(cmd).' '.(a:0 ? a:1 . ' ' : '').file
+  elseif empty(djump)
+    return cmd . file
+  elseif djump =~# '^\d\+$'
+    return cmd . '+' . djump . ' ' . file
   else
-    let testcmd = cmd.' '.(a:0 ? a:1 . ' ' : '').file
+    return cmd . '+call\ ' . s:sid . 'djump('.string(djump).') ' . file
   endif
-  try
-    exe testcmd
-    call s:djump(djump)
-  catch
-    call s:error(s:sub(v:exception,'^.{-}:\zeE',''))
-  endtry
-  return ''
 endfunction
 
-function! s:edit(cmd,file,...)
-  let cmd = s:editcmdfor(a:cmd)
-  let cmd .= ' '.(a:0 ? a:1 . ' ' : '')
-  let file = a:file
-  if file !~ '^/' && file !~ '^\w:' && file !~ '://'
-    exe cmd."`=fnamemodify(rails#app().path(file),':.')`"
-  else
-    exe cmd.file
-  endif
-  return ''
+function! s:open(cmd, file) abort
+  return s:find(a:cmd, rails#app().path(a:file))
+endfunction
+
+function! s:edit(cmd, file) abort
+  return s:open(s:editcmdfor(a:cmd), a:file)
 endfunction
 
 function! s:Alternate(cmd,line1,line2,count,...)
@@ -3231,14 +3199,14 @@ function! s:Alternate(cmd,line1,line2,count,...)
     if a:count && a:cmd !~# 'D'
       return call('s:Find',[1,a:line1.a:cmd]+a:000)
     else
-      let str = ""
+      let cmd = s:editcmdfor((a:count ? a:count : '').a:cmd)
       let i = 1
       while i < a:0
-        let str .= s:escarg(a:{i}) . " "
+        let cmd .= ' ' . s:escarg(a:{i})
         let i += 1
       endwhile
       let file = a:{i}
-      return s:findedit(s:editcmdfor((a:count ? a:count : '').a:cmd), file, str)
+      return s:find(cmd, file)
     endif
   else
     let file = get(b:, a:count ? 'rails_related' : 'rails_alternate')
@@ -3246,7 +3214,7 @@ function! s:Alternate(cmd,line1,line2,count,...)
       let file = rails#buffer().alternate(a:count)
     endif
     if !empty(file)
-      return s:findedit(a:cmd, file)
+      return s:edit(a:cmd, file)
     else
       call s:warn("No alternate file is defined")
       return ''
