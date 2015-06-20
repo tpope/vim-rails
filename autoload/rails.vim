@@ -2362,11 +2362,9 @@ endfunction
 
 call s:add_methods('app', ['route_names','named_route_file'])
 
-function! s:RailsIncludefind(str,...)
-  if a:str ==# "ApplicationController"
-    return "application_controller.rb\napp/controllers/application.rb"
-  elseif a:str ==# "Test::Unit::TestCase"
-    return "test/unit/testcase.rb"
+function! s:RailsIncludefind(str,...) abort
+  if a:str ==# "ApplicationController" && rails#app().has_path('app/controllers/application.rb')
+    return 'application.rb'
   endif
   let str = a:str
   if a:0 == 1
