@@ -2066,7 +2066,7 @@ function! s:Find(count,cmd,...)
       let file = s:RailsIncludefind(file)
     endif
   else
-    let file = s:RailsFind()
+    let file = s:cfile()
     let tail = ""
   endif
   return s:find(cmd, file . tail)
@@ -2156,7 +2156,7 @@ function! s:findasset(path, ext, pre, post) abort
   return len(asset) ? asset : rails#app().path(a:pre . a:path . a:post)
 endfunction
 
-function! s:RailsFind()
+function! s:cfile(...) abort
   if filereadable(expand("<cfile>"))
     return expand("<cfile>")
   endif
@@ -2323,6 +2323,11 @@ function! s:RailsFind()
   endtry
   let res = s:RailsIncludefind(cfile,1)
   return res
+endfunction
+
+function! rails#cfile(...) abort
+  let cfile = s:find('find', s:cfile())[5:-1]
+  return empty(cfile) && a:0 && a:1 is# 'delegate' ? "\<C-R>\<C-F>" : cfile
 endfunction
 
 function! s:app_named_route_file(route) dict abort
@@ -4028,7 +4033,8 @@ endfunction
 " }}}1
 " Mappings {{{1
 
-function! s:BufMappings()
+function! s:BufMappings() abort
+  cmap <buffer><script><expr> <Plug><cfile>        rails#cfile('delegate')
   nnoremap <buffer> <silent> <Plug>RailsFind       :<C-U>exe <SID>Find(v:count1,'E')<CR>
   nnoremap <buffer> <silent> <Plug>RailsSplitFind  :<C-U>exe <SID>Find(v:count1,'S')<CR>
   nnoremap <buffer> <silent> <Plug>RailsVSplitFind :<C-U>exe <SID>Find(v:count1,'V')<CR>
