@@ -246,7 +246,7 @@ function! s:lastopeningline(pattern,limit,start)
 endfunction
 
 function! s:readable_define_pattern() dict abort
-  if self.name() =~ '\.yml$'
+  if self.name() =~ '\.yml\%(\.example\)\=$'
     return '^\%(\h\k*:\)\@='
   endif
   let define = '^\s*def\s\+\(self\.\)\='
@@ -255,6 +255,12 @@ function! s:readable_define_pattern() dict abort
   endif
   if self.name() =~# '/schema\.rb$'
     let define .= "\\\|^\\s*create_table\\s\\+[:'\"]"
+  endif
+  if self.name() =~# '/\.erb$'
+    let define .= '\|\<id=["'']\='
+  endif
+  if self.name() =~# '/\.haml$'
+    let define .= '\|^\s*\%(%\w*\)\=\%(\.[[:alnum:]_-]\+\)*#'
   endif
   if self.type_name('test')
     let define .= '\|^\s*test\s*[''"]'
@@ -4803,17 +4809,21 @@ function! rails#buffer_setup() abort
   elseif ft =~# 'yaml\>' || fnamemodify(self.name(),':e') ==# 'yml'
     call self.setvar('&define',self.define_pattern())
   elseif ft =~# '^eruby\>'
+    call self.setvar('&define',self.define_pattern())
     if exists("g:loaded_ragtag")
       call self.setvar('ragtag_stylesheet_link_tag', "<%= stylesheet_link_tag '\r' %>")
       call self.setvar('ragtag_javascript_include_tag', "<%= javascript_include_tag '\r' %>")
       call self.setvar('ragtag_doctype_index', 10)
     endif
   elseif ft =~# '^haml\>'
+    call self.setvar('&define',self.define_pattern())
     if exists("g:loaded_ragtag")
       call self.setvar('ragtag_stylesheet_link_tag', "= stylesheet_link_tag '\r'")
       call self.setvar('ragtag_javascript_include_tag', "= javascript_include_tag '\r'")
       call self.setvar('ragtag_doctype_index', 10)
     endif
+  elseif ft =~# 'html\>'
+    call self.setvar('&define', '\<id=["'']\=')
   endif
   if ft =~# '^eruby\>' || ft =~# '^yaml\>'
     if exists("g:loaded_surround")
