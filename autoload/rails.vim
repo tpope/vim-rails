@@ -1994,7 +1994,18 @@ function! s:BufNavCommands()
   command! -buffer -bar -nargs=* -range=0 -complete=customlist,s:Complete_related RD    :exe   s:Related('D<bang>',<line1>,<line2>,<count>,<f-args>)
 endfunction
 
-function! s:djump(def)
+function! s:jumpargs(file, jump) abort
+  let file = fnameescape(a:file)
+  if empty(a:jump)
+    return file
+  elseif a:jump =~# '^\d\+$'
+    return '+' . a:jump . ' ' . file
+  else
+    return '+exe\ rails#jump('.string(a:jump).') ' . file
+  endif
+endfunction
+
+function! rails#jump(def) abort
   let def = s:sub(a:def,'^[#:]','')
   if def =~ '^\d\+$'
     exe def
@@ -3116,7 +3127,7 @@ function! s:readable_open_command(cmd, argument, name, projections) dict abort
     endif
     if !empty(file) && self.app().has_path(file)
       let file = fnamemodify(self.app().path(file), ':.')
-      return cmd . '+call\ '. s:sid . 'djump('.string(djump).') ' . s:fnameescape(file) . s:r_warning(a:cmd)
+      return cmd . s:jumpargs(file, djump) . s:r_warning(a:cmd)
     endif
   endfor
   if empty(argument)
@@ -3166,7 +3177,7 @@ call s:add_methods('readable', ['open_command'])
 
 function! s:find(cmd, file) abort
   let djump = matchstr(a:file,'!.*\|#\zs.*\|:\zs\d*\ze\%(:in\)\=$')
-  let file = s:fnameescape(s:sub(a:file,'[#!].*|:\d*%(:in)=$',''))
+  let file = s:sub(a:file,'[#!].*|:\d*%(:in)=$','')
   let cmd = (empty(a:cmd) ? '' : s:findcmdfor(a:cmd)) . ' '
   if djump =~# '!'
     if empty(a:cmd) || file !~# '\%(^\|:\)[\/]'
@@ -3175,14 +3186,10 @@ function! s:find(cmd, file) abort
       if !isdirectory(fnamemodify(file, ':h'))
         call mkdir(fnamemodify(file, ':h'), 'p')
       endif
-      return s:editcmdfor(cmd) . file
+      return s:editcmdfor(cmd) . s:fnameescape(file)
     endif
-  elseif empty(djump)
-    return cmd . file
-  elseif djump =~# '^\d\+$'
-    return cmd . '+' . djump . ' ' . file
   else
-    return cmd . '+call\ ' . s:sid . 'djump('.string(djump).') ' . file
+    return cmd . s:jumpargs(file, djump)
   endif
 endfunction
 
