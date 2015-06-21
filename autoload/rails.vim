@@ -4042,19 +4042,23 @@ endfunction
 " }}}1
 " Mappings {{{1
 
+nnoremap <SID>: :<C-U><C-R>=v:count ? v:count : ''<CR>
 function! s:BufMappings() abort
-  cmap <buffer><script><expr> <Plug><cfile>        rails#cfile('delegate')
-  nnoremap <buffer> <silent> <Plug>RailsFind       :<C-U>exe <SID>Find(v:count1,'E')<CR>
-  nnoremap <buffer> <silent> <Plug>RailsSplitFind  :<C-U>exe <SID>Find(v:count1,'S')<CR>
-  nnoremap <buffer> <silent> <Plug>RailsVSplitFind :<C-U>exe <SID>Find(v:count1,'V')<CR>
-  nnoremap <buffer> <silent> <Plug>RailsTabFind    :<C-U>exe <SID>Find(v:count1,'T')<CR>
-  if !hasmapto("<Plug>RailsFind")
+  cmap <buffer><script><expr> <Plug><cfile>   rails#cfile('delegate')
+  nmap <buffer><silent> <Plug>RailsFind       <SID>:find <Plug><cfile><CR>
+  nmap <buffer><silent> <Plug>RailsSplitFind  <SID>:sfind <Plug><cfile><CR>
+  nmap <buffer><silent> <Plug>RailsTabFind    <SID>:tabfind <Plug><cfile><CR>
+  let pattern = '^$\|_gf(v:count\|[Rr]uby\|[Rr]ails'
+  if mapcheck('gf', 'n') =~# pattern
     nmap <buffer> gf              <Plug>RailsFind
   endif
-  if !hasmapto("<Plug>RailsSplitFind")
-    nmap <buffer> <C-W>f          <Plug>RailsSplitFind
+  if mapcheck('<C-W>f', 'n') =~# pattern
+    nmap <buffer> <C-W>f        <Plug>RailsSplitFind
   endif
-  if !hasmapto("<Plug>RailsTabFind")
+  if mapcheck('<C-W><C-F>', 'n') =~# pattern
+    nmap <buffer> <C-W><C-F>      <Plug>RailsSplitFind
+  endif
+  if mapcheck('<C-W>gf', 'n') =~# pattern
     nmap <buffer> <C-W>gf         <Plug>RailsTabFind
   endif
 endfunction
