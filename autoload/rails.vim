@@ -2008,25 +2008,25 @@ function! s:jumpargs(file, jump) abort
   elseif a:jump =~# '^\d\+$'
     return '+' . a:jump . ' ' . file
   else
-    return '+exe\ rails#jump('.string(a:jump).') ' . file
+    return '+A#' . a:jump . ' ' . file
   endif
 endfunction
 
-function! rails#jump(def) abort
+function! s:jump(def, ...) abort
   let def = s:sub(a:def,'^[#:]','')
+  let edit = s:editcmdfor(a:0 ? a:1 : '')
+  if edit !~# 'edit'
+    exe edit
+  endif
   if def =~ '^\d\+$'
     exe def
-  elseif def =~ '^!'
-    if expand('%') !~ '://' && !isdirectory(expand('%:p:h'))
-      call mkdir(expand('%:p:h'),'p')
-    endif
-  elseif def != ''
+  elseif def !~# '^$\|^!'
     let ext = matchstr(def,'\.\zs.*')
     let def = matchstr(def,'[^.]*')
     let include = &l:include
     try
       setlocal include=
-      exe 'djump '.def
+      exe 'djump' def
     catch /^Vim(djump):E387/
     catch
       let error = 1
@@ -2043,7 +2043,7 @@ function! rails#jump(def) abort
         if !success
           try
             setlocal include=
-            exe 'djump '.def
+            exe 'djump' def
           catch
           finally
             let &l:include = include
@@ -3044,7 +3044,7 @@ endfunction
 " }}}1
 " Alternate/Related {{{1
 
-function! s:findcmdfor(cmd)
+function! s:findcmdfor(cmd) abort
   let bang = ''
   if a:cmd =~ '\!$'
     let bang = '!'
@@ -3065,7 +3065,7 @@ function! s:findcmdfor(cmd)
   elseif cmd == 'V'
     return 'vert '.num.'sfind'.bang
   elseif cmd == 'T'
-    return num.'tabfind'.bang
+    return num.'tab sfind'.bang
   elseif cmd == 'D'
     return num.'read'.bang
   else
@@ -3073,10 +3073,10 @@ function! s:findcmdfor(cmd)
   endif
 endfunction
 
-function! s:editcmdfor(cmd)
+function! s:editcmdfor(cmd) abort
   let cmd = s:findcmdfor(a:cmd)
   let cmd = s:sub(cmd,'<sfind>','split')
-  let cmd = s:sub(cmd,'find>','edit')
+  let cmd = s:sub(cmd,'<find>','edit')
   return cmd
 endfunction
 
@@ -3214,7 +3214,9 @@ endfunction
 
 function! s:Alternate(cmd,line1,line2,count,...)
   if a:0
-    if a:count && a:cmd !~# 'D'
+    if a:1 =~# '^#\h' && a:cmd !~# 'D'
+      return s:jump(a:1[1:-1], a:cmd)
+    elseif a:count && a:cmd !~# 'D'
       return call('s:Find',[1,a:line1.a:cmd]+a:000)
     else
       let cmd = s:editcmdfor((a:count ? a:count : '').a:cmd)
