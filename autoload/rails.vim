@@ -2245,9 +2245,9 @@ function! s:cfile(...) abort
 
   if !buffer.type_name('controller', 'mailer')
     let res = s:sub(s:sub(s:findasymbol('layout','\1'),'^/',''),'[^/]+$','_&')
-    if res != ""|return res."\n".s:findview(res)|endif
+    if res != ""|return s:findview(res)|endif
     let res = s:sub(s:sub(s:findfromview('render\s*(\=\s*\%(:layout\s\+=>\|layout:\)\s*','\1'),'^/',''),'[^/]+$','_&')
-    if res != ""|return res."\n".s:findview(res)|endif
+    if res != ""|return s:findview(res)|endif
   endif
 
   let res = s:findamethod('layout','\=s:findlayout(submatch(1))')
@@ -2269,13 +2269,13 @@ function! s:cfile(...) abort
   if res != ""|return s:findview(res)|endif
 
   let res = s:sub(s:sub(s:findasymbol('partial','\1'),'^/',''),'[^/]+$','_&')
-  if res != ""|return res."\n".s:findview(res)|endif
+  if res != ""|return s:findview(res)|endif
 
   let res = s:sub(s:sub(s:findfromview('json\.(\=\s*\%(:partial\s\+=>\|partial!\)\s*','\1'),'^/',''),'[^/]+$','_&')
-  if res != ""|return res."\n".s:findview(res)|endif
+  if res != ""|return s:findview(res)|endif
 
   let res = s:sub(s:sub(s:findfromview('render\s*(\=\s*\%(:partial\s\+=>\|partial:\)\s*','\1'),'^/',''),'[^/]+$','_&')
-  if res != ""|return res."\n".s:findview(res)|endif
+  if res != ""|return s:findview(res)|endif
 
   let res = s:findamethod('render\>\s*\%(:\%(template\|action\)\s\+=>\|template:\|action:\)\s*','\1')
   if res != ""|return s:findview(res)|endif
@@ -2284,7 +2284,7 @@ function! s:cfile(...) abort
   if !buffer.type_name('controller', 'mailer')
     let res = s:sub(res,'[^/]+$','_&')
   endif
-  if res != ""|return res."\n".s:findview(res)|endif
+  if res != ""|return s:findview(res)|endif
 
   let res = s:findamethod('redirect_to\s*(\=\s*\%\(:action\s\+=>\|\<action:\)\s*','\1')
   if res != ""|return res|endif
@@ -2308,7 +2308,7 @@ function! s:cfile(...) abort
     let contr = s:controller()
     let view = s:findit('\s*\<def\s\+\(\k\+\)\>(\=','/\1')
     if view !=# ''
-      let res = s:findview(contr.'/'.view)
+      let res = rails#buffer().resolve_view(contr.view)
       if res != ""|return res|endif
     endif
   endif
@@ -2936,7 +2936,8 @@ call s:add_methods('readable', ['resolve_view', 'resolve_layout'])
 call s:add_methods('app', ['resolve_asset'])
 
 function! s:findview(name) abort
-  return rails#buffer().resolve_view(a:name, line('.'))
+  let view = rails#buffer().resolve_view(a:name, line('.'))
+  return empty(view) ? a:name : view
 endfunction
 
 function! s:findlayout(name)
