@@ -1297,7 +1297,7 @@ function! s:readable_test_file_candidates() dict abort
           \ '<test/mailers/', 'test/functional/'),
           \ '<test/controllers/', 'test/functional/')
     let tests = s:uniq([test_file, old_test_file, spec_file])
-  elseif f =~# '\<\(test\|spec\)/\%(\1_helper\.rb$\|support\>\)' || f =~# '\%(\<spec/\)\@<!\<features/.*\.rb$'
+  elseif f =~# '\<\(test\|spec\)/\%(\1_helper\.rb$\|support\>\)' || f =~# '\%(\<spec/\|\<test/\)\@<!\<features/.*\.rb$'
     let tests = [matchstr(f, '.*\<\%(test\|spec\|features\)\>')]
   elseif self.type_name('test', 'spec', 'cucumber')
     let tests = [f]
