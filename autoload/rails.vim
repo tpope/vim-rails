@@ -3131,7 +3131,7 @@ function! s:readable_open_command(cmd, argument, name, projections) dict abort
     endif
     if !empty(file) && self.app().has_path(file)
       let file = fnamemodify(self.app().path(file), ':.')
-      return cmd . s:jumpargs(file, djump) . s:r_warning(a:cmd)
+      return cmd . ' ' . s:jumpargs(file, djump) . s:r_warning(a:cmd)
     endif
   endfor
   if empty(argument)
