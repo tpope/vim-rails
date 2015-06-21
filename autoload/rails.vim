@@ -506,6 +506,7 @@ function! s:error(str)
   echomsg a:str
   echohl None
   let v:errmsg = a:str
+  return ''
 endfunction
 
 function! s:debug(str)
@@ -2959,14 +2960,12 @@ function! s:viewEdit(cmd, ...) abort
   let djump = a:0 ? matchstr(a:1,'!.*\|#.*\|:\d*\ze\%(:in\)\=$') : ''
   if !empty(found)
     return s:edit(a:cmd,found.djump)
-    return ''
   elseif a:0 && a:1 =~# '!'
     let file = 'app/views/'.view
     if !rails#app().has_path(fnamemodify(file, ':h'))
       call mkdir(rails#app().path(fnamemodify(file, ':h')), 'p')
     endif
     return s:edit(a:cmd, file.djump)
-    return ''
   else
     return s:open(a:cmd, view)
   endif
