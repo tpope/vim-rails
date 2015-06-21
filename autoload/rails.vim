@@ -4061,6 +4061,9 @@ function! s:BufMappings() abort
   if mapcheck('<C-W>gf', 'n') =~# pattern
     nmap <buffer> <C-W>gf         <Plug>RailsTabFind
   endif
+  if mapcheck('<C-R><C-F>', 'c') =~# pattern
+    cmap <buffer> <C-R><C-F> <Plug><cfile>
+  endif
 endfunction
 
 " }}}1

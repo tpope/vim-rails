@@ -121,8 +121,9 @@ The standard Rails load path is prepended to 'path', enabling |:find| to work:
 File Under Cursor - gf ~
 						*rails-gf*
 The |gf| command, which normally edits the current file under the cursor, has
-been remapped to take context into account. |CTRL-W_f| (open in new window)
-and |CTRL-W_gf| (open in new tab) are also remapped.
+been remapped to take context into account.  |CTRL-W_f| (open in new window),
+|CTRL-W_gf| (open in new tab), and |c_CTRL-R_CTRL-F| (insert filename on
+command line) are also remapped.
 
 Example uses of |gf|, and where they might lead.
 (* indicates cursor position)
