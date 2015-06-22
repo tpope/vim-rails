@@ -4542,7 +4542,7 @@ let s:default_projections = {
       \ 'config/application.rb': {'type': 'environment'},
       \ 'app/controllers/*_controller.rb': {
       \   'type': 'controller',
-      \   'template': ["module {camelcase|capitalize|colons}Controller < ApplicationController", "end"],
+      \   'template': ["class {camelcase|capitalize|colons}Controller < ApplicationController", "end"],
       \   'affinity': 'controller'},
       \ 'app/helpers/*_helper.rb': {
       \   'type': 'helper',
