@@ -2472,42 +2472,6 @@ endfunction
 
 function! s:app_commands() dict abort
   let commands = {}
-
-  let commands['unit test'] = map(filter([
-        \ ['test', 'test/unit/*_test.rb', "require 'test_helper'\n\nclass %STest < ActiveSupport::TestCase\nend", 'model', 1],
-        \ ['test', 'test/models/*_test.rb', "require 'test_helper'\n\nclass %STest < ActiveSupport::TestCase\nend", 'model', 1],
-        \ ['test', 'test/helpers/*_test.rb', "require 'test_helper'\n\nclass %STest < ActionView::TestCase\nend", '', 1],
-        \ ['test', 'test/helpers/*_helper_test.rb', "require 'test_helper'\n\nclass %SHelperTest < ActionView::TestCase\nend", 'controller', 0],
-        \ ['spec', 'spec/models/*_spec.rb', "require 'spec_helper'\n\ndescribe %S do\nend", 'model', 1],
-        \ ['spec', 'spec/helpers/*_spec.rb', "require 'spec_helper'\n\ndescribe %S do\nend", '', 1],
-        \ ['spec', 'spec/helpers/*_helper_spec.rb', "require 'spec_helper'\n\ndescribe %SHelper do\nend", 'controller', 0]],
-        \ 'rails#app().has(v:val[0])'),
-        \ '{"pattern": v:val[1], "template": v:val[2], "affinity": v:val[3], "complete": v:val[4]}')
-  let commands['functional test'] = map(filter([
-        \ ['test', 'test/functional/*_test.rb', "require 'test_helper'\n\nclass %STest < ActionController::TestCase\nend", '', 1],
-        \ ['test', 'test/functional/*_controller_test.rb', "require 'test_helper'\n\nclass %SControllerTest < ActionController::TestCase\nend", 'controller', 0],
-        \ ['test', 'test/controllers/*_test.rb', "require 'test_helper'\n\nclass %STest < ActionController::TestCase\nend", '', 1],
-        \ ['test', 'test/controllers/*_controller_test.rb', "require 'test_helper'\n\nclass %SControllerTest < ActionController::TestCase\nend", 'controller', 0],
-        \ ['test', 'test/mailers/', "require 'test_helper'\n\nclass %STest < ActionMailer::TestCase\nend", 'model', 1],
-        \ ['spec', 'spec/controllers/*_spec.rb', "require 'spec_helper'\n\ndescribe %S do\nend", '', 1],
-        \ ['spec', 'spec/controllers/*_controller_spec.rb', "require 'spec_helper'\n\ndescribe %SController do\nend", 'controller', 0],
-        \ ['spec', 'spec/mailers/*_spec.rb', "require 'spec_helper'\n\ndescribe %S do\nend", 'controller', 0]],
-        \ 'rails#app().has(v:val[0])'),
-        \ '{"pattern": v:val[1], "template": v:val[2], "affinity": v:val[3], "complete": v:val[4]}')
-  let commands['integration test'] = map(filter([
-        \ ['test', 'test/integration/*_test.rb', "require 'test_helper'\n\nclass %STest < ActionDispatch::IntegrationTest\nend"],
-        \ ['spec', 'spec/features/*_spec.rb', "require 'spec_helper'\n\ndescribe \"%h\" do\nend"],
-        \ ['spec', 'spec/requests/*_spec.rb', "require 'spec_helper'\n\ndescribe \"%h\" do\nend"],
-        \ ['spec', 'spec/integration/*_spec.rb', "require 'spec_helper'\n\ndescribe \"%h\" do\nend"],
-        \ ['cucumber', 'features/*.feature', "Feature: %h"],
-        \ ['turnip', 'spec/acceptance/*.feature', "Feature: %h"],
-        \ ['test', 'test/test_helper.rb', ""],
-        \ ['cucumber', 'features/support/env.rb', ""],
-        \ ['spec', 'spec/rails_helper.rb', ""],
-        \ ['spec', 'spec/spec_helper.rb', ""]],
-        \ 'rails#app().has(v:val[0])'),
-        \ '{"pattern": v:val[1], "template": v:val[2]}')
-
   let all = self.projections()
   for pattern in sort(keys(all), function('rails#lencmp'))
     let projection = all[pattern]
@@ -4567,12 +4531,172 @@ let s:default_projections = {
       \ 'lib/tasks/*.rake': {'type': 'task'},
       \ 'Rakefile': {'type': 'task'}}
 
+let s:has_projections = {
+      \ "cucumber": {
+      \   "features/*.feature": {
+      \     "template": ["Feature: {underscore|capitalize|blank}"],
+      \     "type": "integration test"
+      \   },
+      \   "features/support/env.rb": {"type": "integration test"}
+      \ },
+      \ "spec": {
+      \   "spec/controllers/*_spec.rb": {
+      \     "template": [
+      \       "require 'spec_helper'",
+      \       "",
+      \       "describe {camelcase|capitalize|colons} do",
+      \       "end"
+      \     ],
+      \     "type": "functional test"
+      \   },
+      \   "spec/features/*_spec.rb": {
+      \     "template": [
+      \       "require 'spec_helper'",
+      \       "",
+      \       "describe \"{underscore|capitalize|blank}\" do",
+      \       "end"
+      \     ],
+      \     "type": "integration test"
+      \   },
+      \   "spec/helpers/*_spec.rb": {
+      \     "template": [
+      \       "require 'spec_helper'",
+      \       "",
+      \       "describe {camelcase|capitalize|colons} do",
+      \       "end"
+      \     ],
+      \     "type": "unit test"
+      \   },
+      \   "spec/integration/*_spec.rb": {
+      \     "template": [
+      \       "require 'spec_helper'",
+      \       "",
+      \       "describe \"{underscore|capitalize|blank}\" do",
+      \       "end"
+      \     ],
+      \     "type": "integration test"
+      \   },
+      \   "spec/mailers/*_spec.rb": {
+      \     "affinity": "controller",
+      \     "template": [
+      \       "require 'spec_helper'",
+      \       "",
+      \       "describe {camelcase|capitalize|colons} do",
+      \       "end"
+      \     ],
+      \     "type": "functional test"
+      \   },
+      \   "spec/models/*_spec.rb": {
+      \     "affinity": "model",
+      \     "template": [
+      \       "require 'spec_helper'",
+      \       "",
+      \       "describe {camelcase|capitalize|colons} do",
+      \       "end"
+      \     ],
+      \     "type": "unit test"
+      \   },
+      \   "spec/rails_helper.rb": {"type": "integration test"},
+      \   "spec/requests/*_spec.rb": {
+      \     "template": [
+      \       "require 'spec_helper'",
+      \       "",
+      \       "describe \"{underscore|capitalize|blank}\" do",
+      \       "end"
+      \     ],
+      \     "type": "integration test"
+      \   },
+      \   "spec/spec_helper.rb": {"type": "integration test"}
+      \ },
+      \ "test": {
+      \   "test/controllers/*_test.rb": {
+      \     "template": [
+      \       "require 'test_helper'",
+      \       "",
+      \       "class {camelcase|capitalize|colons}Test < ActionController::TestCase",
+      \       "end"
+      \     ],
+      \     "type": "functional test"
+      \   },
+      \   "test/functional/*_test.rb": {
+      \     "template": [
+      \       "require 'test_helper'",
+      \       "",
+      \       "class {camelcase|capitalize|colons}Test < ActionController::TestCase",
+      \       "end"
+      \     ],
+      \     "type": "functional test"
+      \   },
+      \   "test/helpers/*_test.rb": {
+      \     "template": [
+      \       "require 'test_helper'",
+      \       "",
+      \       "class {camelcase|capitalize|colons}Test < ActionView::TestCase",
+      \       "end"
+      \     ],
+      \     "type": "unit test"
+      \   },
+      \   "test/integration/*_test.rb": {
+      \     "template": [
+      \       "require 'test_helper'",
+      \       "",
+      \       "class {camelcase|capitalize|colons}Test < ActionDispatch::IntegrationTest",
+      \       "end"
+      \     ],
+      \     "type": "integration test"
+      \   },
+      \   "test/mailers/": {
+      \     "affinity": "model",
+      \     "template": [
+      \       "require 'test_helper'",
+      \       "",
+      \       "class {camelcase|capitalize|colons}Test < ActionMailer::TestCase",
+      \       "end"
+      \     ],
+      \     "type": "functional test"
+      \   },
+      \   "test/models/*_test.rb": {
+      \     "affinity": "model",
+      \     "template": [
+      \       "require 'test_helper'",
+      \       "",
+      \       "class {camelcase|capitalize|colons}Test < ActiveSupport::TestCase",
+      \       "end"
+      \     ],
+      \     "type": "unit test"
+      \   },
+      \   "test/test_helper.rb": {"type": "integration test"},
+      \   "test/unit/*_test.rb": {
+      \     "affinity": "model",
+      \     "template": [
+      \       "require 'test_helper'",
+      \       "",
+      \       "class {camelcase|capitalize|colons}Test < ActiveSupport::TestCase",
+      \       "end"
+      \     ],
+      \     "type": "unit test"
+      \   }
+      \ },
+      \ "turnip": {
+      \   "spec/acceptance/*.feature": {
+      \     "template": ["Feature: {underscore|capitalize|blank}"],
+      \     "type": "integration test"
+      \   }
+      \ }
+      \}
+
+
 let s:projections_for_gems = {}
 function! s:app_projections() dict abort
   let dict = deepcopy(s:default_projections)
   if !self.has('rails3')
     let dict['config/environment.rb'] = remove(dict, 'config/application.rb')
   endif
+  for [k, v] in items(s:has_projections)
+    if self.has(k)
+      call s:combine_projections(dict, v)
+    endif
+  endfor
   call s:combine_projections(dict, get(g:, 'rails_projections', ''))
   for gem in keys(get(g:, 'rails_gem_projections', {}))
     if self.has_gem(gem)
