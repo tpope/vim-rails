@@ -4050,16 +4050,16 @@ function! s:BufMappings() abort
   nmap <buffer><silent> <Plug>RailsTabFind    <SID>:tabfind <Plug><cfile><CR>
   let pattern = '^$\|_gf(v:count\|[Rr]uby\|[Rr]ails'
   if mapcheck('gf', 'n') =~# pattern
-    nmap <buffer> gf              <Plug>RailsFind
+    nmap <buffer> gf         <Plug>RailsFind
   endif
   if mapcheck('<C-W>f', 'n') =~# pattern
-    nmap <buffer> <C-W>f        <Plug>RailsSplitFind
+    nmap <buffer> <C-W>f     <Plug>RailsSplitFind
   endif
   if mapcheck('<C-W><C-F>', 'n') =~# pattern
-    nmap <buffer> <C-W><C-F>      <Plug>RailsSplitFind
+    nmap <buffer> <C-W><C-F> <Plug>RailsSplitFind
   endif
   if mapcheck('<C-W>gf', 'n') =~# pattern
-    nmap <buffer> <C-W>gf         <Plug>RailsTabFind
+    nmap <buffer> <C-W>gf    <Plug>RailsTabFind
   endif
   if mapcheck('<C-R><C-F>', 'c') =~# pattern
     cmap <buffer> <C-R><C-F> <Plug><cfile>
