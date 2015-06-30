@@ -3153,6 +3153,9 @@ call s:add_methods('readable', ['open_command'])
 function! s:find(cmd, file) abort
   let djump = matchstr(a:file,'!.*\|#\zs.*\|:\zs\d*\ze\%(:in\)\=$')
   let file = s:sub(a:file,'[#!].*|:\d*%(:in)=$','')
+  if file =~# '^\.\.\=\%([\/]\|$\)' && getcwd() !=# rails#app().path()
+    let file = rails#app().path() . s:sub(file[1:-1], '^\.\+', '')
+  endif
   let cmd = (empty(a:cmd) ? '' : s:findcmdfor(a:cmd)) . ' '
   if djump =~# '!'
     if empty(a:cmd) || file !~# '\%(^\|:\)[\/]'
@@ -3215,7 +3218,7 @@ function! s:Related(cmd,line1,line2,count,...)
 endfunction
 
 function! s:Complete_related(A,L,P)
-  if a:L =~# '^[[:alpha:]]'
+  if a:L =~# '^[[:alpha:]]' || a:A =~# '^\w*:\|^\.\=[\/]'
     return s:Complete_edit(a:A,a:L,a:P)
   else
     return s:Complete_find(a:A,a:L,a:P)
