@@ -2003,7 +2003,7 @@ endfunction
 
 function! s:jumpargs(file, jump) abort
   let file = fnameescape(a:file)
-  if empty(a:jump)
+  if empty(a:jump) || a:jump ==# '!'
     return file
   elseif a:jump =~# '^\d\+$'
     return '+' . a:jump . ' ' . file
