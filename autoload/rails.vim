@@ -3158,7 +3158,7 @@ function! s:find(cmd, file) abort
   endif
   let cmd = (empty(a:cmd) ? '' : s:findcmdfor(a:cmd)) . ' '
   if djump =~# '!'
-    if empty(a:cmd) || file !~# '\%(^\|:\)[\/]'
+    if empty(a:cmd) || file !~# '\%(^.\=\|:\)[\/]'
       throw "Cannot create directory here"
     else
       if !isdirectory(fnamemodify(file, ':h'))
@@ -3179,7 +3179,7 @@ function! s:edit(cmd, file) abort
   return s:open(s:editcmdfor(a:cmd), a:file)
 endfunction
 
-function! s:Alternate(cmd,line1,line2,count,...)
+function! s:Alternate(cmd,line1,line2,count,...) abort
   if a:0
     if a:1 =~# '^#\h' && a:cmd !~# 'D'
       return s:jump(a:1[1:-1], a:cmd)
@@ -3200,11 +3200,32 @@ function! s:Alternate(cmd,line1,line2,count,...)
     if empty(file)
       let file = rails#buffer().alternate(a:count)
     endif
-    if !empty(file)
-      return s:edit(a:cmd, file)
-    else
-      call s:warn("No alternate file is defined")
+    let has_path = !empty(file) && rails#app().has_path(file)
+    let g:confirm = histget(':', -1)
+    let confirm = &confirm || (histget(':', -1) =~# '\%(^\||\)\s*conf\%[irm]\>')
+    if confirm && !a:count && !has_path
+      let projected = rails#buffer().projected_with_raw('alternate')
+      call filter(projected, 'rails#app().has_path(matchstr(v:val[1], "^[^{}]*/"))')
+      if len(projected)
+        let choices = ['Create alternate file?']
+        let i = 0
+        for [alt, _] in projected
+          let i += 1
+          call add(choices, i.' '.alt)
+        endfor
+        let i = inputlist(choices)
+        if i > 0 && i <= len(projected)
+          let file = projected[i-1][0] . '!'
+        else
+          return ''
+        endif
+      endif
+    endif
+    if empty(file)
+      call s:error("No alternate file defined")
       return ''
+    else
+      return s:find(a:cmd, './' . file)
     endif
   endif
 endfunction
@@ -4829,7 +4850,7 @@ function! s:expand_placeholders(string, placeholders)
   return value =~# "\001" ? '' : value
 endfunction
 
-function! s:readable_projected(key, ...) dict abort
+function! s:readable_projected_with_raw(key, ...) dict abort
   let f = self.name()
   let all = self.app().projections()
   let mine = []
@@ -4853,13 +4874,17 @@ function! s:readable_projected(key, ...) dict abort
       if suffix =~# '\.js\>'
         let ph.S = s:gsub(ph.S, '::', '.')
       endif
-      let mine += map(s:getlist(all[pattern], a:key), 's:expand_placeholders(v:val, ph)')
+      let mine += map(s:getlist(all[pattern], a:key), '[s:expand_placeholders(v:val, ph), v:val]')
     endif
   endfor
-  return filter(mine, '!empty(v:val)')
+  return filter(mine, '!empty(v:val[0])')
 endfunction
 
-call s:add_methods('readable', ['projected'])
+function! s:readable_projected(key, ...) dict abort
+  return map(self.projected_with_raw(a:key, a:0 ? a:1 : {}), 'v:val[0]')
+endfunction
+
+call s:add_methods('readable', ['projected', 'projected_with_raw'])
 
 function! s:Set(bang,...)
   call s:warn('Rset is obsolete and has no effect')
