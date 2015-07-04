@@ -3358,25 +3358,6 @@ function! s:readable_alternate_candidates(...) dict abort
     return ['db/seeds.rb']
   elseif f ==# 'db/seeds.rb'
     return ['db/schema.rb', 'db/structure.sql', 'db/'.s:environment().'_structure.sql']
-  elseif self.type_name('test')
-    let app_file = s:sub(s:sub(f, '<test/', 'app/'), '_test\.rb$', '.rb')
-    if app_file =~# '\<app/lib/'
-      return [s:sub(app_file,'<app/lib/','lib/')]
-    elseif app_file =~# '\<app/unit/helpers/'
-      return [s:sub(app_file,'<app/unit/helpers/','app/helpers/')]
-    elseif app_file =~# '\<app/functional/.*_controller\.rb'
-      return [s:sub(app_file,'<app/functional/','app/controllers/')]
-    elseif app_file =~# '\<app/unit/'
-      return [s:sub(app_file,'<app/unit/','app/models/'),
-            \ s:sub(app_file,'<app/unit/','lib/'),
-            \ app_file]
-    elseif app_file =~# '\<app/functional'
-      return [s:sub(file, '\<app/functional/', 'app/controllers/'),
-            \ s:sub(file, '\<app/functional/', 'app/mailers/'),
-            \ app_file]
-    else
-      return [app_file]
-    endif
   elseif self.type_name('spec-view')
     return [s:sub(s:sub(f,'<spec/','app/'),'_spec\.rb$','')]
   elseif self.type_name('spec-lib')
@@ -4633,6 +4614,9 @@ let s:has_projections = {
       \   "spec/spec_helper.rb": {"type": "integration test"}
       \ },
       \ "test": {
+      \   "test/*_test.rb": {
+      \     "alternate": "app/{}.rb"
+      \   },
       \   "test/controllers/*_test.rb": {
       \     "template": [
       \       "require 'test_helper'",
@@ -4643,6 +4627,7 @@ let s:has_projections = {
       \     "type": "functional test"
       \   },
       \   "test/functional/*_test.rb": {
+      \     "alternate": ["app/controllers/{}.rb", "app/mailers/{}.rb"],
       \     "template": [
       \       "require 'test_helper'",
       \       "",
@@ -4669,7 +4654,10 @@ let s:has_projections = {
       \     ],
       \     "type": "integration test"
       \   },
-      \   "test/mailers/": {
+      \   "test/lib/*_test.rb": {
+      \     "alternate": "lib/{}.rb",
+      \   }
+      \   "test/mailers/*_test.rb": {
       \     "affinity": "model",
       \     "template": [
       \       "require 'test_helper'",
@@ -4692,6 +4680,7 @@ let s:has_projections = {
       \   "test/test_helper.rb": {"type": "integration test"},
       \   "test/unit/*_test.rb": {
       \     "affinity": "model",
+      \     "alternate": ["app/models/{}.rb", "lib/{}.rb"],
       \     "template": [
       \       "require 'test_helper'",
       \       "",
@@ -4699,6 +4688,10 @@ let s:has_projections = {
       \       "end"
       \     ],
       \     "type": "unit test"
+      \   },
+      \   "test/unit/helpers/*_helper_test.rb": {
+      \     "affinity": "controller",
+      \     "alternate": "app/helpers/{}_helper.rb"
       \   }
       \ },
       \ "turnip": {
