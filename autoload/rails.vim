@@ -4654,7 +4654,7 @@ let s:has_projections = {
       \   },
       \   "test/lib/*_test.rb": {
       \     "alternate": "lib/{}.rb",
-      \   }
+      \   },
       \   "test/mailers/*_test.rb": {
       \     "affinity": "model",
       \     "template": [
