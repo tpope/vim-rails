@@ -865,6 +865,7 @@ function! s:app_has(feature) dict
         \'test': 'test/',
         \'spec': 'spec/',
         \'bundler': 'Gemfile|gems.locked',
+        \'rails2': 'script/about',
         \'rails3': 'config/application.rb',
         \'cucumber': 'features/',
         \'turnip': 'spec/acceptance/',
@@ -3298,27 +3299,7 @@ function! s:readable_alternate_candidates(...) dict abort
   if !empty(projected)
     return projected
   endif
-  if f =~# '^config/environments/'
-    return ['config/application.rb', 'config/environment.rb']
-  elseif f =~# '\.example\.yml$\|\.yml\.example$'
-    return [s:sub(f, '\.example\.yml$|\.yml\.example$', '.yml')]
-  elseif f =~# '\.yml$'
-    return [s:sub(f, '\.yml$', '\.example.yml'), f . '.example']
-  elseif f =~# '^README\%(\.\w\+\)\=$'
-    return ['config/database.yml']
-  elseif f ==# 'config/routes.rb'
-    return ['config/application.rb', 'config/environment.rb']
-  elseif f =~# '^config/\%(application\|environment\)\.rb$'
-    return ['config/routes.rb']
-  elseif f ==# 'Gemfile'
-    return ['Gemfile.lock']
-  elseif f ==# 'Gemfile.lock'
-    return ['Gemfile']
-  elseif f ==# 'gems.rb'
-    return ['gems.locked']
-  elseif f ==# 'gems.locked'
-    return ['gems.rb']
-  elseif f =~# '^db/migrate/'
+  if f =~# '^db/migrate/'
     let migrations = sort(self.app().relglob('db/migrate/','*','.rb'))
     let me = matchstr(f,'\<db/migrate/\zs.*\ze\.rb$')
     if !exists('lastmethod') || lastmethod == 'down' || (a:0 && a:1 == 1)
@@ -4503,7 +4484,12 @@ function! s:combine_projections(dest, src, ...) abort
 endfunction
 
 let s:default_projections = {
-      \  "Gemfile": {"type": "lib"},
+      \  "*.example.yml": {"alternate": "{}.yml"},
+      \  "*.yml": {"alternate": ["{}.example.yml", "{}.yml"]},
+      \  "*.yml.example": {"alternate": "{}.yml"},
+      \  "Gemfile": {"alternate": "Gemfile.lock", "type": "lib"},
+      \  "README": {"alternate": "config/database.yml"},
+      \  "README.*": {"alternate": "config/database.yml"},
       \  "Rakefile": {"type": "task"},
       \  "app/controllers/*_controller.rb": {
       \    "affinity": "controller",
@@ -4532,12 +4518,18 @@ let s:default_projections = {
       \    "template": "class %S\nend",
       \    "type": "model"
       \  },
-      \  "config/application.rb": {"type": "environment"},
-      \  "config/environments/*.rb": {"type": "environment"},
+      \  "config/application.rb": {"alternate": "config/routes.rb"},
+      \  "config/environment.rb": {"alternate": "config/routes.rb"},
+      \  "config/environments/*.rb": {
+      \    "alternate": ["config/application.rb", "config/environment.rb"],
+      \    "type": "environment"
+      \  },
       \  "config/initializers/*.rb": {"type": "initializer"},
-      \  "config/routes.rb": {"type": "initializer"},
-      \  "gems.rb": {"type": "lib"},
-      \  "lib/*.rb": {"type": "lib"},
+      \  "config/routes.rb": {
+      \    "alternate": ["config/application.rb", "config/environment.rb"],
+      \    "type": "initializer"
+      \  },
+      \  "gems.rb": {"alternate": "gems.locked", "type": "lib"},
       \  "lib/tasks/*.rake": {"type": "task"}
       \}
 
@@ -4549,6 +4541,8 @@ let s:has_projections = {
       \    },
       \    "features/support/env.rb": {"type": "integration test"}
       \  },
+      \  "rails2": {"config/environment.rb": {"type": "environment"}},
+      \  "rails3": {"config/application.rb": {"type": "environment"}},
       \  "spec": {
       \    "spec/*_spec.rb": {"alternate": "app/{}.rb"},
       \    "spec/controllers/*_spec.rb": {
@@ -4708,9 +4702,6 @@ let s:has_projections = {
 let s:projections_for_gems = {}
 function! s:app_projections() dict abort
   let dict = deepcopy(s:default_projections)
-  if !self.has('rails3')
-    let dict['config/environment.rb'] = remove(dict, 'config/application.rb')
-  endif
   for [k, v] in items(s:has_projections)
     if self.has(k)
       call s:combine_projections(dict, v)
