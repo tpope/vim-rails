@@ -4503,203 +4503,207 @@ function! s:combine_projections(dest, src, ...) abort
 endfunction
 
 let s:default_projections = {
-      \ 'config/environments/*.rb': {'type': 'environment'},
-      \ 'config/application.rb': {'type': 'environment'},
-      \ 'app/controllers/*_controller.rb': {
-      \   'type': 'controller',
-      \   'template': ["class {camelcase|capitalize|colons}Controller < ApplicationController", "end"],
-      \   'affinity': 'controller'},
-      \ 'app/helpers/*_helper.rb': {
-      \   'type': 'helper',
-      \   'template': ["module {camelcase|capitalize|colons}Helper", "end"],
-      \   'affinity': 'controller'},
-      \ 'config/initializers/*.rb': {'type': 'initializer'},
-      \ 'config/routes.rb': {'type': 'initializer'},
-      \ 'app/jobs/*_job.rb': {
-      \   'type': 'job',
-      \   'template': "class {camelcase|capitalize|colons}Job < ActiveJob::Base\nend"},
-      \ 'lib/*.rb': {'type': 'lib'},
-      \ 'Gemfile': {'type': 'lib'},
-      \ 'gems.rb': {'type': 'lib'},
-      \ 'app/mailers/*.rb': {
-      \    'type': 'mailer',
-      \    'template': "class {camelcase|capitalize|colons} < ActionMailer::Base\nend",
-      \    'affinity': 'controller'},
-      \ 'app/models/*.rb': {
-      \    'type': 'model',
-      \    'template': "class %S\nend",
-      \    'affinity': 'model'},
-      \ 'lib/tasks/*.rake': {'type': 'task'},
-      \ 'Rakefile': {'type': 'task'}}
-
-let s:has_projections = {
-      \ "cucumber": {
-      \   "features/*.feature": {
-      \     "template": ["Feature: {underscore|capitalize|blank}"],
-      \     "type": "integration test"
-      \   },
-      \   "features/support/env.rb": {"type": "integration test"}
-      \ },
-      \ "spec": {
-      \   "spec/*_spec.rb": {"alternate": "app/{}.rb"},
-      \   "spec/lib/*_spec.rb": {"alternate": "lib/{}.rb"},
-      \   "spec/controllers/*_spec.rb": {
-      \     "template": [
-      \       "require 'spec_helper'",
-      \       "",
-      \       "describe {camelcase|capitalize|colons} do",
-      \       "end"
-      \     ],
-      \     "type": "functional test"
-      \   },
-      \   "spec/features/*_spec.rb": {
-      \     "template": [
-      \       "require 'spec_helper'",
-      \       "",
-      \       "describe \"{underscore|capitalize|blank}\" do",
-      \       "end"
-      \     ],
-      \     "type": "integration test"
-      \   },
-      \   "spec/helpers/*_spec.rb": {
-      \     "template": [
-      \       "require 'spec_helper'",
-      \       "",
-      \       "describe {camelcase|capitalize|colons} do",
-      \       "end"
-      \     ],
-      \     "type": "unit test"
-      \   },
-      \   "spec/integration/*_spec.rb": {
-      \     "template": [
-      \       "require 'spec_helper'",
-      \       "",
-      \       "describe \"{underscore|capitalize|blank}\" do",
-      \       "end"
-      \     ],
-      \     "type": "integration test"
-      \   },
-      \   "spec/mailers/*_spec.rb": {
-      \     "affinity": "controller",
-      \     "template": [
-      \       "require 'spec_helper'",
-      \       "",
-      \       "describe {camelcase|capitalize|colons} do",
-      \       "end"
-      \     ],
-      \     "type": "functional test"
-      \   },
-      \   "spec/models/*_spec.rb": {
-      \     "affinity": "model",
-      \     "template": [
-      \       "require 'spec_helper'",
-      \       "",
-      \       "describe {camelcase|capitalize|colons} do",
-      \       "end"
-      \     ],
-      \     "type": "unit test"
-      \   },
-      \   "spec/rails_helper.rb": {"type": "integration test"},
-      \   "spec/requests/*_spec.rb": {
-      \     "template": [
-      \       "require 'spec_helper'",
-      \       "",
-      \       "describe \"{underscore|capitalize|blank}\" do",
-      \       "end"
-      \     ],
-      \     "type": "integration test"
-      \   },
-      \   "spec/spec_helper.rb": {"type": "integration test"}
-      \ },
-      \ "test": {
-      \   "test/*_test.rb": {
-      \     "alternate": "app/{}.rb"
-      \   },
-      \   "test/controllers/*_test.rb": {
-      \     "template": [
-      \       "require 'test_helper'",
-      \       "",
-      \       "class {camelcase|capitalize|colons}Test < ActionController::TestCase",
-      \       "end"
-      \     ],
-      \     "type": "functional test"
-      \   },
-      \   "test/functional/*_test.rb": {
-      \     "alternate": ["app/controllers/{}.rb", "app/mailers/{}.rb"],
-      \     "template": [
-      \       "require 'test_helper'",
-      \       "",
-      \       "class {camelcase|capitalize|colons}Test < ActionController::TestCase",
-      \       "end"
-      \     ],
-      \     "type": "functional test"
-      \   },
-      \   "test/helpers/*_test.rb": {
-      \     "template": [
-      \       "require 'test_helper'",
-      \       "",
-      \       "class {camelcase|capitalize|colons}Test < ActionView::TestCase",
-      \       "end"
-      \     ],
-      \     "type": "unit test"
-      \   },
-      \   "test/integration/*_test.rb": {
-      \     "template": [
-      \       "require 'test_helper'",
-      \       "",
-      \       "class {camelcase|capitalize|colons}Test < ActionDispatch::IntegrationTest",
-      \       "end"
-      \     ],
-      \     "type": "integration test"
-      \   },
-      \   "test/lib/*_test.rb": {
-      \     "alternate": "lib/{}.rb",
-      \   },
-      \   "test/mailers/*_test.rb": {
-      \     "affinity": "model",
-      \     "template": [
-      \       "require 'test_helper'",
-      \       "",
-      \       "class {camelcase|capitalize|colons}Test < ActionMailer::TestCase",
-      \       "end"
-      \     ],
-      \     "type": "functional test"
-      \   },
-      \   "test/models/*_test.rb": {
-      \     "affinity": "model",
-      \     "template": [
-      \       "require 'test_helper'",
-      \       "",
-      \       "class {camelcase|capitalize|colons}Test < ActiveSupport::TestCase",
-      \       "end"
-      \     ],
-      \     "type": "unit test"
-      \   },
-      \   "test/test_helper.rb": {"type": "integration test"},
-      \   "test/unit/*_test.rb": {
-      \     "affinity": "model",
-      \     "alternate": ["app/models/{}.rb", "lib/{}.rb"],
-      \     "template": [
-      \       "require 'test_helper'",
-      \       "",
-      \       "class {camelcase|capitalize|colons}Test < ActiveSupport::TestCase",
-      \       "end"
-      \     ],
-      \     "type": "unit test"
-      \   },
-      \   "test/unit/helpers/*_helper_test.rb": {
-      \     "affinity": "controller",
-      \     "alternate": "app/helpers/{}_helper.rb"
-      \   }
-      \ },
-      \ "turnip": {
-      \   "spec/acceptance/*.feature": {
-      \     "template": ["Feature: {underscore|capitalize|blank}"],
-      \     "type": "integration test"
-      \   }
-      \ }
+      \  "Gemfile": {"type": "lib"},
+      \  "Rakefile": {"type": "task"},
+      \  "app/controllers/*_controller.rb": {
+      \    "affinity": "controller",
+      \    "template": [
+      \      "class {camelcase|capitalize|colons}Controller < ApplicationController",
+      \      "end"
+      \    ],
+      \    "type": "controller"
+      \  },
+      \  "app/helpers/*_helper.rb": {
+      \    "affinity": "controller",
+      \    "template": ["module {camelcase|capitalize|colons}Helper", "end"],
+      \    "type": "helper"
+      \  },
+      \  "app/jobs/*_job.rb": {
+      \    "template": "class {camelcase|capitalize|colons}Job < ActiveJob::Base\nend",
+      \    "type": "job"
+      \  },
+      \  "app/mailers/*.rb": {
+      \    "affinity": "controller",
+      \    "template": "class {camelcase|capitalize|colons} < ActionMailer::Base\nend",
+      \    "type": "mailer"
+      \  },
+      \  "app/models/*.rb": {
+      \    "affinity": "model",
+      \    "template": "class %S\nend",
+      \    "type": "model"
+      \  },
+      \  "config/application.rb": {"type": "environment"},
+      \  "config/environments/*.rb": {"type": "environment"},
+      \  "config/initializers/*.rb": {"type": "initializer"},
+      \  "config/routes.rb": {"type": "initializer"},
+      \  "gems.rb": {"type": "lib"},
+      \  "lib/*.rb": {"type": "lib"},
+      \  "lib/tasks/*.rake": {"type": "task"}
       \}
 
+let s:has_projections = {
+      \  "cucumber": {
+      \    "features/*.feature": {
+      \      "template": ["Feature: {underscore|capitalize|blank}"],
+      \      "type": "integration test"
+      \    },
+      \    "features/support/env.rb": {"type": "integration test"}
+      \  },
+      \  "spec": {
+      \    "spec/*_spec.rb": {"alternate": "app/{}.rb"},
+      \    "spec/controllers/*_spec.rb": {
+      \      "template": [
+      \        "require 'spec_helper'",
+      \        "",
+      \        "describe {camelcase|capitalize|colons} do",
+      \        "end"
+      \      ],
+      \      "type": "functional test"
+      \    },
+      \    "spec/features/*_spec.rb": {
+      \      "template": [
+      \        "require 'spec_helper'",
+      \        "",
+      \        "describe \"{underscore|capitalize|blank}\" do",
+      \        "end"
+      \      ],
+      \      "type": "integration test"
+      \    },
+      \    "spec/helpers/*_spec.rb": {
+      \      "template": [
+      \        "require 'spec_helper'",
+      \        "",
+      \        "describe {camelcase|capitalize|colons} do",
+      \        "end"
+      \      ],
+      \      "type": "unit test"
+      \    },
+      \    "spec/integration/*_spec.rb": {
+      \      "template": [
+      \        "require 'spec_helper'",
+      \        "",
+      \        "describe \"{underscore|capitalize|blank}\" do",
+      \        "end"
+      \      ],
+      \      "type": "integration test"
+      \    },
+      \    "spec/lib/*_spec.rb": {"alternate": "lib/{}.rb"},
+      \    "spec/mailers/*_spec.rb": {
+      \      "affinity": "controller",
+      \      "template": [
+      \        "require 'spec_helper'",
+      \        "",
+      \        "describe {camelcase|capitalize|colons} do",
+      \        "end"
+      \      ],
+      \      "type": "functional test"
+      \    },
+      \    "spec/models/*_spec.rb": {
+      \      "affinity": "model",
+      \      "template": [
+      \        "require 'spec_helper'",
+      \        "",
+      \        "describe {camelcase|capitalize|colons} do",
+      \        "end"
+      \      ],
+      \      "type": "unit test"
+      \    },
+      \    "spec/rails_helper.rb": {"type": "integration test"},
+      \    "spec/requests/*_spec.rb": {
+      \      "template": [
+      \        "require 'spec_helper'",
+      \        "",
+      \        "describe \"{underscore|capitalize|blank}\" do",
+      \        "end"
+      \      ],
+      \      "type": "integration test"
+      \    },
+      \    "spec/spec_helper.rb": {"type": "integration test"}
+      \  },
+      \  "test": {
+      \    "test/*_test.rb": {"alternate": "app/{}.rb"},
+      \    "test/controllers/*_test.rb": {
+      \      "template": [
+      \        "require 'test_helper'",
+      \        "",
+      \        "class {camelcase|capitalize|colons}Test < ActionController::TestCase",
+      \        "end"
+      \      ],
+      \      "type": "functional test"
+      \    },
+      \    "test/functional/*_test.rb": {
+      \      "alternate": ["app/controllers/{}.rb", "app/mailers/{}.rb"],
+      \      "template": [
+      \        "require 'test_helper'",
+      \        "",
+      \        "class {camelcase|capitalize|colons}Test < ActionController::TestCase",
+      \        "end"
+      \      ],
+      \      "type": "functional test"
+      \    },
+      \    "test/helpers/*_test.rb": {
+      \      "template": [
+      \        "require 'test_helper'",
+      \        "",
+      \        "class {camelcase|capitalize|colons}Test < ActionView::TestCase",
+      \        "end"
+      \      ],
+      \      "type": "unit test"
+      \    },
+      \    "test/integration/*_test.rb": {
+      \      "template": [
+      \        "require 'test_helper'",
+      \        "",
+      \        "class {camelcase|capitalize|colons}Test < ActionDispatch::IntegrationTest",
+      \        "end"
+      \      ],
+      \      "type": "integration test"
+      \    },
+      \    "test/lib/*_test.rb": {"alternate": "lib/{}.rb"},
+      \    "test/mailers/*_test.rb": {
+      \      "affinity": "model",
+      \      "template": [
+      \        "require 'test_helper'",
+      \        "",
+      \        "class {camelcase|capitalize|colons}Test < ActionMailer::TestCase",
+      \        "end"
+      \      ],
+      \      "type": "functional test"
+      \    },
+      \    "test/models/*_test.rb": {
+      \      "affinity": "model",
+      \      "template": [
+      \        "require 'test_helper'",
+      \        "",
+      \        "class {camelcase|capitalize|colons}Test < ActiveSupport::TestCase",
+      \        "end"
+      \      ],
+      \      "type": "unit test"
+      \    },
+      \    "test/test_helper.rb": {"type": "integration test"},
+      \    "test/unit/*_test.rb": {
+      \      "affinity": "model",
+      \      "alternate": ["app/models/{}.rb", "lib/{}.rb"],
+      \      "template": [
+      \        "require 'test_helper'",
+      \        "",
+      \        "class {camelcase|capitalize|colons}Test < ActiveSupport::TestCase",
+      \        "end"
+      \      ],
+      \      "type": "unit test"
+      \    },
+      \    "test/unit/helpers/*_helper_test.rb": {
+      \      "affinity": "controller",
+      \      "alternate": "app/helpers/{}_helper.rb"
+      \    }
+      \  },
+      \  "turnip": {
+      \    "spec/acceptance/*.feature": {
+      \      "template": ["Feature: {underscore|capitalize|blank}"],
+      \      "type": "integration test"
+      \    }
+      \  }
+      \}
 
 let s:projections_for_gems = {}
 function! s:app_projections() dict abort
