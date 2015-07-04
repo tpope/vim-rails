@@ -2004,8 +2004,10 @@ endfunction
 
 function! s:jumpargs(file, jump) abort
   let file = fnameescape(a:file)
-  if empty(a:jump) || a:jump ==# '!'
+  if empty(a:jump)
     return file
+  elseif a:jump ==# '!'
+    return '+AD ' . file
   elseif a:jump =~# '^\d\+$'
     return '+' . a:jump . ' ' . file
   else
@@ -3129,21 +3131,20 @@ function! s:readable_open_command(cmd, argument, name, projections) dict abort
         call mkdir(fnamemodify(file, ':h'), 'p')
       endif
       if has_key(projection, 'template')
-      let template = s:split(projection.template)
-      let ph = {
-            \ 'match': root,
-            \ 'file': file,
-            \ 'project': self.app().path(),
-            \ 'S': rails#camelize(root),
-            \ 'h': toupper(root[0]) . tr(rails#underscore(root), '_', ' ')[1:-1]}
+        let template = s:split(projection.template)
+        let ph = {
+              \ 'match': root,
+              \ 'file': file,
+              \ 'project': self.app().path(),
+              \ 'S': rails#camelize(root),
+              \ 'h': toupper(root[0]) . tr(rails#underscore(root), '_', ' ')[1:-1]}
         call map(template, 's:expand_placeholders(v:val, ph)')
+        call map(template, 's:gsub(v:val, "\t", "  ")')
+        let file = fnamemodify(simplify(file), ':.')
+        return cmd . ' ' . s:fnameescape(file) . '|call setline(1, '.string(template).')' . '|set nomod'.s:r_warning(a:cmd)
       else
-        let projected = self.app().file(relative).projected('template')
-        let template = s:split(get(projected, 0, ''))
+        return cmd . ' +AD ' . s:fnameescape(file) . s:r_warning(a:cmd)
       endif
-      call map(template, 's:gsub(v:val, "\t", "  ")')
-      let file = fnamemodify(simplify(file), ':.')
-      return cmd . ' ' . s:fnameescape(file) . '|call setline(1, '.string(template).')' . '|set nomod'.s:r_warning(a:cmd)
     endif
   endfor
   return 'echoerr '.string("Couldn't find destination directory for ".a:name.' '.a:argument)
@@ -3154,19 +3155,15 @@ call s:add_methods('readable', ['open_command'])
 function! s:find(cmd, file) abort
   let djump = matchstr(a:file,'!.*\|#\zs.*\|:\zs\d*\ze\%(:in\)\=$')
   let file = s:sub(a:file,'[#!].*|:\d*%(:in)=$','')
-  if file =~# '^\.\.\=\%([\/]\|$\)' && getcwd() !=# rails#app().path()
-    let file = rails#app().path() . s:sub(file[1:-1], '^\.\+', '')
+  if file =~# '^\.\.\=\%([\/]\|$\)'
+    let file = simplify(rails#app().path() . s:sub(file[1:-1], '^\.', '/..'))
   endif
   let cmd = (empty(a:cmd) ? '' : s:findcmdfor(a:cmd)) . ' '
   if djump =~# '!'
-    if empty(a:cmd) || file !~# '\%(^.\=\|:\)[\/]'
-      throw "Cannot create directory here"
-    else
-      if !isdirectory(fnamemodify(file, ':h'))
-        call mkdir(fnamemodify(file, ':h'), 'p')
-      endif
-      return s:editcmdfor(cmd) . s:fnameescape(file)
+    if !isdirectory(fnamemodify(file, ':h'))
+      call mkdir(fnamemodify(file, ':h'), 'p')
     endif
+    return s:editcmdfor(cmd) . s:jumpargs(fnamemodify(file, ':~:.'), djump)
   else
     return cmd . s:jumpargs(file, djump)
   endif
@@ -3182,8 +3179,8 @@ endfunction
 
 function! s:Alternate(cmd,line1,line2,count,...) abort
   if a:0
-    if a:1 =~# '^#\h' && a:cmd !~# 'D'
-      return s:jump(a:1[1:-1], a:cmd)
+    if a:1 =~# '^#\h'
+      return s:jump(a:1[1:-1], s:sub(a:cmd, 'D', 'E'))
     elseif a:count && a:cmd !~# 'D'
       return call('s:Find',[1,a:line1.a:cmd]+a:000)
     else
@@ -3196,6 +3193,20 @@ function! s:Alternate(cmd,line1,line2,count,...) abort
       let file = a:{i}
       return s:find(cmd, file)
     endif
+  elseif a:cmd =~# 'D'
+    let modified = &l:modified
+    let template = s:split(get(rails#buffer().projected('template'), 0, []))
+    call map(template, 's:gsub(v:val, "\t", "  ")')
+    if a:line2 == a:count
+      call append(a:line2, template)
+    else
+      silent %delete_
+      call setline(1, template)
+      if !modified && !filereadable(expand('%'))
+        setlocal nomodified
+      endif
+    endif
+    return ''
   else
     let file = get(b:, a:count ? 'rails_related' : 'rails_alternate')
     if empty(file)
@@ -4456,10 +4467,14 @@ function! s:app_engines() dict abort
   return self.cache.get('engines')[0]
 endfunction
 
-function! s:extend_projection(dest, src)
+function! s:extend_projection(dest, src) abort
   let dest = copy(a:dest)
   for key in keys(a:src)
-    if !has_key(dest, key) || key ==# 'affinity'
+    if !has_key(dest, key) && key ==# 'template'
+      let dest[key] = [s:split(a:src[key])]
+    elseif key ==# 'template'
+      let dest[key] += [s:split(a:src[key])]
+    elseif !has_key(dest, key) || key ==# 'affinity'
       let dest[key] = a:src[key]
     elseif type(a:src[key]) == type({}) && type(dest[key]) == type({})
       let dest[key] = extend(copy(dest[key]), a:src[key])
@@ -4827,8 +4842,8 @@ function! s:expand_placeholder(placeholder, expansions) abort
 endfunction
 
 function! s:expand_placeholders(string, placeholders)
-  if type(a:string) !=# type('')
-    return a:string
+  if type(a:string) ==# type({}) || type(a:string) == type([])
+    return map(copy(a:string), 's:expand_placeholders(v:val, a:placeholders)')
   endif
   let ph = extend({'%': '%'}, a:placeholders)
   let value = substitute(a:string, '{[^{}]*}', '\=s:expand_placeholder(submatch(0), ph)', 'g')
