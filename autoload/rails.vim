@@ -3360,10 +3360,6 @@ function! s:readable_alternate_candidates(...) dict abort
     return ['db/schema.rb', 'db/structure.sql', 'db/'.s:environment().'_structure.sql']
   elseif self.type_name('spec-view')
     return [s:sub(s:sub(f,'<spec/','app/'),'_spec\.rb$','')]
-  elseif self.type_name('spec-lib')
-    return [s:sub(s:sub(f,'<spec/',''),'_spec\.rb$','.rb')]
-  elseif self.type_name('spec')
-    return [s:sub(s:sub(f,'<spec/','app/'),'_spec\.rb$','.rb')]
   else
     return self.test_file_candidates()
   endif
@@ -4545,6 +4541,8 @@ let s:has_projections = {
       \   "features/support/env.rb": {"type": "integration test"}
       \ },
       \ "spec": {
+      \   "spec/*_spec.rb": {"alternate": "app/{}.rb"},
+      \   "spec/lib/*_spec.rb": {"alternate": "lib/{}.rb"},
       \   "spec/controllers/*_spec.rb": {
       \     "template": [
       \       "require 'spec_helper'",
