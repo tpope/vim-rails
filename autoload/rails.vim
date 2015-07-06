@@ -4520,17 +4520,17 @@ let s:default_projections = {
       \    "type": "helper"
       \  },
       \  "app/jobs/*_job.rb": {
-      \    "template": "class {camelcase|capitalize|colons}Job < ActiveJob::Base\nend",
+      \    "template": ["class {camelcase|capitalize|colons}Job < ActiveJob::Base", "end"],
       \    "type": "job"
       \  },
       \  "app/mailers/*.rb": {
       \    "affinity": "controller",
-      \    "template": "class {camelcase|capitalize|colons} < ActionMailer::Base\nend",
+      \    "template": ["class {camelcase|capitalize|colons} < ActionMailer::Base", "end"],
       \    "type": "mailer"
       \  },
       \  "app/models/*.rb": {
       \    "affinity": "model",
-      \    "template": "class %S\nend",
+      \    "template": ["class {camelcase|capitalize|colons}", "end"],
       \    "type": "model"
       \  },
       \  "config/application.rb": {"alternate": "config/routes.rb"},
