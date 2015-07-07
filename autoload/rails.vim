@@ -4545,6 +4545,7 @@ let s:default_projections = {
       \    "type": "initializer"
       \  },
       \  "gems.rb": {"alternate": "gems.locked", "type": "lib"},
+      \  "lib/*.rb": {"type": "lib"},
       \  "lib/tasks/*.rake": {"type": "task"}
       \}
 
