@@ -5019,7 +5019,10 @@ function! rails#buffer_setup() abort
     let dir = dispatch#dir_opt(self.app().path())
   endif
 
-  if self.name() =~# '^public'
+  let dispatch = self.projected('dispatch')
+  if !empty(dispatch) && exists(dir)
+    call self.setvar('dispatch', dir . dispatch[0])
+  elseif self.name() =~# '^public'
     call self.setvar('dispatch', ':Preview')
   elseif self.type_name('test', 'spec', 'cucumber')
     call self.setvar('dispatch', ':Runner')
