@@ -3236,7 +3236,7 @@ function! s:Alternate(cmd,line1,line2,count,...) abort
       call s:error("No alternate file defined")
       return ''
     else
-      return s:find(a:cmd, './' . file)
+      return s:find(a:cmd, rails#app().path(file))
     endif
   endif
 endfunction
