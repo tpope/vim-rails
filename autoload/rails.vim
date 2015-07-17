@@ -4865,7 +4865,7 @@ function! s:readable_projected_with_raw(key, ...) dict abort
   let all = self.app().projections()
   let mine = []
   if has_key(all, f)
-    let mine += map(s:getlist(all[f], a:key), 's:expand_placeholders(v:val, a:0 ? a:1 : {})')
+    let mine += map(s:getlist(all[f], a:key), '[s:expand_placeholders(v:val, a:0 ? a:1 : {}), v:val]')
   endif
   for pattern in reverse(sort(filter(keys(all), 'v:val =~# "^[^*{}]*\\*[^*{}]*$"'), s:function('rails#lencmp')))
     let [prefix, suffix; _] = split(pattern, '\*', 1)
