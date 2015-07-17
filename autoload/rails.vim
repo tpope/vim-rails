@@ -4513,6 +4513,15 @@ let s:default_projections = {
       \    ],
       \    "type": "controller"
       \  },
+      \  "app/controllers/concerns/*.rb": {
+      \    "affinity": "controller",
+      \    "template": [
+      \      "module {camelcase|capitalize|colons}",
+      \      "\tinclude ActiveSupport::Concern",
+      \      "end"
+      \    ],
+      \    "type": "controller"
+      \  },
       \  "app/helpers/*_helper.rb": {
       \    "affinity": "controller",
       \    "template": ["module {camelcase|capitalize|colons}Helper", "end"],
