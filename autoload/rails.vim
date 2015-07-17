@@ -4725,7 +4725,7 @@ let s:has_projections = {
 
 let s:projections_for_gems = {}
 function! s:app_projections() dict abort
-  let dict = deepcopy(s:default_projections)
+  let dict = s:combine_projections({}, s:default_projections)
   for [k, v] in items(s:has_projections)
     if self.has(k)
       call s:combine_projections(dict, v)
