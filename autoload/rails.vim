@@ -583,7 +583,7 @@ function! rails#pluralize(word)
 endfunction
 
 function! rails#app(...) abort
-  let root = a:0 ? a:1 : get(b:, 'rails_root', '')
+  let root = s:sub(a:0 ? a:1 : get(b:, 'rails_root', ''), '[\/]$', '')
   if !empty(root)
     if !has_key(s:apps, root) && filereadable(root . '/config/environment.rb')
       let s:apps[root] = deepcopy(s:app_prototype)
