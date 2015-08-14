@@ -3306,7 +3306,7 @@ function! s:readable_alternate_candidates(...) dict abort
     endif
   endif
   let projected = self.projected('alternate', placeholders)
-  if !empty(projected)
+  if !empty(projected) && f !~# '\<spec/views/.*_spec\.rb$'
     return projected
   endif
   if f =~# '^db/migrate/'
