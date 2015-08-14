@@ -3191,7 +3191,7 @@ function! s:Alternate(cmd,line1,line2,count,...) abort
         let i += 1
       endwhile
       let file = a:{i}
-      return s:find(cmd, file)
+      return s:edit(cmd, file)
     endif
   elseif a:cmd =~# 'D'
     let modified = &l:modified
