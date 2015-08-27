@@ -4472,7 +4472,7 @@ function! s:extend_projection(dest, src) abort
     if !has_key(dest, key) && key ==# 'template'
       let dest[key] = [s:split(a:src[key])]
     elseif key ==# 'template'
-      let dest[key] += [s:split(a:src[key])]
+      let dest[key] = [s:split(a:src[key])] + dest[key]
     elseif !has_key(dest, key) || key ==# 'affinity'
       let dest[key] = a:src[key]
     elseif type(a:src[key]) == type({}) && type(dest[key]) == type({})
