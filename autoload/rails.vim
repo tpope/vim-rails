@@ -2950,7 +2950,7 @@ function! s:viewEdit(cmd, ...) abort
   endif
 endfunction
 
-function! s:layoutEdit(cmd,...)
+function! s:layoutEdit(cmd,...) abort
   if a:0
     return s:viewEdit(a:cmd,"layouts/".a:1)
   endif
@@ -2958,7 +2958,7 @@ function! s:layoutEdit(cmd,...)
   if file ==# ""
     let file = "app/views/layouts/application.html.erb"
   endif
-  return s:edit(a:cmd,s:sub(file,'^/',''))
+  return s:edit(a:cmd, file)
 endfunction
 
 function! s:stylesheetEdit(cmd,...)
