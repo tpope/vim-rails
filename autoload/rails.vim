@@ -2946,7 +2946,7 @@ function! s:viewEdit(cmd, ...) abort
     endif
     return s:edit(a:cmd, file.djump)
   else
-    return s:open(a:cmd, view)
+    return s:open(a:cmd, 'app/views/'.view)
   endif
 endfunction
 
