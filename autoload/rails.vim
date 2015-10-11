@@ -1589,6 +1589,7 @@ function! s:Preview(bang, lnum, uri) abort
     let binding = '0.0.0.0:3000'
   endif
   let binding = s:sub(binding, '^0\.0\.0\.0>|^127\.0\.0\.1>', 'localhost')
+  let binding = s:sub(binding, '^\[::\]', '[::1]')
   let uri = empty(a:uri) ? get(rails#buffer().preview_urls(a:lnum),0,'') : a:uri
   if uri =~ '://'
     "
@@ -1802,7 +1803,8 @@ function! rails#get_binding_for(pid) abort
   endif
   if has('win32')
     let output = system('netstat -anop tcp')
-    return matchstr(output, '\n\s*TCP\s\+\zs\S\+\ze\s\+\S\+\s\+LISTENING\s\+'.a:pid.'\>')
+    let binding = matchstr(output, '\n\s*TCP\s\+\zs\S\+\ze\s\+\S\+\s\+LISTENING\s\+'.a:pid.'\>')
+    return s:sub(binding, '^([^[]*:.*):', '[\1]:')
   endif
   if executable('lsof')
     let lsof = 'lsof'
@@ -1810,14 +1812,20 @@ function! rails#get_binding_for(pid) abort
     let lsof = '/usr/sbin/lsof'
   endif
   if exists('lsof')
-    let output = system(lsof.' -an -itcp -sTCP:LISTEN -p'.a:pid)
+    let output = system(lsof.' -an -i4tcp -sTCP:LISTEN -p'.a:pid)
     let binding = matchstr(output, '\S\+:\d\+\ze\s\+(LISTEN)\n')
-    return s:sub(binding, '^\*', '0.0.0.0')
+    let binding = s:sub(binding, '^\*', '0.0.0.0')
+    if empty(binding)
+      let output = system(lsof.' -an -i6tcp -sTCP:LISTEN -p'.a:pid)
+      let binding = matchstr(output, '\S\+:\d\+\ze\s\+(LISTEN)\n')
+      let binding = s:sub(binding, '^\*', '[::]')
+    endif
+    return binding
   endif
   if executable('netstat')
     let output = system('netstat -antp')
-    return matchstr(output, '\S\+:\d\+\ze\s\+\S\+\s\+LISTEN\s\+'.a:pid.'/')
-    return binding
+    let binding = matchstr(output, '\S\+:\d\+\ze\s\+\S\+\s\+LISTEN\s\+'.a:pid.'/')
+    return s:sub(binding, '^([^[]*:.*):', '[\1]:')
   endif
   return ''
 endfunction
