@@ -1461,19 +1461,19 @@ call s:add_methods('app', ['rake_command'])
 function! s:initOpenURL() abort
   if exists(":OpenURL") != 2
     if exists(":Browse") == 2
-      command -bar -nargs=1 OpenURL :Browse <args>
+      command -bar -nargs=1 OpenURL Browse <args>
     elseif has("gui_mac") || has("gui_macvim") || exists("$SECURITYSESSIONID")
-      command -bar -nargs=1 OpenURL :!open <args>
+      command -bar -nargs=1 OpenURL exe '!open' shellescape(<q-args>, 1)
     elseif has("gui_win32")
-      command -bar -nargs=1 OpenURL :!start cmd /cstart /b <args>
+      command -bar -nargs=1 OpenURL exe '!start cmd /cstart /b' shellescape(<q-args>, 1)
     elseif executable("xdg-open")
-      command -bar -nargs=1 OpenURL :!xdg-open <args> &
+      command -bar -nargs=1 OpenURL exe '!xdg-open' shellescape(<q-args>, 1) '&'
     elseif executable("sensible-browser")
-      command -bar -nargs=1 OpenURL :!sensible-browser <args>
+      command -bar -nargs=1 OpenURL exe '!sensible-browser' shellescape(<q-args>, 1)
     elseif executable('launchy')
-      command -bar -nargs=1 OpenURL :!launchy <args>
+      command -bar -nargs=1 OpenURL exe '!launchy' shellescape(<q-args>, 1)
     elseif executable('git')
-      command -bar -nargs=1 OpenURL :!git web--browse <args>
+      command -bar -nargs=1 OpenURL exe '!git web--browse' shellescape(<q-args>, 1)
     endif
   endif
 endfunction
