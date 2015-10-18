@@ -3269,9 +3269,12 @@ function! s:readable_alternate_candidates(...) dict abort
   let f = self.name()
   let placeholders = {}
   if a:0 && a:1
+    let placeholders.lnum = a:1
+    let placeholders.line = a:1
     let lastmethod = self.last_method(a:1)
     if !empty(lastmethod)
       let placeholders.d = lastmethod
+      let placeholders.define = lastmethod
     endif
     let projected = self.projected('related', placeholders)
     if !empty(projected)
