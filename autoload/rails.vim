@@ -1038,16 +1038,11 @@ function! s:Log(bang,arg)
 endfunction
 
 function! rails#new_app_command(bang,...) abort
-  if !a:0 && a:bang
-    echo "rails.vim ".g:autoloaded_rails
-  elseif !a:0 || a:1 !=# 'new'
+  if !a:0 || a:1 !=# 'new'
     return 'echoerr '.string('Usage: rails new <path>')
   endif
 
   let args = copy(a:000)
-  if a:bang
-    let args += ['--force']
-  endif
 
   if &shellpipe !~# 'tee' && index(args, '--skip') < 0 && index(args, '--force') < 0
     let args += ['--skip']
@@ -1675,14 +1670,6 @@ function! s:app_generators() dict abort
 endfunction
 
 function! s:app_script_command(bang,...) dict
-  let msg = "rails.vim ".g:autoloaded_rails
-  if a:0 == 0 && a:bang && rails#buffer().type_name() == ''
-    echo msg." (Rails)"
-    return
-  elseif a:0 == 0 && a:bang
-    echo msg." (Rails-".rails#buffer().type_name().")"
-    return
-  endif
   let str = join(map(copy(a:000), 's:rquote(v:val)'), ' ')
   if str =~# '^\%(c\|console\|db\|dbconsole\|s\|server\)\S\@!' && str !~# ' -d\| --daemon\| --help'
     return self.start_rails_command(str, a:bang)

@@ -50,11 +50,6 @@ actually edit a file from a Rails application.
 			{directory}" and loads the generated files into the
 			quickfix list.
 
-						*rails-:Rails!*
-:Rails!			Show the version of rails.vim installed.  If rails.vim
-			is active for the current buffer, also show the type
-			of Rails file detected.
-
 						*rails-:Rlog*
 :Rlog [{logfile}]	Split window and open {logfile} ($RAILS_ENV or
 			development by default).  The control characters used
