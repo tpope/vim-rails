@@ -1365,10 +1365,11 @@ function! s:readable_default_rake_task(...) dict abort
     let line = getline(mnum)
     " We can't grab the namespace so only run tasks at the start of the line
     if line =~# '^\%(task\|file\)\>'
-      return self.last_method(lnum)
+      let task = self.last_method(lnum)
     else
-      return matchstr(self.getline(1),'\C# rake \zs.*')
+      let task = matchstr(self.getline(1),'\C# rake \zs.*')
     endif
+    return s:sub(task, '^$', '--tasks')
   elseif self.type_name('db-migration')
     let ver = matchstr(self.name(),'\<db/migrate/0*\zs\d*\ze_')
     if !empty(ver)
