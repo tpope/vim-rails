@@ -1641,7 +1641,7 @@ function! s:app_generators() dict abort
     let paths = [self.path('vendor/plugins/*'), self.path('lib'), expand("~/.rails")]
     if !empty(self.gems())
       let gems = values(self.gems())
-      let paths += map(gems, 'v:val . "/lib/rails"')
+      let paths += map(copy(gems), 'v:val . "/lib/rails"')
       let paths += map(gems, 'v:val . "/lib"')
       let builtin = []
     else
