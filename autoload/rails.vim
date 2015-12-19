@@ -867,6 +867,7 @@ function! s:app_has(feature) dict
         \'bundler': 'Gemfile|gems.locked',
         \'rails2': 'script/about',
         \'rails3': 'config/application.rb',
+        \'rails5': 'app/assets/config/manifest.js|config/initializers/application_controller_renderer.rb',
         \'cucumber': 'features/',
         \'turnip': 'spec/acceptance/',
         \'sass': 'public/stylesheets/sass/',
@@ -1893,7 +1894,13 @@ function! rails#complete_rails(ArgLead, CmdLine, P, ...) abort
   elseif empty(app)
     return s:completion_filter(['new'], a:ArgLead)
   elseif cmd =~# '^\w*$'
-    return s:completion_filter(['generate', 'console', 'server', 'dbconsole', 'application', 'destroy', 'plugin', 'runner'],a:ArgLead)
+    let cmds = ['generate', 'console', 'server', 'dbconsole', 'destroy', 'plugin', 'runner']
+    if app.has('rails5')
+      call extend(cmds, app.rake_tasks())
+    endif
+    return s:completion_filter(cmds, a:ArgLead)
+  elseif cmd =~# '^\%([rt]\|runner\|test\|test:db\)\s\+'
+    return s:completion_filter(app.relglob('', s:fuzzyglob(a:ArgLead)), a:ArgLead)
   elseif cmd =~# '^\%([gd]\|generate\|destroy\)\s\+'.a:ArgLead.'$'
     return s:completion_filter(app.generators(),a:ArgLead)
   elseif cmd =~# '^\%([gd]\|generate\|destroy\)\s\+\w\+\s\+'.a:ArgLead.'$'

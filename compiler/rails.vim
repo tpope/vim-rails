@@ -39,6 +39,7 @@ CompilerSet errorformat^=
       \%+G\ %#Code\ LOC:\ %.%#,
       \%+GAbout\ your\ application's\ environment,
       \%+Grun\ %\\S%#::Application.routes,
+      \%+Irails\ %\\S%\\+%\\s%\\+#\ %.%#,
       \%+Eruby:%.%#(LoadError),
       \%+EUsage:%.%#,
       \%+ECould\ not\ find\ generator%.%#,
