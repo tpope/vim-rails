@@ -35,6 +35,9 @@ CompilerSet errorformat^=
       \%-GOverwrite%.%#\"h\"%.%#,
       \%+GCurrent\ version:%.%#,
       \%+G\ %#Status\ %#Migration\ ID%.%#,
+      \%+G\ The\ fixture\ ID\ for\ %.%#,
+      \%f:\ %s\ (%m)%$
+      \%\\&%.%#/fixtures/%.%#(%\\d%\\+),
       \%+G\ %#Prefix\ %#Verb%.%#,
       \%+G\ %#Code\ LOC:\ %.%#,
       \%+GAbout\ your\ application's\ environment,
