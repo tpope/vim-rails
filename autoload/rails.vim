@@ -1701,7 +1701,7 @@ function! s:readable_runner_command(bang, count, arg) dict abort
     else
       let arg = self.test_file()
       if empty(arg)
-        let arg = a:arg
+        let arg = self.name()
       endif
     endif
 
