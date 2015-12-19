@@ -5030,13 +5030,18 @@ function! rails#buffer_setup() abort
   elseif self.type_name('test', 'spec', 'cucumber')
     call self.setvar('dispatch', ':Runner')
   elseif self.name() =~# '^\%(app\|config\|db\|lib\|log\|README\|Rakefile\)'
-    if exists('dir')
+    if !exists('dir')
+      call self.setvar('dispatch', ':Rake')
+    elseif self.app().has('rails5')
+      call self.setvar('dispatch',
+            \ dir .
+            \ self.app().ruby_script_command('bin/rails') .
+            \ ' `=rails#buffer(' . self['#'] . ').default_rake_task(v:lnum)`')
+    else
       call self.setvar('dispatch',
             \ dir . '-compiler=rails ' .
             \ self.app().rake_command('static') .
             \ ' `=rails#buffer(' . self['#'] . ').default_rake_task(v:lnum)`')
-    else
-      call self.setvar('dispatch', ':Rake')
     endif
   endif
 endfunction
