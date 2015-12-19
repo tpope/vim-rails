@@ -724,22 +724,19 @@ function! s:readable_calculate_file_type() dict abort
   elseif f =~ '\<app/mailers/.*\.rb'
     let r = "mailer"
   elseif f =~ '\<app/models/'
-    let top = join(s:readfile(full_path,50),"\n")
-    let class = matchstr(top,'\<Acti\w\w\u\w\+\%(::\h\w*\)\+\>')
-    if class == "ActiveResource::Base"
-      let class = "ares"
-      let r = "model-ares"
-    elseif class == 'ActionMailer::Base'
-      let r = "mailer"
-    elseif class != ''
-      let class = tolower(s:gsub(class,'[^A-Z]',''))
-      let r = "model-".class
-    elseif f =~ '_mailer\.rb$'
-      let r = "mailer"
+    let top = "\n".join(s:readfile(full_path,50),"\n")
+    let class = matchstr(top,"\n".'class\s\+\S\+\s*<\s*\<\zs\S\+\>')
+    let type = tolower(matchstr(class, '^Application\zs[A-Z]\w*$\|^Acti\w\w\zs[A-Z]\w*\ze::Base'))
+    if type ==# 'mailer' || f =~ '_mailer\.rb$'
+      let r = 'mailer'
+    elseif class ==# 'ActiveRecord::Observer'
+      let r = 'model-observer'
+    elseif !empty(type)
+      let r = 'model-'.type
     elseif top =~ '\<\%(self\.\%(table_name\|primary_key\)\|has_one\|has_many\|belongs_to\)\>'
-      let r = "model-arb"
+      let r = 'model-record'
     else
-      let r = "model"
+      let r = 'model'
     endif
   elseif f =~ '\<app/views/.*/_\w\+\%(\.[[:alnum:]_+]\+\)\=\.\w\+$'
     let r = "view-partial-" . e
@@ -3289,13 +3286,13 @@ function! s:readable_alternate_candidates(...) dict abort
       return [controller, controller2, mailer, model]
     elseif self.type_name('controller')
       return [s:sub(s:sub(f,'/controllers/','/helpers/'),'%(_controller)=\.rb$','_helper.rb')]
-    elseif self.type_name('model-arb')
+    elseif self.type_name('model-record')
       let table_name = matchstr(join(self.getline(1,50),"\n"),'\n\s*self\.table_name\s*=\s*[:"'']\zs\w\+')
       if table_name == ''
         let table_name = rails#pluralize(s:gsub(s:sub(fnamemodify(f,':r'),'.{-}<app/models/',''),'/','_'))
       endif
       return ['db/schema.rb#'.table_name]
-    elseif self.type_name('model-aro')
+    elseif self.type_name('model-observer')
       return [s:sub(f,'_observer\.rb$','.rb')]
     elseif self.type_name('db-schema') && !empty(lastmethod)
       return ['app/models/' . rails#singularize(lastmethod) . '.rb']
@@ -3744,7 +3741,7 @@ function! rails#buffer_syntax()
       if buffer.type_name() == ''
         syn keyword rubyRailsMethod params request response session headers cookies flash
       endif
-      if buffer.type_name() ==# 'model' || buffer.type_name('model-arb')
+      if buffer.type_name() ==# 'model' || buffer.type_name('model-record')
         syn keyword rubyRailsARMethod default_scope enum named_scope scope serialize store
         syn keyword rubyRailsARAssociationMethod belongs_to has_one has_many has_and_belongs_to_many composed_of accepts_nested_attributes_for
         syn keyword rubyRailsARCallbackMethod before_create before_destroy before_save before_update before_validation before_validation_on_create before_validation_on_update
@@ -3755,7 +3752,7 @@ function! rails#buffer_syntax()
         syn keyword rubyRailsARValidationMethod validate validates validate_on_create validate_on_update validates_acceptance_of validates_associated validates_confirmation_of validates_each validates_exclusion_of validates_format_of validates_inclusion_of validates_length_of validates_numericality_of validates_presence_of validates_size_of validates_uniqueness_of validates_with
         syn keyword rubyRailsMethod logger
       endif
-      if buffer.type_name('model-aro')
+      if buffer.type_name('model-observer')
         syn keyword rubyRailsARMethod observe
       endif
       if buffer.type_name('mailer')
@@ -4296,7 +4293,7 @@ function! s:BufAbbreviations()
       Rabbrev rst( respond_to
       " ))
     endif
-    if buffer.type_name() ==# 'model' || buffer.type_name('model-arb')
+    if buffer.type_name() ==# 'model' || buffer.type_name('model-record')
       Rabbrev bt(    belongs_to
       Rabbrev ho(    has_one
       Rabbrev hm(    has_many
