@@ -1205,7 +1205,7 @@ function! s:make(bang, args, ...)
   endif
 endfunction
 
-function! s:Rake(bang,lnum,arg)
+function! s:Rake(bang, lnum, arg) abort
   let self = rails#app()
   let lnum = a:lnum < 0 ? 0 : a:lnum
   let old_makeprg = &l:makeprg
@@ -1217,16 +1217,6 @@ function! s:Rake(bang,lnum,arg)
     let &l:makeprg = rails#app().rake_command()
     let &l:errorformat .= ',chdir '.escape(self.path(), ',')
     let arg = a:arg
-    if &filetype =~# '^ruby\>' && arg == ''
-      let mnum = s:lastmethodline(lnum)
-      let str = getline(mnum)."\n".getline(mnum+1)."\n".getline(mnum+2)."\n"
-      let pat = '\s\+\zs.\{-\}\ze\%(\n\|\s\s\|#{\@!\|$\)'
-      let mat = matchstr(str,'#\s*rake'.pat)
-      let mat = s:sub(mat,'\s+$','')
-      if mat != ""
-        let arg = mat
-      endif
-    endif
     if arg == ''
       let arg = rails#buffer().default_rake_task(lnum)
     endif
@@ -1235,7 +1225,6 @@ function! s:Rake(bang,lnum,arg)
       let arg = get(self.options,'last_rake_task','')
     endif
     let self.options['last_rake_task'] = arg
-    let withrubyargs = '-r ./config/boot -r '.s:rquote(self.path('config/environment')).' -e "puts \%((in \#{Dir.getwd}))" '
     if arg =~# '^notes\>'
       let &l:errorformat = '%-P%f:,\ \ *\ [%\ %#%l]\ [%t%*[^]]] %m,\ \ *\ [%[\ ]%#%l] %m,%-Q'
       call s:make(a:bang, arg)
@@ -1326,16 +1315,17 @@ function! s:readable_default_rake_task(...) dict abort
   let app = self.app()
   let lnum = a:0 ? (a:1 < 0 ? 0 : a:1) : 0
 
+  let taskpat = '\C# rake\s\+\zs.\{-\}\ze\%(\s\s\|#\|$\)'
   if self.getvar('&buftype') == 'quickfix'
     return '-'
   elseif self.getline(lnum) =~# '# rake \S'
     return matchstr(self.getline(lnum),'\C# rake \zs.*')
-  elseif self.getline(self.last_method_line(lnum)-1) =~# '# rake '
-    return matchstr(self.getline(self.last_method_line(lnum)-1),'\C# rake \zs.*')
-  elseif self.getline(self.last_method_line(lnum)) =~# '# rake '
-    return matchstr(self.getline(self.last_method_line(lnum)),'\C# rake \zs.*')
-  elseif self.getline(1) =~# '# rake \S' && !lnum
-    return matchstr(self.getline(1),'\C# rake \zs.*')
+  elseif self.getline(self.last_method_line(lnum)-1) =~# taskpat
+    return matchstr(self.getline(self.last_method_line(lnum)-1), taskpat)
+  elseif self.getline(self.last_method_line(lnum)) =~# taskpat
+    return matchstr(self.getline(self.last_method_line(lnum)), taskpat)
+  elseif self.getline(1) =~# taskpat && !lnum
+    return matchstr(self.getline(1), taskpat)
   endif
 
   let placeholders = {}
