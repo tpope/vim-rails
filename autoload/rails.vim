@@ -1704,7 +1704,7 @@ function! s:readable_runner_command(bang, count, arg) dict abort
     if arg =~# '^test/.*_test\.rb$'
       let compiler = 'rubyunit'
       if a:count > 0
-        let method = file.last_method(lnum)
+        let method = file.last_method(a:count)
         if method =~ '^test_'
           let extra = ' -n'.method
         else
