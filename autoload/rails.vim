@@ -1623,9 +1623,9 @@ endfunction
 " Script Wrappers {{{1
 
 function! s:BufScriptWrappers()
-  command! -buffer -bang -bar -nargs=* -complete=customlist,s:Complete_script   Rscript       :execute empty(<q-args>) ? rails#app().script_command(<bang>0, 'console') : rails#app().script_command(<bang>0,<f-args>)
+  command! -buffer -bang -bar -nargs=? -complete=customlist,s:Complete_script   Rscript       :execute 'Rails<bang>' empty(<q-args>) ? 'console' : <q-args>
   command! -buffer -bang -bar -nargs=* -complete=customlist,s:Complete_environments Console   :Rails<bang> console <args>
-  command! -buffer -bang -bar -nargs=* -complete=customlist,s:Complete_script   Rails         :execute rails#app().script_command(<bang>0,<f-args>)
+  command! -buffer -bang -bar -nargs=? -count -complete=customlist,s:Complete_script Rails    :execute s:Rails(<bang>0, !<count> && <line1> ? -1 : <count>, <q-args>)
   command! -buffer -bang -bar -nargs=* -complete=customlist,s:Complete_generate Rgenerate     :execute rails#app().generator_command(<bang>0,'generate',<f-args>)
   command! -buffer -bang -bar -nargs=* -complete=customlist,s:Complete_generate Generate      :execute rails#app().generator_command(<bang>0,'generate',<f-args>)
   command! -buffer -bar -nargs=*       -complete=customlist,s:Complete_destroy  Rdestroy      :execute rails#app().generator_command(1,'destroy',<f-args>)
@@ -1660,16 +1660,35 @@ function! s:app_generators() dict abort
   return self.cache.get('generators')
 endfunction
 
-function! s:app_script_command(bang,...) dict
-  let str = join(map(copy(a:000), 's:rquote(v:val)'), ' ')
+function! s:Rails(bang, count, arg) abort
+  if !empty(a:arg)
+    let str = a:arg
+  elseif rails#buffer().type_name('spec', 'cucumber')
+    return rails#buffer().runner_command(a:bang, a:count, '')
+  elseif rails#buffer().type_name('test') && !rails#app().has('rails5')
+    return rails#buffer().runner_command(a:bang, a:count, '')
+  elseif rails#buffer().name() =~# '^\%(app\|config\|db\|lib\|log\|README\|Rakefile\|test\|spec\|features\)'
+    let str = rails#buffer().default_rake_task(a:count)
+    if str ==# '--tasks'
+      let str = ''
+    else
+      let rake = 1
+    endif
+  else
+    let str = ''
+  endif
   if str =~# '^\%(c\|console\|db\|dbconsole\|s\|server\)\S\@!' && str !~# ' -d\| --daemon\| --help'
-    return self.start_rails_command(str, a:bang)
+    return rails#app().start_rails_command(str, a:bang)
   else
     let [mp, efm, cc] = [&l:mp, &l:efm, get(b:, 'current_compiler', '')]
     try
       compiler rails
-      let &l:makeprg = self.prepare_rails_command('$*')
-      let &l:errorformat .= ',chdir '.escape(self.path(), ',')
+      if exists('rake') && !rails#app().has('rails5')
+        let &l:makeprg = rails#app().rake_command()
+      else
+        let &l:makeprg = rails#app().prepare_rails_command('$*')
+      endif
+      let &l:errorformat .= ',chdir '.escape(rails#app().path(), ',')
       call s:make(a:bang, str)
     finally
       let [&l:mp, &l:efm, b:current_compiler] = [mp, efm, cc]
@@ -1874,7 +1893,7 @@ function! s:app_generator_command(bang,...) dict
   endif
 endfunction
 
-call s:add_methods('app', ['generators','script_command','output_command','server_command','generator_command'])
+call s:add_methods('app', ['generators','output_command','server_command','generator_command'])
 
 function! s:Complete_script(ArgLead, CmdLine, P) abort
   return rails#complete_rails(a:ArgLead, a:CmdLine, a:P, rails#app())
@@ -5029,11 +5048,13 @@ function! rails#buffer_setup() abort
     call self.setvar('dispatch', dir . dispatch[0])
   elseif self.name() =~# '^public'
     call self.setvar('dispatch', ':Preview')
-  elseif self.type_name('test', 'spec', 'cucumber')
+  elseif self.type_name('spec', 'cucumber')
     call self.setvar('dispatch', ':Runner')
-  elseif self.name() =~# '^\%(app\|config\|db\|lib\|log\|README\|Rakefile\)'
+  elseif self.type_name('test') && !self.app().has('rails5')
+    call self.setvar('dispatch', ':Runner')
+  elseif self.name() =~# '^\%(app\|config\|db\|lib\|log\|README\|Rakefile\|test\|spec\|features\)'
     if !exists('dir')
-      call self.setvar('dispatch', ':Rake')
+      call self.setvar('dispatch', ':Rails')
     elseif self.app().has('rails5')
       call self.setvar('dispatch',
             \ dir .
