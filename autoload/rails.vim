@@ -3338,6 +3338,8 @@ function! s:readable_alternate_candidates(...) dict abort
     return ['app/helpers/application_helper.rb']
   elseif f =~# 'spec\.js$'
     return [s:sub(s:sub(f, 'spec/javascripts', 'app/assets/javascripts'), '_spec.js', '.js')]
+  elseif f =~# 'Spec\.js$'
+    return [s:sub(s:sub(f, 'spec/javascripts', 'app/assets/javascripts'), 'Spec.js', '.js')]
   elseif f =~# 'spec\.coffee$'
     return [s:sub(s:sub(f, 'spec/javascripts', 'app/assets/javascripts'), '_spec.coffee', '.coffee')]
   elseif f =~# 'spec\.js\.coffee$'
@@ -3354,6 +3356,9 @@ function! s:readable_alternate_candidates(...) dict abort
     elseif f =~ '.coffee$'
       let suffix = '.coffee'
       let suffix_replacement = '_spec.coffee'
+    elseif f =~ '[A-Z][a-z]\+\.js$'
+      let suffix = '.js'
+      let suffix_replacement = 'Spec.js'
     else
       let suffix = '.js'
       let suffix_replacement = '_spec.js'
