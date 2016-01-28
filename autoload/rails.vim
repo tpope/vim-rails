@@ -3774,7 +3774,7 @@ function! rails#buffer_syntax()
         syn keyword rubyRailsARCallbackMethod after_create after_destroy after_save after_update after_validation after_validation_on_create after_validation_on_update
         syn keyword rubyRailsARCallbackMethod around_create around_destroy around_save around_update
         syn keyword rubyRailsARCallbackMethod after_commit after_find after_initialize after_rollback after_touch
-        syn keyword rubyRailsARClassMethod attr_accessible attr_protected attr_readonly has_secure_password store_accessor
+        syn keyword rubyRailsARClassMethod attr_accessible attr_protected attr_readonly has_secure_password has_secure_token store_accessor
         syn keyword rubyRailsARValidationMethod validate validates validate_on_create validate_on_update validates_acceptance_of validates_associated validates_confirmation_of validates_each validates_exclusion_of validates_format_of validates_inclusion_of validates_length_of validates_numericality_of validates_presence_of validates_absence_of validates_size_of validates_uniqueness_of validates_with
         syn keyword rubyRailsMethod logger
       endif
