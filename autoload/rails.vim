@@ -4525,6 +4525,10 @@ let s:default_projections = {
       \  "README": {"alternate": "config/database.yml"},
       \  "README.*": {"alternate": "config/database.yml"},
       \  "Rakefile": {"type": "task"},
+      \  "app/channels/*_channel.rb": {
+      \    "template": ["class {camelcase|capitalize|colons}Channel < ActionCable::Channel", "end"],
+      \    "type": "channel"
+      \  },
       \  "app/controllers/*_controller.rb": {
       \    "affinity": "controller",
       \    "template": [
