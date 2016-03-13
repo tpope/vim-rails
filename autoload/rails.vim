@@ -3701,7 +3701,7 @@ function! s:helpermethods()
   return ""
         \."action_name asset_path asset_url atom_feed audio_path audio_tag audio_url auto_discovery_link_tag "
         \."button_tag button_to "
-        \."cache cache_fragment_name cache_if cache_unless capture cdata_section check_box check_box_tag collection_check_boxes collection_radio_buttons collection_select color_field color_field_tag compute_asset_extname compute_asset_host compute_asset_path concat content_for content_tag content_tag_for controller controller_name controller_path convert_to_model cookies csrf_meta_tag csrf_meta_tags current_cycle cycle "
+        \."cache cache_fragment_name cache_if cache_unless capture cdata_section check_box check_box_tag collection_check_boxes collection_radio_buttons collection_select color_field color_field_tag compute_asset_extname compute_asset_host compute_asset_path concat content_for content_tag content_tag_for controller controller_name controller_path convert_to_model cookies csrf_meta_tag csrf_meta_tags current_cycle cycle action_cable_meta_tag "
         \."date_field date_field_tag date_select datetime_field datetime_field_tag datetime_local_field datetime_local_field_tag datetime_select debug distance_of_time_in_words distance_of_time_in_words_to_now div_for dom_class dom_id "
         \."email_field email_field_tag escape_javascript escape_once excerpt "
         \."favicon_link_tag field_set_tag fields_for file_field file_field_tag flash font_path font_url form_for form_tag "
