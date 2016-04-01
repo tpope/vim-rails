@@ -2789,6 +2789,8 @@ function! s:migrationEdit(cmd,...)
     let offset = local - ts % 86400
     if offset <= -12 * 60 * 60
       let offset += 86400
+    elseif offset >= 12 * 60 * 60
+      let offset -= 86400
     endif
     let template = 'class ' . rails#camelize(matchstr(arg, '[^!]*')) . " < ActiveRecord::Migration\nend"
     return rails#buffer().open_command(a:cmd, strftime('%Y%m%d%H%M%S', ts - offset).'_'.arg, 'migration',
