@@ -4567,6 +4567,10 @@ let s:default_projections = {
       \    "template": ["class {camelcase|capitalize|colons}", "end"],
       \    "type": "model"
       \  },
+      \  "app/serializers/*_serializer.rb": {
+      \    "template": ["class {camelcase|capitalize|colons}Serializer < ActiveModel::Serializer", "end"],
+      \    "type": "serializer"
+      \  },
       \  "config/application.rb": {"alternate": "config/routes.rb"},
       \  "config/environment.rb": {"alternate": "config/routes.rb"},
       \  "config/environments/*.rb": {
