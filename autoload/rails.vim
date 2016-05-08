@@ -4441,8 +4441,11 @@ endfunction
 " Projections {{{1
 
 function! rails#json_parse(string) abort
-  let [null, false, true] = ['', 0, 1]
   let string = type(a:string) == type([]) ? join(a:string, ' ') : a:string
+  if exists('*json_decode')
+    return json_decode(string)
+  endif
+  let [null, false, true] = ['', 0, 1]
   let stripped = substitute(string,'\C"\(\\.\|[^"\\]\)*"','','g')
   if stripped !~# "[^,:{}\\[\\]0-9.\\-+Eaeflnr-u \n\r\t]"
     try
@@ -4947,8 +4950,10 @@ function! s:SetBasePath() abort
   let path += get(g:, 'rails_path', [])
   let path += ['app/models/concerns', 'app/controllers/concerns', 'app/controllers', 'app/helpers', 'app/mailers', 'app/models']
 
+  let true = get(v:, 'true', 1)
   for [key, projection] in items(self.app().projections())
-    if get(projection, 'path', 0) is 1 || get(projection, 'autoload', 0) is 1
+    if get(projection, 'path', 0) is true || get(projection, 'autoload', 0) is true
+          \ || get(projection, 'path', 0) is 1 || get(projection, 'autoload', 0) is 1
       let path += split(key, '*')[0]
     endif
   endfor
