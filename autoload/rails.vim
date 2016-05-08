@@ -2069,29 +2069,6 @@ function! s:jump(def, ...) abort
   return ''
 endfunction
 
-function! s:Find(count,cmd,...)
-  let cmd = (a:count==1?'' : a:count) . a:cmd
-  if a:0
-    let i = 1
-    while i < a:0
-      let cmd .= ' ' . s:escarg(a:{i})
-      let i += 1
-    endwhile
-    let file = a:{i}
-    let tail = matchstr(file,'[#!].*$\|:\d*\%(:in\>.*\)\=$')
-    if tail != ""
-      let file = s:sub(file,'[#!].*$|:\d*%(:in>.*)=$','')
-    endif
-    if file != ""
-      let file = s:RailsIncludefind(file)
-    endif
-  else
-    let file = s:cfile()
-    let tail = ""
-  endif
-  return s:find(cmd, file . tail)
-endfunction
-
 function! s:fuzzyglob(arg)
   return s:gsub(s:gsub(a:arg,'[^/.]','[&]*'),'%(/|^)\.@!|\.','&*')
 endfunction
@@ -3192,18 +3169,26 @@ endfunction
 
 function! s:Alternate(cmd,line1,line2,count,...) abort
   if a:0
-    if a:1 =~# '^#\h'
-      return s:jump(a:1[1:-1], s:sub(a:cmd, 'D', 'E'))
+    let cmd = ''
+    let i = 1
+    while i < a:0
+      let cmd .= ' ' . s:escarg(a:{i})
+      let i += 1
+    endwhile
+    let file = a:{i}
+    if file =~# '^#\h'
+      return s:jump(file[1:-1], s:sub(a:cmd, 'D', 'E'))
     elseif a:count && a:cmd !~# 'D'
-      return call('s:Find',[1,a:line1.a:cmd]+a:000)
+      let tail = matchstr(file,'[#!].*$\|:\d*\%(:in\>.*\)\=$')
+      if tail != ""
+        let file = s:sub(file,'[#!].*$|:\d*%(:in>.*)=$','')
+      endif
+      if file != ""
+        let file = s:RailsIncludefind(file)
+      endif
+      return s:find(a:cmd . cmd, file . tail)
     else
-      let cmd = s:editcmdfor((a:count ? a:count : '').a:cmd)
-      let i = 1
-      while i < a:0
-        let cmd .= ' ' . s:escarg(a:{i})
-        let i += 1
-      endwhile
-      let file = a:{i}
+      let cmd = s:editcmdfor((a:count ? a:count : '').a:cmd) . cmd
       return s:edit(cmd, file)
     endif
   elseif a:cmd =~# 'D'
