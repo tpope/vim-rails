@@ -887,6 +887,10 @@ single project.
 Gem maintainers may also provide custom projections by placing them in
 lib/rails/projections.json.
 
+						*g:rails_single_quotes_style*
+Uses single quotes instead of double quotes when generating partials.  See
+|rails-partials|.
+
 ABOUT					*rails-about* *rails-plugin-author*
 
 The latest stable version can be found at

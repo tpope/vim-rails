@@ -3443,7 +3443,11 @@ function! s:Extract(bang,...) range abort
     let erub2 = ''
   endif
   let spaces = matchstr(getline(first),"^ *")
-  let renderstr = 'render "'.fnamemodify(file,":r:r").'"'
+  if exists('g:rails_single_quotes_style')
+    let renderstr = "render '".fnamemodify(file,":r:r")."'"
+  else
+    let renderstr = 'render "'.fnamemodify(file,":r:r").'"'
+  endif
   if ext =~? '^\%(rhtml\|erb\|dryml\)$'
     let renderstr = "<%= ".renderstr." %>"
   elseif ext == "rxml" || ext == "builder"
