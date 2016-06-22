@@ -503,7 +503,7 @@ And you issue this command: >
 Your file will change to this: >
 
  1	<div>
- 2	  <%= render 'post' %>
+ 2	  <%= render "post" %>
  3	</div>
 
 And app/views/blog/_post.html.erb will now contain: >
