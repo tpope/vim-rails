@@ -762,6 +762,8 @@ function! s:readable_calculate_file_type() dict abort
     let r = 'lib'
   elseif f =~ '\<spec/\w*s/.*_spec\.rb$'
     let r = s:sub(f,'.*<spec/(\w*)s/.*','spec-\1')
+  elseif f =~ '\<test/\w*s/.*_test\.rb$'
+    let r = s:sub(f,'.*<test/(\w*)s/.*','minitest-\1')
   elseif f =~ '\<features/.*\.feature$'
     let r = 'cucumber-feature'
   elseif f =~ '\<features/step_definitions/.*_steps\.rb$'
