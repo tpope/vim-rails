@@ -1397,7 +1397,7 @@ function! s:readable_default_rake_task(...) dict abort
     if empty(test)
       return '--tasks'
     elseif test =~# '^test\>' && self.app().has('rails5')
-      return 'test '.s:rquote(with_line)
+      return 'test TEST='.s:rquote(with_line)
     elseif test =~# '^test\>'
       let opts = ''
       if test ==# self.name()
