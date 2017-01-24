@@ -1253,11 +1253,11 @@ function! s:readable_test_file_candidates() dict abort
   let projected = self.projected('test')
   if self.type_name('view')
     let tests = [
-          \ fnamemodify(f,':s?\<app/?spec/?')."_spec.rb",
-          \ fnamemodify(f,':r:s?\<app/?spec/?')."_spec.rb",
-          \ fnamemodify(f,':r:r:s?\<app/?spec/?')."_spec.rb",
-          \ s:sub(s:sub(f,'<app/views/','test/controllers/'),'/[^/]*$','_controller_test.rb'),
-          \ s:sub(s:sub(f,'<app/views/','test/functional/'),'/[^/]*$','_controller_test.rb')]
+          \ fnamemodify(f,':s?.{-}app/?spec/?')."_spec.rb",
+          \ fnamemodify(f,':r:s?\.{-}<app/?spec/?')."_spec.rb",
+          \ fnamemodify(f,':r:r:s?\.{-}<app/?spec/?')."_spec.rb",
+          \ s:sub(s:sub(f,'.{-}<app/views/','test/controllers/'),'/[^/]*$','_controller_test.rb'),
+          \ s:sub(s:sub(f,'.{-}<app/views/','test/functional/'),'/[^/]*$','_controller_test.rb')]
   elseif self.type_name('controller-api')
     let tests = [
           \ s:sub(s:sub(f,'/controllers/','/apis/'),'_controller\.rb$','_api.rb')]
@@ -1276,10 +1276,10 @@ function! s:readable_test_file_candidates() dict abort
     let tests = [
           \ 'test/models/' . self.model_name() . '_test.rb',
           \ 'test/unit/' . self.model_name() . '_test.rb']
-  elseif f =~# '\<app/.*/.*\.rb'
+  elseif f =~# '\.{-}<app/.*/.*\.rb'
     let file = fnamemodify(f,":r")
-    let test_file = s:sub(file,'<app/','test/') . '_test.rb'
-    let spec_file = s:sub(file,'<app/','spec/') . '_spec.rb'
+    let test_file = s:sub(file,'.{-}<app/','test/') . '_test.rb'
+    let spec_file = s:sub(file,'.{-}<app/','spec/') . '_spec.rb'
     let old_test_file = s:sub(s:sub(s:sub(s:sub(test_file,
           \ '<test/helpers/', 'test/unit/helpers/'),
           \ '<test/models/', 'test/unit/'),
