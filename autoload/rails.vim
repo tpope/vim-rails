@@ -1673,8 +1673,6 @@ function! s:Rails(bang, count, arg) abort
     return rails#buffer().runner_command(a:bang, a:count, '')
   elseif rails#buffer().name() =~# '^\%(app\|config\|db\|lib\|log\|README\|Rakefile\|test\|spec\|features\)'
     let str = rails#buffer().default_rake_task(a:count)
-    let str = s:gsub(str, '<TEST\w*\=', '')
-    let str = s:gsub(str, '<CONTROLLER\=', '-c ')
     if str ==# '--tasks'
       let str = ''
     else
@@ -1692,6 +1690,8 @@ function! s:Rails(bang, count, arg) abort
       if exists('rake') && !rails#app().has('rails5')
         let &l:makeprg = rails#app().rake_command()
       else
+        let str = s:gsub(str, '<TEST\w*\=', '')
+        let str = s:gsub(str, '<CONTROLLER\=', '-c ')
         let &l:makeprg = rails#app().prepare_rails_command('$*')
       endif
       let &l:errorformat .= ',chdir '.escape(rails#app().path(), ',')
