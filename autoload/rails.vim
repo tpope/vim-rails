@@ -1669,9 +1669,7 @@ endfunction
 function! s:Rails(bang, count, arg) abort
   if !empty(a:arg)
     let str = a:arg
-  elseif rails#buffer().type_name('spec', 'cucumber')
-    return rails#buffer().runner_command(a:bang, a:count, '')
-  elseif rails#buffer().type_name('test') && !rails#app().has('rails5')
+  elseif rails#buffer().type_name('test', 'spec', 'cucumber') && !rails#app().has('rails5')
     return rails#buffer().runner_command(a:bang, a:count, '')
   elseif rails#buffer().name() =~# '^\%(app\|config\|db\|lib\|log\|README\|Rakefile\|test\|spec\|features\)'
     let str = rails#buffer().default_rake_task(a:count)
