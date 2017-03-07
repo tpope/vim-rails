@@ -1396,8 +1396,6 @@ function! s:readable_default_rake_task(...) dict abort
     endif
     if empty(test)
       return '--tasks'
-    elseif test =~# '^test\>' && self.app().has('rails5')
-      return 'test TEST='.s:rquote(with_line)
     elseif test =~# '^test\>'
       let opts = ''
       if test ==# self.name()
@@ -1406,7 +1404,9 @@ function! s:readable_default_rake_task(...) dict abort
           let opts = ' TESTOPTS=-n'.method
         endif
       endif
-      if test =~# '^test/\%(unit\|models\|jobs\)\>'
+      if self.app().has('rails5')
+        return 'test TEST='.s:rquote(test).opts
+      elseif test =~# '^test/\%(unit\|models\|jobs\)\>'
         return 'test:units TEST='.s:rquote(test).opts
       elseif test =~# '^test/\%(functional\|controllers\)\>'
         return 'test:functionals TEST='.s:rquote(test).opts
@@ -1675,6 +1675,7 @@ function! s:Rails(bang, count, arg) abort
     return rails#buffer().runner_command(a:bang, a:count, '')
   elseif rails#buffer().name() =~# '^\%(app\|config\|db\|lib\|log\|README\|Rakefile\|test\|spec\|features\)'
     let str = rails#buffer().default_rake_task(a:count)
+    let str = s:gsub(str, '<TEST\w*\=', '')
     if str ==# '--tasks'
       let str = ''
     else
