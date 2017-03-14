@@ -1,0 +1,40 @@
+!_TAG_FILE_FORMAT	2	/extended format; --format=1 will not append ;" to lines/
+!_TAG_FILE_SORTED	1	/0=unsorted, 1=sorted, 2=foldcase/
+!_TAG_PROGRAM_AUTHOR	Darren Hiebert	/dhiebert@users.sourceforge.net/
+!_TAG_PROGRAM_NAME	Exuberant Ctags	//
+!_TAG_PROGRAM_URL	http://ctags.sourceforge.net	/official site/
+!_TAG_PROGRAM_VERSION	5.8	//
+ActiveSupport	test/test_helper.rb	/^class ActiveSupport::TestCase$/;"	c
+Application	config/application.rb	/^  class Application < Rails::Application$/;"	c	class:VimRailsTutor
+ApplicationCable	app/channels/application_cable/channel.rb	/^module ApplicationCable$/;"	m
+ApplicationCable	app/channels/application_cable/connection.rb	/^module ApplicationCable$/;"	m
+ApplicationController	app/controllers/application_controller.rb	/^class ApplicationController < ActionController::Base$/;"	c
+ApplicationHelper	app/helpers/application_helper.rb	/^module ApplicationHelper$/;"	m
+ApplicationJob	app/jobs/application_job.rb	/^class ApplicationJob < ActiveJob::Base$/;"	c
+ApplicationMailer	app/mailers/application_mailer.rb	/^class ApplicationMailer < ActionMailer::Base$/;"	c
+ApplicationRecord	app/models/application_record.rb	/^class ApplicationRecord < ActiveRecord::Base$/;"	c
+Channel	app/channels/application_cable/channel.rb	/^  class Channel < ActionCable::Channel::Base$/;"	c	class:ApplicationCable
+Comment	app/models/comment.rb	/^class Comment < ApplicationRecord$/;"	c
+CommentTest	test/models/comment_test.rb	/^class CommentTest < ActiveSupport::TestCase$/;"	c
+CommentsController	app/controllers/comments_controller.rb	/^class CommentsController < ApplicationController$/;"	c
+CommentsControllerTest	test/controllers/comments_controller_test.rb	/^class CommentsControllerTest < ActionDispatch::IntegrationTest$/;"	c
+CommentsHelper	app/helpers/comments_helper.rb	/^module CommentsHelper$/;"	m
+Connection	app/channels/application_cable/connection.rb	/^  class Connection < ActionCable::Connection::Base$/;"	c	class:ApplicationCable
+CreateComments	db/migrate/20170305062103_create_comments.rb	/^class CreateComments < ActiveRecord::Migration[5.0]$/;"	c
+CreateUsers	db/migrate/20170303005057_create_users.rb	/^class CreateUsers < ActiveRecord::Migration[5.0]$/;"	c
+User	app/models/user.rb	/^class User < ApplicationRecord$/;"	c
+UserTest	test/models/user_test.rb	/^class UserTest < ActiveSupport::TestCase$/;"	c
+UsersController	app/controllers/users_controller.rb	/^class UsersController < ApplicationController$/;"	c
+UsersControllerTest	test/controllers/users_controller_test.rb	/^class UsersControllerTest < ActionDispatch::IntegrationTest$/;"	c
+UsersHelper	app/helpers/users_helper.rb	/^module UsersHelper$/;"	m
+VimRailsTutor	config/application.rb	/^module VimRailsTutor$/;"	m
+bar_comments	app/models/comment.rb	/^  def bar_comments$/;"	f	class:Comment
+change	db/migrate/20170303005057_create_users.rb	/^  def change$/;"	f	class:CreateUsers
+change	db/migrate/20170305062103_create_comments.rb	/^  def change$/;"	f	class:CreateComments
+current_user	app/controllers/application_controller.rb	/^  def current_user$/;"	f	class:ApplicationController
+foo_user	app/models/user.rb	/^  def self.foo_user$/;"	F	class:User
+index	app/controllers/comments_controller.rb	/^  def index$/;"	f	class:CommentsController
+index	app/controllers/users_controller.rb	/^  def index$/;"	f	class:UsersController
+new	app/controllers/comments_controller.rb	/^  def new$/;"	f	class:CommentsController
+system!	bin/setup	/^def system!(*args)$/;"	f
+system!	bin/update	/^def system!(*args)$/;"	f

@@ -1,0 +1,341 @@
+===============================================================================
+=    W e l c o m e   t o   t h e  R a i l s . V I M   T u t o r              =
+===============================================================================
+
+    This tutor assumes you have basic working knowledge of Vim.
+    If you are new to Vim and are not familiar with most basic operations,
+    press : then type q! to exit the program and run vimtutor first.
+
+    This tutor also assumes you have the rails.vim plugin installed.
+    If you have not done so, please follow the instructions on its git repo:
+    https://github.com/tpope/vim-rails
+
+    You will need approximately 30 minutes to complete this tutor.
+
+    ATTENTION:
+    Any changes made during the lessons that follow will modify the original
+    vim-rails-tutor. Assuming that you have pulled a copy of the
+    tutor via git clone, you can always use your favorite git command to
+    restore the instructions and/or the example rails application
+    to their original state.
+
+    Like vimtutor, this tutor aims to teach you some of the rails.vim
+    commands by use, rather than by reading a doc file or watching a video,
+    therefore, it is important that you follow the instructions and execute
+    all commands.
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+                      Lesson 1.1: NAVIGATION WITH CONTEXT
+
+          ** Getting familiar with contextual rails.vim navigation. **
+
+  1. Enter the following command to open the Comment model from the
+     example rails app  :Vmodel comment  .
+
+     Note: The above will open the Comment model in a new vertical split.
+           Keep both windows open in order to be able to follow the
+           instructions in this file. If you need to switch between windows
+           you can use CTRL-w w  .
+
+  2. To see the unit test for the Comment model execute  :Eunittest  .
+
+  3. To see the controller related to the Comment model execute  :Emodel
+     while in the Comment model window.
+
+  4. To see the javascript file for the Comment model, execute  :Ejavascript  .
+
+  5. To close the working window execute  :q  .
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+                    Lesson 1.2 NAVIGATION WITH LINE CONTEXT
+
+                  ** Rails view navigation from controller. **
+
+  1. Open the Comments controller into a new window by executing
+     :Vcontroller comments  .
+
+  2. Try executing  :Eview  . This should fail with 'No view name given'.
+
+  3. Now, move the cursor to any line between 3 and 5 and execute  :Eview  .
+     This will take you to the view template matching the 'new' action.
+
+  4. Go back to the controller by executing  :Econtroller  .
+
+  5. Put the cursor anywhere between line 7 and 9 and execute  :Eview  .
+     Similar to step 3, this step will take you to the index template.
+
+  6. Execute  :q  to close the working window.
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+                     Lesson 1.3 NAVIGATION WITHOUT CONTEXT
+
+                   ** Navigate to anything from anywhere. **
+
+  1. Open the Comments controller into a new window by executing
+     :Vcontroller comments  .
+
+  2. You can switch to the User model by executing  :Emodel user  .
+
+  3. Execute  :Elayout users  to go to the Users layout.
+
+  4. Execute  :Eview comments/index  to jump to the comments index view.
+
+  5. Execute  :q  to close the working window.
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+                                Lesson 1 SUMMARY
+
+  1.  :E<something Rails-y>  will take you to the expected Rails file based on
+     the context of your current location.
+
+  2.  :E<something Rails-y> <argument>  does not take the context of your
+     current location into account, and takes you to the specified location.
+
+  3. Sometimes, the line you are currently on is taken into consideration.
+
+  4. For a full list of the commands available, please refer to rails.vim`
+     documentation.
+
+  Note: Throughout Lesson 1 we mostly used the prefix  :E  to edit a desired
+        file into the current window. The following options are also available:
+
+        *  :S  - for a horizontal split window
+        *  :V  - for a vertical split window
+        *  :T  - for a new tab
+        *  :D  - for reading the file into the current buffer
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+                   Lesson 2.1: CLASS DEFINITION UNDER CURSOR
+
+           **  gf  has been modified to take context into account. **
+
+  1. Execute  :Vcontroller comments  .
+
+  2. Put the cursor over 'Comment' in line 4.
+
+  3. Press  gf  . This will take you to the Comment model.
+
+  4. Put the cursor over 'User' in line 5.
+
+  5. Press  gf  . This will take you to the User class definition file.
+
+  6. Execute  :q  to close the working window.
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+                  Lesson 2.2: MODEL RELATIONSHIP UNDER CURSOR
+
+                      **  gf  for model relationships. **
+
+  1. Execute  :Vmodel comment  .
+
+  2. Move the cursor to point anywhere on the 'belongs_to :user'  line.
+
+  3. Press  gf  . This will take you to the User model.
+
+  4. In the User model, move the cursor to point anywhere on the
+     'has_many :comments' line.
+
+  5. Press  gf  . This will take you back to the Comment model.
+
+  6. Execute  :q  to close the working window.
+
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+                       Lesson 2.3: PARTIALS UNDER CURSOR
+
+                   **  gf  to jump to partial definition. **
+
+  1. Execute  :Vcontroller users.
+
+  2. Move the cursor to the 'layout :users' line.
+
+  3. Press  gf  . This will take you to the Users layout.
+
+  4. Move the cursor to point to any character of the partial name on line 4.
+
+     Note: If you place the cursor anywhere besides within 'shared/tim_pope',
+           the above will not work, as there will be no definition file to
+           look for.
+
+  5. Press  CTRL-W CTRL-F  . This will open the partial in a new vertical
+     split window.
+
+  6. Execute  :q  to close that window.
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+                         Lesson 2.4: PATHS UNDER CURSOR
+
+                **  gf  to jump to path`s controller action. **
+
+  1. This example builds on the example in Lesson 2.3. If you are starting
+     this lesson from scratch, execute  :Vlayout users  .
+
+  2. Move the cursor to 'new_comment_path'.
+
+  3. Press  gf  to go to the matching action for this path.
+     Note from the documentation:
+         """
+         [T]he controller and action for the named route are
+         determined by evaluating routes.rb as Ruby and doing some
+         introspection. This means code from the application is executed.
+         Keep this in mind when navigating unfamiliar applications.
+         """
+
+   4. Execute  :q  to close the working window.
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+                                Lesson 2 SUMMARY
+
+  1. The  gf  command which normally edits the file under the cursor, has
+     been remapped to take Rails context into account.
+
+  2. In some cases (i.e.:  gf  on a path [Lesson 2.4]) code from the Rails
+     application is executed to determine the correct mapping.
+
+  3. Besides  gf  the following related commands have also been remapped
+     to take Rails context into account:
+
+     *  CTRL-W f  - opens file in new window
+     *  CTRL-W gf  - opens file in new tab
+     *  c_CTRL-R CTRL-F  - inserts filename on command line
+
+  4. For a full list of  gf  mappings, please refer to the rails.vim docs.
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+                           Lesson 3.1: RELATED FILES
+
+                   ** Jumping to Related files with  :R  .**
+
+  1. Execute  :Vcontroller comments  .
+
+  2. Place the cursor on the first line or any line between methods.
+
+  3. Execute  :R  . This will take you to the Comments controller related
+     file, which in this case is the Comments helper.
+
+  4. Press  CTRL-O  to jump back to the Comments controller.
+
+  5. Move the cursor to any of the action methods in the Comments controller.
+
+  6. Execute  :R  . This will take you to the controller action's related view.
+
+  7. Now execute  :R  from the view. This will send you back to the Comments
+     controller.
+
+  8. Execute  :q  to close the working window.
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+                           Lesson 3.2: ALTERNATE FILES
+
+                  ** Jumping to Alternate files with  :A  . **
+
+  1. Execute  :Vcontroller comments  .
+
+  2. Execute  :A  anywhere in the file. This will take you to the functional
+     test for that controller.
+
+  3. Execute  :A  again. This will take you back to the controller.
+
+  4. Execute  :Emodel comment  .
+
+  5. Execute  :A  to go to the unit test for the Comment model.
+
+  6. Execute  :A  to go back to the Comment model.
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+                               Lesson 3 SUMMARY
+
+  1. The Alternate file  :A  is usually the test file or whatever the test
+     file is designed to test.
+
+  2. The Related file  :R  is useful for navigating to views and templates.
+
+  3. For a full list of the Alternate and Related file mappings, please
+     refer to the rails.vim docs.
+
+  4.  :A  and  :R  can be used in the following ways:
+
+     *  :AE  - same as  :A  . Edits the file in the same window.
+     *  :AS  - opens the file in a horizontal split window.
+     *  :AV  - opens the file in a vertical split window.
+     *  :AT  - opens the file in a new tab.
+     *  :AD  - reads file in the current buffer.
+
+     The same postfixes can be applied to the  :R  command as well.
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+                           Lesson 4.1: RAKE FOR TESTS
+
+                 ** Using  :Rake  to execute related tests. **
+
+  1. Open the Comment model in a new window using  :Vmodel comment  .
+
+  2. Execute  :Rake  .  This will run the tests related to your model.
+
+  3. Execute  :A  to go to the actual Comment unit tests.
+
+  4. Execute  :Rake  to run the Comment unit tests again.
+
+  5. Go to the Comments controller by executing  :Econtroller comments  .
+
+  6. Execute  :Rake  to run the functional tests for that controller.
+
+  7.  :A  to jump to the functional tests.
+
+  8.  :Rake  to run the functional tests again.
+
+  9. Execute  :q  to close the working window.
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+                           Lesson 4.2: RAKE FOR TASKS
+
+                     ** Using  :Rake  to execute tasks. **
+
+  1. In this window execute  :Rake routes. As expected you should see
+     the output of the 'rake routes' command.
+
+  2. Execute  :Rake -  to run the last executed command.
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+                           Lesson 4 SUMMARY
+
+  1. Use  :Rake  to execute the current model, controller, helper test.
+     When no argument is passed  :Rake  defaults to something sensible.
+     For a full list refer to the rails.vim docs.
+
+  2.  :Rake  without arguments will also run rspec specs.
+
+  3. Pass an argument to  :Rake  in order to execute any rake task.
+
+  4. Use  :Rake -  to re-run the last  :Rake  call.
+
+

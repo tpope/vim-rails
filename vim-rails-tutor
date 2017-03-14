@@ -1,0 +1,6 @@
+#!/bin/bash
+cd tutor/sample_rails5_app
+cp -f ../INSTRUCTIONS ./tmp/
+bundle install
+vim tmp/INSTRUCTIONS
+

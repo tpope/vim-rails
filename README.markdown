@@ -69,6 +69,22 @@ Once help tags have been generated, you can view the manual with
 
 [bundler.vim]: https://github.com/tpope/vim-bundler
 
+## Tutor
+
+If you prefer learning by doing, make sure to checkout the included tutor.
+
+It will let you interact with a sample Rails application, and will guide you
+through some of the most useful commands rails.vim has to offer.
+
+To start the tutor, run:
+
+```
+./vim-rails-tutor
+```
+
+**Note:** the executable above will run `bundle install` in order to install
+all gems necessary to run the sample app and its tests.
+
 ## FAQ
 
 > I installed the plugin and started Vim.  Why does only the `:Rails`
