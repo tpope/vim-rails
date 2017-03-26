@@ -1041,15 +1041,17 @@ function! s:Log(bang,arg)
   endif
 endfunction
 
-function! rails#new_app_command(bang,...) abort
-  if !a:0 || a:1 !=# 'new'
+function! rails#command(bang, count, arg) abort
+  if exists('b:rails_root')
+    return s:Rails(a:bang, a:count, a:arg)
+  elseif a:arg !~# '^new\>'
     return 'echoerr '.string('Usage: rails new <path>')
   endif
 
-  let args = copy(a:000)
+  let arg = a:arg
 
-  if &shellpipe !~# 'tee' && index(args, '--skip') < 0 && index(args, '--force') < 0
-    let args += ['--skip']
+  if &shellpipe !~# 'tee' && arg !~# ' --\%(skip\|force\)\>'
+    let arg .= ' --skip'
   endif
 
   let temp = tempname()
@@ -1059,23 +1061,27 @@ function! rails#new_app_command(bang,...) abort
     else
       let pipe = &shellpipe . ' ' . temp
     endif
-    exe '!rails' join(map(copy(args),'s:rquote(v:val)'),' ') pipe
+    exe '!rails' arg pipe
+    let error = v:shell_error
   catch /^Vim:Interrupt/
   endtry
 
-  if isdirectory(expand(args[1]))
+  let dir = matchstr(arg, ' ["'']\=\zs[^- "''][^ "'']\+')
+  if isdirectory(dir)
     let old_errorformat = &l:errorformat
     let chdir = exists("*haslocaldir") && haslocaldir() ? 'lchdir' : 'chdir'
     let cwd = getcwd()
     try
-      exe chdir s:fnameescape(expand(args[1]))
+      exe chdir s:fnameescape(dir)
       let &l:errorformat = s:efm_generate
       exe 'cgetfile' temp
-      return 'cfirst'
+      return 'copen|cfirst'
     finally
       let &l:errorformat = old_errorformat
       exe chdir s:fnameescape(cwd)
     endtry
+  elseif exists('error') && !error && !empty(dir)
+    call s:warn("Couldn't find app directory")
   endif
   return ''
 endfunction
@@ -1631,7 +1637,6 @@ endfunction
 function! s:BufScriptWrappers()
   command! -buffer -bang -bar -nargs=? -complete=customlist,s:Complete_script   Rscript       :execute 'Rails<bang>' empty(<q-args>) ? 'console' : <q-args>
   command! -buffer -bang -bar -nargs=* -complete=customlist,s:Complete_environments Console   :Rails<bang> console <args>
-  command! -buffer -bang -bar -nargs=? -count -complete=customlist,s:Complete_script Rails    :execute s:Rails(<bang>0, !<count> && <line1> ? -1 : <count>, <q-args>)
   command! -buffer -bang -bar -nargs=* -complete=customlist,s:Complete_generate Rgenerate     :execute rails#app().generator_command(<bang>0,'generate',<f-args>)
   command! -buffer -bang -bar -nargs=* -complete=customlist,s:Complete_generate Generate      :execute rails#app().generator_command(<bang>0,'generate',<f-args>)
   command! -buffer -bar -nargs=*       -complete=customlist,s:Complete_destroy  Rdestroy      :execute rails#app().generator_command(1,'destroy',<f-args>)
