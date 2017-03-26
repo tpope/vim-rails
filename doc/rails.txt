@@ -62,13 +62,13 @@ actually edit a file from a Rails application.
 			window.  If the delay in loading is too long, you
 			might like :Rake log:clear.
 
-						*rails-:Rpreview*
-:Rpreview [path]	Open the given [path] for the current app in a
-			browser.  The host and port are determined by applying
-			some netstat/lsof trickery to the current server pid.
-			If no server is running, Pow is consulted, and if all
+					*rails-:Preview* *rails-:Rpreview*
+:Preview [path]		Open the given path for the current app in a browser.
+			The host and port are determined by applying some
+			netstat/lsof trickery to the current server pid.  If
+			no server is running, Pow is consulted, and if all
 			else fails, a default of localhost:3000 is used.  If
-			[path] is omitted, a default is used based on the
+			no path is given, a default is used based on the
 			current file and the application's routes.  The
 			default is overridden by comments like the following
 			that are either before the current method call or at
@@ -82,8 +82,8 @@ actually edit a file from a Rails application.
 >
 		:command -bar -nargs=1 OpenURL :!open <args>
 <
-						*rails-:Rpreview!*
-:Rpreview! [path]	Like :Rpreview, but open the path inside Vim using
+					*rails-:Preview!* *rails-:Rpreview!*
+:Preview! [path]	Like :Preview, but open the path inside Vim using
 			|netrw| instead.
 
 						*rails-:Rrefresh*
@@ -427,11 +427,16 @@ A limited amount of completion with <Tab> is supported.
 						*rails-:Rscript*
 :Rscript {command} [options]
 			Deprecated alias for |:Rails| {command}.  Defaults to
-			calling |:Rails| console.
+			calling |:Console|.
 
-						*rails-:Rrunner*
-:[range]Rrunner [file]	Run the given file or code with rails runner and load
-:Rrunner {code}		the results in to the quickfix list, using the error
+						*rails-:Console*
+:Console {options}	Launch rails console {options}. If dispatch.vim's
+			:Start is available, that is used.  Otherwise,
+			executes directly in the foreground.
+
+					*rails-:Runner* *rails-:Rrunner*
+:[range]Runner [file]	Run the given file or code with rails runner and load
+:Runner {code}		the results in to the quickfix list, using the error
 			parser from the "ruby" |:compiler|.  If the file looks
 			like a test, spec, or cucumber feature, the
 			"rubyunit", "rspec", or "cucumber" |:compiler| will be
@@ -447,22 +452,22 @@ A limited amount of completion with <Tab> is supported.
 						*rails-:Rpp*
 :[range]Rpp {code}	Like :Rp, but with pp (pretty print).
 
-						*rails-:Rgenerate*
-:Rgenerate {options}	Calls rails generate {options} and loads the
+					*rails-:Generate* *rails-:Rgenerate*
+:Generate {options}	Invoke rails generate {options} and loads the
 			generated files into the quickfix list.  Use ! to
 			surpress jumping to the first file.
 
-						*rails-:Rdestroy*
-:Rdestroy {options}	Calls rails destroy {options} and loads the destroyed
+					*rails-:Destroy* *rails-:Rdestroy*
+:Destroy {options}	Invoke rails destroy {options} and loads the destroyed
 			files into the quickfix list.
 
-						*rails-:Rserver*
-:Rserver {options}	Launches rails server {options} in the background.
-			If dispatch.vim's :Start is available, that is used.
+					*rails-:Server* *rails-:Rserver*
+:Server {options}	Launch rails server {options} in the background.  If
+			dispatch.vim's :Start is available, that is used.
 			Otherwise, the --daemon option is passed in.
 
-						*rails-:Rserver!*
-:Rserver! {options}	Kill the pid found in tmp/pids/server.pid and then
+					*rails-:Server!* *rails-:Rserver!*
+:Server! {options}	Kill the pid found in tmp/pids/server.pid and then
 			invoke |:Rserver|.
 
 REFACTORING HELPERS				*rails-refactoring*
@@ -472,19 +477,19 @@ A few features are dedicated to helping you refactor your code.
 Partial Extraction ~
 						*rails-partials*
 
-The :Rextract command can be used to extract part of a view to a partial, part
+The :Extract command can be used to extract part of a view to a partial, part
 of a helper to another helper, or part of a model or controller to a concern.
 
-						*rails-:Rextract*
-:[range]Rextract [{controller}/]{name}
+					*rails-:Extract* *rails-:Rextract*
+:[range]Extract [{controller}/]{name}
 			Create a {name} partial from [range] lines (default:
 			current line).  Only available in views.
 
-:[range]Rextract {helper}
+:[range]Extract {helper}
 			Create a {name} helper from [range] lines (default:
 			current line).  Only available in helpers.
 
-:[range]Rextract {concern}
+:[range]Extract {concern}
 			Create a {name} concern from [range] lines (default:
 			current line).  Only available in models and
 			controllers.
@@ -758,7 +763,7 @@ The full list of available options is as follows:
 	current 'define' match (typically a method).
 						*rails-projection-test*
 "test" ~
-	Determines the default test file to run with |rails-:Rrunner| and
+	Determines the default test file to run with |rails-:Runner| and
 	|rails-:Rake|.  Also serves as a default for "alternate".
 						*rails-projection-task*
 "task" ~
@@ -769,7 +774,7 @@ The full list of available options is as follows:
 	when a line number is given, and the second when it's omitted.
 						*rails-projection-compiler*
 "compiler" ~
-	Determines the |:compiler| plugin to use with |rails-:Rrunner|.
+	Determines the |:compiler| plugin to use with |rails-:Runner|.
 						*rails-projection-keywords*
 "keywords" ~
 	Provides a whitespace delimited list of keywords to syntax highlight.
