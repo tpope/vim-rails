@@ -1534,8 +1534,7 @@ function! s:readable_preview_urls(lnum) dict abort
       let handler = self.controller_name().'#'.fnamemodify(self.name(),':t:r:r')
     endif
     if exists('handler')
-      call self.app().route_names()
-      for route in values(self.app().cache.get('named_routes'))
+      for route in self.app().routes()
         if route.method =~# 'GET' && route.handler ==# handler
           let urls += [s:gsub(s:gsub(route.path, '\([^()]*\)', ''), ':\w+', '1')]
 
@@ -2344,19 +2343,21 @@ function! rails#cfile(...) abort
   return empty(cfile) && a:0 && a:1 is# 'delegate' ? "\<C-R>\<C-F>" : cfile
 endfunction
 
-function! s:app_named_route_file(route) dict abort
-  call self.route_names()
-  if self.cache.has("named_routes") && has_key(self.cache.get("named_routes"),a:route)
-    return s:sub(self.cache.get("named_routes")[a:route].handler, '#', '_controller.rb#')
-  endif
+function! s:app_named_route_file(route_name) dict abort
+  for route in self.routes()
+    if get(route, 'name', '') ==# a:route_name
+      return s:sub(route.handler, '#', '_controller.rb#')
+    endif
+  endfor
   return ""
 endfunction
 
-function! s:app_route_names() dict abort
-  if self.cache.needs("named_routes")
+function! s:app_routes() dict abort
+  if self.cache.needs('routes')
     let cd = exists('*haslocaldir') && haslocaldir() ? 'lcd' : 'cd'
     let cwd = getcwd()
-    let routes = {}
+    let routes = []
+    let paths = {}
     try
       execute cd fnameescape(rails#app().path())
       let output = system(self.rake_command().' routes')
@@ -2364,19 +2365,26 @@ function! s:app_route_names() dict abort
       execute cd fnameescape(cwd)
     endtry
     for line in split(output, "\n")
-      let matches = matchlist(line, '^ *\(\l\w*\) \{-\}\([A-Z|]*\) \+\(\S\+\) \+\([[:alnum:]_/]\+#\w\+\)')
+      let matches = matchlist(line, '^ *\(\l\w*\|\) \{-\}\([A-Z|]*\) \+\(\S\+\) \+\([[:alnum:]_/]\+#\w\+\)\%( {.*\)\=$')
       if !empty(matches)
         let [_, name, method, path, handler; __] = matches
-        let routes[name] = {'method': method, 'path': path, 'handler': handler}
+        if !empty(name)
+          let paths[path] = name
+        else
+          let name = get(paths, path, '')
+        endif
+        call insert(routes, {'method': method, 'path': path, 'handler': handler, 'name': name})
+      else
+        PP line
       endif
     endfor
-    call self.cache.set("named_routes",routes)
+    call self.cache.set('routes', routes)
   endif
 
-  return keys(self.cache.get("named_routes"))
+  return self.cache.get('routes')
 endfunction
 
-call s:add_methods('app', ['route_names','named_route_file'])
+call s:add_methods('app', ['routes', 'named_route_file'])
 
 function! s:RailsIncludefind(str,...) abort
   if a:str ==# "ApplicationController" && rails#app().has_path('app/controllers/application.rb')
@@ -5120,7 +5128,7 @@ augroup railsPluginAuto
   autocmd BufWritePost */config/database.yml      call rails#cache_clear("db_config")
   autocmd BufWritePost */config/projections.json  call rails#cache_clear("projections")
   autocmd BufWritePost */test/test_helper.rb      call rails#cache_clear("user_assertions")
-  autocmd BufWritePost */config/routes.rb         call rails#cache_clear("named_routes")
+  autocmd BufWritePost */config/routes.rb         call rails#cache_clear("routes")
   autocmd BufWritePost */config/application.rb    call rails#cache_clear("default_locale")
   autocmd BufWritePost */config/application.rb    call rails#cache_clear("stylesheet_suffix")
   autocmd BufWritePost */config/environments/*.rb call rails#cache_clear("environments")
