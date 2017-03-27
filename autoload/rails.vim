@@ -1042,7 +1042,7 @@ function! s:Log(bang,arg)
     if exists(":Tail") == 2
       exe 'Tail'  s:fnameescape(lf)
     else
-      exe 'pedit' s:fnameescape(lf)
+      exe 'pedit +$' s:fnameescape(lf)
     endif
   endif
 endfunction
@@ -4018,18 +4018,27 @@ function! rails#log_syntax()
   hi def link railslogHTTP        Special
 endfunction
 
+function! s:reload_log() abort
+  checktime
+  if &l:filetype !=# 'railslog'
+    setfiletype railslog
+  endif
+endfunction
+
 function! rails#log_setup() abort
-  nnoremap <buffer> <silent> R :checktime<CR>
-  nnoremap <buffer> <silent> G :checktime<Bar>$<CR>
+  nnoremap <buffer> <silent> R :<C-U>call <SID>reload_log()<CR>
+  nnoremap <buffer> <silent> G :<C-U>call <SID>reload_log()<Bar>exe v:count ? v:count : '$'<CR>
   nnoremap <buffer> <silent> q :bwipe<CR>
-  setlocal modifiable noswapfile autoread
+  setlocal noswapfile autoread
   if exists('+concealcursor')
     setlocal concealcursor=nc conceallevel=2
   else
+    let pos = getpos('.')
+    setlocal modifiable
     silent %s/\%(\e\[[0-9;]*m\|\r$\)//ge
+    call setpos('.', pos)
   endif
   setlocal readonly nomodifiable
-  $
 endfunction
 
 " }}}1
