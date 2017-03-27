@@ -1536,7 +1536,7 @@ function! s:readable_preview_urls(lnum) dict abort
     if exists('handler')
       call self.app().route_names()
       for route in values(self.app().cache.get('named_routes'))
-        if route.method ==# 'GET' && route.handler ==# handler
+        if route.method =~# 'GET' && route.handler ==# handler
           let urls += [s:gsub(s:gsub(route.path, '\([^()]*\)', ''), ':\w+', '1')]
 
         endif
@@ -2364,7 +2364,7 @@ function! s:app_route_names() dict abort
       execute cd fnameescape(cwd)
     endtry
     for line in split(output, "\n")
-      let matches = matchlist(line, '^ \+\(\l\w*\) \{-\}\(\u*\) \+\(\S\+\) \+\(\w\+#\w\+\)')
+      let matches = matchlist(line, '^ *\(\l\w*\) \{-\}\([A-Z|]*\) \+\(\S\+\) \+\([[:alnum:]_/]\+#\w\+\)')
       if !empty(matches)
         let [_, name, method, path, handler; __] = matches
         let routes[name] = {'method': method, 'path': path, 'handler': handler}
