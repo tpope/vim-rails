@@ -1008,8 +1008,9 @@ function! s:BufCommands()
   command! -buffer -bar -nargs=? -bang -range -complete=customlist,s:Complete_preview Rpreview :exe s:deprecate(':Rpreview', ':Preview')|call s:Preview(<bang>0,<line1>,<q-args>)
   command! -buffer -bar -nargs=? -bang -range -complete=customlist,s:Complete_preview Rbrowse :call s:Preview(<bang>0,<line1>,<q-args>)
   command! -buffer -bar -nargs=? -bang -range -complete=customlist,s:Complete_preview Preview :call s:Preview(<bang>0,<line1>,<q-args>)
-  command! -buffer -bar -nargs=? -bang -complete=customlist,s:Complete_environments   Rlog     :call s:Log(<bang>0,<q-args>)
-  command! -buffer -bar -nargs=* -bang                                                Rset     :call s:Set(<bang>0,<f-args>)
+  command! -buffer -bar -nargs=? -bang -complete=customlist,s:Complete_log            Rlog     exe s:deprecate(':Rlog', ':Clogfile', <bang>0 ? 'Clogfile<bang> '.<q-args> : s:Plog(0, <q-args>))
+  command! -buffer -bar -nargs=? -bang -complete=customlist,s:Complete_log            Clogfile exe s:Clogfile(1<bang>, <q-args>)
+  command! -buffer -bar -nargs=* -bang                                                Rset     :exe s:Set(<bang>0,<f-args>)
   command! -buffer -bar -nargs=0 Rtags       :execute rails#app().tags_command()
   command! -buffer -bar -nargs=0 Ctags       :execute rails#app().tags_command()
   command! -buffer -bar -nargs=0 -bang Rrefresh :if <bang>0|unlet! g:autoloaded_rails|source `=s:file`|endif|call s:Refresh(<bang>0)
@@ -1033,18 +1034,36 @@ function! s:BufCommands()
   endif
 endfunction
 
-function! s:Log(bang,arg)
+function! s:Complete_log(A, L, P) abort
+  return s:completion_filter(rails#app().relglob('log/','**/*', '.log'), a:A)
+endfunction
+
+function! s:Clogfile(bang, arg) abort
   let lf = rails#app().path('log/' . (empty(a:arg) ? s:environment() : a:arg) . '.log')
-  if a:bang
-    exe 'cgetfile' s:fnameescape(lf)
-    clast
-  else
-    if exists(":Tail") == 2
-      exe 'Tail'  s:fnameescape(lf)
-    else
-      exe 'pedit +$' s:fnameescape(lf)
-    endif
+  if !filereadable(lf)
+    return 'cgetfile ' . s:fnameescape(lf)
   endif
+  let [mp, efm, cc] = [&l:mp, &l:efm, get(b:, 'current_compiler', '')]
+  let chdir = exists("*haslocaldir") && haslocaldir() ? 'lchdir' : 'chdir'
+  let cwd = getcwd()
+  try
+    compiler rails
+    exe chdir s:fnameescape(rails#app().path())
+    exe 'cgetfile' s:fnameescape(lf)
+  finally
+    let [&l:mp, &l:efm, b:current_compiler] = [mp, efm, cc]
+    if empty(cc) | unlet! b:current_compiler | endif
+    exe chdir s:fnameescape(cwd)
+  endtry
+  copen
+  setf railslog
+  $
+  return 'silent! clast'
+endfunction
+
+function! s:Plog(bang, arg) abort
+  let lf = rails#app().path('log/' . (empty(a:arg) ? s:environment() : a:arg) . '.log')
+  return 'pedit' . (a:bang ? '!' : '') . ' +$ ' . s:fnameescape(lf)
 endfunction
 
 function! rails#command(bang, count, arg) abort
@@ -3984,10 +4003,16 @@ function! rails#log_syntax()
     syn match railslogEscape      '\e\[[0-9;]*m'
     syn match railslogEscapeMN    '\e\[[0-9;]*m' nextgroup=railslogModelNum,railslogEscapeMN skipwhite contained
   endif
-  syn match   railslogRender      '\%(^\s*\%(\e\[[0-9;]*m\)\=\)\@<=\%(Started\|Processing\|Rendering\|Rendered\|Redirected\|Completed\)\>'
-  syn match   railslogComment     '^\s*# .*'
-  syn match   railslogModel       '\%(^\s*\%(\e\[[0-9;]*m\)*\)\@<=\u\%(\w\|:\)* \%(Load\%( Including Associations\| IDs For Limited Eager Loading\)\=\|Columns\|Exists\|Count\|Create\|Update\|Destroy\|Delete all\)\>' skipwhite nextgroup=railslogModelNum,railslogEscapeMN
-  syn match   railslogModel       '\%(^\s*\%(\e\[[0-9;]*m\)*\)\@<=\%(SQL\|CACHE\)\>' skipwhite nextgroup=railslogModelNum,railslogEscapeMN
+  syn cluster railslogLine        contains=railslogRender,railslogModel,railslogDeprecation
+  syn match   railslogLineStart   '\%(^\s*\%(\e\[[0-9;]*m\)\=\)\@<=' nextgroup=@railslogLineStart
+  syn match   railslogQfFileName  "^[^|]*|\@=" nextgroup=railslogQfSeparator
+  syn match   railslogQfSeparator "|" nextgroup=railslogQfLineNr contained
+  syn match   railslogQfLineNr    "[^|]*" contained contains=railslogQfError
+  syn match   railslogQfError     "error" contained
+  syn match   railslogRender      '\%(\%(^\||\)\s*\%(\e\[[0-9;]*m\)\=\)\@<=\%(Started\|Processing\|Rendering\|Rendered\|Redirected\|Completed\)\>'
+  syn match   railslogComment     '\%(^\||\)\@<=\s*# .*'
+  syn match   railslogModel       '\%(\%(^\||\)\s*\%(\e\[[0-9;]*m\)*\)\@<=\u\%(\w\|:\)* \%(Load\%( Including Associations\| IDs For Limited Eager Loading\)\=\|Columns\|Exists\|Count\|Create\|Update\|Destroy\|Delete all\)\>' skipwhite nextgroup=railslogModelNum,railslogEscapeMN
+  syn match   railslogModel       '\%(\%(^\||\)\s*\%(\e\[[0-9;]*m\)*\)\@<=\%(SQL\|CACHE\)\>' skipwhite nextgroup=railslogModelNum,railslogEscapeMN
   syn region  railslogModelNum    start='(' end=')' contains=railslogNumber contained skipwhite
   syn match   railslogNumber      '\<\d\+\>%'
   syn match   railslogNumber      '[ (]\@<=\<\d\+\.\d\+\>\.\@!'
@@ -3997,12 +4022,15 @@ function! rails#log_syntax()
   syn match   railslogIP          '\<\d\{1,3\}\%(\.\d\{1,3}\)\{3\}\>'
   syn match   railslogTimestamp   '\<\d\d\d\d-\d\d-\d\d \d\d:\d\d:\d\d\>'
   syn match   railslogSessionID   '\<\x\{32\}\>'
-  syn match   railslogIdentifier  '^\s*\%(Session ID\|Parameters\|Unpermitted parameters\)\ze:'
+  syn match   railslogIdentifier  '\%(^\||\)\@<=\s*\%(Session ID\|Parameters\|Unpermitted parameters\)\ze:'
   syn match   railslogSuccess     '\<2\d\d \u[A-Za-z0-9 ]*\>'
   syn match   railslogRedirect    '\<3\d\d \u[A-Za-z0-9 ]*\>'
   syn match   railslogError       '\<[45]\d\d \u[A-Za-z0-9 ]*\>'
-  syn match   railslogError       '^DEPRECATION WARNING\>'
+  syn match   railslogDeprecation '\<DEPRECATION WARNING\>'
   syn keyword railslogHTTP        OPTIONS GET HEAD POST PUT PATCH DELETE TRACE CONNECT
+  hi def link railslogQfFileName  Directory
+  hi def link railslogQfLineNr    LineNr
+  hi def link railslogQfError     Error
   hi def link railslogEscapeMN    railslogEscape
   hi def link railslogEscape      Ignore
   hi def link railslogComment     Comment
@@ -4014,12 +4042,20 @@ function! rails#log_syntax()
   hi def link railslogIdentifier  Identifier
   hi def link railslogRedirect    railslogSuccess
   hi def link railslogSuccess     Special
+  hi def link railslogDeprecation railslogError
   hi def link railslogError       Error
   hi def link railslogHTTP        Special
 endfunction
 
 function! s:reload_log() abort
-  checktime
+  if &buftype == 'quickfix' && get(w:, 'quickfix_title') =~ '^:cgetfile'
+    let pos = getpos('.')
+    exe 'cgetfile' s:fnameescape(w:quickfix_title[10:-1])
+    silent! clast
+    call setpos('.', pos)
+  else
+    checktime
+  endif
   if &l:filetype !=# 'railslog'
     setfiletype railslog
   endif

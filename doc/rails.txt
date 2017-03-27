@@ -50,17 +50,17 @@ actually edit a file from a Rails application.
 			{directory}" and loads the generated files into the
 			quickfix list.
 
+						*rails-:Clogfile*
+:Clogfile [environment]	Load the log file for the given environment using
+			|:cgetfile|, open the quickfix window, and jump to the
+			last line.  |R| is remapped to reload the list, and
+			|G| remapped to do the same before it's usual behavior
+			of jumping to the last line.  If the delay in loading
+			is too long, you might consider :Rake log:clear.
+
 						*rails-:Rlog*
-:Rlog [{logfile}]	Split window and open {logfile} ($RAILS_ENV or
-			development by default).  The control characters used
-			for highlighting are removed.  If you have a :Tail
-			command (provided by |tailminusf|.vim), that is used;
-			otherwise, the file does NOT reload upon change.
-			Use |:checktime| to tell Vim to check for changes.
-			|G| has been mapped to do just that prior to jumping
-			to the end of the file, and q is mapped to close the
-			window.  If the delay in loading is too long, you
-			might like :Rake log:clear.
+:Rlog [environment]	Open the log file in the preview window using
+			|:pedit|.  Deprecated in favor if |rails-:Clog|.
 
 					*rails-:Preview* *rails-:Rpreview*
 :Preview [path]		Open the given path for the current app in a browser.

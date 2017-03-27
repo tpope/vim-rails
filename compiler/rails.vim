@@ -33,6 +33,8 @@ CompilerSet errorformat^=
       \%\\&%\\s\ %#%m%\\>\ \ %#%f,
       \Overwrite%.%#%\\S%\\+\ \ %#%m%\\x1b[0m\ \ %#%f,
       \%-GOverwrite%.%#\"h\"%.%#,
+      \%+GStarted\ %\\u%\\u%.%#,
+      \%+GCompleted\ %\\d%\\d%\\d%.%#,
       \%.%#rails\ test\ %f:%l,
       \%+GCurrent\ version:%.%#,
       \%+G\ %#Status\ %#Migration\ ID%.%#,
