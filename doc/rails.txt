@@ -3,16 +3,16 @@
 Author:  Tim Pope <http://tpo.pe/>
 
 |rails-introduction|            Introduction and Feature Summary
-|rails-commands|                General Commands
 |rails-navigation|              Navigation
 |rails-gf|                          File Under Cursor - gf
 |rails-alternate-related|           Alternate and Related Files
 |rails-type-navigation|             File Type Commands
+|rails-exec|                    Executable Wrappers
 |rails-rake|                    Rake
-|rails-scripts|                 Script Wrappers
 |rails-refactoring|             Refactoring Helpers
 |rails-partials|                    Partial Extraction
 |rails-migrations|                  Migration Inversion
+|rails-misc|                    Miscellaneous Commands
 |rails-integration|             Integration
 |rails-vim-integration|             Integration with the Vim Universe
 |rails-rails-integration|           Integration with the Rails Universe
@@ -25,10 +25,6 @@ Author:  Tim Pope <http://tpo.pe/>
 |rails-about|                   About rails.vim
 |rails-license|                     License
 
-This plugin is only available if 'compatible' is not set.
-
-{Vi does not have any of this}
-
 INTRODUCTION					*rails-introduction* *rails*
 
 Whenever you edit a file in a Rails application, this plugin will be
@@ -38,76 +34,12 @@ buffer-specific commands.
 If you are in a hurry to get started, with a minimal amount of reading, you
 are encouraged to at least skim through the headings and command names in this
 file, to get a better idea of what is offered.  If you only read one thing,
-make sure it is the navigation section: |rails-navigation|.
-
-GENERAL COMMANDS				*rails-commands*
-
-All commands are buffer local, unless otherwise stated.  This means you must
-actually edit a file from a Rails application.
-
-						*rails-:Rails-new*
-:Rails new {directory}	The only global command.  Invokes "rails new
-			{directory}" and loads the generated files into the
-			quickfix list.
-
-						*rails-:Clogfile*
-:Clogfile [environment]	Load the log file for the given environment using
-			|:cgetfile|, open the quickfix window, and jump to the
-			last line.  |R| is remapped to reload the list, and
-			|G| remapped to do the same before it's usual behavior
-			of jumping to the last line.  If the delay in loading
-			is too long, you might consider :Rake log:clear.
-
-						*rails-:Rlog*
-:Rlog [environment]	Open the log file in the preview window using
-			|:pedit|.  Deprecated in favor if |rails-:Clog|.
-
-					*rails-:Preview* *rails-:Rpreview*
-:Preview [path]		Open the given path for the current app in a browser.
-			The host and port are determined by applying some
-			netstat/lsof trickery to the current server pid.  If
-			no server is running, Pow is consulted, and if all
-			else fails, a default of localhost:3000 is used.  If
-			no path is given, a default is used based on the
-			current file and the application's routes.  The
-			default is overridden by comments like the following
-			that are either before the current method call or at
-			the top of the file: >
-
-		# GET /users
-		# PUT /users/1
-<
-			If it's not using the right browser, define an OpenURL
-			command:
->
-		:command -bar -nargs=1 OpenURL :!open <args>
-<
-					*rails-:Preview!* *rails-:Rpreview!*
-:Preview! [path]	Like :Preview, but open the path inside Vim using
-			|netrw| instead.
-
-						*rails-:Rrefresh*
-:Rrefresh		Refreshes cached settings.
-
-						*rails-:Rrefresh!*
-:Rrefresh!		As above, and also reloads rails.vim.
-
-						*rails-:Cd* *rails-:Rcd*
-:Cd [{directory}]	|:cd| to /path/to/railsapp/{directory}.
-
-						*rails-:Lcd* *rails-:Rlcd*
-:Lcd [{directory}]	|:lcd| to /path/to/railsapp/{directory}.
-
-						*rails-:Ctags* *rails-:Rtags*
-:Ctags			Calls ctags -R on the current application root.
-			Exuberant ctags must be installed.  Additional
-			arguments can be passed to ctags with
-			|g:rails_ctags_arguments|.
+make sure it is the navigation section.
 
 NAVIGATION					*rails-navigation*
 
-Navigation is where the real power of this plugin lies.  Efficient use of the
-following features will greatly ease navigating the Rails file structure.
+Navigating the twisted file hierarchy of Rails projects is what initially
+inspired the creation of this plugin.
 
 The standard Rails load path is prepended to 'path', enabling |:find| to work:
 >
@@ -352,6 +284,69 @@ Finally, one Vim feature that proves helpful in conjunction with all of the
 above is |CTRL-^|.  This keystroke edits the previous file, and is helpful to
 back out of any of the above commands.
 
+EXECUTABLE WRAPPERS				*rails-exec*
+
+The following commands are wrappers around the `rails` executable and
+subcommands.
+
+						*rails-:Rails*
+:Rails {command} [options]
+			Depending on the Rails version, invoke one of
+			"bin/rails {command}", "script/rails {command}", or
+			"script/{command}".  Unless the command is "console",
+			"dbconsole", or "server", the results are loaded into
+			the quickfix list using the "rails" |:compiler|
+			included with the plugin.  With no command, runs the
+			default rake task.  See |rails-default-task|.  Unlike
+			other commands, :Rails is available globally, for use
+			with the "new" subcommand.
+
+						*rails-:Rscript*
+:Rscript {command} [options]
+			Deprecated alias for |:Rails| {command}.  Defaults to
+			calling |:Console|.
+
+						*rails-:Console*
+:Console {options}	Launch rails console {options}. If dispatch.vim's
+			:Start is available, that is used.  Otherwise,
+			executes directly in the foreground.
+
+					*rails-:Generate* *rails-:Rgenerate*
+:Generate {options}	Invoke rails generate {options} and loads the
+			generated files into the quickfix list.  Use ! to
+			surpress jumping to the first file.
+
+					*rails-:Destroy* *rails-:Rdestroy*
+:Destroy {options}	Invoke rails destroy {options} and loads the destroyed
+			files into the quickfix list.
+
+					*rails-:Server* *rails-:Rserver*
+:Server {options}	Launch rails server {options} in the background.  If
+			dispatch.vim's :Start is available, that is used.
+			Otherwise, the --daemon option is passed in.
+
+					*rails-:Server!* *rails-:Rserver!*
+:Server! {options}	Kill the pid found in tmp/pids/server.pid and then
+			invoke |:server|.
+
+					*rails-:Runner* *rails-:Rrunner*
+:[range]Runner [file]	Run the given file or code with rails runner and load
+:Runner {code}		the results in to the quickfix list, using the error
+			parser from the "ruby" |:compiler|.  If the file looks
+			like a test, spec, or cucumber feature, the
+			"rubyunit", "rspec", or "cucumber" |:compiler| will be
+			used instead.  If provided, [range] is passed to the
+			test runner to restrict execution to a particular
+			line.  With no argument, defaults to running the test
+			for the current file.
+
+						*rails-:Rp*
+:[range]Rp {code}	Use rails runner to execute "p begin {code} end" and
+			echo the result.
+
+						*rails-:Rpp*
+:[range]Rpp {code}	Like :Rp, but with pp (pretty print).
+
 RAKE						*rails-rake*
 
 Rake integration happens through the :Rake command.
@@ -359,20 +354,21 @@ Rake integration happens through the :Rake command.
 						*rails-:Rake*
 :[range]Rake {targets}	Calls |:make!| {targets} (with 'makeprg' being rake)
 			and opens the quickfix window if there were any
-			errors.  An argument of "-" reruns the last task.  If
-			{targets} are omitted, :Rake defaults to something
-			sensible as described below.  Giving a line number
-			argument may affect that default.
+			errors.  If dispatch.vim's |:Make| is available that
+			is used instead.  An argument of "-" reruns the last
+			task.  If {targets} are omitted, :Rake defaults to
+			something sensible as described below.
 
 						*rails-:Rake!*
 :[range]Rake! {targets}	Called with a bang, :Rake will forgo opening the
 			quickfix window.
 
-						*rails-rake-defaults*
+						*rails-default-task*
 
-Generally, the default task is one that runs the test you'd expect.  For
-example, if you're in a view in an RSpec application, the view spec is run,
-but if it's a Test::Unit application, the functional test for the
+Invoking |rails-:Rails| or |rails-:Rake| with no arguments runs a default
+task.  Generally, the default task is one that runs the test you'd expect.
+For example, if you're in a view in an RSpec application, the view spec is
+run, but if it's a Test::Unit application, the functional test for the
 corresponding controller is run.  The following table lists the most
 interesting mappings:
 
@@ -393,8 +389,8 @@ db/schema.rb		db:migrate:status
 db/seeds.rb		db:seed
 README			about
 
-Additionally, when :Rake is given a line number (e.g., :.Rake), the following
-additional tasks can be invoked:
+Additionally, when :Rails or :Rake is given a line number (e.g., :.Rake), the
+following additional tasks can be invoked:
 
 File			Task ~
 unit test		test:units TEST=... TESTOPTS=-n...
@@ -410,65 +406,6 @@ task			... (try to guess currently edited declaration)
 
 Finally, you can override the default task with a comment like "# rake ..."
 before the method pointed to by [range] or at the top of the file.
-
-SCRIPT WRAPPERS					*rails-scripts*
-
-The following commands are wrappers around the scripts in the script directory
-of the Rails application.  Most have extra features beyond calling the script.
-A limited amount of completion with <Tab> is supported.
-
-
-						*rails-:Rails*
-:Rails {command} [options]
-			Depending on the Rails version, invoke one of
-			"bin/rails {command}", "script/rails {command}", or
-			"script/{command}".
-
-						*rails-:Rscript*
-:Rscript {command} [options]
-			Deprecated alias for |:Rails| {command}.  Defaults to
-			calling |:Console|.
-
-						*rails-:Console*
-:Console {options}	Launch rails console {options}. If dispatch.vim's
-			:Start is available, that is used.  Otherwise,
-			executes directly in the foreground.
-
-					*rails-:Runner* *rails-:Rrunner*
-:[range]Runner [file]	Run the given file or code with rails runner and load
-:Runner {code}		the results in to the quickfix list, using the error
-			parser from the "ruby" |:compiler|.  If the file looks
-			like a test, spec, or cucumber feature, the
-			"rubyunit", "rspec", or "cucumber" |:compiler| will be
-			used instead.  If provided, [range] is passed to the
-			test runner to restrict execution to a particular
-			line.  With no argument, defaults to running the test
-			for the current file.
-
-						*rails-:Rp*
-:[range]Rp {code}	Use rails runner to execute "p begin {code} end" and
-			echo the result.
-
-						*rails-:Rpp*
-:[range]Rpp {code}	Like :Rp, but with pp (pretty print).
-
-					*rails-:Generate* *rails-:Rgenerate*
-:Generate {options}	Invoke rails generate {options} and loads the
-			generated files into the quickfix list.  Use ! to
-			surpress jumping to the first file.
-
-					*rails-:Destroy* *rails-:Rdestroy*
-:Destroy {options}	Invoke rails destroy {options} and loads the destroyed
-			files into the quickfix list.
-
-					*rails-:Server* *rails-:Rserver*
-:Server {options}	Launch rails server {options} in the background.  If
-			dispatch.vim's :Start is available, that is used.
-			Otherwise, the --daemon option is passed in.
-
-					*rails-:Server!* *rails-:Rserver!*
-:Server! {options}	Kill the pid found in tmp/pids/server.pid and then
-			invoke |:Rserver|.
 
 REFACTORING HELPERS				*rails-refactoring*
 
@@ -503,7 +440,7 @@ If this is your file, in app/views/blog/show.html.erb: >
 
 And you issue this command: >
 
-	:2,3Rextract post
+	:2,3Extract post
 
 Your file will change to this: >
 
@@ -518,7 +455,7 @@ And app/views/blog/_post.html.erb will now contain: >
 <
 The easiest way to choose what to extract is to use |linewise-visual| mode.
 Then, a simple >
-	:'<,'>Rextract blog/post
+	:'<,'>Extract blog/post
 will suffice. (Note the use of a controller name in this example.)
 
 Migration Inversion ~
@@ -531,6 +468,62 @@ Migration Inversion ~
 			Newer versions of Rails provide increasingly good
 			support for reversible migration definitions, so this
 			command is deprecated and no longer maintained.
+
+MISCELLANEOUS COMMANDS				*rails-misc*
+
+						*rails-:Clogfile*
+:Clogfile [environment]	Load the log file for the given environment using
+			|:cgetfile|, open the quickfix window, and jump to the
+			last line.  |R| is remapped to reload the list, and
+			|G| remapped to do the same before it's usual behavior
+			of jumping to the last line.  If the delay in loading
+			is too long, you might consider :Rake log:clear.
+
+						*rails-:Rlog*
+:Rlog [environment]	Open the log file in the preview window using
+			|:pedit|.  Deprecated in favor if |rails-:Clog|.
+
+					*rails-:Preview* *rails-:Rpreview*
+:Preview [path]		Open the given path for the current app in a browser.
+			The host and port are determined by applying some
+			netstat/lsof trickery to the current server pid.  If
+			no server is running, Pow is consulted, and if all
+			else fails, a default of localhost:3000 is used.  If
+			no path is given, a default is used based on the
+			current file and the application's routes.  The
+			default is overridden by comments like the following
+			that are either before the current method call or at
+			the top of the file: >
+
+		# GET /users
+		# PUT /users/1
+<
+			If it's not using the right browser, define an OpenURL
+			command:
+>
+		:command -bar -nargs=1 OpenURL :!open <args>
+<
+					*rails-:Preview!* *rails-:Rpreview!*
+:Preview! [path]	Like :Preview, but open the path inside Vim using
+			|netrw| instead.
+
+						*rails-:Rrefresh*
+:Rrefresh		Refreshes cached settings.
+
+						*rails-:Rrefresh!*
+:Rrefresh!		As above, and also reloads rails.vim.
+
+						*rails-:Cd* *rails-:Rcd*
+:Cd [{directory}]	|:cd| to /path/to/railsapp/{directory}.
+
+						*rails-:Lcd* *rails-:Rlcd*
+:Lcd [{directory}]	|:lcd| to /path/to/railsapp/{directory}.
+
+						*rails-:Ctags* *rails-:Rtags*
+:Ctags			Calls ctags -R on the current application root.
+			Exuberant ctags must be installed.  Additional
+			arguments can be passed to ctags with
+			|g:rails_ctags_arguments|.
 
 INTEGRATION					*rails-integration*
 
