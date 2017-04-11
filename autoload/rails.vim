@@ -4129,8 +4129,22 @@ function! s:app_db_config(environment) dict
   if has_key(all, a:environment)
     return all[a:environment]
   elseif self.has_gem('rails-default-database')
-    let db = s:gsub(fnamemodify(self.path(), ':t'), '[^[:alnum:]]+', '_') .
-          \ '_' . a:environment
+    let db = ''
+    if self.has_file('config/application.rb')
+      for line in readfile(self.path('config/application.rb'), 32)
+        let db = matchstr(line,'^\s*config\.database_name\s*=\s*[''"]\zs.\{-\}\ze[''"]')
+        if !empty(db)
+          break
+        endif
+    endfor
+    if empty(db)
+      let db = s:gsub(fnamemodify(self.path(), ':t'), '[^[:alnum:]]+', '_') .
+            \ '_%s'
+    endif
+    let db = substitute(db, '%s', a:environment, 'g')
+    if db !~# '_test$' && a:environment ==# 'test'
+      let db .= '_test'
+    endif
     if self.has_gem('pg')
       return {'adapter': 'postgresql', 'database': db}
     elseif self.has_gem('mysql') || self.has_gem('mysql2')
