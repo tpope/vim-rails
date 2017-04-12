@@ -4003,8 +4003,6 @@ function! rails#log_syntax()
     syn match railslogEscape      '\e\[[0-9;]*m'
     syn match railslogEscapeMN    '\e\[[0-9;]*m' nextgroup=railslogModelNum,railslogEscapeMN skipwhite contained
   endif
-  syn cluster railslogLine        contains=railslogRender,railslogModel,railslogDeprecation
-  syn match   railslogLineStart   '\%(^\s*\%(\e\[[0-9;]*m\)\=\)\@<=' nextgroup=@railslogLineStart
   syn match   railslogQfFileName  "^[^|]*|\@=" nextgroup=railslogQfSeparator
   syn match   railslogQfSeparator "|" nextgroup=railslogQfLineNr contained
   syn match   railslogQfLineNr    "[^|]*" contained contains=railslogQfError
