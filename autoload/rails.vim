@@ -4585,11 +4585,13 @@ endfunction
 function! s:combine_projections(dest, src, ...) abort
   let extra = a:0 ? a:1 : {}
   if type(a:src) == type({})
-    for [pattern, original] in items(a:src)
-      let projection = extend(copy(original), extra)
-      if !has_key(projection, 'prefix') && !has_key(projection, 'format')
-        let a:dest[pattern] = s:extend_projection(get(a:dest, pattern, {}), projection)
-      endif
+    for [pattern, value] in items(a:src)
+      for original in type(value) == type([]) ? value : [value]
+        let projection = extend(copy(original), extra)
+        if !has_key(projection, 'prefix') && !has_key(projection, 'format')
+          let a:dest[pattern] = s:extend_projection(get(a:dest, pattern, {}), projection)
+        endif
+      endfor
     endfor
   endif
   return a:dest
