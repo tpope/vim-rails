@@ -1735,7 +1735,7 @@ function! s:Rails(bang, count, arg) abort
     let [mp, efm, cc] = [&l:mp, &l:efm, get(b:, 'current_compiler', '')]
     try
       compiler rails
-      if exists('rake') !rails#app().has('rails5')
+      if exists('rake') && !rails#app().has('rails5')
         let &l:makeprg = rails#app().rake_command()
       else
         let str = s:rake2rails(str)
