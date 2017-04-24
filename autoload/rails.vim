@@ -5070,23 +5070,23 @@ function! rails#buffer_setup() abort
     return ''
   endif
   let self = rails#buffer()
+  let ft = self.getvar('&filetype')
   let b:rails_cached_file_type = self.calculate_file_type()
-  call s:BufMappings()
-  call s:BufCommands()
-  if !empty(findfile('macros/rails.vim', escape(&runtimepath, ' ')))
-    runtime! macros/rails.vim
-  endif
-  silent doautocmd User Rails
-  call s:BufProjectionCommands()
-  call s:BufAbbreviations()
+
   call s:SetBasePath()
+  call self.setvar('&suffixesadd', s:sub(self.getvar('&suffixesadd'),'^$','.rb'))
+  call self.setvar('&includeexpr','rails#includeexpr(v:fname)')
+
   let rp = s:gsub(self.app().path(),'[ ,]','\\&')
   if stridx(&tags,rp.'/tags') == -1
     let &l:tags = rp . '/tags,' . rp . '/tmp/tags,' . &tags
   endif
-  call self.setvar('&includeexpr','rails#includeexpr(v:fname)')
-  call self.setvar('&suffixesadd', s:sub(self.getvar('&suffixesadd'),'^$','.rb'))
-  let ft = self.getvar('&filetype')
+
+  call s:BufMappings()
+  call s:BufCommands()
+  call s:BufProjectionCommands()
+  call s:BufAbbreviations()
+
   if ft =~# '^ruby\>'
     call self.setvar('&define',self.define_pattern())
     " This really belongs in after/ftplugin/ruby.vim but we'll be nice
@@ -5174,6 +5174,11 @@ function! rails#buffer_setup() abort
             \ ' `=rails#buffer(' . self['#'] . ').default_rake_task(v:lnum)`')
     endif
   endif
+
+  if !empty(findfile('macros/rails.vim', escape(&runtimepath, ' ')))
+    runtime! macros/rails.vim
+  endif
+  silent doautocmd User Rails
 endfunction
 
 " }}}1
