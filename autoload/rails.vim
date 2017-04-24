@@ -1419,7 +1419,11 @@ function! s:readable_default_rake_task(...) dict abort
   elseif self.name() =~# '\<README'
     return 'about'
   elseif self.type_name('controller') && lnum
-    return 'routes CONTROLLER='.self.controller_name()
+    if self.app().has('rails5')
+      return 'routes -c '.self.controller_name()
+    else
+      return 'routes CONTROLLER='.self.controller_name()
+    endif
   else
     let test = self.test_file()
     let with_line = test
@@ -1460,6 +1464,16 @@ function! s:readable_default_rake_task(...) dict abort
   endif
 endfunction
 
+function! s:rake2rails(task) abort
+  let task = s:gsub(a:task, '^--task$', '')
+  let task = s:gsub(task, '<TEST\w*\=', '')
+  return task
+endfunction
+
+function! s:readable_default_rails_task(...) dict abort
+  return s:rake2rails(call(self.default_rake_task, a:000, self))
+endfunction
+
 function! s:app_rake_command(...) dict abort
   let cmd = 'rake'
   if self.has('rails5') && get(a:, 1, '') !=# 'norails' && get(g:, 'rails_make', '') ==# 'rails'
@@ -1480,7 +1494,7 @@ function! rails#complete_rake(A,L,P)
   return s:completion_filter(rails#app().rake_tasks(), a:A, ':')
 endfunction
 
-call s:add_methods('readable', ['test_file_candidates', 'test_file', 'default_rake_task'])
+call s:add_methods('readable', ['test_file_candidates', 'test_file', 'default_rake_task', 'default_rails_task'])
 call s:add_methods('app', ['rake_command'])
 
 " }}}1
@@ -1721,11 +1735,10 @@ function! s:Rails(bang, count, arg) abort
     let [mp, efm, cc] = [&l:mp, &l:efm, get(b:, 'current_compiler', '')]
     try
       compiler rails
-      if exists('rake') && !rails#app().has('rails5')
+      if !rails#app().has('rails5')
         let &l:makeprg = rails#app().rake_command()
       else
-        let str = s:gsub(str, '<TEST\w*\=', '')
-        let str = s:gsub(str, '<CONTROLLER\=', '-c ')
+        let str = s:rake2rails(str)
         let &l:makeprg = rails#app().prepare_rails_command('$*')
       endif
       let &l:errorformat .= ',chdir '.escape(rails#app().path(), ',')
@@ -5179,7 +5192,7 @@ function! rails#buffer_setup() abort
       call self.setvar('dispatch',
             \ dir .
             \ self.app().ruby_script_command('bin/rails') .
-            \ ' `=rails#buffer(' . self['#'] . ').default_rake_task(v:lnum)`')
+            \ ' `=rails#buffer(' . self['#'] . ').default_rails_task(v:lnum)`')
     else
       call self.setvar('dispatch',
             \ dir . '-compiler=rails ' .
