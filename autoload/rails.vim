@@ -1209,7 +1209,7 @@ function! s:app_rake_tasks() dict abort
   if self.cache.needs('rake_tasks')
     call s:push_chdir()
     try
-      let output = system(self.rake_command().' -T')
+      let output = system(self.rake_command('norails').' -T')
       let lines = split(output, "\n")
     finally
       call s:pop_command()
@@ -1217,7 +1217,7 @@ function! s:app_rake_tasks() dict abort
     if v:shell_error != 0
       return []
     endif
-    call map(lines,'matchstr(v:val,"^rake\\s\\+\\zs[^][ ]\\+")')
+    call map(lines,'matchstr(v:val,"^\\S\\+\\s\\+\\zs[^][ ]\\+")')
     call filter(lines,'v:val != ""')
     call self.cache.set('rake_tasks',s:uniq(['default'] + lines))
   endif
@@ -1250,7 +1250,7 @@ function! s:Rake(bang, lnum, arg) abort
   try
     compiler rails
     let b:current_compiler = 'rake'
-    let &l:makeprg = rails#app().rake_command()
+    let &l:makeprg = rails#app().rake_command('norails')
     let &l:errorformat .= ',chdir '.escape(self.path(), ',')
     let arg = a:arg
     if arg == ''
@@ -1351,7 +1351,7 @@ function! s:readable_default_rake_task(...) dict abort
   let app = self.app()
   let lnum = a:0 ? (a:1 < 0 ? 0 : a:1) : 0
 
-  let taskpat = '\C# rake\s\+\zs.\{-\}\ze\%(\s\s\|#\|$\)'
+  let taskpat = '\C# ra\%(ils\|ke)\s\+\zs.\{-\}\ze\%(\s\s\|#\|$\)'
   if self.getvar('&buftype') == 'quickfix'
     return '-'
   elseif self.getline(lnum) =~# '# rake \S'
@@ -1461,14 +1461,18 @@ function! s:readable_default_rake_task(...) dict abort
 endfunction
 
 function! s:app_rake_command(...) dict abort
+  let cmd = 'rake'
+  if self.has('rails5') && get(a:, 1, '') !=# 'norails' && get(g:, 'rails_make', '') ==# 'rails'
+    let cmd = 'rails'
+  endif
   if get(a:, 1, '') !=# 'static' && self.has_path('.zeus.sock') && executable('zeus')
-    return 'zeus rake'
-  elseif self.has_path('bin/rake')
-    return self.ruby_script_command('bin/rake')
+    return 'zeus ' . cmd
+  elseif self.has_path('bin/' . cmd)
+    return self.ruby_script_command('bin/' . cmd)
   elseif self.has('bundler')
-    return 'bundle exec rake'
+    return 'bundle exec ' . cmd
   else
-    return 'rake'
+    return cmd
   endif
 endfunction
 
@@ -1952,6 +1956,7 @@ function! rails#complete_rails(ArgLead, CmdLine, P, ...) abort
     if app.has('rails5')
       call extend(cmds, app.rake_tasks())
     endif
+    call sort(cmds)
     return s:completion_filter(cmds, a:ArgLead)
   elseif cmd =~# '^\%([rt]\|runner\|test\|test:db\)\s\+'
     return s:completion_filter(app.relglob('', s:fuzzyglob(a:ArgLead)), a:ArgLead)
@@ -5145,7 +5150,9 @@ function! rails#buffer_setup() abort
   endif
 
   compiler rails
-  let b:current_compiler = 'rake'
+  if get(g:, 'rails_make', '') !=# 'rails'
+    let b:current_compiler = 'rake'
+  endif
   let &l:makeprg = self.app().rake_command('static')
   let &l:errorformat .= ',chdir '.escape(self.app().path(), ',')
 
