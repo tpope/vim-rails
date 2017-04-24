@@ -4081,6 +4081,9 @@ endfunction
 
 nnoremap <SID>: :<C-U><C-R>=v:count ? v:count : ''<CR>
 function! s:BufMappings() abort
+  if &includeexpr !~# 'rails#'
+    return
+  endif
   cmap <buffer><script><expr> <Plug><cfile>   rails#cfile('delegate')
   nmap <buffer><silent> <Plug>RailsFind       <SID>:find <Plug><cfile><CR>
   nmap <buffer><silent> <Plug>RailsSplitFind  <SID>:sfind <Plug><cfile><CR>
@@ -5075,7 +5078,10 @@ function! rails#buffer_setup() abort
 
   call s:SetBasePath()
   call self.setvar('&suffixesadd', s:sub(self.getvar('&suffixesadd'),'^$','.rb'))
-  call self.setvar('&includeexpr','rails#includeexpr(v:fname)')
+  let inex = self.getvar('&includeexpr')
+  if inex =~? 'rails\|ruby\|\.rb' || inex !~# '[A-Z#]'
+    call self.setvar('&includeexpr', 'rails#includeexpr(v:fname)')
+  endif
 
   let rp = s:gsub(self.app().path(),'[ ,]','\\&')
   if stridx(&tags,rp.'/tags') == -1
