@@ -42,16 +42,17 @@ function! s:endswith(string,suffix)
 endfunction
 
 function! s:uniq(list) abort
+  if exists('*uniq')
+    return uniq(a:list)
+  endif
   let i = 0
   let seen = {}
   while i < len(a:list)
-    if (a:list[i] ==# '' && exists('empty')) || has_key(seen,a:list[i])
-      call remove(a:list,i)
-    elseif a:list[i] ==# ''
-      let i += 1
-      let empty = 1
+    let key = string(a:list[i])
+    if has_key(seen, key)
+      call remove(a:list, i)
     else
-      let seen[a:list[i]] = 1
+      let seen[key] = 1
       let i += 1
     endif
   endwhile
