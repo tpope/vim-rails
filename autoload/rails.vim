@@ -1351,11 +1351,11 @@ function! s:readable_default_rake_task(...) dict abort
   let app = self.app()
   let lnum = a:0 ? (a:1 < 0 ? 0 : a:1) : 0
 
-  let taskpat = '\C# ra\%(ils\|ke)\s\+\zs.\{-\}\ze\%(\s\s\|#\|$\)'
+  let taskpat = '\C# ra\%(ils\|ke\)\s\+\zs.\{-\}\ze\%(\s\s\|#\|$\)'
   if self.getvar('&buftype') == 'quickfix'
     return '-'
-  elseif self.getline(lnum) =~# '# rake \S'
-    return matchstr(self.getline(lnum),'\C# rake \zs.*')
+  elseif self.getline(lnum) =~# '# ra\%(ils\|ke\) \S'
+    return matchstr(self.getline(lnum),'\C# ra\%(ils\|ke\) \zs.*')
   elseif self.getline(self.last_method_line(lnum)-1) =~# taskpat
     return matchstr(self.getline(self.last_method_line(lnum)-1), taskpat)
   elseif self.getline(self.last_method_line(lnum)) =~# taskpat
