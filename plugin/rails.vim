@@ -49,10 +49,21 @@ if !exists('g:loaded_projectionist')
   runtime! plugin/projectionist.vim
 endif
 
+function! s:doau_user(arg) abort
+  if exists('#User#'.a:arg)
+    try
+      let [modelines, &modelines] = [&modelines, 0]
+      exe 'doautocmd User' a:arg
+    finally
+      let &modelines = modelines
+    endtry
+  endif
+endfunction
+
 augroup railsPluginDetect
   autocmd!
-  autocmd BufEnter * if exists("b:rails_root")|silent doau User BufEnterRails|endif
-  autocmd BufLeave * if exists("b:rails_root")|silent doau User BufLeaveRails|endif
+  autocmd BufEnter * if exists("b:rails_root")|call s:doau_user('BufEnterRails')|endif
+  autocmd BufLeave * if exists("b:rails_root")|call s:doau_user('BufLeaveRails')|endif
 
   autocmd BufNewFile,BufReadPost *
         \ if RailsDetect(expand("<afile>:p")) && empty(&filetype) |
@@ -61,11 +72,11 @@ augroup railsPluginDetect
   autocmd VimEnter *
         \ if empty(expand("<amatch>")) && RailsDetect(getcwd()) |
         \   call rails#buffer_setup() |
-        \   silent doau User BufEnterRails |
+        \   call s:doau_user('BufEnterRails') |
         \ endif
   autocmd FileType netrw
         \ if RailsDetect() |
-        \   silent doau User BufEnterRails |
+        \   call s:doau_user('BufEnterRails') |
         \ endif
   autocmd FileType * if RailsDetect() | call rails#buffer_setup() | endif
 

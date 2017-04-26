@@ -1156,7 +1156,14 @@ function! s:Refresh(bang)
     endif
   endif
   let _ = rails#app().cache.clear()
-  silent doautocmd User BufLeaveRails
+  if exists('#User#BufLeaveRails')
+    try
+      let [modelines, &modelines] = [&modelines, 0]
+      doautocmd User BufLeaveRails
+    finally
+      let &modelines = modelines
+    endtry
+  endif
   if a:bang
     for key in keys(s:apps)
       if type(s:apps[key]) == type({})
@@ -1174,7 +1181,14 @@ function! s:Refresh(bang)
     endif
     let i += 1
   endwhile
-  silent doautocmd User BufEnterRails
+  if exists('#User#BufEnterRails')
+    try
+      let [modelines, &modelines] = [&modelines, 0]
+      doautocmd User BufEnterRails
+    finally
+      let &modelines = modelines
+    endtry
+  endif
 endfunction
 
 function! s:RefreshBuffer()
@@ -5204,7 +5218,14 @@ function! rails#buffer_setup() abort
   if !empty(findfile('macros/rails.vim', escape(&runtimepath, ' ')))
     runtime! macros/rails.vim
   endif
-  silent doautocmd User Rails
+  if exists('#User#Rails')
+    try
+      let [modelines, &modelines] = [&modelines, 0]
+      doautocmd User Rails
+    finally
+      let &modelines = modelines
+    endtry
+  endif
 endfunction
 
 " }}}1
