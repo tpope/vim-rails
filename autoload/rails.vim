@@ -2526,12 +2526,6 @@ function! s:RailsIncludefind(str,...) abort
     let str = rails#singularize(str)
     let str = s:sub(str,'_id$','')
   endif
-  if str =~ '^/' && !filereadable(str)
-    let str = s:sub(str,'^/','')
-  endif
-  if str =~# '^lib/' && !filereadable(str)
-    let str = s:sub(str,'^lib/','')
-  endif
   return str
 endfunction
 
