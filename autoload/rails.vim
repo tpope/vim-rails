@@ -2465,7 +2465,7 @@ function! s:RailsIncludefind(str,...) abort
   let fpat = '\(\s*\%("\f*"\|:\f*\|'."'\\f*'".'\)\s*,\s*\)*'
   if a:str =~# '\u' && &filetype !~# 'javascript\|coffee'
     " Classes should always be in .rb files
-    let str .= '.rb'
+    let str = s:sub(str, '([#:]|$)', '.rb\1')
   elseif line =~# ':partial\s*=>\s*' || (line =~# ':layout\s*=>\s*' && !rails#buffer().type_name('controller', 'mailer'))
     let str = s:sub(str,'[^/]+$','_&')
     let str = s:findview(str)
