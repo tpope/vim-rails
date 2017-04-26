@@ -35,6 +35,7 @@ CompilerSet errorformat^=
       \%-GOverwrite%.%#\"h\"%.%#,
       \%+GStarted\ %\\u%\\u%.%#,
       \%+GCompleted\ %\\d%\\d%\\d%.%#,
+      \%+G[ActiveJob]%.%#]\ Perform%.%#,
       \%.%#rails\ test\ %f:%l,
       \%+GCurrent\ version:%.%#,
       \%+G\ %#Status\ %#Migration\ ID%.%#,
