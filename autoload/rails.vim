@@ -1057,7 +1057,6 @@ function! s:Clogfile(bang, arg) abort
     exe chdir s:fnameescape(cwd)
   endtry
   copen
-  setf railslog
   $
   return 'silent! clast'
 endfunction

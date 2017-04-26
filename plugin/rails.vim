@@ -39,6 +39,14 @@ function! RailsDetect(...) abort
   endif
 endfunction
 
+function! s:log_detect() abort
+  let path = matchstr(get(w:, 'quickfix_title'), '\<cgetfile \zs.*\ze[\\/]log[\\/].*.log$')
+  if !empty(path) && filereadable(path . '/config/environment.rb') && isdirectory(path . '/app')
+    let b:rails_root = path
+    setlocal filetype=railslog
+  endif
+endfunction
+
 " }}}1
 " Initialization {{{1
 
@@ -85,6 +93,7 @@ augroup railsPluginDetect
         \ if &filetype !=# 'ruby' | set filetype=ruby | endif
   autocmd BufReadPost *.log if RailsDetect() | set filetype=railslog | endif
 
+  autocmd FileType qf call s:log_detect()
   autocmd FileType railslog call rails#log_setup()
   autocmd Syntax railslog call rails#log_syntax()
   autocmd Syntax ruby,eruby,yaml,haml,javascript,coffee,sass,scss
