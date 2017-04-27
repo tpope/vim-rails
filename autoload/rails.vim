@@ -4042,19 +4042,20 @@ function! rails#log_syntax()
   syn match   railslogJobScope    '\[\u\%(\w\|:\)*\]' contains=railslogJobName contained
   syn match   railslogJob         '\%(\%(^\|[\]|]\)\s*\%(\e\[[0-9;]*m\)*\)\@<=\%(Enqueued\|Performing\|Performed\)\>' skipwhite nextgroup=railslogJobName
   syn match   railslogJobName     '\<\u\%(\w\|:\)*\>' contained
-  syn match   railslogNumber      '\<\d\+\>%'
+  syn match   railslogNumber      '\<\d\+%'
   syn match   railslogNumber      '[ (]\@<=\<\d\+\.\d\+\>\.\@!'
-  syn match   railslogNumber      '[ (]\@<=\<\d\+\.\d\+ms\>'
+  syn match   railslogNumber      '[ (]\@<=\<\d\+\%(\.\d\+\)\=ms\>'
   syn region  railslogString      start='"' skip='\\"' end='"' oneline contained
   syn region  railslogHash        start='{' end='}' oneline contains=railslogHash,railslogString
   syn match   railslogIP          '\<\d\{1,3\}\%(\.\d\{1,3}\)\{3\}\>'
-  syn match   railslogTimestamp   '\<\d\d\d\d-\d\d-\d\d \d\d:\d\d:\d\d\>'
+  syn match   railslogIP          '\<\%(\x\{1,4}:\)\+\%(:\x\{1,4}\)\+\>\|\S\@<!:\%(:\x\{1,4}\)\+\>\|\<\%(\x\{1,4}:\)\+\%(:\S\@!\|\x\{1,4}\>\)'
+  syn match   railslogTimestamp   '\<\d\d\d\d-\d\d-\d\d \d\d:\d\d:\d\d\%( [+-]\d\d\d\d\| UTC\)\=\>'
   syn match   railslogSessionID   '\<\x\{32\}\>'
   syn match   railslogUUID        '\<\x\{8\}-\x\{4\}-\x\{4\}-\x\{4\}-\x\{12\}\>'
   syn match   railslogIdentifier  '\%(^\||\)\@<=\s*\%(Session ID\|Parameters\|Unpermitted parameters\)\ze:'
-  syn match   railslogSuccess     '\<2\d\d \u[A-Za-z0-9 ]*\>'
-  syn match   railslogRedirect    '\<3\d\d \u[A-Za-z0-9 ]*\>'
-  syn match   railslogError       '\<[45]\d\d \u[A-Za-z0-9 ]*\>'
+  syn match   railslogSuccess     '\<2\d\d\%( \u\w*\)\+\>'
+  syn match   railslogRedirect    '\<3\d\d\%( \u\w*\)\+\>'
+  syn match   railslogError       '\<[45]\d\d\%( \u\w*\)\+\>'
   syn match   railslogDeprecation '\<DEPRECATION WARNING\>'
   syn keyword railslogHTTP        OPTIONS GET HEAD POST PUT PATCH DELETE TRACE CONNECT
   hi def link railslogQfFileName  Directory
@@ -4067,7 +4068,7 @@ function! rails#log_syntax()
   hi def link railslogModel       Type
   hi def link railslogJob         Repeat
   hi def link railslogJobName     Structure
-  hi def link railslogNumber      Number
+  hi def link railslogNumber      Float
   hi def link railslogString      String
   hi def link railslogSessionID   Constant
   hi def link railslogUUID        Constant
