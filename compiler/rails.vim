@@ -31,8 +31,8 @@ CompilerSet errorformat^=
       \%\\&%\\x1b%\\S%\\+\ \ %#%m%\\>%\\x1b[0m\ \ %#%f,
       \%\\s\ %#%[cefi]%[rxod]%[eir]%[a-z]%#\ %\\+%\\S%\\+%$
       \%\\&%\\s\ %#%m%\\>\ \ %#%f,
-      \Overwrite%.%#%\\S%\\+\ \ %#%m%\\x1b[0m\ \ %#%f,
-      \%-GOverwrite%.%#\"h\"%.%#,
+      \\ %#Overwrite%.%#%\\S%\\+\ \ %#%m%\\x1b[0m\ \ %#%f,
+      \%-G\ %#Overwrite%.%#\"h\"%.%#,
       \%+GStarted\ %\\u%\\u%.%#,
       \%+GCompleted\ %\\d%\\d%\\d%.%#,
       \%+G[ActiveJob]%.%#]\ Perform%.%#,

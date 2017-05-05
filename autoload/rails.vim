@@ -1927,11 +1927,13 @@ function! s:color_efm(pre, before, after)
 endfunction
 
 let s:efm_generate =
-      \ s:color_efm('%-G', 'invoke', '%f') .
-      \ s:color_efm('%-G', 'conflict', '%f') .
-      \ s:color_efm('%-G', 'run', '%f') .
+      \ s:color_efm('%-G', 'invoke', '%.%#') .
+      \ s:color_efm('%-G', 'conflict', '%.%#') .
+      \ s:color_efm('%-G', 'run', '%.%#') .
+      \ s:color_efm('%-G', 'route', '%.%#') .
       \ s:color_efm('%-G', '%\w%\+', ' ') .
-      \ 'Overwrite%.%#%\S%\+  %#%m%\e[0m  %#%f,' .
+      \ '%-G %#Overwrite%.%#"h"%.%#,' .
+      \ ' %#Overwrite%.%#%\S%\+  %#%m%\e[0m  %#%f,' .
       \ s:color_efm('', '%m%\>', '%f') .
       \ '%-G%.%#'
 
