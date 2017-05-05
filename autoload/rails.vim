@@ -704,7 +704,11 @@ endfunction
 
 function! s:readable_calculate_file_type() dict abort
   let f = self.name()
-  let e = fnamemodify(f,':e')
+  let e = matchstr(f, '\.\zs[^.\/]\+$')
+  let ae = e
+  if ae ==# 'erb'
+    let ae = matchstr(f, '\.\zs[^.\/]\+\ze\.erb$')
+  endif
   let r = "-"
   let full_path = self.path()
   let nr = bufnr('^'.full_path.'$')
@@ -800,11 +804,11 @@ function! s:readable_calculate_file_type() dict abort
     let r = "task"
   elseif f =~ '\<log/.*\.log$'
     let r = "log"
-  elseif e == "css" || e =~ "s[ac]ss" || e == "less"
-    let r = "stylesheet-".e
-  elseif e == "js"
+  elseif ae ==# "css" || ae =~# "^s[ac]ss$" || ae == "^less$"
+    let r = "stylesheet-".ae
+  elseif ae ==# "js" || ae ==# "es6"
     let r = "javascript"
-  elseif e == "coffee"
+  elseif ae == "coffee"
     let r = "javascript-coffee"
   elseif e == "html"
     let r = e
@@ -2191,9 +2195,62 @@ function! s:findfromview(func,repl)
   return s:findit('\s*\%(<%\)\==\=\s*\<\%('.a:func.'\)\s*(\=\s*[@:'."'".'"]\(\f\+\)\>['."'".'"]\=\s*\%(%>\s*\)\=',a:repl)
 endfunction
 
-function! s:findasset(path, ext, pre, post) abort
-  let asset = rails#app().resolve_asset(a:path, a:ext)
-  return len(asset) ? asset : rails#app().path(a:pre . a:path . a:post)
+function! s:suffixes(type) abort
+  if a:type =~# '^stylesheets\=$\|^css$'
+    let exts = ['css', 'scss', 'css.scss', 'sass', 'css.sass']
+    call extend(exts, map(copy(exts), 'v:val.".erb"'))
+  elseif a:type =~# '^javascripts\=$\|^js$'
+    let exts = ['js', 'coffee', 'js.coffee', 'es6']
+    call extend(exts, map(copy(exts), 'v:val.".erb"'))
+    call extend(exts, ['ejs', 'eco', 'jst', 'jst.ejs', 'jst.eco'])
+  else
+    return []
+  endif
+  let suffixes = map(copy(exts), '".".v:val')
+  call extend(suffixes, map(copy(suffixes), '"/index".v:val'))
+  return s:uniq(suffixes)
+endfunction
+
+function! s:findasset(path, dir) abort
+  let path = a:path
+  if path =~# '^\.\.\=/'
+    let path = simplify(expand('%:p:h') . '/' . path)
+  endif
+  let suffixes = s:suffixes(a:dir)
+  let asset = rails#app().resolve_asset(path, suffixes)
+  if len(asset)
+    return asset
+  endif
+  if path ==# a:path
+    if empty(a:dir)
+      return ''
+    endif
+    if a:dir ==# 'stylesheets' && rails#app().has('sass')
+      let sass = rails#app().path('public/stylesheets/sass/' . path)
+      if filereadable(sass)
+        return sass
+      elseif filereadable(sass.'.sass')
+        return sass.'.sass'
+      elseif filereadable(sass.'.scss')
+        return sass.'.scss'
+      endif
+    endif
+    let public = rails#app().path('public/' . a:dir . '/' . path)
+    let post = get(suffixes, 0, '')
+    if filereadable(public)
+      return public
+    elseif filereadable(public . post)
+      return public . post
+    elseif rails#app().has_path('app/assets/' . a:dir) || !rails#app().has_path('public/' . a:dir)
+      let path = rails#app().path('app/assets/' . a:dir . '/' . path)
+    else
+      let path = public
+    endif
+  endif
+  if !empty(getftype(path)) || path =~# '\.\w\+$'
+    return path
+  endif
+  return path . post
 endfunction
 
 function! s:cfile(...) abort
@@ -2205,36 +2262,36 @@ function! s:cfile(...) abort
   let buffer = rails#buffer()
   let format = s:format()
 
-  let ssext = ['css', 'css.*', 'scss', 'sass']
+  let assetloadpat = '^\s*\%(//\|[*#]\)=\s*\%(link\|require\|depend_on\|stub\)\w*\s*["'']\=\([^"'' ]*\)'
   if buffer.type_name('stylesheet')
-    let res = s:findit('^\s*\*=\s*require\s*["'']\=\([^"'' ]*\)', '\1')
+    let sssuf = s:suffixes('stylesheets')
+    let res = s:findit(assetloadpat, '\1')
     if !empty(res)
-      return s:findasset(res, ssext, "app/assets/stylesheets/", ".css")
+      return s:findasset(res, "stylesheets")
     endif
     let res = s:findit('^\s*@import\s*\%(url(\)\=["'']\=\([^"'' ]*\)', '\1')
     if res != ""
       let base = expand('%:p:h')
       let rel = s:sub(res, '\ze[^/]*$', '_')
-      for ext in ['css', 'css.scss', 'css.sass', 'scss', 'sass']
-        for name in [res.'.'.ext, res.'.'.ext.'.erb', rel.'.'.ext, rel.'.'.ext.'.erb']
+      for ext in [''] + sssuf
+        for name in [res.ext, rel.ext]
           if filereadable(base.'/'.name)
             return base.'/'.name
           endif
         endfor
       endfor
-      let asset = rails#app().resolve_asset(res, ssext)
+      let asset = rails#app().resolve_asset(res, sssuf)
       if empty(asset) && expand('%:e') =~# '^s[ac]ss$'
-        let asset = rails#app().resolve_asset(rel, ssext)
+        let asset = rails#app().resolve_asset(rel, sssuf)
       endif
       return empty(asset) ? 'app/assets/stylesheets/'.res : asset
     endif
   endif
 
-  let jsext = ['js', 'js.*', 'jst', 'jst.*', 'coffee']
   if buffer.type_name('javascript')
-    let res = s:findit('^\s*//=\s*require\s*["'']\=\([^"'' ]*\)', '\1')
+    let res = s:findit(assetloadpat, '\1')
     if !empty(res)
-      return s:findasset(res, jsext, "app/assets/javascript/", ".js")
+      return s:findasset(res, "javascripts")
     endif
     return expand("<cfile>")
   endif
@@ -2337,17 +2394,17 @@ function! s:cfile(...) abort
 
   let res = s:findfromview('image[_-]\%(\|path\|url\)\|\%(path\|url\)_to_image','\1')
   if res != ""
-    return s:findasset(res, [], 'public/images/', '')
+    return s:findasset(res, 'images')
   endif
 
   let res = s:findfromview('stylesheet[_-]\%(link_tag\|path\|url\)\|\%(path\|url\)_to_stylesheet','\1')
   if res != ""
-    return s:findasset(res, ssext, 'public/stylesheets/', '.css')
+    return s:findasset(res, 'stylesheets')
   endif
 
   let res = s:sub(s:findfromview('javascript_\%(include_tag\|path\|url\)\|\%(path\|url\)_to_javascript','\1'),'/defaults>','/application')
   if res != ""
-    return s:findasset(res, jsext, 'public/javascripts/', '.js')
+    return s:findasset(res, 'javascripts')
   endif
 
   if buffer.type_name('controller', 'mailer')
@@ -2925,12 +2982,34 @@ function! s:readable_resolve_layout(name, ...) dict abort
   return view
 endfunction
 
+function! s:app_asset_path() dict abort
+  let gems = self.gems()
+  if self.cache.needs('gem_assets', gems)
+    let path = []
+    let gempath = escape(join(values(gems),','), ' ')
+    if !empty(gempath)
+      call extend(path, finddir('app/assets/', gempath, -1))
+      call extend(path, finddir('lib/assets/', gempath, -1))
+      call extend(path, finddir('vendor/assets/', gempath, -1))
+      call extend(path, finddir('assets/', gempath, -1))
+      call map(path, 'v:val . "*"')
+      call sort(path)
+    endif
+    call self.cache.set('gem_assets', path, gems)
+  endif
+  return extend([self.path('app/assets/*'), self.path('lib/assets/*'), self.path('vendor/assets/*'), self.path('node_modules')],
+        \ self.cache.get('gem_assets'))
+endfunction
+
 function! s:app_resolve_asset(name, ...) dict abort
-  let paths = [self.path('app/assets/*'), self.path('lib/assets/*'), self.path('vendor/assets/*')]
-        \ + map(copy(self.engines()), 'v:val . "/app/assets/*"')
-        \ + map(values(self.gems()), 'v:val . "/vendor/assets/*"')
-  let path = join(map(paths, 'escape(v:val, " ,")'), ',')
-  let exact = findfile(a:name, path)
+  let path = join(map(copy(self.asset_path()), 'escape(v:val, " ,")'), ',')
+  let suffixesadd = &l:suffixesadd
+  try
+    let &l:suffixesadd = join(a:0 ? (type(a:1) ==# type([]) ? a:1 : s:suffixes(a:1)) : [], ',')
+    let exact = findfile(a:name, path)
+  finally
+    let &l:suffixesadd = suffixesadd
+  endtry
   if !empty(exact)
     return fnamemodify(exact, ':p')
   endif
@@ -2948,7 +3027,7 @@ function! s:app_resolve_asset(name, ...) dict abort
 endfunction
 
 call s:add_methods('readable', ['resolve_view', 'resolve_layout'])
-call s:add_methods('app', ['resolve_asset'])
+call s:add_methods('app', ['asset_path', 'resolve_asset'])
 
 function! s:findview(name) abort
   let view = rails#buffer().resolve_view(a:name, line('.'))
@@ -3013,7 +3092,8 @@ function! s:stylesheetEdit(cmd,...)
     let types = rails#app().relglob('app/assets/stylesheets/'.name,'.*','')
     if !empty(types)
       return s:LegacyCommandEdit(a:cmd,name,'app/assets/stylesheets/',types[0])
-    elseif !isdirectory(rails#app().path('app/assets/stylesheets'))
+    elseif !isdirectory(rails#app().path('app/assets/stylesheets')) ||
+        \ rails#app().has_file('public/stylesheets/'.name.'.css')
       return s:LegacyCommandEdit(a:cmd,name,'public/stylesheets/','.css')
     else
       return s:LegacyCommandEdit(a:cmd,name,'app/assets/stylesheets/',rails#app().stylesheet_suffix())
@@ -3026,7 +3106,8 @@ function! s:javascriptEdit(cmd,...)
   let types = rails#app().relglob('app/assets/javascripts/'.name,'.*','')
   if !empty(types)
     return s:LegacyCommandEdit(a:cmd,name,'app/assets/javascripts/',types[0])
-  elseif !isdirectory(rails#app().path('app/assets/javascripts'))
+  elseif !isdirectory(rails#app().path('app/assets/javascripts')) ||
+        \ rails#app().has_file('public/javascripts/'.name.'.js')
     return s:LegacyCommandEdit(a:cmd,name,'public/javascripts/','.js')
   elseif rails#app().has_gem('coffee-rails')
     return s:LegacyCommandEdit(a:cmd,name,'app/assets/javascripts/','.coffee')
