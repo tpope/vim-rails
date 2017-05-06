@@ -1610,10 +1610,10 @@ endfunction
 function! s:app_server_binding() dict abort
   let pid = self.server_pid()
   if pid
-    if self.cache.has('server')
-      let old = self.cache.get('server')
-    else
+    if self.cache.needs('server')
       let old = {'pid': 0, 'binding': ''}
+    else
+      let old = self.cache.get('server')
     endif
     if !empty(old.binding) && pid == old.pid
       return old.binding
@@ -3715,24 +3715,20 @@ function! rails#cache_clear(...)
   endif
 endfunction
 
-function! s:cache_get(...) dict
+function! s:cache_get(...) dict abort
   if a:0 == 1
-    return self.dict[a:1]
+    return self.dict[a:1][0]
   else
     return self.dict
   endif
 endfunction
 
-function! s:cache_has(key) dict
-  return has_key(self.dict,a:key)
+function! s:cache_needs(key, ...) dict abort
+  return !has_key(self.dict, a:key) || (a:0 && a:1 isnot# get(self.dict[a:key], 1, {}))
 endfunction
 
-function! s:cache_needs(key) dict
-  return !has_key(self.dict,a:key)
-endfunction
-
-function! s:cache_set(key,value) dict
-  let self.dict[a:key] = a:value
+function! s:cache_set(key, value, ...) dict abort
+  let self.dict[a:key] = [a:value] + a:000
 endfunction
 
 call s:add_methods('cache', ['clear','needs','has','get','set'])
@@ -4150,7 +4146,7 @@ endfunction
 
 function! s:app_db_config(environment) dict
   let all = {}
-  if self.cache.has('db_config')
+  if !self.cache.needs('db_config')
     let all = self.cache.get('db_config')
   elseif self.has_path('config/database.yml')
     try
@@ -4319,7 +4315,7 @@ function! s:BufDatabase(level, ...)
   else
     let env = s:environment()
   endif
-  if !self.cache.has('db_config') && a:level <= 0
+  if self.cache.needs('db_config') && a:level <= 0
     return
   endif
   let dict = self.dbext_settings(env)
@@ -4586,16 +4582,16 @@ function! s:app_has_gem(gem) dict abort
 endfunction
 
 function! s:app_engines() dict abort
-  if self.cache.needs('engines') || self.cache.get('engines')[1] isnot# self.gems()
-    let gems = self.gems()
+  let gems = self.gems()
+  if self.cache.needs('engines', gems)
     let gempath = escape(join(values(gems),','), ' ')
     if empty(gempath)
-      call self.cache.set('engines', [[], gems])
+      call self.cache.set('engines', [], gems)
     else
-      call self.cache.set('engines', [sort(map(finddir('app', gempath, -1), 'fnamemodify(v:val, ":h")')), gems])
+      call self.cache.set('engines', sort(map(finddir('app', gempath, -1), 'fnamemodify(v:val, ":h")')), gems)
     endif
   endif
-  return self.cache.get('engines')[0]
+  return self.cache.get('engines')
 endfunction
 
 function! s:extend_projection(dest, src) abort
