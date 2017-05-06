@@ -254,10 +254,10 @@ function! s:readable_define_pattern() dict abort
   if self.name() =~# '/schema\.rb$'
     let define .= "\\\|^\\s*create_table\\s\\+[:'\"]"
   endif
-  if self.name() =~# '/\.erb$'
+  if self.name() =~# '\.erb$'
     let define .= '\|\<id=["'']\='
   endif
-  if self.name() =~# '/\.haml$'
+  if self.name() =~# '\.haml$'
     let define .= '\|^\s*\%(%\w*\)\=\%(\.[[:alnum:]_-]\+\)*#'
   endif
   if self.type_name('test')
