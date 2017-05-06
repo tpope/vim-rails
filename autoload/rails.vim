@@ -143,7 +143,7 @@ function! s:app_find_file(name, ...) dict abort
   let default = get(a:000,2,'')
   let oldsuffixesadd = &l:suffixesadd
   try
-    let &suffixesadd = suffixesadd
+    let &l:suffixesadd = suffixesadd
     " Versions before 7.1.256 returned directories from findfile
     if type(default) == type(0) && (v:version < 702 || default == -1)
       let all = findfile(a:name,path,-1)
