@@ -42,9 +42,6 @@ function! s:endswith(string,suffix)
 endfunction
 
 function! s:uniq(list) abort
-  if exists('*uniq')
-    return uniq(a:list)
-  endif
   let i = 0
   let seen = {}
   while i < len(a:list)
