@@ -877,9 +877,7 @@ function! s:app_has(feature) dict
         \'rails5': 'app/assets/config/manifest.js|config/initializers/application_controller_renderer.rb',
         \'cucumber': 'features/',
         \'turnip': 'spec/acceptance/',
-        \'sass': 'public/stylesheets/sass/',
-        \'lesscss': 'app/stylesheets/',
-        \'coffee': 'app/scripts/'}
+        \'sass': 'public/stylesheets/sass/'}
   if self.cache.needs('features')
     call self.cache.set('features',{})
   endif
@@ -1569,10 +1567,6 @@ function! s:readable_preview_urls(lnum) dict abort
     let urls = urls + ['/assets/application.css']
   elseif self.name() =~ '^app/assets/javascripts/'
     let urls = urls + ['/assets/application.js']
-  elseif self.name() =~ '^app/stylesheets/'
-    let urls = urls + [s:sub(s:sub(self.name(),'^app/stylesheets/','/stylesheets/'),'\.less$','.css')]
-  elseif self.name() =~ '^app/scripts/'
-    let urls = urls + [s:sub(s:sub(self.name(),'^app/scripts/','/javascripts/'),'\.coffee$','.js')]
   elseif self.controller_name() != '' && self.controller_name() != 'application'
     if self.type_name('controller') && self.last_method(a:lnum) != ''
       let handler = self.controller_name().'#'.self.last_method(a:lnum)
@@ -3012,8 +3006,6 @@ function! s:stylesheetEdit(cmd,...)
     return s:LegacyCommandEdit(a:cmd,name,"public/stylesheets/sass/",".sass")
   elseif rails#app().has('sass') && rails#app().has_file('public/stylesheets/sass/'.name.'.scss')
     return s:LegacyCommandEdit(a:cmd,name,"public/stylesheets/sass/",".scss")
-  elseif rails#app().has('lesscss') && rails#app().has_file('app/stylesheets/'.name.'.less')
-    return s:LegacyCommandEdit(a:cmd,name,"app/stylesheets/",".less")
   else
     let types = rails#app().relglob('app/assets/stylesheets/'.name,'.*','')
     if !empty(types)
@@ -3028,21 +3020,15 @@ endfunction
 
 function! s:javascriptEdit(cmd,...)
   let name = a:0 ? a:1 : s:controller(1)
-  if rails#app().has('coffee') && rails#app().has_file('app/scripts/'.name.'.coffee')
-    return s:LegacyCommandEdit(a:cmd,name,'app/scripts/','.coffee')
-  elseif rails#app().has('coffee') && rails#app().has_file('app/scripts/'.name.'.js')
-    return s:LegacyCommandEdit(a:cmd,name,'app/scripts/','.js')
+  let types = rails#app().relglob('app/assets/javascripts/'.name,'.*','')
+  if !empty(types)
+    return s:LegacyCommandEdit(a:cmd,name,'app/assets/javascripts/',types[0])
+  elseif !isdirectory(rails#app().path('app/assets/javascripts'))
+    return s:LegacyCommandEdit(a:cmd,name,'public/javascripts/','.js')
+  elseif rails#app().has_gem('coffee-rails')
+    return s:LegacyCommandEdit(a:cmd,name,'app/assets/javascripts/','.coffee')
   else
-    let types = rails#app().relglob('app/assets/javascripts/'.name,'.*','')
-    if !empty(types)
-      return s:LegacyCommandEdit(a:cmd,name,'app/assets/javascripts/',types[0])
-    elseif !isdirectory(rails#app().path('app/assets/javascripts'))
-      return s:LegacyCommandEdit(a:cmd,name,'public/javascripts/','.js')
-    elseif rails#app().has_gem('coffee-rails')
-      return s:LegacyCommandEdit(a:cmd,name,'app/assets/javascripts/','.coffee')
-    else
-      return s:LegacyCommandEdit(a:cmd,name,'app/assets/javascripts/','.js')
-    endif
+    return s:LegacyCommandEdit(a:cmd,name,'app/assets/javascripts/','.js')
   endif
 endfunction
 
@@ -3432,10 +3418,7 @@ function! s:readable_alternate_candidates(...) dict abort
     else
       let to_replace = 'app/assets/javascripts'
     endif
-    if f =~ '.coffee.js$'
-      let suffix = '.coffee.js'
-      let suffix_replacement = '_spec.coffee.js'
-    elseif f =~ '.coffee$'
+    if f =~ '\.coffee$'
       let suffix = '.coffee'
       let suffix_replacement = '_spec.coffee'
     elseif f =~ '[A-Z][a-z]\+\.js$'
