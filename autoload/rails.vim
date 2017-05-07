@@ -2242,17 +2242,23 @@ function! s:cfile(...) abort
     return expand("<cfile>")
   endif
 
-  let res = s:findit('\v\s*<require\s*\(=\s*File.dirname\(__FILE__\)\s*\+\s*[:'."'".'"](\f+)>.=',expand('%:h').'/\1')
-  if res != ""|return res.(fnamemodify(res,':e') == '' ? '.rb' : '')|endif
+  let res = s:findit('\v\s*<require\s*\(=\s*File.expand_path\([''"]../(\f+)[''"],\s*__FILE__\s*\)',expand('%:p:h').'/\1')
+  if res != ""|return simplify(res.(res !~ '\.[^\/.]\+$' ? '.rb' : ''))|endif
 
-  let res = s:findit('\v<File.dirname\(__FILE__\)\s*\+\s*[:'."'".'"](\f+)>['."'".'"]=',expand('%:h').'\1')
-  if res != ""|return res|endif
+  let res = s:findit('\v<File.expand_path\([''"]../(\f+)[''"],\s*__FILE__\s*\)',expand('%:p:h').'/\1')
+  if res != ""|return simplify(res)|endif
+
+  let res = s:findit('\v\s*<require\s*\(=\s*File.dirname\(__FILE__\)\s*\+\s*[:''"](\f+)>.=',expand('%:p:h').'/\1')
+  if res != ""|return simplify(res.(res !~ '\.[^\/.]\+$' ? '.rb' : ''))|endif
+
+  let res = s:findit('\v<File.dirname\(__FILE__\)\s*\+\s*[:''"](\f+)>[''"]=',expand('%:p:h').'\1')
+  if res != ""|return simplify(res)|endif
 
   let res = rails#underscore(s:findit('\v\s*<%(include|extend)\(=\s*<([[:alnum:]_:]+)>','\1'))
   if res != ""|return res.".rb"|endif
 
   let res = s:findamethod('require','\1')
-  if res != ""|return res.(fnamemodify(res,':e') == '' ? '.rb' : '')|endif
+  if res != ""|return res.(res !~ '\.[^\/.]\+$' ? '.rb' : '')|endif
 
   let res = s:findamethod('belongs_to\|has_one\|embedded_in\|embeds_one\|composed_of\|validates_associated\|scaffold','\1.rb')
   if res != ""|return res|endif
