@@ -3733,7 +3733,7 @@ function! s:cache_set(key, value, ...) dict abort
   let self.dict[a:key] = [a:value] + a:000
 endfunction
 
-call s:add_methods('cache', ['clear','needs','has','get','set'])
+call s:add_methods('cache', ['clear','needs','get','set'])
 
 let s:app_prototype.cache = s:cache_prototype
 
