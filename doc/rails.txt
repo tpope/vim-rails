@@ -42,8 +42,11 @@ inspired the creation of this plugin.
 
 The standard Rails load path is prepended to 'path', enabling |:find| to work:
 >
-	:find application_controller.rb
+	:find application_controller
 <
+In asset files, 'path' is instead set to the asset load path, and
+'suffixesadd' is set to a long list of possible JavaScript or CSS suffixes.
+
 File Under Cursor - gf ~
 						*rails-gf*
 The |gf| command, which normally edits the current file under the cursor, has
@@ -66,8 +69,8 @@ Example uses of |gf|, and where they might lead.
 	<%= render 'sh*ared/sidebar' %>
 <	app/views/shared/_sidebar.html.erb ~
 >
-	<%= stylesheet_link_tag 'scaf*fold' %>
-<	public/stylesheets/scaffold.css ~
+	<%= stylesheet_link_tag 'appl*ication' %>
+<	app/assets/stylesheets/application.css ~
 >
 	class BlogController < Applica*tionController
 <	app/controllers/application_controller.rb ~

@@ -3304,7 +3304,7 @@ function! s:AR(cmd,related,line1,line2,count,...) abort
       if file != ""
         if a:related
           let file = s:RailsIncludefind(file)
-          let found = rails#app().find_file(file, &l:path, '.rb', a:count)
+          let found = rails#app().find_file(file, rails#app().internal_load_path(), '.rb', a:count)
           if !empty(found)
             let file = fnamemodify(found, ':p')
             let c = ''
@@ -3398,7 +3398,7 @@ function! s:Complete_related(A,L,P)
     return s:Complete_edit(a:A,a:L,a:P)
   else
     let seen = {}
-    for path in filter(s:pathsplit(&l:path), 's:startswith(v:val,rails#app().path())')
+    for path in rails#app().internal_load_path()
       let path = path[strlen(rails#app().path()) + 1 : ]
       if path !~# '[][*]\|^\.\=$\|^vendor\>'
         for file in rails#app().relglob(path == '' ? '' : path.'/',s:fuzzyglob(rails#underscore(a:A)), a:A =~# '\u' ? '.rb' : '')
@@ -5160,45 +5160,100 @@ endfunction
 " }}}1
 " Detection {{{1
 
-function! s:SetBasePath() abort
-  let self = rails#buffer()
-  if self.app().path() =~ '://'
-    return
-  endif
-  let add_dot = self.getvar('&path') =~# '^\.\%(,\|$\)'
-  let old_path = s:pathsplit(s:sub(self.getvar('&path'),'^\.%(,|$)',''))
-
+function! s:app_internal_load_path() dict abort
   let path = ['lib', 'vendor']
   let path += get(g:, 'rails_path_additions', [])
   let path += get(g:, 'rails_path', [])
   let path += ['app/models/concerns', 'app/controllers/concerns', 'app/controllers', 'app/helpers', 'app/mailers', 'app/models', 'app/jobs']
 
   let true = get(v:, 'true', 1)
-  for [key, projection] in items(self.app().projections())
+  for [key, projection] in items(self.projections())
     if get(projection, 'path', 0) is true || get(projection, 'autoload', 0) is true
           \ || get(projection, 'path', 0) is 1 || get(projection, 'autoload', 0) is 1
+          \ && key =~# '\.rb$'
       let path += split(key, '*')[0]
     endif
   endfor
-  let path += filter(self.projected('path'), 'type(v:val) == type("")')
+  let projected = get(get(self.projections(), '*.rb', {}), 'path', [])
+  let path += filter(type(projected) == type([]) ? projected : [projected], 'type(v:val) == type("")')
 
-  let path += ['app/*', 'app/views']
-  if self.controller_name() != ''
-    let path += ['app/views/'.self.controller_name(), 'app/views/application', 'public']
-  endif
-  if self.app().has('test')
+  let path += ['app/*']
+
+  if self.has('test')
     let path += ['test', 'test/unit', 'test/functional', 'test/integration', 'test/controllers', 'test/helpers', 'test/mailers', 'test/models', 'test/jobs']
   endif
-  if self.app().has('spec')
+  if self.has('spec')
     let path += ['spec', 'spec/controllers', 'spec/helpers', 'spec/mailers', 'spec/models', 'spec/views', 'spec/lib', 'spec/features', 'spec/requests', 'spec/integration', 'spec/jobs']
   endif
-  if self.app().has('cucumber')
+  if self.has('cucumber')
     let path += ['features']
   endif
-  let path += ['vendor/plugins/*/lib', 'vendor/plugins/*/test', 'vendor/rails/*/lib', 'vendor/rails/*/test']
   call map(path, 'rails#app().path(v:val)')
-  let engine_paths = map(copy(self.app().engines()), 'v:val . "/app/*"')
-  call self.setvar('&path',(add_dot ? '.,' : '').s:pathjoin(s:uniq(path + [self.app().path()] + old_path + engine_paths)))
+  return path
+endfunction
+
+call s:add_methods('app', ['internal_load_path'])
+
+function! s:set_path_options() abort
+  let self = rails#buffer()
+  let name = self.name()
+
+  let assetdir = matchstr(name, '^\%(public/\|\w\+/assets/\)\zs[^/]\+')
+  let suffixes = join(s:suffixes(assetdir), ',')
+  if !empty(suffixes)
+    if name =~# '\.erb$'
+      let suffixes = '.rb,' . suffixes
+    endif
+    let &l:suffixesadd = suffixes
+  elseif name =~# '^node_modules\>\|^app/javascript\>'
+    let &l:suffixesadd = join(s:uniq(['.coffee', '.js', '.jsx', '.ts', '.vue'] + split(&l:suffixesadd, ',') + ['/package.json']), ',')
+  endif
+  if empty(&l:suffixesadd)
+    setlocal suffixesadd=.rb
+  endif
+
+  if self.app().path() =~ '://'
+    return
+  endif
+
+  let old_path_str = &l:path
+  if old_path_str =~# '\v^\.%(,/%(usr|emx)/include)=,,$'
+    let add_dot = 0
+    let old_path = []
+  else
+    let add_dot = old_path_str =~# '^\.\%(,\|$\)'
+    let old_path = s:pathsplit(s:sub(old_path_str,'^\.%(,|$)',''))
+  endif
+
+  let path = filter(self.projected('path'), 'type(v:val) == type("")')
+
+  let engine_paths = []
+  if &l:suffixesadd =~# '\.rb\>'
+    let path += self.app().internal_load_path()
+    let path += ['app/views']
+    if self.controller_name() != ''
+      let path += ['app/views/'.self.controller_name(), 'app/views/application', 'public']
+    endif
+    if !self.app().has('rails5')
+      let path += ['vendor/plugins/*/lib', 'vendor/rails/*/lib']
+    endif
+    let engine_paths = map(copy(self.app().engines()), 'v:val . "/app/*"')
+  endif
+
+  if self.name() =~# '^node_modules\>\|^app/javascript\>'
+    call extend(path, ['node_modules'])
+    let add_dot = 1
+  elseif !empty(assetdir)
+    call extend(path, self.app().asset_path())
+  else
+    call add(path, self.app().path())
+  endif
+
+  call map(path, 'self.app().path(v:val)')
+
+  let &l:path = (add_dot ? '.,' : '').s:pathjoin(s:uniq(path + old_path + engine_paths))
+  let undo = get(b:, 'undo_ftplugin', '')
+  let b:undo_ftplugin = (empty(undo) ? '' : undo . '|') . 'setl path< sua<'
 endfunction
 
 function! rails#buffer_setup() abort
@@ -5209,8 +5264,7 @@ function! rails#buffer_setup() abort
   let ft = self.getvar('&filetype')
   let b:rails_cached_file_type = self.calculate_file_type()
 
-  call s:SetBasePath()
-  call self.setvar('&suffixesadd', s:sub(self.getvar('&suffixesadd'),'^$','.rb'))
+  call s:set_path_options()
   let inex = self.getvar('&includeexpr')
   if inex =~? 'rails\|ruby\|\.rb' || inex !~# '[A-Z#]'
     call self.setvar('&includeexpr', 'rails#includeexpr(v:fname)')
