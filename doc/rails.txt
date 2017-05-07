@@ -101,17 +101,21 @@ Two commands, :A and :R, are used to quickly jump to an "alternate" and a
 :AS			either the same window (:A and :AE), a new split
 :AV			window (:AS), a new vertically split window (:AV), a
 :AT			new tab (:AT), or read it into the current buffer
-:AD			(:AD).
+:AD			(:AD).  With a range (:.A), they find the "related"
+			file for the specified line.  With a filename
+			argument, they edit a file relative to the application
+			root (:A Rakefile), and with both a count and a
+			filename (:1A post.rb), they find a file in 'path',
+			similar to |:find| but with smarter tab completion.
 
 	*rails-:R* *rails-:RE* *rails-:RS* *rails-:RV* *rails-:RT* *rails-:RD*
 :R			These are similar |rails-:A| and friends above, only
-:RE			they jump to the "related" file rather than the
-:RS			"alternate."  With a file name argument, they edit
-:RV			a file relative to the application root (:R Rakefile),
-:RT			and with a count and a file name argument, they find a
-:RD			file in 'path' (e.g., :1R PostsController.)  You can
-			also append a line number (post.rb:42) or a method
-			(PostsController#index) to both forms.
+:RE			they default to the "related" file rather than the
+:RS			"alternate."  :R is equivalent to :.A and :0R is
+:RV			equivalent to :.A.  The filename and count version
+:RT			(:1R post.rb) is hard coded to use the application
+:RD			load path rather than 'path', so that one can access
+			Ruby files regardless of 'filetype'.
 
 					*rails-alternate* *rails-related*
 The alternate file is most frequently the test file, though there are

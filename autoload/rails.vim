@@ -162,7 +162,7 @@ function! s:app_find_file(name, ...) dict abort
         let found = findfile(a:name,path,i)
       endwhile
     endif
-    return found == "" ? default : s:gsub(strpart(fnamemodify(found,':p'),trim),'\\','/')
+    return found == "" && type(default) == type('') ? default : s:gsub(strpart(fnamemodify(found,':p'),trim),'\\','/')
   finally
     let &l:suffixesadd = oldsuffixesadd
   endtry
@@ -2064,19 +2064,19 @@ function! s:BufNavCommands()
   command! -buffer -bar -nargs=? -complete=customlist,s:Complete_cd Lcd  :lcd `=rails#app().path(<q-args>)`
   command! -buffer -bar -nargs=? -complete=customlist,s:Complete_cd Rcd   :cd `=rails#app().path(<q-args>)`
   command! -buffer -bar -nargs=? -complete=customlist,s:Complete_cd Rlcd :lcd `=rails#app().path(<q-args>)`
-  command! -buffer -bar -nargs=* -range=0 -complete=customlist,s:Complete_related A     :exe s:Alternate('E<bang>',<line1>,<line2>,<count>,<f-args>)
-  command! -buffer -bar -nargs=* -range=0 -complete=customlist,s:Complete_related AE    :exe s:Alternate('E<bang>',<line1>,<line2>,<count>,<f-args>)
-  command! -buffer -bar -nargs=* -range=0 -complete=customlist,s:Complete_related AS    :exe s:Alternate('S<bang>',<line1>,<line2>,<count>,<f-args>)
-  command! -buffer -bar -nargs=* -range=0 -complete=customlist,s:Complete_related AV    :exe s:Alternate('V<bang>',<line1>,<line2>,<count>,<f-args>)
-  command! -buffer -bar -nargs=* -range=0 -complete=customlist,s:Complete_related AT    :exe s:Alternate('T<bang>',<line1>,<line2>,<count>,<f-args>)
-  command! -buffer -bar -nargs=* -range=0 -complete=customlist,s:Complete_related AD    :exe s:Alternate('D<bang>',<line1>,<line2>,<count>,<f-args>)
-  command! -buffer -bar -nargs=* -range=0 -complete=customlist,s:Complete_related AR    :exe s:Alternate('D<bang>',<line1>,<line2>,<count>,<f-args>)
-  command! -buffer -bar -nargs=* -range=0 -complete=customlist,s:Complete_related R     :exe   s:Related('E<bang>',<line1>,<line2>,<count>,<f-args>)
-  command! -buffer -bar -nargs=* -range=0 -complete=customlist,s:Complete_related RE    :exe   s:Related('E<bang>',<line1>,<line2>,<count>,<f-args>)
-  command! -buffer -bar -nargs=* -range=0 -complete=customlist,s:Complete_related RS    :exe   s:Related('S<bang>',<line1>,<line2>,<count>,<f-args>)
-  command! -buffer -bar -nargs=* -range=0 -complete=customlist,s:Complete_related RV    :exe   s:Related('V<bang>',<line1>,<line2>,<count>,<f-args>)
-  command! -buffer -bar -nargs=* -range=0 -complete=customlist,s:Complete_related RT    :exe   s:Related('T<bang>',<line1>,<line2>,<count>,<f-args>)
-  command! -buffer -bar -nargs=* -range=0 -complete=customlist,s:Complete_related RD    :exe   s:Related('D<bang>',<line1>,<line2>,<count>,<f-args>)
+  command! -buffer -bar -nargs=* -range=0 -complete=customlist,s:Complete_alternate A   exe s:Alternate('E<bang>',<line1>,<line2>,<count>,<f-args>)
+  command! -buffer -bar -nargs=* -range=0 -complete=customlist,s:Complete_alternate AE  exe s:Alternate('E<bang>',<line1>,<line2>,<count>,<f-args>)
+  command! -buffer -bar -nargs=* -range=0 -complete=customlist,s:Complete_alternate AS  exe s:Alternate('S<bang>',<line1>,<line2>,<count>,<f-args>)
+  command! -buffer -bar -nargs=* -range=0 -complete=customlist,s:Complete_alternate AV  exe s:Alternate('V<bang>',<line1>,<line2>,<count>,<f-args>)
+  command! -buffer -bar -nargs=* -range=0 -complete=customlist,s:Complete_alternate AT  exe s:Alternate('T<bang>',<line1>,<line2>,<count>,<f-args>)
+  command! -buffer -bar -nargs=* -range=0 -complete=customlist,s:Complete_edit      AD  exe s:Alternate('D<bang>',<line1>,<line2>,<count>,<f-args>)
+  command! -buffer -bar -nargs=* -range=0 -complete=customlist,s:Complete_edit      AR  exe s:Alternate('D<bang>',<line1>,<line2>,<count>,<f-args>)
+  command! -buffer -bar -nargs=* -range=0 -complete=customlist,s:Complete_related   R   exe   s:Related('E<bang>',<line1>,<line2>,<count>,<f-args>)
+  command! -buffer -bar -nargs=* -range=0 -complete=customlist,s:Complete_related   RE  exe   s:Related('E<bang>',<line1>,<line2>,<count>,<f-args>)
+  command! -buffer -bar -nargs=* -range=0 -complete=customlist,s:Complete_related   RS  exe   s:Related('S<bang>',<line1>,<line2>,<count>,<f-args>)
+  command! -buffer -bar -nargs=* -range=0 -complete=customlist,s:Complete_related   RV  exe   s:Related('V<bang>',<line1>,<line2>,<count>,<f-args>)
+  command! -buffer -bar -nargs=* -range=0 -complete=customlist,s:Complete_related   RT  exe   s:Related('T<bang>',<line1>,<line2>,<count>,<f-args>)
+  command! -buffer -bar -nargs=* -range=0 -complete=customlist,s:Complete_edit      RD  exe   s:Related('D<bang>',<line1>,<line2>,<count>,<f-args>)
 endfunction
 
 function! s:jumpargs(file, jump) abort
@@ -2137,20 +2137,6 @@ endfunction
 
 function! s:fuzzyglob(arg)
   return s:gsub(s:gsub(a:arg,'[^/.]','[&]*'),'%(/|^)\.@!|\.','&*')
-endfunction
-
-function! s:Complete_find(ArgLead, CmdLine, CursorPos)
-  let paths = s:pathsplit(&l:path)
-  let seen = {}
-  for path in paths
-    if s:startswith(path,rails#app().path()) && path !~ '[][*]'
-      let path = path[strlen(rails#app().path()) + 1 : ]
-      for file in rails#app().relglob(path == '' ? '' : path.'/',s:fuzzyglob(rails#underscore(a:ArgLead)), a:ArgLead =~# '\u' ? '.rb' : '')
-        let seen[file] = 1
-      endfor
-    endif
-  endfor
-  return s:autocamelize(sort(keys(seen)),a:ArgLead)
 endfunction
 
 function! s:Complete_edit(ArgLead, CmdLine, CursorPos)
@@ -3237,7 +3223,7 @@ function! s:edit(cmd, file) abort
   return s:open(s:editcmdfor(a:cmd), a:file)
 endfunction
 
-function! s:Alternate(cmd,line1,line2,count,...) abort
+function! s:AR(cmd,related,line1,line2,count,...) abort
   if a:0
     let cmd = ''
     let i = 1
@@ -3249,14 +3235,24 @@ function! s:Alternate(cmd,line1,line2,count,...) abort
     if file =~# '^#\h'
       return s:jump(file[1:-1], s:sub(a:cmd, 'D', 'E'))
     elseif a:count && a:cmd !~# 'D'
+      let c = a:count
       let tail = matchstr(file,'[#!].*$\|:\d*\%(:in\>.*\)\=$')
       if tail != ""
         let file = s:sub(file,'[#!].*$|:\d*%(:in>.*)=$','')
       endif
       if file != ""
-        let file = s:RailsIncludefind(file)
+        if a:related
+          let file = s:RailsIncludefind(file)
+          let found = rails#app().find_file(file, &l:path, '.rb', a:count)
+          if !empty(found)
+            let file = fnamemodify(found, ':p')
+            let c = ''
+          else
+            let c = 99999999
+          endif
+        endif
       endif
-      return s:find(a:cmd . cmd, file . tail)
+      return c.s:find(a:cmd . cmd, file . tail)
     else
       let cmd = s:editcmdfor((a:count ? a:count : '').a:cmd) . cmd
       return s:edit(cmd, file)
@@ -3276,13 +3272,14 @@ function! s:Alternate(cmd,line1,line2,count,...) abort
     endif
     return ''
   else
-    let file = get(b:, a:count ? 'rails_related' : 'rails_alternate')
+    let line = a:related ? a:line1 : a:count
+    let file = get(b:, line ? 'rails_related' : 'rails_alternate')
     if empty(file)
-      let file = rails#buffer().alternate(a:count)
+      let file = rails#buffer().alternate(line)
     endif
     let has_path = !empty(file) && rails#app().has_path(file)
     let confirm = &confirm || (histget(':', -1) =~# '\%(^\||\)\s*conf\%[irm]\>')
-    if confirm && !a:count && !has_path
+    if confirm && !line && !has_path
       let projected = rails#buffer().projected_with_raw('alternate')
       call filter(projected, 'rails#app().has_path(matchstr(v:val[1], "^[^{}]*/"))')
       if len(projected)
@@ -3309,11 +3306,29 @@ function! s:Alternate(cmd,line1,line2,count,...) abort
   endif
 endfunction
 
+function! s:Alternate(cmd,line1,line2,count,...) abort
+  return call('s:AR',[a:cmd,0,a:line1,a:line2,a:count]+a:000)
+endfunction
+
 function! s:Related(cmd,line1,line2,count,...)
-  if a:count == 0 && a:0 == 0
-    return s:Alternate(a:cmd,a:line1,a:line1,a:line1)
+  return call('s:AR',[a:cmd,1,a:line1,a:line2,a:count]+a:000)
+endfunction
+
+function! s:Complete_alternate(A,L,P)
+  if a:L =~# '^[[:alpha:]]' || a:A =~# '^\w*:\|^\.\=[\/]'
+    return s:Complete_edit(a:A,a:L,a:P)
   else
-    return call('s:Alternate',[a:cmd,a:line1,a:line2,a:count]+a:000)
+    let seen = {}
+    for glob in filter(s:pathsplit(&l:path), 's:startswith(v:val,rails#app().path())')
+      for path in split(glob(glob), "\n")
+        for file in split(glob(path.'/'.s:fuzzyglob(a:A)), "\n")
+          let file = file[strlen(path) + 1 : ]
+          let file = substitute(file, '\%('.escape(tr(&l:suffixesadd, ',', '|'), '.|').'\)$', '', '')
+          let seen[file] = 1
+        endfor
+      endfor
+    endfor
+    return s:completion_filter(sort(keys(seen)), a:A)
   endif
 endfunction
 
@@ -3321,7 +3336,17 @@ function! s:Complete_related(A,L,P)
   if a:L =~# '^[[:alpha:]]' || a:A =~# '^\w*:\|^\.\=[\/]'
     return s:Complete_edit(a:A,a:L,a:P)
   else
-    return s:Complete_find(a:A,a:L,a:P)
+    let seen = {}
+    for path in filter(s:pathsplit(&l:path), 's:startswith(v:val,rails#app().path())')
+      let path = path[strlen(rails#app().path()) + 1 : ]
+      if path !~# '[][*]\|^\.\=$\|^vendor\>'
+        for file in rails#app().relglob(path == '' ? '' : path.'/',s:fuzzyglob(rails#underscore(a:A)), a:A =~# '\u' ? '.rb' : '')
+          let file = substitute(file, '\.rb$', '', '')
+          let seen[file] = 1
+        endfor
+      endif
+    endfor
+    return s:autocamelize(sort(keys(seen)), a:A)
   endif
 endfunction
 
