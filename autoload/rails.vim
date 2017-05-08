@@ -3013,16 +3013,6 @@ function! s:app_resolve_asset(name, ...) dict abort
   if !empty(exact)
     return fnamemodify(exact, ':p')
   endif
-  if a:0 && !empty(a:1)
-    for candidate in map(split(globpath(path, a:name . '.*'), "\n"), 'fnamemodify(v:val, ":p")')
-      for ext in a:1
-        let pat = '[\\/]'.s:gsub(s:gsub(a:name.'.'.ext, '\.', '\\.'), '\*', '.*') . '\%(\.erb\)\=$'
-        if candidate =~# pat
-          return candidate
-        endif
-      endfor
-    endfor
-  endif
   return ''
 endfunction
 
