@@ -1407,11 +1407,8 @@ function! s:readable_default_rake_task(...) dict abort
   elseif self.type_name('db-migration')
     let ver = matchstr(self.name(),'\<db/migrate/0*\zs\d*\ze_')
     if !empty(ver)
-      let method = self.last_method(lnum)
-      if method == "down" || lnum == 1
+      if lnum
         return "db:migrate:down VERSION=".ver
-      elseif method == "up" || lnum == line('$')
-        return "db:migrate:up VERSION=".ver
       else
         return "db:migrate:redo VERSION=".ver
       endif
