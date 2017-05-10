@@ -8,7 +8,6 @@ Author:  Tim Pope <http://tpo.pe/>
 |rails-alternate-related|           Alternate and Related Files
 |rails-type-navigation|             File Type Commands
 |rails-exec|                    Executable Wrappers
-|rails-rake|                    Rake
 |rails-refactoring|             Refactoring Helpers
 |rails-partials|                    Partial Extraction
 |rails-migrations|                  Migration Inversion
@@ -290,8 +289,9 @@ back out of any of the above commands.
 
 EXECUTABLE WRAPPERS				*rails-exec*
 
-The following commands are wrappers around the `rails` executable and
-subcommands.
+Several commands are provided that wrap the `rails` and `rake` executables.
+Additionally, `rake` can be invoked directly with |:make| (or dispatch.vim's
+|:Make|).
 
 						*rails-:Rails*
 :Rails {command} [options]
@@ -300,10 +300,11 @@ subcommands.
 			"script/{command}".  Unless the command is "console",
 			"dbconsole", or "server", the results are loaded into
 			the quickfix list using the "rails" |:compiler|
-			included with the plugin.  With no command, runs the
-			default rake task.  See |rails-default-task|.  Unlike
-			other commands, :Rails is available globally, for use
-			with the "new" subcommand.
+			included with the plugin.  With no command, runs a
+			default task based on the current file (see
+			|rails-default-task|).  Unlike other commands, :Rails
+			is available globally, for use with the "new"
+			subcommand.
 
 						*rails-:Rscript*
 :Rscript {command} [options]
@@ -318,7 +319,7 @@ subcommands.
 					*rails-:Generate* *rails-:Rgenerate*
 :Generate {options}	Invoke rails generate {options} and loads the
 			generated files into the quickfix list.  Use ! to
-			surpress jumping to the first file.
+			suppress jumping to the first file.
 
 					*rails-:Destroy* *rails-:Rdestroy*
 :Destroy {options}	Invoke rails destroy {options} and loads the destroyed
@@ -351,10 +352,6 @@ subcommands.
 						*rails-:Rpp*
 :[range]Rpp {code}	Like :Rp, but with pp (pretty print).
 
-RAKE						*rails-rake*
-
-Rake integration happens through the :Rake command.
-
 						*rails-:Rake*
 :[range]Rake {targets}	Calls |:make!| {targets} (with 'makeprg' being rake)
 			and opens the quickfix window if there were any
@@ -370,45 +367,41 @@ Rake integration happens through the :Rake command.
 						*rails-default-task*
 
 Invoking |rails-:Rails| or |rails-:Rake| with no arguments runs a default
-task.  Generally, the default task is one that runs the test you'd expect.
-For example, if you're in a view in an RSpec application, the view spec is
-run, but if it's a Test::Unit application, the functional test for the
-corresponding controller is run.  The following table lists the most
-interesting mappings:
+task.  This is typically the associated test task, but can also be a closely
+related utility task.
 
-File			Task ~
-unit test		test:units TEST=...
-functional test		test:functionals TEST=...
-integration test	test:integration TEST=...
-spec			spec SPEC=...
-feature			cucumber FEATURE=...
-model			test:units TEST=...		spec SPEC=...
-controller		test:functionals TEST=...	spec SPEC=...
-helper			test:functionals TEST=...	spec SPEC=...
-view			test:functionals TEST=...	spec SPEC=...
-fixtures		db:fixtures:load FIXTURES=...
-migration		db:migrate:redo VERSION=...
-config/routes.rb	routes
-db/schema.rb		db:migrate:status
-db/seeds.rb		db:seed
-README			about
+File                            Task ~
+test/*_test.rb                  test TEST=test/*_test.rb
+spec/*_spec.rb                  spec SPEC=spec/*_spec.rb
+features/*.feature              cucumber FEATURE=features/*.feature
+app/*.rb                        test TEST=... | spec SPEC=...
+test/fixtures/*.yml             db:fixtures:load FIXTURES=*
+config.ru                       middleware
+config/routes.rb                routes
+db/migrate/*_*.rb               db:migrate:redo VERSION=*
+db/schema.rb                    db:migrate:status
+db/seeds.rb                     db:seed
+README                          about
 
-Additionally, when :Rails or :Rake is given a line number (e.g., :.Rake), the
-following additional tasks can be invoked:
+For some files, giving the command a range (e.g., :.Rails) triggers a variant
+of the task to be performed.
 
-File			Task ~
-unit test		test:units TEST=... TESTOPTS=-n...
-functional test		test:functionals TEST=... TESTOPTS=-n...
-integration test	test:integration TEST=... TESTOPTS=-n...
-spec			spec SPEC=...:...
-feature			cucumber FEATURE=...:...
-controller		routes CONTROLLER=...
-fixtures		db:fixtures:identify LABEL=...
-migration 		db:migrate:down VERSION=...
-task			... (try to guess currently edited declaration)
+File                            Task when given range ~
+test/*_test.rb                  test TEST=test/*_test.rb TESTOPTS=-n<method>
+spec/*_spec.rb                  spec SPEC=spec/*_spec.rb:<line>
+features/*.feature              cucumber FEATURE=features/*.feature:<line>
+app/controllers/*_controller.rb routes CONTROLLER=*
+test/fixtures/*.yml             db:fixtures:identify LABEL=<label>
+db/migrate/*_*.rb               db:migrate:down VERSION=*
+lib/tasks/*.rake                <try to guess currently edited task>
 
-Finally, you can override the default task with a comment like "# rake ..."
-before the method pointed to by [range] or at the top of the file.
+You can override the default task with a comment like "# rails <task>" either
+at the top of the file or before the method referenced by the given line
+number.
+
+If dispatch.vim is installed, you can also run the default task by calling
+|:Dispatch| with no arguments.  Use :.FocusDispatch and :0FocusDispatch to see
+the default task with and without a range given.
 
 REFACTORING HELPERS				*rails-refactoring*
 
@@ -480,7 +473,7 @@ MISCELLANEOUS COMMANDS				*rails-misc*
 			last line.  |R| is remapped to reload the list, and
 			|G| remapped to do the same before it's usual behavior
 			of jumping to the last line.  If the delay in loading
-			is too long, you might consider :Rake log:clear.
+			is too long, you might consider :Rails log:clear.
 
 						*rails-:Rlog*
 :Rlog [environment]	Open the log file in the preview window using
@@ -589,7 +582,7 @@ The presence of a spec directory causes several additional behaviors to
 activate.  :A knows about specs and will jump to them (but Test::Unit files
 still get priority).  The associated controller or model of a spec is
 detected, so all navigation commands should work as expected inside a spec
-file.  :Rake in a spec runs just that spec, and in a model, controller, or
+file.  :Rails in a spec runs just that spec, and in a model, controller, or
 helper, runs the associated spec.
 
 |:Eunittest| and |:Efunctionaltest| lead double lives, handling model/helper
@@ -759,8 +752,9 @@ The full list of available options is as follows:
 	current 'define' match (typically a method).
 						*rails-projection-test*
 "test" ~
-	Determines the default test file to run with |rails-:Runner| and
-	|rails-:Rake|.  Also serves as a default for "alternate".
+	Determines the default test file to run with |rails-:Runner|,
+	|rails-:Rails|, and |rails-:Rake|.  Also serves as a default for
+	"alternate".
 						*rails-projection-task*
 "task" ~
 	Determines the default rake task to run.  Provide {lnum} or {define}
@@ -813,7 +807,7 @@ If you would like to set your own custom Vim settings whenever a Rails file is
 loaded, you can use an autocommand like the following in your vimrc: >
 
 	autocmd User Rails		silent! Lcd
-	autocmd User Rails		map <buffer> <F9> :Rake<CR>
+	autocmd User Rails		map <buffer> <F9> :Rails<CR>
 
 There used to be autocommands that fire based on the "type" or file name of
 the buffer, but they have been removed.  If you still need to execute code for
