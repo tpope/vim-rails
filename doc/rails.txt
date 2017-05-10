@@ -331,7 +331,7 @@ subcommands.
 
 					*rails-:Server!* *rails-:Rserver!*
 :Server! {options}	Kill the pid found in tmp/pids/server.pid and then
-			invoke |:server|.
+			invoke |:Server|.
 
 					*rails-:Runner* *rails-:Rrunner*
 :[range]Runner [file]	Run the given file or code with rails runner and load
