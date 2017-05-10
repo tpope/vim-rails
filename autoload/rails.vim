@@ -2208,6 +2208,22 @@ function! s:cfile(...) abort
   let buffer = rails#buffer()
   let format = s:format()
 
+  if exists('g:rails_gf_callbacks')
+    for callback in g:rails_gf_callbacks
+      if !exists('*'.callback)
+        continue
+      endif
+
+      let saved_view = winsaveview()
+      let res = call(callback, [])
+      call winrestview(saved_view)
+
+      if res != '' && filereadable(res)
+        return res
+      endif
+    endfor
+  endif
+
   let ssext = ['css', 'css.*', 'scss', 'sass']
   if buffer.type_name('stylesheet')
     let res = s:findit('^\s*\*=\s*require\s*["'']\=\([^"'' ]*\)', '\1')
