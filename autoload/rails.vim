@@ -95,6 +95,17 @@ function! s:fnameescape(file) abort
   endif
 endfunction
 
+function! s:dot_relative(path) abort
+  let slash = matchstr(a:path, '^\%(\w\:\)\=\zs[\/]')
+  if !empty(slash)
+    let path = fnamemodify(a:path, ':.')
+    if path !=# a:path
+      return '.' . slash . path
+    endif
+  endif
+  return a:path
+endfunction
+
 function! s:sname()
   return fnamemodify(s:file,':t:r')
 endfunction
@@ -2253,26 +2264,69 @@ function! s:findasset(path, dir) abort
   return path . post
 endfunction
 
-function! s:cfile(...) abort
-  if filereadable(expand("<cfile>"))
-    return expand("<cfile>")
-  endif
-
-  " UGH
-  let buffer = rails#buffer()
-  let format = s:format()
-
-  let assetloadpat = '^\s*\%(//\|[*#]\)=\s*\%(link\|require\|depend_on\|stub\)\w*\s*["'']\=\([^"'' ]*\)'
-  if buffer.type_name('stylesheet')
-    let sssuf = s:suffixes('stylesheets')
-    let res = s:findit(assetloadpat, '\1')
-    if !empty(res)
-      return s:findasset(res, "stylesheets")
+function! s:is_embedded_ruby() abort
+  let groups = [
+        \ 'erubyBlock', 'erubyExpression', 'erubyComment', 'erubyOneLiner',
+        \ 'yamlRailsBlock', 'yamlRailsExpression', 'yamlRailsComment', 'yamlRailsOneLiner',
+        \ 'hamlRuby']
+  call map(groups, 'hlID(v:val)')
+  for id in synstack(line('.'), col('.'))
+    if index(groups, id) >= 0 || synIDattr(id, 'name') =~# '^ruby'
+      return 1
     endif
-    let res = s:findit('^\s*@import\s*\%(url(\)\=["'']\=\([^"'' ]*\)', '\1')
-    if res != ""
+  endfor
+endfunction
+
+function! s:cfile_delegate(expr) abort
+  let expr = empty(a:expr) ? matchstr(&includeexpr, '.*\<v:fname\>.*') : a:expr
+  if empty(expr)
+    let expr = 'v:fname'
+  endif
+  let expr = substitute(expr, '\<v:fname\>', 'expand("<cfile>")', 'g')
+  return expr
+endfunction
+
+function! rails#embedded_cfile(...) abort
+  if s:is_embedded_ruby()
+    let expr = 'rails#cfile('.(a:0 > 1 ? string(a:2) : '').')'
+  else
+    let expr = s:cfile_delegate(a:0 ? a:1 : '')
+  endif
+  return eval(expr)
+endfunction
+
+function! s:asset_cfile() abort
+  let buffer = rails#buffer()
+
+  let dir = ''
+
+  if buffer.type_name('javascript')
+    let dir = 'javascripts'
+  elseif buffer.type_name('stylesheet')
+    let dir = 'stylesheets'
+
+    let asset = ''
+    let sssuf = s:suffixes('stylesheets')
+    let res = s:findit('\%(^\s*[[:alnum:]-]\+:\s\+\)\=\<[[:alnum:]-]\+-\%(path\|url\)(["'']\=\([^"''() ]*\)', '\1')
+    if !empty(res)
+      let asset = rails#app().resolve_asset(res)
+    endif
+    let res = s:findit('\%(^\s*[[:alnum:]-]\+:\s\+\)\=\<stylesheet-\%(path\|url\)(["'']\=\([^"''() ]*\)', '\1')
+    if !empty(res)
+      let asset = rails#app().resolve_asset(res, sssuf)
+    endif
+    let res = s:findit('\%(^\s*[[:alnum:]-]\+:\s\+\)\=\<javascript-\%(path\|url\)(["'']\=\([^"''() ]*\)', '\1')
+    if !empty(res)
+      let asset = rails#app().resolve_asset(res, s:suffixes('javascripts'))
+    endif
+    if !empty(asset)
+      return asset
+    endif
+    let res = s:findit('^\s*@import\s*\%(url(\)\=["'']\=\([^"''() ]*\)', '\1')
+    if !empty(res)
       let base = expand('%:p:h')
       let rel = s:sub(res, '\ze[^/]*$', '_')
+      let sssuf = s:suffixes('stylesheets')
       for ext in [''] + sssuf
         for name in [res.ext, rel.ext]
           if filereadable(base.'/'.name)
@@ -2288,13 +2342,34 @@ function! s:cfile(...) abort
     endif
   endif
 
-  if buffer.type_name('javascript')
-    let res = s:findit(assetloadpat, '\1')
-    if !empty(res)
-      return s:findasset(res, "javascripts")
-    endif
+  let res = s:findit('^\s*\%(//\|[*#]\)=\s*\%(link\|require\|depend_on\|stub\)\w*\s*["'']\=\([^"'' ]*\)', '\1')
+  if !empty(res)
+    let asset = rails#app().resolve_asset(res, dir)
+    return empty(asset) ? res : asset
+  endif
+  return ''
+endfunction
+
+function! rails#asset_cfile(...) abort
+  let file = s:dot_relative(s:asset_cfile())
+  if empty(file)
+    return eval(s:cfile_delegate(a:0 ? a:1 : ''))
+  endif
+  let escaped = s:fnameescape(file)
+  if file ==# escaped
+    return file
+  else
+    return '+ '.escaped
+  endif
+endfunction
+
+function! s:ruby_cfile() abort
+  if filereadable(expand("<cfile>"))
     return expand("<cfile>")
   endif
+
+  let buffer = rails#buffer()
+  let format = s:format()
 
   let res = s:findit('\v\s*<require\s*\(=\s*File.expand_path\([''"]../(\f+)[''"],\s*__FILE__\s*\)',expand('%:p:h').'/\1')
   if res != ""|return simplify(res.(res !~ '\.[^\/.]\+$' ? '.rb' : ''))|endif
@@ -2434,8 +2509,8 @@ function! s:cfile(...) abort
 endfunction
 
 function! rails#cfile(...) abort
-  let cfile = s:find('find', s:cfile())[5:-1]
-  return empty(cfile) && a:0 && a:1 is# 'delegate' ? "\<C-R>\<C-F>" : cfile
+  let cfile = s:find('find', s:ruby_cfile())[5:-1]
+  return empty(cfile) ? (a:0 ? eval(a:1) : expand('<cfile>')) : cfile
 endfunction
 
 function! s:app_named_route_file(route_name) dict abort
@@ -4228,10 +4303,9 @@ endfunction
 
 nnoremap <SID>: :<C-U><C-R>=v:count ? v:count : ''<CR>
 function! s:BufMappings() abort
-  if &includeexpr !~# 'rails#'
+  if empty(maparg('<Plug><cfile>', 'c'))
     return
   endif
-  cmap <buffer><script><expr> <Plug><cfile>   rails#cfile('delegate')
   nmap <buffer><silent> <Plug>RailsFind       <SID>:find <Plug><cfile><CR>
   nmap <buffer><silent> <Plug>RailsSplitFind  <SID>:sfind <Plug><cfile><CR>
   nmap <buffer><silent> <Plug>RailsTabFind    <SID>:tabfind <Plug><cfile><CR>
@@ -5219,16 +5293,36 @@ function! s:set_path_options() abort
 
   let assetdir = matchstr(name, '^\%(public/\|\w\+/assets/\)\zs[^/]\+')
   let suffixes = join(s:suffixes(assetdir), ',')
-  if !empty(suffixes)
-    if name =~# '\.erb$'
-      let suffixes = '.rb,' . suffixes
+  if !empty(assetdir)
+    let delegate = ''
+    if exists(':chistory')
+      let cfilemap = maparg('<Plug><cfile>', 'c', 0, 1)
+      if cfilemap.expr && cfilemap.buffer && cfilemap.rhs !~# 'rails#\|Ruby'
+        let delegate = string(maparg('<Plug><cfile>', 'c'))
+      endif
     endif
-    let &l:suffixesadd = suffixes
+    let map = 'rails#asset_cfile('.delegate.')'
+    if len(suffixes)
+      let &l:suffixesadd = suffixes
+    endif
+    if name =~# '\.erb$'
+      let map = 'rails#embedded_cfile('.string(map).')'
+      setlocal includeexpr=rails#includeexpr(v:fname)
+      setlocal suffixesadd^=.rb
+    endif
+    exe 'cmap <buffer><script><expr> <Plug><cfile>' map
+    let &l:include = &l:include.(empty(&l:include) ? '' : '\|') .
+          \ '^\s*[[:punct:]]\+=\s*\%(link\|require\|depend_on\|stub\)\w*'
   elseif name =~# '^node_modules\>\|^app/javascript\>'
     let &l:suffixesadd = join(s:uniq(['.coffee', '.js', '.jsx', '.ts', '.vue'] + split(&l:suffixesadd, ',') + ['/package.json']), ',')
-  endif
-  if empty(&l:suffixesadd)
-    setlocal suffixesadd=.rb
+  else
+    if empty(&l:suffixesadd)
+      setlocal suffixesadd=.rb
+    endif
+    if &l:suffixesadd =~# '\.rb\>'
+      setlocal includeexpr=rails#includeexpr(v:fname)
+      cmap <buffer><script><expr> <Plug><cfile> rails#cfile()
+    endif
   endif
 
   if self.app().path() =~ '://'
@@ -5272,7 +5366,7 @@ function! s:set_path_options() abort
 
   let &l:path = (add_dot ? '.,' : '').s:pathjoin(s:uniq(path + old_path + engine_paths))
   let undo = get(b:, 'undo_ftplugin', '')
-  let b:undo_ftplugin = (empty(undo) ? '' : undo . '|') . 'setl path< sua<'
+  let b:undo_ftplugin = (empty(undo) ? '' : undo . '|') . 'setl path< sua< inc< inex<'
 endfunction
 
 function! rails#buffer_setup() abort
@@ -5284,10 +5378,6 @@ function! rails#buffer_setup() abort
   let b:rails_cached_file_type = self.calculate_file_type()
 
   call s:set_path_options()
-  let inex = self.getvar('&includeexpr')
-  if inex =~? 'rails\|ruby\|\.rb' || inex !~# '[A-Z#]'
-    call self.setvar('&includeexpr', 'rails#includeexpr(v:fname)')
-  endif
 
   let rp = s:gsub(self.app().path(),'[ ,]','\\&')
   if stridx(&tags,rp.'/tags') == -1
