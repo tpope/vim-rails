@@ -384,10 +384,10 @@ function! s:readable_controller_name(...) dict abort
     return s:sub(f,'.*<spec/views/(.{-})/\w+_view_spec\.rb$','\1')
   elseif f =~ '\<app/models/.*\.rb$' && self.type_name('mailer')
     return s:sub(f,'.*<app/models/(.{-})\.rb$','\1')
-  elseif f =~ '\<\%(public\|app/assets\)/stylesheets/.*\.css\%(\.\w\+\)\=$'
-    return s:sub(f,'.*<%(public|app/assets)/stylesheets/(.{-})\.css%(\.\w+)=$','\1')
-  elseif f =~ '\<\%(public\|app/assets\)/javascripts/.*\.js\%(\.\w\+\)\=$'
-    return s:sub(f,'.*<%(public|app/assets)/javascripts/(.{-})\.js%(\.\w+)=$','\1')
+  elseif f =~ '\<\%(public\|app/assets\)/stylesheets/[^.]\+\.'
+    return s:sub(f,'.*<%(public|app/assets)/stylesheets/(.{-})\..*$','\1')
+  elseif f =~ '\<\%(public\|app/assets\)/javascripts/.[^.]\+\.'
+    return s:sub(f,'.*<%(public|app/assets)/javascripts/(.{-})\..*$','\1')
   elseif a:0 && a:1
     return rails#pluralize(self.model_name())
   endif
