@@ -96,7 +96,7 @@ augroup railsPluginDetect
   autocmd FileType qf call s:log_detect()
   autocmd FileType railslog call rails#log_setup()
   autocmd Syntax railslog call rails#log_syntax()
-  autocmd Syntax ruby,eruby,yaml,haml,javascript,coffee,sass,scss
+  autocmd Syntax ruby,eruby,yaml,haml,javascript,coffee,css,sass,scss
         \ if RailsDetect() | call rails#buffer_syntax() | endif
 
   autocmd User ProjectionistDetect
