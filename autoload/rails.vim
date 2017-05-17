@@ -2314,6 +2314,11 @@ function! s:cfile(...) abort
   let res = s:findamethod('require','\1')
   if res != ""|return res.(res !~ '\.[^\/.]\+$' ? '.rb' : '')|endif
 
+  if !empty(s:findamethod('\w\+', '\1'))
+    let class = s:findit('^[^;#]*,\s*\%(:class_name\s*=>\|class_name:\)\s*["'':]\=\([[:alnum:]_:]\+\)','\1')
+    if class != ""|return rails#underscore(class).".rb"|endif
+  endif
+
   let res = s:findamethod('belongs_to\|has_one\|embedded_in\|embeds_one\|composed_of\|validates_associated\|scaffold','\1.rb')
   if res != ""|return res|endif
 
