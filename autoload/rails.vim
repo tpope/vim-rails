@@ -2706,24 +2706,6 @@ function! s:layoutList(A,L,P)
   return s:completion_filter(rails#app().relglob("app/views/layouts/","*"),a:A)
 endfunction
 
-function! s:stylesheetList(A,L,P)
-  let list = rails#app().relglob('app/assets/stylesheets/','**/*.*','')
-  call map(list,'s:sub(v:val,"\\..*$","")')
-  let list += rails#app().relglob('public/stylesheets/','**/*','.css')
-  if rails#app().has('sass')
-    call extend(list,rails#app().relglob('public/stylesheets/sass/','**/*','.s?ss'))
-    call s:uniq(list)
-  endif
-  return s:completion_filter(list,a:A)
-endfunction
-
-function! s:javascriptList(A,L,P)
-  let list = rails#app().relglob('app/assets/javascripts/','**/*.*','')
-  call map(list,'s:sub(v:val,"\\.js\\..*|\\.\\w+$","")')
-  let list += rails#app().relglob("public/javascripts/","**/*",".js")
-  return s:completion_filter(list,a:A)
-endfunction
-
 function! s:fixturesList(A,L,P)
   return s:completion_filter(
         \ rails#app().relglob('test/fixtures/', '**/*') +
@@ -2822,15 +2804,6 @@ function! s:CommandEdit(cmd, name, projections, ...)
   else
     return rails#buffer().open_command(a:cmd, a:0 ? a:1 : '', a:name, a:projections)
   endif
-endfunction
-
-function! s:LegacyCommandEdit(cmd, target, prefix, suffix)
-  let cmd = s:findcmdfor(a:cmd)
-  if a:target == ""
-    return s:error("E471: Argument required")
-  endif
-  let f = a:prefix . s:sub(a:target, '\ze[#!:]|$', a:suffix)
-  return s:open(a:cmd, f)
 endfunction
 
 function! s:app_migration(file) dict
@@ -3080,38 +3053,57 @@ function! s:layoutEdit(cmd,...) abort
   return s:edit(a:cmd, file)
 endfunction
 
-function! s:stylesheetEdit(cmd,...)
-  let name = a:0 ? a:1 : s:controller(1)
-  if rails#app().has('sass') && rails#app().has_file('public/stylesheets/sass/'.name.'.sass')
-    return s:LegacyCommandEdit(a:cmd,name,"public/stylesheets/sass/",".sass")
-  elseif rails#app().has('sass') && rails#app().has_file('public/stylesheets/sass/'.name.'.scss')
-    return s:LegacyCommandEdit(a:cmd,name,"public/stylesheets/sass/",".scss")
-  else
-    let types = rails#app().relglob('app/assets/stylesheets/'.name,'.*','')
-    if !empty(types)
-      return s:LegacyCommandEdit(a:cmd,name,'app/assets/stylesheets/',types[0])
-    elseif !isdirectory(rails#app().path('app/assets/stylesheets')) ||
-        \ rails#app().has_file('public/stylesheets/'.name.'.css')
-      return s:LegacyCommandEdit(a:cmd,name,'public/stylesheets/','.css')
-    else
-      return s:LegacyCommandEdit(a:cmd,name,'app/assets/stylesheets/',rails#app().stylesheet_suffix())
-    endif
+function! s:AssetEdit(cmd, name, dir, suffix, fallbacks) abort
+  let name = matchstr(a:name, '^[^!#:]*')
+  if empty(name)
+    let name = s:controller(1)
   endif
+  let suffixes = s:suffixes(a:dir)
+  for file in map([''] + suffixes, '"app/assets/".a:dir."/".name.v:val') +
+        \ map(copy(a:fallbacks), 'printf(v:val, name)') +
+        \ [   'public/'.a:dir.'/'.name.suffixes[0],
+        \ 'app/assets/'.a:dir.'/'.name.(name =~# '\.' ? '' : a:suffix)]
+    if rails#app().has_file(file)
+      break
+    endif
+  endfor
+  return s:open(a:cmd, file . matchstr(a:name, '[!#:]*'))
 endfunction
 
-function! s:javascriptEdit(cmd,...)
-  let name = a:0 ? a:1 : s:controller(1)
-  let types = rails#app().relglob('app/assets/javascripts/'.name,'.*','')
-  if !empty(types)
-    return s:LegacyCommandEdit(a:cmd,name,'app/assets/javascripts/',types[0])
-  elseif !isdirectory(rails#app().path('app/assets/javascripts')) ||
-        \ rails#app().has_file('public/javascripts/'.name.'.js')
-    return s:LegacyCommandEdit(a:cmd,name,'public/javascripts/','.js')
-  elseif rails#app().has_gem('coffee-rails')
-    return s:LegacyCommandEdit(a:cmd,name,'app/assets/javascripts/','.coffee')
-  else
-    return s:LegacyCommandEdit(a:cmd,name,'app/assets/javascripts/','.js')
+function! s:javascriptEdit(cmd,...) abort
+  return s:AssetEdit(a:cmd, a:0 ? a:1 : '', 'javascripts',
+        \ rails#app().has_gem('coffee-rails') ? '.coffee' : '.js', [])
+endfunction
+
+function! s:stylesheetEdit(cmd,...) abort
+  let fallbacks = []
+  if rails#app().has('sass')
+    let fallbacks = ['public/stylesheets/sass/%s.sass', 'public/stylesheets/sass/%s.scss']
   endif
+  return s:AssetEdit(a:cmd, a:0 ? a:1 : '', 'stylesheets',
+        \ rails#app().stylesheet_suffix(), fallbacks)
+endfunction
+
+function! s:javascriptList(A, L, P, ...) abort
+  let dir = a:0 ? a:1 : 'javascripts'
+  let list = rails#app().relglob('app/assets/'.dir.'/','**/*.*','')
+  let suffixes = s:suffixes(dir)
+  let strip = '\%('.escape(join(suffixes, '|'), '.*[]~').'\)$'
+  call map(list,'substitute(v:val,strip,"","")')
+  call extend(list, rails#app().relglob("public/".dir."/","**/*",suffixes[0]))
+  if !empty(a:0 ? a:2 : [])
+    call extend(list, a:2)
+    call s:uniq(list)
+  endif
+  return s:completion_filter(list,a:A)
+endfunction
+
+function! s:stylesheetList(A, L, P) abort
+  let extra = []
+  if rails#app().has('sass')
+    let extra = rails#app().relglob('public/stylesheets/sass/','**/*','.s?ss')
+  endif
+  return s:javascriptList(a:A, a:L, a:P, 'stylesheets', extra)
 endfunction
 
 function! s:specEdit(cmd,...) abort
