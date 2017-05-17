@@ -2152,7 +2152,7 @@ function! rails#includeexpr(fname) abort
   endif
 endfunction
 
-function! s:linepeak()
+function! s:linepeek() abort
   let line = getline(line("."))
   let line = s:sub(line,'^(.{'.col(".").'}).*','\1')
   let line = s:sub(line,'([:"'."'".']|\%[qQ]=[[({<])=\f*$','')
@@ -2483,8 +2483,8 @@ function! s:RailsIncludefind(str,...) abort
   let str = a:str
   if a:0 == 1
     " Get the text before the filename under the cursor.
-    " We'll cheat and peak at this in a bit
-    let line = s:linepeak()
+    " We'll cheat and peek at this in a bit
+    let line = s:linepeek()
     let line = s:sub(line,'([:"'."'".']|\%[qQ]=[[({<])=\f*$','')
   else
     let line = ""
