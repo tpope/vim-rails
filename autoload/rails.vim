@@ -2486,8 +2486,10 @@ function! s:RailsIncludefind(str,...) abort
     " We'll cheat and peek at this in a bit
     let line = s:linepeek()
     let line = s:sub(line,'([:"'."'".']|\%[qQ]=[[({<])=\f*$','')
+    let synid = synID(line('.'), col('.'), 1)
   else
     let line = ""
+    let synid = -1
   endif
   let str = s:sub(str,'^\s*','')
   let str = s:sub(str,'\s*$','')
@@ -2560,8 +2562,9 @@ function! s:RailsIncludefind(str,...) abort
       let str = file
     endif
   elseif str !~ '/'
-    " If we made it this far, we'll risk making it singular.
-    let str = rails#singularize(str)
+    if synid >= 0 && synid != hlID('rubyString')
+      let str = rails#singularize(str)
+    endif
     let str = s:sub(str,'_id$','')
   endif
   return str
