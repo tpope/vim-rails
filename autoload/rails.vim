@@ -3088,7 +3088,8 @@ function! s:javascriptList(A, L, P, ...) abort
   let dir = a:0 ? a:1 : 'javascripts'
   let list = rails#app().relglob('app/assets/'.dir.'/','**/*.*','')
   let suffixes = s:suffixes(dir)
-  let strip = '\%('.escape(join(suffixes, '|'), '.*[]~').'\)$'
+  let strip = '\%('.escape(join(suffixes, '\|'), '.*[]~').'\)$'
+  let g:strip = strip
   call map(list,'substitute(v:val,strip,"","")')
   call extend(list, rails#app().relglob("public/".dir."/","**/*",suffixes[0]))
   if !empty(a:0 ? a:2 : [])
