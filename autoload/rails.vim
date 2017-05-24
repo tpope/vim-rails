@@ -4243,7 +4243,11 @@ endfunction
 " Database {{{1
 
 function! rails#yaml_parse_file(file) abort
-  let json = system('ruby -e '.s:rquote('require %{yaml}; require %{json}; File.open(%q{'.a:file.'}) {|f| puts JSON.generate(YAML::load(f))}'))
+  let erb = get(g:, 'rails_erb_yaml')
+  let json = system('ruby -rjson -ryaml -rerb -e ' .
+        \ s:rquote('puts JSON.generate(YAML.load(' .
+        \   (erb ? 'ERB.new(ARGF.read).result' : 'ARGF.read').'))')
+        \ . ' ' . s:rquote(a:file))
   if !v:shell_error && json =~# '^[[{]'
     return rails#json_parse(json)
   endif
