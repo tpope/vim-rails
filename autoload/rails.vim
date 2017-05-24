@@ -4275,7 +4275,8 @@ function! s:app_db_config(environment) dict
         if !empty(db)
           break
         endif
-    endfor
+      endfor
+    endif
     if empty(db)
       let db = s:gsub(fnamemodify(self.path(), ':t'), '[^[:alnum:]]+', '_') .
             \ '_%s'
