@@ -3070,7 +3070,11 @@ function! s:AssetEdit(cmd, name, dir, suffix, fallbacks) abort
       break
     endif
   endfor
-  return s:open(a:cmd, file . matchstr(a:name, '[!#:]*'))
+  if name =~# '\.' || a:name =~# '!'
+    return s:edit(a:cmd, file . matchstr(a:name, '[!#:]*'))
+  else
+    return s:open(a:cmd, file . matchstr(a:name, '[!#:]*'))
+  endif
 endfunction
 
 function! s:javascriptEdit(cmd,...) abort
