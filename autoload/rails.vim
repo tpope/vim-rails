@@ -4183,7 +4183,6 @@ function! s:reload_log() abort
   if &buftype == 'quickfix' && get(w:, 'quickfix_title') =~ '^:cgetfile'
     let pos = getpos('.')
     exe 'cgetfile' s:fnameescape(w:quickfix_title[10:-1])
-    silent! clast
     call setpos('.', pos)
   else
     checktime
@@ -4194,12 +4193,19 @@ function! s:reload_log() abort
 endfunction
 
 function! rails#log_setup() abort
+  if exists('w:quickfix_title')
+    runtime! ftplugin/qf.vim ftplugin/qf_*.vim ftplugin/qf/*.vim
+  endif
+  let b:undo_ftplugin = get(b:, 'undo_ftplugin', 'exe')
   nnoremap <buffer> <silent> R :<C-U>call <SID>reload_log()<CR>
   nnoremap <buffer> <silent> G :<C-U>call <SID>reload_log()<Bar>exe v:count ? v:count : '$'<CR>
   nnoremap <buffer> <silent> q :bwipe<CR>
+  let b:undo_ftplugin .= '|sil! nunmap <buffer> R|sil! nunmap <buffer> G|sil! nunmap <buffer> q'
   setlocal noswapfile autoread
+  let b:undo_ftplugin .= '|set swapfile< autoread<'
   if exists('+concealcursor')
     setlocal concealcursor=nc conceallevel=2
+    let b:undo_ftplugin .= ' concealcursor< conceallevel<'
   else
     let pos = getpos('.')
     setlocal modifiable
@@ -4207,6 +4213,7 @@ function! rails#log_setup() abort
     call setpos('.', pos)
   endif
   setlocal readonly nomodifiable
+  let b:undo_ftplugin .= ' noreadonly modifiable'
 endfunction
 
 " }}}1
