@@ -3058,6 +3058,9 @@ function! s:AssetEdit(cmd, name, dir, suffix, fallbacks) abort
   if empty(name)
     let name = s:controller(1)
   endif
+  if empty(name)
+    return s:error("E471: Argument required")
+  endif
   let suffixes = s:suffixes(a:dir)
   for file in map([''] + suffixes, '"app/assets/".a:dir."/".name.v:val') +
         \ map(copy(a:fallbacks), 'printf(v:val, name)') +
