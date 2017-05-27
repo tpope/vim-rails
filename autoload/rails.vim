@@ -1134,7 +1134,7 @@ function! s:app_tags_command() dict abort
     if self.has_path('.ctags')
       let args = []
     else
-      let args = s:split(get(g:, 'rails_ctags_arguments', '--languages=ruby'))
+      let args = s:split(get(g:, 'rails_ctags_arguments', '--languages=Ruby'))
     endif
     exe '!'.cmd.' -R '.join(args,' ')
   finally
