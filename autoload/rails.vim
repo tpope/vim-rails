@@ -21,8 +21,8 @@ function! s:add_methods(namespace, method_names)
   endfor
 endfunction
 
-function! s:function(name)
-    return function(substitute(a:name,'^s:',matchstr(expand('<sfile>'), '<SNR>\d\+_'),''))
+function! s:function(name) abort
+  return function(substitute(a:name, '^s:', matchstr(expand('<sfile>'),  '.*\zs<SNR>\d\+_'), ''))
 endfunction
 
 function! s:sub(str,pat,rep)
