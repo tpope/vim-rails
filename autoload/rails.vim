@@ -5297,7 +5297,7 @@ function! s:set_path_options() abort
     let delegate = ''
     if exists(':chistory')
       let cfilemap = maparg('<Plug><cfile>', 'c', 0, 1)
-      if cfilemap.expr && cfilemap.buffer && cfilemap.rhs !~# 'rails#\|Ruby'
+      if get(cfilemap, 'buffer') && cfilemap.expr && cfilemap.rhs !~# 'rails#\|Ruby'
         let delegate = string(maparg('<Plug><cfile>', 'c'))
       endif
     endif
