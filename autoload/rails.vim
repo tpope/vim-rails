@@ -2070,19 +2070,19 @@ function! s:BufNavCommands()
   command! -buffer -bar -nargs=? -complete=customlist,s:Complete_cd Lcd  :lcd `=rails#app().path(<q-args>)`
   command! -buffer -bar -nargs=? -complete=customlist,s:Complete_cd Rcd   :cd `=rails#app().path(<q-args>)`
   command! -buffer -bar -nargs=? -complete=customlist,s:Complete_cd Rlcd :lcd `=rails#app().path(<q-args>)`
-  command! -buffer -bar -nargs=* -range=0 -complete=customlist,s:Complete_alternate A   exe s:Alternate('E<bang>',<line1>,<line2>,<count>,<f-args>)
-  command! -buffer -bar -nargs=* -range=0 -complete=customlist,s:Complete_alternate AE  exe s:Alternate('E<bang>',<line1>,<line2>,<count>,<f-args>)
-  command! -buffer -bar -nargs=* -range=0 -complete=customlist,s:Complete_alternate AS  exe s:Alternate('S<bang>',<line1>,<line2>,<count>,<f-args>)
-  command! -buffer -bar -nargs=* -range=0 -complete=customlist,s:Complete_alternate AV  exe s:Alternate('V<bang>',<line1>,<line2>,<count>,<f-args>)
-  command! -buffer -bar -nargs=* -range=0 -complete=customlist,s:Complete_alternate AT  exe s:Alternate('T<bang>',<line1>,<line2>,<count>,<f-args>)
-  command! -buffer -bar -nargs=* -range=0 -complete=customlist,s:Complete_edit      AD  exe s:Alternate('D<bang>',<line1>,<line2>,<count>,<f-args>)
-  command! -buffer -bar -nargs=* -range=0 -complete=customlist,s:Complete_edit      AR  exe s:Alternate('D<bang>',<line1>,<line2>,<count>,<f-args>)
-  command! -buffer -bar -nargs=* -range=0 -complete=customlist,s:Complete_related   R   exe   s:Related('E<bang>',<line1>,<line2>,<count>,<f-args>)
-  command! -buffer -bar -nargs=* -range=0 -complete=customlist,s:Complete_related   RE  exe   s:Related('E<bang>',<line1>,<line2>,<count>,<f-args>)
-  command! -buffer -bar -nargs=* -range=0 -complete=customlist,s:Complete_related   RS  exe   s:Related('S<bang>',<line1>,<line2>,<count>,<f-args>)
-  command! -buffer -bar -nargs=* -range=0 -complete=customlist,s:Complete_related   RV  exe   s:Related('V<bang>',<line1>,<line2>,<count>,<f-args>)
-  command! -buffer -bar -nargs=* -range=0 -complete=customlist,s:Complete_related   RT  exe   s:Related('T<bang>',<line1>,<line2>,<count>,<f-args>)
-  command! -buffer -bar -nargs=* -range=0 -complete=customlist,s:Complete_edit      RD  exe   s:Related('D<bang>',<line1>,<line2>,<count>,<f-args>)
+  command! -buffer -bar -nargs=* -range=0 -complete=customlist,s:Complete_alternate A   exe s:Alternate('<mods> E<bang>',<line1>,<line2>,<count>,<f-args>)
+  command! -buffer -bar -nargs=* -range=0 -complete=customlist,s:Complete_alternate AE  exe s:Alternate('<mods> E<bang>',<line1>,<line2>,<count>,<f-args>)
+  command! -buffer -bar -nargs=* -range=0 -complete=customlist,s:Complete_alternate AS  exe s:Alternate('<mods> S<bang>',<line1>,<line2>,<count>,<f-args>)
+  command! -buffer -bar -nargs=* -range=0 -complete=customlist,s:Complete_alternate AV  exe s:Alternate('<mods> V<bang>',<line1>,<line2>,<count>,<f-args>)
+  command! -buffer -bar -nargs=* -range=0 -complete=customlist,s:Complete_alternate AT  exe s:Alternate('<mods> T<bang>',<line1>,<line2>,<count>,<f-args>)
+  command! -buffer -bar -nargs=* -range=0 -complete=customlist,s:Complete_edit      AD  exe s:Alternate('<mods> D<bang>',<line1>,<line2>,<count>,<f-args>)
+  command! -buffer -bar -nargs=* -range=0 -complete=customlist,s:Complete_edit      AR  exe s:Alternate('<mods> D<bang>',<line1>,<line2>,<count>,<f-args>)
+  command! -buffer -bar -nargs=* -range=0 -complete=customlist,s:Complete_related   R   exe   s:Related('<mods> E<bang>',<line1>,<line2>,<count>,<f-args>)
+  command! -buffer -bar -nargs=* -range=0 -complete=customlist,s:Complete_related   RE  exe   s:Related('<mods> E<bang>',<line1>,<line2>,<count>,<f-args>)
+  command! -buffer -bar -nargs=* -range=0 -complete=customlist,s:Complete_related   RS  exe   s:Related('<mods> S<bang>',<line1>,<line2>,<count>,<f-args>)
+  command! -buffer -bar -nargs=* -range=0 -complete=customlist,s:Complete_related   RV  exe   s:Related('<mods> V<bang>',<line1>,<line2>,<count>,<f-args>)
+  command! -buffer -bar -nargs=* -range=0 -complete=customlist,s:Complete_related   RT  exe   s:Related('<mods> T<bang>',<line1>,<line2>,<count>,<f-args>)
+  command! -buffer -bar -nargs=* -range=0 -complete=customlist,s:Complete_edit      RD  exe   s:Related('<mods> D<bang>',<line1>,<line2>,<count>,<f-args>)
 endfunction
 
 function! s:jumpargs(file, jump) abort
@@ -2678,7 +2678,7 @@ function! s:addfilecmds(type)
   let l = s:sub(a:type,'^.','\l&')
   for prefix in ['E', 'S', 'V', 'T', 'D', 'R', 'RE', 'RS', 'RV', 'RT', 'RD']
     let cplt = " -complete=customlist,".s:sid.l."List"
-    exe "command! -buffer -bar ".(prefix =~# 'D' ? '-range=0 ' : '')."-nargs=*".cplt." ".prefix.l." :execute s:".l.'Edit("'.(prefix =~# 'D' ? '<line1>' : '').s:sub(prefix, '^R', '').'<bang>",<f-args>)'
+    exe "command! -buffer -bar ".(prefix =~# 'D' ? '-range=0 ' : '')."-nargs=*".cplt." ".prefix.l." :execute s:".l.'Edit("<mods> '.(prefix =~# 'D' ? '<line1>' : '').s:sub(prefix, '^R', '').'<bang>",<f-args>)'
   endfor
 endfunction
 
@@ -2847,7 +2847,7 @@ function! s:define_navcommand(name, projection, ...) abort
           \ (prefix =~# 'D' ? '-range=0 ' : '') .
           \ '-complete=customlist,'.s:sid.'CommandList ' .
           \ prefix . name . ' :execute s:CommandEdit(' .
-          \ string((prefix =~# 'D' ? '<line1>' : '') . prefix . "<bang>") . ',' .
+          \ string('<mods> '.(prefix =~# 'D' ? '<line1>' : '') . prefix . "<bang>") . ',' .
           \ string(a:name) . ',' . string(a:projection) . ',<f-args>)' .
           \ (a:0 ? '|' . a:1 : '')
   endfor
@@ -3208,12 +3208,9 @@ function! s:findcmdfor(cmd) abort
   else
     let cmd = a:cmd
   endif
-  if cmd =~ '^\d'
-    let num = matchstr(cmd,'^\d\+')
-    let cmd = s:sub(cmd,'^\d+','')
-  else
-    let num = ''
-  endif
+  let cmd = s:gsub(cmd, '[<]mods[>] ', '')
+  let num = matchstr(cmd, '.\{-\}\ze\a*$')
+  let cmd = matchstr(cmd, '\a*$')
   if cmd == '' || cmd == 'E' || cmd == 'F'
     return num.'find'.bang
   elseif cmd == 'S'
