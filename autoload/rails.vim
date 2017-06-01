@@ -4085,28 +4085,28 @@ function! rails#buffer_syntax()
 
     elseif &syntax =~# '^eruby\>' || &syntax == 'haml'
       let containedin = 'contained containedin=@'.&syntax.'RailsRegions'
+      let group = matchstr(&syntax, '^\w\+')
       syn case match
       if !empty(special)
-        exe 'syn match '.&syntax.'RailsMethod "\<\%('.join(special, '\|').'\)"' containedin
+        exe 'syn match '.group.'RailsMethod "\<\%('.join(special, '\|').'\)"' containedin
       endif
       if !empty(regular)
-        exe 'syn keyword '.&syntax.'RailsMethod '.join(regular, ' ') containedin
+        exe 'syn keyword '.group.'RailsMethod '.join(regular, ' ') containedin
       endif
-      if &syntax == 'haml'
+      if group == 'haml'
         exe 'syn cluster hamlRailsRegions contains=hamlRubyCodeIncluded,hamlRubyCode,hamlRubyHash,@hamlEmbeddedRuby,rubyInterpolation'
       else
         exe 'syn cluster erubyRailsRegions contains=erubyOneLiner,erubyBlock,erubyExpression,rubyInterpolation'
       endif
-      exe 'syn keyword '.&syntax.'RailsHelperMethod '.s:gsub(s:helpermethods(),'<%(content_for|select)\s+','').' contained containedin=@'.&syntax.'RailsRegions'
-      exe 'syn match '.&syntax.'RailsHelperMethod "\<select\>\%(\s*{\|\s*do\>\|\s*(\=\s*&\)\@!" contained containedin=@'.&syntax.'RailsRegions'
-      exe 'syn match '.&syntax.'RailsHelperMethod "\<\%(content_for?\=\|current_page?\)" contained containedin=@'.&syntax.'RailsRegions'
-      exe 'syn keyword '.&syntax.'RailsMethod logger url_for polymorphic_path polymorphic_url edit_polymorphic_path edit_polymorphic_url new_polymorphic_path new_polymorphic_url contained containedin=@'.&syntax.'RailsRegions'
-      exe 'syn match '.&syntax.'RailsViewMethod "\.\@<!\<\(h\|html_escape\|u\|url_encode\)\>" contained containedin=@'.&syntax.'RailsRegions'
+      exe 'syn keyword rubyRailsHelperMethod '.s:gsub(s:helpermethods(),'<%(content_for|select)\s+','').' contained containedin=@'.group.'RailsRegions'
+      exe 'syn match rubyRailsHelperMethod "\<select\>\%(\s*{\|\s*do\>\|\s*(\=\s*&\)\@!" contained containedin=@'.group.'RailsRegions'
+      exe 'syn match rubyRailsHelperMethod "\<\%(content_for?\=\|current_page?\)" contained containedin=@'.group.'RailsRegions'
+      exe 'syn keyword rubyRailsMethod logger url_for polymorphic_path polymorphic_url edit_polymorphic_path edit_polymorphic_url new_polymorphic_path new_polymorphic_url contained containedin=@'.group.'RailsRegions'
+      exe 'syn match rubyRailsViewMethod "\.\@<!\<\(h\|html_escape\|u\|url_encode\)\>" contained containedin=@'.group.'RailsRegions'
       if buffer.type_name('view-partial')
-        exe 'syn keyword '.&syntax.'RailsMethod local_assigns contained containedin=@'.&syntax.'RailsRegions'
+        exe 'syn keyword rubyRailsMethod local_assigns contained containedin=@'.group.'RailsRegions'
       endif
-      exe 'syn keyword '.&syntax.'RailsRenderMethod render contained containedin=@'.&syntax.'RailsRegions'
-      exe 'syn case match'
+      exe 'syn keyword rubyRailsRenderMethod render contained containedin=@'.group.'RailsRegions'
     elseif &syntax == "yaml"
       syn case match
       unlet! b:current_syntax
@@ -4165,18 +4165,6 @@ function! s:HiDefaults()
   hi def link rubyRailsInclude                rubyInclude
   hi def link rubyRailsUserClass              railsUserClass
   hi def link rubyRailsUserMethod             railsUserMethod
-  hi def link erubyRailsHelperMethod          erubyRailsMethod
-  hi def link erubyRailsViewMethod            erubyRailsMethod
-  hi def link erubyRailsRenderMethod          erubyRailsMethod
-  hi def link erubyRailsMethod                railsMethod
-  hi def link erubyRailsUserMethod            railsUserMethod
-  hi def link erubyRailsUserClass             railsUserClass
-  hi def link hamlRailsHelperMethod           hamlRailsMethod
-  hi def link hamlRailsViewMethod             hamlRailsMethod
-  hi def link hamlRailsRenderMethod           hamlRailsMethod
-  hi def link hamlRailsMethod                 railsMethod
-  hi def link hamlRailsUserMethod             railsUserMethod
-  hi def link hamlRailsUserClass              railsUserClass
   hi def link railsUserMethod                 railsMethod
   hi def link yamlRailsDelimiter              Delimiter
   hi def link yamlRailsMethod                 railsMethod
