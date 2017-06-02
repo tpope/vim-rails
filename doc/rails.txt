@@ -17,7 +17,6 @@ Author:  Tim Pope <http://tpo.pe/>
 |rails-rails-integration|           Integration with the Rails Universe
 |rails-abbreviations|           Abbreviations
 |rails-syntax|                  Syntax Highlighting
-|rails-options|                 Managed Vim Options
 |rails-projections|             Projections
 |rails-configuration|           Configuration
 |rails-global-settings|         Global Settings
@@ -669,30 +668,6 @@ syntax group is used.  The list of assertions can be refreshed with
 						*rails-syntax-yaml*
 YAML syntax highlighting has been extended to highlight eRuby, which can be
 used in most Rails YAML files (including database.yml and fixtures).
-
-MANAGED VIM OPTIONS			*rails-options*
-
-The following options are set local to buffers where the plugin is active.
-
-					*rails-'shiftwidth'*	*rails-'sw'*
-					*rails-'softtabstop'*	*rails-'sts'*
-					*rails-'expandtab'*	*rails-'et'*
-Indent settings are no longer adjusted by default.  Install sleuth.vim, or try
-this in your vimrc instead: >
-	autocmd FileType ruby set sw=2 sts=2 et
-<
-					*rails-'path'*		*rails-'pa'*
-All the relevant directories from your application are added to your 'path'.
-This makes it easy to access a buried file: >
-	:find blog_controller
-<
-					*rails-'includeexpr'*	*rails-'inex'*
-The 'includeexpr' option is set to enable the magic described in |rails-gf|.
-
-					*rails-'filetype'*	*rails-'ft'*
-The 'filetype' is sometimes adjusted for Rails files.  Most notably, template
-extensions like *.builder and *.ruby are treated as Ruby files, and
-*.yml.example is treated as YAML.
 
 PROJECTIONS		*rails-config/projections.json* *rails-projections*
 
