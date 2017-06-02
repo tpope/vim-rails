@@ -3945,7 +3945,7 @@ call s:add_methods('app', ['user_classes','user_assertions'])
 function! rails#buffer_syntax()
   if !exists("g:rails_no_syntax")
     let buffer = rails#buffer()
-    let keywords = split(join(buffer.projected('keywords'), ' '))
+    let keywords = split(join(filter(buffer.projected('keywords'), 'type(v:val) == type("")'), ' '))
     let special = filter(copy(keywords), 'v:val =~# ''^\h\k*[?!]$''')
     let regular = filter(copy(keywords), 'v:val =~# ''^\h\k*$''')
     if &syntax == 'ruby'
@@ -5133,9 +5133,11 @@ function! s:expand_placeholder(placeholder, expansions) abort
   return value
 endfunction
 
-function! s:expand_placeholders(string, placeholders)
+function! s:expand_placeholders(string, placeholders) abort
   if type(a:string) ==# type({}) || type(a:string) == type([])
     return map(copy(a:string), 's:expand_placeholders(v:val, a:placeholders)')
+  elseif type(a:string) !=# type('')
+    return a:string
   endif
   let ph = extend({'%': '%'}, a:placeholders)
   let value = substitute(a:string, '{[^{}]*}', '\=s:expand_placeholder(submatch(0), ph)', 'g')
