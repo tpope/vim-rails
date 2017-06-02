@@ -239,9 +239,7 @@ There are also "classic" versions of these commands that start with :R (e.g.,
 			default locale.
 
 				*rails-:Emailer* *rails-:Rmailer*
-:Emailer [{name}]	Edit the mailer specified.  This looks in both
-			app/mailers for Rails 3 and app/models for older
-			versions of Rails but only tab completes the former.
+:Emailer [{name}]	Edit the specified mailer.
 
 				*rails-:Emigration* *rails-:Rmigration*
 :Emigration [{pattern}]	If {pattern} is a number, find the migration for that
