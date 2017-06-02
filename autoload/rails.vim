@@ -3959,7 +3959,7 @@ function! rails#buffer_syntax()
         syn keyword rubyRailsMethod params request response session headers cookies flash
       endif
       if buffer.type_name() ==# 'model' || buffer.type_name('model-record')
-        syn keyword rubyRailsARMethod default_scope enum named_scope scope serialize store
+        syn keyword rubyRailsARMethod attribute default_scope enum named_scope scope serialize store
         syn keyword rubyRailsARAssociationMethod belongs_to has_one has_many has_and_belongs_to_many composed_of accepts_nested_attributes_for
         syn keyword rubyRailsARCallbackMethod before_create before_destroy before_save before_update before_validation before_validation_on_create before_validation_on_update before_commit
         syn keyword rubyRailsARCallbackMethod after_create after_destroy after_save after_update after_validation after_validation_on_create after_validation_on_update after_create_commit after_update_commit after_destroy_commit
