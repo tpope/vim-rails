@@ -106,8 +106,8 @@ function! s:dot_relative(path) abort
   return a:path
 endfunction
 
-function! s:sname()
-  return fnamemodify(s:file,':t:r')
+function! s:mods(mods) abort
+  return s:gsub(a:mods, '[<]mods[>]\s*', '')
 endfunction
 
 function! s:pop_command()
@@ -1012,13 +1012,13 @@ function! s:BufCommands()
   if RailsFilePath() =~ '\<app/views/'
     " TODO: complete controller names with trailing slashes here
     command! -buffer -bar -bang -nargs=? -range -complete=customlist,s:controllerList Rextract :exe s:deprecate(':Rextract', ':Extract', '<line1>,<line2>Extract<bang> '.<q-args>)
-    command! -buffer -bar -bang -nargs=? -range -complete=customlist,s:controllerList Extract  :<line1>,<line2>call s:Extract(<bang>0,<f-args>)
+    command! -buffer -bar -bang -nargs=? -range -complete=customlist,s:controllerList Extract  :<line1>,<line2>call s:Extract(<bang>0,'<mods>',<f-args>)
   elseif rails#buffer().name() =~# '^app/helpers/.*\.rb$'
-    command! -buffer -bar -bang -nargs=1 -range Rextract :<line1>,<line2>call s:RubyExtract(<bang>0, 'app/helpers', [], s:sub(<f-args>, '_helper$|Helper$|$', '_helper'))
-    command! -buffer -bar -bang -nargs=1 -range Extract  :<line1>,<line2>call s:RubyExtract(<bang>0, 'app/helpers', [], s:sub(<f-args>, '_helper$|Helper$|$', '_helper'))
+    command! -buffer -bar -bang -nargs=1 -range Rextract :<line1>,<line2>call s:RubyExtract(<bang>0, '<mods>', 'app/helpers', [], s:sub(<f-args>, '_helper$|Helper$|$', '_helper'))
+    command! -buffer -bar -bang -nargs=1 -range Extract  :<line1>,<line2>call s:RubyExtract(<bang>0, '<mods>', 'app/helpers', [], s:sub(<f-args>, '_helper$|Helper$|$', '_helper'))
   elseif rails#buffer().name() =~# '^app/\w\+/.*\.rb$'
-    command! -buffer -bar -bang -nargs=1 -range Rextract :<line1>,<line2>call s:RubyExtract(<bang>0, matchstr(rails#buffer().name(), '^app/\w\+/').'concerns', ['  extend ActiveSupport::Concern', ''], <f-args>)
-    command! -buffer -bar -bang -nargs=1 -range Extract  :<line1>,<line2>call s:RubyExtract(<bang>0, matchstr(rails#buffer().name(), '^app/\w\+/').'concerns', ['  extend ActiveSupport::Concern', ''], <f-args>)
+    command! -buffer -bar -bang -nargs=1 -range Rextract :<line1>,<line2>call s:RubyExtract(<bang>0, '<mods>', matchstr(rails#buffer().name(), '^app/\w\+/').'concerns', ['  extend ActiveSupport::Concern', ''], <f-args>)
+    command! -buffer -bar -bang -nargs=1 -range Extract  :<line1>,<line2>call s:RubyExtract(<bang>0, '<mods>', matchstr(rails#buffer().name(), '^app/\w\+/').'concerns', ['  extend ActiveSupport::Concern', ''], <f-args>)
   endif
   if RailsFilePath() =~ '\<db/migrate/.*\.rb$'
     command! -buffer -bar                 Rinvert  :call s:Invert(<bang>0)
@@ -1054,7 +1054,7 @@ function! s:Plog(bang, arg) abort
   return 'pedit' . (a:bang ? '!' : '') . ' +$ ' . s:fnameescape(lf)
 endfunction
 
-function! rails#command(bang, count, arg) abort
+function! rails#command(bang, mods, count, arg) abort
   if exists('b:rails_root')
     return s:Rails(a:bang, a:count, a:arg)
   elseif a:arg !~# '^new\>'
@@ -1674,10 +1674,10 @@ endfunction
 function! s:BufScriptWrappers()
   command! -buffer -bang -bar -nargs=? -complete=customlist,s:Complete_script   Rscript       :execute s:deprecate(':Rscript', ':Rails', 'Rails<bang>' empty(<q-args>) ? 'console' : <q-args>)
   command! -buffer -bang -bar -nargs=* -complete=customlist,s:Complete_environments Console   :Rails<bang> console <args>
-  command! -buffer -bang -bar -nargs=* -complete=customlist,s:Complete_generate Rgenerate     :execute s:deprecate(':Rgenerate', ':Generate', rails#app().generator_command(<bang>0,'generate',<f-args>))
-  command! -buffer -bang -bar -nargs=* -complete=customlist,s:Complete_generate Generate      :execute rails#app().generator_command(<bang>0,'generate',<f-args>)
-  command! -buffer -bar -nargs=*       -complete=customlist,s:Complete_destroy  Rdestroy      :execute s:deprecate(':Rdestroy', ':Destroy', rails#app().generator_command(1,'destroy',<f-args>))
-  command! -buffer -bar -nargs=*       -complete=customlist,s:Complete_destroy  Destroy       :execute rails#app().generator_command(1,'destroy',<f-args>)
+  command! -buffer -bang -bar -nargs=* -complete=customlist,s:Complete_generate Rgenerate     :execute s:deprecate(':Rgenerate', ':Generate', rails#app().generator_command(<bang>0,'<mods>','generate',<f-args>))
+  command! -buffer -bang -bar -nargs=* -complete=customlist,s:Complete_generate Generate      :execute rails#app().generator_command(<bang>0,'<mods>','generate',<f-args>)
+  command! -buffer -bar -nargs=*       -complete=customlist,s:Complete_destroy  Rdestroy      :execute s:deprecate(':Rdestroy', ':Destroy', rails#app().generator_command(1,'<mods>','destroy',<f-args>))
+  command! -buffer -bar -nargs=*       -complete=customlist,s:Complete_destroy  Destroy       :execute rails#app().generator_command(1,'<mods>','destroy',<f-args>)
   command! -buffer -bar -nargs=? -bang -complete=customlist,s:Complete_server   Rserver       :execute s:deprecate(':Rserver', ':Server', rails#app().server_command(<bang>0, 1, <q-args>))
   command! -buffer -bar -nargs=? -bang -complete=customlist,s:Complete_server   Server        :execute rails#app().server_command(0, <bang>0, <q-args>)
   command! -buffer -bang -nargs=? -range=0 -complete=customlist,s:Complete_edit Rrunner       :execute s:deprecate(':Rrunner', ':Runner', rails#buffer().runner_command(<bang>0, <count>?<line1>:0, <q-args>))
@@ -1921,7 +1921,7 @@ let s:efm_generate =
       \ s:color_efm('', '%m%\>', '%f') .
       \ '%-G%.%#'
 
-function! s:app_generator_command(bang,...) dict
+function! s:app_generator_command(bang, mods, ...) dict abort
   call self.cache.clear('user_classes')
   call self.cache.clear('features')
   let cmd = join(map(copy(a:000),'s:rquote(v:val)'),' ')
@@ -1938,7 +1938,7 @@ function! s:app_generator_command(bang,...) dict
   if a:bang || empty(getqflist())
     return ''
   else
-    return 'cfirst'
+    return s:mods(a:mods) 'cfirst'
   endif
 endfunction
 
@@ -3183,7 +3183,7 @@ function! s:findcmdfor(cmd) abort
   else
     let cmd = a:cmd
   endif
-  let cmd = s:gsub(cmd, '[<]mods[>] ', '')
+  let cmd = s:mods(cmd)
   let num = matchstr(cmd, '.\{-\}\ze\a*$')
   let cmd = matchstr(cmd, '\a*$')
   if cmd == '' || cmd == 'E' || cmd == 'F'
@@ -3589,7 +3589,7 @@ call s:add_methods('readable', ['alternate_candidates', 'alternate', 'related'])
 " }}}1
 " Extraction {{{1
 
-function! s:Extract(bang,...) range abort
+function! s:Extract(bang, mods, ...) range abort
   if a:0 == 0 || a:0 > 1
     return s:error("Incorrect number of arguments")
   endif
@@ -3680,7 +3680,7 @@ function! s:Extract(bang,...) range abort
   endif
   let ft = &ft
   let shortout = fnamemodify(out,':.')
-  silent execute 'split '.s:fnameescape(shortout)
+  silent execute s:mods(a:mods) 'split' s:fnameescape(shortout)
   silent %delete _
   let &ft = ft
   let @@ = partial
@@ -3693,7 +3693,7 @@ function! s:Extract(bang,...) range abort
   1
 endfunction
 
-function! s:RubyExtract(bang, root, before, name) range abort
+function! s:RubyExtract(bang, mods, root, before, name) range abort
   let content = getline(a:firstline, a:lastline)
   execute a:firstline.','.a:lastline.'delete_'
   let indent = get(sort(map(filter(copy(content), '!empty(v:val)'), 'len(matchstr(v:val, "^ \\+"))')), 0, 0)
@@ -3708,7 +3708,7 @@ function! s:RubyExtract(bang, root, before, name) range abort
   if !isdirectory(fnamemodify(out, ':h'))
     call mkdir(fnamemodify(out, ':h'), 'p')
   endif
-  execute 'split '.s:fnameescape(out)
+  execute s:mods(a:mods) 'split' s:fnameescape(out)
   silent %delete_
   call setline(1, ['module '.rails#camelize(a:name)] + a:before + content + ['end'])
 endfunction

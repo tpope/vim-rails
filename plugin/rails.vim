@@ -109,7 +109,7 @@ augroup railsPluginDetect
         \ endif
 augroup END
 
-command! -bang -bar -nargs=* -count -complete=customlist,rails#complete_rails Rails execute rails#command(<bang>0, !<count> && <line1> ? -1 : <count>, <q-args>)
+command! -bang -bar -nargs=* -count -complete=customlist,rails#complete_rails Rails execute rails#command(<bang>0, '<mods>', !<count> && <line1> ? -1 : <count>, <q-args>)
 
 " }}}1
 " abolish.vim support {{{1
