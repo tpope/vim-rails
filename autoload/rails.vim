@@ -1066,9 +1066,7 @@ function! s:Clogfile(bang, arg) abort
     if empty(cc) | unlet! b:current_compiler | endif
     exe chdir s:fnameescape(cwd)
   endtry
-  copen
-  $
-  return 'silent! clast'
+  return 'copen|$'
 endfunction
 
 function! s:Plog(bang, arg) abort
