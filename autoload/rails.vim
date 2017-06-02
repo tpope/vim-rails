@@ -4108,21 +4108,17 @@ function! rails#buffer_syntax()
       exe 'syn keyword rubyRailsRenderMethod render contained containedin=@'.group.'RailsRegions'
     endif
 
-    let directive = '\%(require\|require_directory\|require_tree\|require_self$\|link\|link_directory\|link_tree\|depend_on\|depend_on_asset\|stub\)\>" contained skipwhite'
+    if &syntax =~# '^\%(javascript\|coffee\|css\|scss\|sass\)'
+      syn match railsAssetPreProc "\%(\w\s*\)\@<!=" contained containedin=.*Comment skipwhite nextgroup=railsAssetInclude
+      syn keyword railsAssetInclude require_self
+      syn keyword railsAssetInclude require link link_directory link_tree depend_on depend_on_asset stub skipwhite nextgroup=railsAssetIncluded
+      syn keyword railsAssetInclude require_directory require_tree skipwhite nextgroup=railsAssetIncludedDir
+      syn match railsAssetIncluded /\f\+\|"[^"]*"/ contained
+      syn match railsAssetIncludedDir /\f\+\|"[^"]*"/ contained skipwhite nextgroup=railsAssetIncluded
+    endif
     if &syntax ==# "scss" || &syntax ==# "sass"
       syn match sassFunction "\<\%(\%(asset\|image\|font\|video\|audio\|javascript\|stylesheet\)-\%(url\|path\)\)\>(\@=" contained
       syn match sassFunction "\<\asset-data-url\>(\@=" contained
-      exe 'syn match sassRailsAssetInclude "[/*]=\s*\zs'.directive 'containedin=sassComment,sassCssComment nextgroup=sassRailsAsset'
-      syn match sassRailsAsset "\f\+" contained
-    elseif &syntax ==# 'css'
-      exe 'syn match cssRailsAssetInclude "\*=\s*\zs'.directive 'containedin=cssComment nextgroup=cssRailsAsset'
-      syn match cssRailsAsset "\f\+" contained
-    elseif &syntax ==# 'javascript'
-      exe 'syn match javascriptRailsAssetInclude "[/*]=\s*\zs'.directive 'containedin=javascriptComment,jsComment nextgroup=javascriptRailsAsset'
-      syn match javascriptRailsAsset "\f\+" contained
-    elseif &syntax ==# 'coffee'
-      exe 'syn match coffeeRailsAssetInclude "#=\s*\zs'.directive 'containedin=coffeeComment nextgroup=coffeeRailsAsset'
-      syn match coffeeRailsAsset "\f\+" contained
     endif
   endif
   call s:HiDefaults()
@@ -4151,14 +4147,10 @@ function! s:HiDefaults()
   hi def link rubyRailsUserClass              railsUserClass
   hi def link rubyRailsUserMethod             railsUserMethod
   hi def link railsUserMethod                 railsMethod
-  hi def link cssRailsAssetInclude            Include
-  hi def link sassRailsAssetInclude           Include
-  hi def link javascriptRailsAssetInclude     Include
-  hi def link coffeeRailsAssetInclude         Include
-  hi def link cssRailsAsset                   String
-  hi def link sassRailsAsset                  String
-  hi def link javascriptRailsAsset            String
-  hi def link coffeeRailsAsset                String
+  hi def link railsAssetPreProc               PreProc
+  hi def link railsAssetInclude               Include
+  hi def link railsAssetIncludedDir           railsAssetIncluded
+  hi def link railsAssetIncluded              String
   hi def link railsUserClass                  railsClass
   hi def link railsMethod                     Function
   hi def link railsClass                      Type
