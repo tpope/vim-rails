@@ -88,7 +88,10 @@ augroup railsPluginDetect
         \ endif
   autocmd FileType * if RailsDetect() | call rails#buffer_setup() | endif
 
-  autocmd BufNewFile,BufReadPost *.yml.example set filetype=yaml
+  autocmd BufNewFile,BufReadPost *.yml,*.yml.example
+        \ if &filetype !=# 'eruby.yaml' && RailsDetect() |
+        \   set filetype=eruby.yaml |
+        \ endif
   autocmd BufNewFile,BufReadPost *.rjs,*.rxml,*.builder,*.jbuilder,*.ruby
         \ if &filetype !=# 'ruby' | set filetype=ruby | endif
   autocmd BufReadPost *.log if RailsDetect() | set filetype=railslog | endif
@@ -96,7 +99,7 @@ augroup railsPluginDetect
   autocmd FileType qf call s:log_detect()
   autocmd FileType railslog call rails#log_setup()
   autocmd Syntax railslog call rails#log_syntax()
-  autocmd Syntax ruby,eruby,yaml,haml,javascript,coffee,css,sass,scss
+  autocmd Syntax ruby,eruby,haml,javascript,coffee,css,sass,scss
         \ if RailsDetect() | call rails#buffer_syntax() | endif
 
   autocmd User ProjectionistDetect

@@ -2267,7 +2267,6 @@ endfunction
 function! s:is_embedded_ruby() abort
   let groups = [
         \ 'erubyBlock', 'erubyExpression', 'erubyComment', 'erubyOneLiner',
-        \ 'yamlRailsBlock', 'yamlRailsExpression', 'yamlRailsComment', 'yamlRailsOneLiner',
         \ 'hamlRuby']
   call map(groups, 'hlID(v:val)')
   for id in synstack(line('.'), col('.'))
@@ -4083,7 +4082,7 @@ function! rails#buffer_syntax()
       syn match   railsConditionsSpecial +?\|:\h\w*+ contained
       syn cluster rubyNotTop add=railsOrderSpecial,railsConditionsSpecial
 
-    elseif &syntax =~# '^eruby\>' || &syntax == 'haml'
+    elseif (&syntax =~# '^eruby\>' || &syntax == 'haml') && &syntax !~# 'yaml'
       let containedin = 'contained containedin=@'.&syntax.'RailsRegions'
       let group = matchstr(&syntax, '^\w\+')
       syn case match
@@ -4107,20 +4106,6 @@ function! rails#buffer_syntax()
         exe 'syn keyword rubyRailsMethod local_assigns contained containedin=@'.group.'RailsRegions'
       endif
       exe 'syn keyword rubyRailsRenderMethod render contained containedin=@'.group.'RailsRegions'
-    elseif &syntax == "yaml"
-      syn case match
-      unlet! b:current_syntax
-      let g:main_syntax = 'eruby'
-      syn include @rubyTop syntax/ruby.vim
-      unlet g:main_syntax
-      syn cluster yamlRailsRegions contains=yamlRailsOneLiner,yamlRailsBlock,yamlRailsExpression
-      syn region  yamlRailsOneLiner   matchgroup=yamlRailsDelimiter start="^%%\@!" end="$"  contains=@rubyRailsTop      containedin=ALLBUT,@yamlRailsRegions,yamlRailsComment keepend oneline
-      syn region  yamlRailsBlock      matchgroup=yamlRailsDelimiter start="<%%\@!" end="%>" contains=@rubyTop           containedin=ALLBUT,@yamlRailsRegions,yamlRailsComment
-      syn region  yamlRailsExpression matchgroup=yamlRailsDelimiter start="<%="    end="%>" contains=@rubyTop           containedin=ALLBUT,@yamlRailsRegions,yamlRailsComment
-      syn region  yamlRailsComment    matchgroup=yamlRailsDelimiter start="<%#"    end="%>" contains=rubyTodo,@Spell    containedin=ALLBUT,@yamlRailsRegions,yamlRailsComment keepend
-      syn match yamlRailsMethod '\.\@<!\<\(h\|html_escape\|u\|url_encode\)\>' contained containedin=@yamlRailsRegions
-      let b:current_syntax = "yaml"
-
     endif
 
     let directive = '\%(require\|require_directory\|require_tree\|require_self$\|link\|link_directory\|link_tree\|depend_on\|depend_on_asset\|stub\)\>" contained skipwhite'
@@ -4166,11 +4151,6 @@ function! s:HiDefaults()
   hi def link rubyRailsUserClass              railsUserClass
   hi def link rubyRailsUserMethod             railsUserMethod
   hi def link railsUserMethod                 railsMethod
-  hi def link yamlRailsDelimiter              Delimiter
-  hi def link yamlRailsMethod                 railsMethod
-  hi def link yamlRailsComment                Comment
-  hi def link yamlRailsUserClass              railsUserClass
-  hi def link yamlRailsUserMethod             railsUserMethod
   hi def link cssRailsAssetInclude            Include
   hi def link sassRailsAssetInclude           Include
   hi def link javascriptRailsAssetInclude     Include
@@ -5387,7 +5367,7 @@ function! rails#buffer_setup() abort
     elseif exists(':SnipMateLoadScope') == 2
       SnipMateLoadScope rails
     endif
-  elseif ft =~# 'yaml\>' || fnamemodify(self.name(),':e') ==# 'yml'
+  elseif self.name() =~# '\.yml\%(\.example\)\=$'
     call self.setvar('&define',self.define_pattern())
   elseif ft =~# '^eruby\>'
     call self.setvar('&define',self.define_pattern())
@@ -5406,7 +5386,7 @@ function! rails#buffer_setup() abort
   elseif ft =~# 'html\>'
     call self.setvar('&define', '\<id=["'']\=')
   endif
-  if ft =~# '^eruby\>' || ft =~# '^yaml\>'
+  if ft =~# '^eruby\>'
     if exists("g:loaded_surround")
       if self.getvar('surround_45') == '' || self.getvar('surround_45') == "<% \r %>" " -
         call self.setvar('surround_45', "<% \r %>")
