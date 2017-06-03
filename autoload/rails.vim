@@ -918,13 +918,9 @@ call s:add_methods('readable',['app','relative','absolute','spec','calculate_fil
 " }}}1
 " Ruby Execution {{{1
 
-function! s:app_ruby_command(cmd) dict abort
-  return 'ruby '.a:cmd
-endfunction
-
 function! s:app_ruby_script_command(cmd) dict abort
   if has('win32')
-    return self.ruby_command(a:cmd)
+    return 'ruby ' . a:cmd
   else
     return a:cmd
   endif
@@ -989,23 +985,7 @@ function! s:app_execute_rails_command(cmd) dict abort
   return ''
 endfunction
 
-function! s:app_eval(ruby,...) dict abort
-  let def = a:0 ? a:1 : ""
-  if !executable("ruby")
-    return def
-  endif
-  let args = "-r./config/boot -r ".s:rquote(self.path("config/environment"))." -e ".s:rquote(a:ruby)
-  let cmd = self.ruby_command(args)
-  call s:push_chdir(1)
-  try
-    silent! let results = system(cmd)
-  finally
-    call s:pop_command()
-  endtry
-  return v:shell_error == 0 ? results : def
-endfunction
-
-call s:add_methods('app', ['ruby_command','ruby_script_command','static_rails_command','prepare_rails_command','execute_rails_command','start_rails_command','eval'])
+call s:add_methods('app', ['ruby_script_command','static_rails_command','prepare_rails_command','execute_rails_command','start_rails_command'])
 
 " }}}1
 " Commands {{{1
