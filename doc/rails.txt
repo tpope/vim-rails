@@ -466,8 +466,8 @@ Migration Inversion ~
 
 MISCELLANEOUS COMMANDS				*rails-misc*
 
-						*rails-:Clogfile*
-:Clogfile [environment]	Load the log file for the given environment using
+						*rails-:Clog*
+:Clog [environment]	Load the log file for the given environment using
 			|:cgetfile|, open the quickfix window, and jump to the
 			last line.  |R| is remapped to reload the list, and
 			|G| remapped to do the same before it's usual behavior
