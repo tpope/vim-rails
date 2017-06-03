@@ -2134,18 +2134,11 @@ function! s:Complete_cd(ArgLead, CmdLine, CursorPos)
 endfunction
 
 function! rails#includeexpr(fname) abort
-  if mode() =~# '[iR]' || expand('<cfile>') !=# a:fname
-    return s:RailsIncludefind(a:fname)
+  if a:fname =~# '\u' && a:fname !~# '[./]'
+    return rails#underscore(a:fname) . '.rb'
   else
-    return s:RailsIncludefind(a:fname, 1)
+    return a:fname
   endif
-endfunction
-
-function! s:linepeek() abort
-  let line = getline(line("."))
-  let line = s:sub(line,'^(.{'.col(".").'}).*','\1')
-  let line = s:sub(line,'([:"'."'".']|\%[qQ]=[[({<])=\f*$','')
-  return line
 endfunction
 
 function! s:matchcursor(pat)
@@ -2341,10 +2334,6 @@ function! rails#asset_cfile(...) abort
 endfunction
 
 function! s:ruby_cfile() abort
-  if filereadable(expand("<cfile>"))
-    return expand("<cfile>")
-  endif
-
   let buffer = rails#buffer()
   let format = s:format()
 
@@ -2383,10 +2372,8 @@ function! s:ruby_cfile() abort
   let res = rails#singularize(s:findasymbol('through','\1'))
   if res != ""|return res.".rb"|endif
 
-  let res = s:findamethod('fixtures','fixtures/\1')
-  if res != ""
-    return RailsFilePath() =~ '\<spec/' ? 'spec/'.res : res
-  endif
+  let res = s:findamethod('fixtures','fixtures/\1.yml')
+  if res != ""|return res|endif
 
   let res = s:findamethod('\%(\w\+\.\)\=resources','\1_controller.rb')
   if res != ""|return res|endif
@@ -2473,16 +2460,47 @@ function! s:ruby_cfile() abort
     endif
   endif
 
+  let synid = synID(line('.'), col('.'), 1)
   let old_isfname = &isfname
   try
-    set isfname=@,48-57,/,-,_,:,#
-    " TODO: grab visual selection in visual mode
-    let cfile = expand("<cfile>")
+    if synid == hlID('rubyString')
+      set isfname+=:
+      let cfile = expand("<cfile>")
+    else
+      set isfname=@,48-57,/,-,_,:,#
+      let cfile = expand("<cfile>")
+      if cfile !~# '\u\|/'
+        let cfile = s:sub(cfile, '_attributes$', '')
+        let cfile = rails#singularize(cfile)
+        let cfile = s:sub(cfile, '_ids=$', '')
+      endif
+    endif
   finally
     let &isfname = old_isfname
   endtry
-  let res = s:RailsIncludefind(cfile,1)
-  return res
+  let cfile = s:sub(cfile, '^:=[:@]', '')
+  let cfile = s:sub(cfile, ':0x\x+$', '') " For #<Object:0x...> style output
+  if cfile =~# '^\l\w*#\w\+$'
+    let cfile = s:sub(cfile, '#', '_controller.rb#')
+  elseif cfile =~# '\u'
+    let cfile = rails#underscore(cfile) . '.rb'
+  elseif cfile =~# '^\w*_\%(path\|url\)$' && synid != hlID('rubyString')
+    let route = s:gsub(cfile, '^hash_for_|_%(path|url)$', '')
+    let cfile = rails#app().named_route_file(route)
+    if empty(cfile)
+      let cfile = s:sub(route, '^formatted_', '')
+      if cfile =~# '^\%(new\|edit\)_'
+        let cfile = s:sub(rails#pluralize(cfile), '^(new|edit)_(.*)', '\2_controller.rb#\1')
+      elseif cfile ==# rails#singularize(cfile)
+        let cfile = rails#pluralize(cfile).'_controller.rb#show'
+      else
+        let cfile = cfile.'_controller.rb#index'
+      endif
+    endif
+  elseif cfile !~# '\.'
+    let cfile .= '.rb'
+  endif
+  return cfile
 endfunction
 
 function! rails#cfile(...) abort
@@ -2530,100 +2548,6 @@ function! s:app_routes() dict abort
 endfunction
 
 call s:add_methods('app', ['routes', 'named_route_file'])
-
-function! s:RailsIncludefind(str,...) abort
-  if a:str ==# "ApplicationController" && rails#app().has_path('app/controllers/application.rb')
-    return 'application.rb'
-  endif
-  let str = a:str
-  if a:0 == 1
-    " Get the text before the filename under the cursor.
-    " We'll cheat and peek at this in a bit
-    let line = s:linepeek()
-    let line = s:sub(line,'([:"'."'".']|\%[qQ]=[[({<])=\f*$','')
-    let synid = synID(line('.'), col('.'), 1)
-  else
-    let line = ""
-    let synid = -1
-  endif
-  let str = s:sub(str,'^\s*','')
-  let str = s:sub(str,'\s*$','')
-  let str = s:sub(str,'^:=[:@]','')
-  let str = s:sub(str,':0x\x+$','') " For #<Object:0x...> style output
-  let str = s:gsub(str,"[\"']",'')
-  if line =~# '\<\(require\|load\)\s*(\s*$'
-    return str
-  elseif str =~# '^\l\w*#\w\+$'
-    return s:sub(str,'#','_controller.rb#')
-  endif
-  let str = rails#underscore(str)
-  let fpat = '\(\s*\%("\f*"\|:\f*\|'."'\\f*'".'\)\s*,\s*\)*'
-  if a:str =~# '\u' && &filetype !~# 'javascript\|coffee'
-    " Classes should always be in .rb files
-    let str = s:sub(str, '([#:]|$)', '.rb\1')
-  elseif line =~# ':partial\s*=>\s*' || (line =~# ':layout\s*=>\s*' && !rails#buffer().type_name('controller', 'mailer'))
-    let str = s:sub(str,'[^/]+$','_&')
-    let str = s:findview(str)
-  elseif line =~# '\<layout\s*(\=\s*' || line =~# ':layout\s*=>\s*'
-    let str = s:findview(s:sub(str,'^/=','layouts/'))
-  elseif line =~# ':controller\s*=>\s*'
-    let str = str.'_controller.rb'
-  elseif line =~# '\<helper\s*(\=\s*'
-    let str = str.'_helper.rb'
-  elseif line =~# '\<fixtures\s*(\='.fpat
-    if RailsFilePath() =~# '\<spec/'
-      let str = s:sub(str,'^/@!','spec/fixtures/')
-    else
-      let str = s:sub(str,'^/@!','test/fixtures/')
-    endif
-  elseif line =~# '\<stylesheet_\(link_tag\|path\)\s*(\='.fpat
-    let str = s:sub(str,'^/@!','/stylesheets/')
-    if str != '' && fnamemodify(str, ':e') == ''
-      let str .= '.css'
-    endif
-  elseif line =~# '\<javascript_\(include_tag\|path\)\s*(\='.fpat
-    if str ==# "defaults"
-      let str = "application"
-    endif
-    let str = s:sub(str,'^/@!','/javascripts/')
-    if str != '' && fnamemodify(str, ':e') == ''
-      let str .= '.js'
-    endif
-  elseif line =~# '\<\(has_one\|belongs_to\)\s*(\=\s*'
-    let str = str.'.rb'
-  elseif line =~# '\<has_\(and_belongs_to_\)\=many\s*(\=\s*'
-    let str = rails#singularize(str).'.rb'
-  elseif line =~# '\<def\s\+' && expand("%:t") =~# '_controller\.rb'
-    let str = s:findview(str)
-  elseif str =~# '_\%(path\|url\)$' || (line =~# ':as\s*=>\s*$' && rails#buffer().type_name('config-routes'))
-    if line !~# ':as\s*=>\s*$'
-      let str = s:sub(str,'_%(path|url)$','')
-      let str = s:sub(str,'^hash_for_','')
-    endif
-    let file = rails#app().named_route_file(str)
-    if file == ""
-      let str = s:sub(str,'^formatted_','')
-      if str =~# '^\%(new\|edit\)_'
-        let str = s:sub(rails#pluralize(str),'^(new|edit)_(.*)','\2_controller.rb#\1')
-      elseif str ==# rails#singularize(str)
-        " If the word can't be singularized, it's probably a link to the show
-        " method.  We should verify by checking for an argument, but that's
-        " difficult the way things here are currently structured.
-        let str = rails#pluralize(str).'_controller.rb#show'
-      else
-        let str = str.'_controller.rb#index'
-      endif
-    else
-      let str = file
-    endif
-  elseif str !~ '/'
-    if synid >= 0 && synid != hlID('rubyString')
-      let str = rails#singularize(str)
-    endif
-    let str = s:sub(str,'_id$','')
-  endif
-  return str
-endfunction
 
 " }}}1
 " Projection Commands {{{1
@@ -3357,7 +3281,9 @@ function! s:AR(cmd,related,line1,line2,count,...) abort
       endif
       if file != ""
         if a:related
-          let file = s:RailsIncludefind(file)
+          if file =~# '\u'
+            let file = rails#underscore(file)
+          endif
           let found = rails#app().find_file(file, rails#app().internal_load_path(), '.rb', a:count)
           if !empty(found)
             let file = fnamemodify(found, ':p')
@@ -5242,7 +5168,6 @@ function! s:set_path_options() abort
     endif
     if name =~# '\.erb$'
       let map = 'rails#embedded_cfile('.string(map).')'
-      setlocal includeexpr=rails#includeexpr(v:fname)
       setlocal suffixesadd^=.rb
     endif
     exe 'cmap <buffer><script><expr> <Plug><cfile>' map
