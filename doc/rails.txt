@@ -295,16 +295,20 @@ Additionally, `rake` can be invoked directly with |:make| (or dispatch.vim's
 
 						*rails-:Rails*
 :Rails {command} [options]
-			Depending on the Rails version, invoke one of
-			"bin/rails {command}", "script/rails {command}", or
-			"script/{command}".  Unless the command is "console",
-			"dbconsole", or "server", the results are loaded into
-			the quickfix list using the "rails" |:compiler|
-			included with the plugin.  With no command, runs a
-			default task based on the current file (see
-			|rails-default-task|).  Unlike other commands, :Rails
-			is available globally, for use with the "new"
-			subcommand.
+			Invoke "rails {command}".  On older versions of Rails,
+			it will conditionally invoke "rake {command}" and
+			"script/{command}" when appropriate.  Uses |:!| or
+			dispatch.vim's :Start if the command is "console",
+			"dbconsole", or "server".  Otherwise, the "rails"
+			|:compiler| plugin included with the plugin is
+			temporarily enabled, and |:make|  or dispatch.vim's
+			:Make is used to load the output into the quickfix
+			list.
+			Unlike other commands, :Rails is available globally,
+			for use with the "new" subcommand.
+
+:Rails			With no command, runs a default task based on the
+			current file.  See |rails-default-task|.
 
 						*rails-:Rscript*
 :Rscript {command} [options]
@@ -352,22 +356,13 @@ Additionally, `rake` can be invoked directly with |:make| (or dispatch.vim's
 :[range]Rpp {code}	Like :Rp, but with pp (pretty print).
 
 						*rails-:Rake*
-:[range]Rake {targets}	Calls |:make!| {targets} (with 'makeprg' being rake)
-			and opens the quickfix window if there were any
-			errors.  If dispatch.vim's |:Make| is available that
-			is used instead.  An argument of "-" reruns the last
-			task.  If {targets} are omitted, :Rake defaults to
-			something sensible as described below.
-
-						*rails-:Rake!*
-:[range]Rake! {targets}	Called with a bang, :Rake will forgo opening the
-			quickfix window.
+:[range]Rake {task}	Invoke `rake`.  Generally, you are encouraged to use
+			|:Rails| or directly invoke |:make| instead.
 
 						*rails-default-task*
 
-Invoking |rails-:Rails| or |rails-:Rake| with no arguments runs a default
-task.  This is typically the associated test task, but can also be a closely
-related utility task.
+Invoking |:Rails| with no arguments runs a default task.  This is typically
+the associated test task, but can also be a closely related utility task.
 
 File                            Task ~
 test/*_test.rb                  test TEST=test/*_test.rb
@@ -721,9 +716,8 @@ The full list of available options is as follows:
 	current 'define' match (typically a method).
 						*rails-projection-test*
 "test" ~
-	Determines the default test file to run with |rails-:Runner|,
-	|rails-:Rails|, and |rails-:Rake|.  Also serves as a default for
-	"alternate".
+	Determines the default test file to run with |:Rails| and
+	|rails-:Runner|.  Also serves as a default for "alternate".
 						*rails-projection-task*
 "task" ~
 	Determines the default rake task to run.  Provide {lnum} or {define}

@@ -17,17 +17,17 @@ applications.
 * Enhanced syntax highlighting.  From `has_and_belongs_to_many` to
   `distance_of_time_in_words`, it's here.
 
-* Interface to rake.  Use `:Rake` to run the current test, spec, or
-  feature.  Use `:.Rake` to do a focused run of just the method,
-  example, or scenario on the current line.  `:Rake` can also run
-  arbitrary migrations, load individual fixtures, and more.
-  `:help rails-rake`
-
 * Interface to the `rails` command.  Generally, use `:Rails console` to
   call `rails console`.  Many commands have wrappers with additional features:
   `:Generate controller Blog` generates a blog controller and loads the
   generated files into the quickfix list, and `:Runner` wraps `rails runner`
   and doubles as a direct test runner.  `:help rails-exec`
+
+* Default task runner.  Use `:Rails` (with no arguments) to run the current
+  test, spec, or feature.  Use `:.Rails` to do a focused run of just the
+  method, example, or scenario on the current line.  `:Rails` can also run
+  arbitrary migrations, load individual fixtures, and more.
+  `:help rails-default-task`
 
 * Partial and concern extraction.  In a view, `:Extract {file}`
   replaces the desired range (typically selected in visual line mode)
