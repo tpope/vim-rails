@@ -1,9 +1,7 @@
 # rails.vim
 
-Remember when everybody and their mother was using TextMate for Ruby on
-Rails development?  Well if it wasn't for rails.vim, we'd still be in
-that era.  So shut up and pay some respect.  And check out these
-features:
+This is a massive (in a good way) Vim plugin for editing Ruby on Rails
+applications.
 
 * Easy navigation of the Rails directory structure.  `gf` considers
   context and knows about partials, fixtures, and much more.  There are
@@ -27,30 +25,27 @@ features:
 
 * Interface to the `rails` command.  Generally, use `:Rails console` to
   call `rails console`.  Many commands have wrappers with additional features:
-  `:Rgenerate controller Blog` generates a blog controller and loads the
-  generated files into the quickfix list, and `:Rrunner` wraps `rails runner`
-  and doubles as a direct test runner.  `:help rails-scripts`
+  `:Generate controller Blog` generates a blog controller and loads the
+  generated files into the quickfix list, and `:Runner` wraps `rails runner`
+  and doubles as a direct test runner.  `:help rails-exec`
 
-* Partial and concern extraction.  In a view, `:Rextract {file}`
+* Partial and concern extraction.  In a view, `:Extract {file}`
   replaces the desired range (typically selected in visual line mode)
   with `render '{file}'`, which is automatically created with your
   content.  In a model or controller, a concern is created, with the
   appropriate `include` declaration left behind.
-  `:help rails-:Rextract`
+  `:help rails-:Extract`
 
 * Fully customizable. Define "projections" at the global, app, or gem
   level to define navigation commands and override the alternate file,
   default rake task, syntax highlighting, abbreviations, and more.
   `:help rails-projections`.
 
-* Integration with other plugins.  If
-  [dbext.vim](http://www.vim.org/scripts/script.php?script_id=356) is
-  installed, it will be transparently configured to reflect
-  `database.yml`.  Users of
+* Integration with other plugins.  If [dispatch.vim][] is installed, `:Rails`
+  and other command wrappers will use it for asynchronous execution.  Users of
   [abolish.vim](https://github.com/tpope/vim-abolish) get pluralize and
-  tableize coercions, and users of
-  [bundler.vim](https://github.com/tpope/vim-bundler) get a smattering of
-  features.  `:help rails-integration`
+  tableize coercions, and users of [bundler.vim][] get a smattering of
+  features.   `:help rails-integration`
 
 ## Installation
 
@@ -59,15 +54,14 @@ installing [pathogen.vim](https://github.com/tpope/vim-pathogen), and
 then simply copy and paste:
 
     cd ~/.vim/bundle
-    git clone git://github.com/tpope/vim-rails.git
-    git clone git://github.com/tpope/vim-bundler.git
+    git clone https://github.com/tpope/vim-rails.git
+    vim -u NONE -c "helptags vim-rails/doc" -c q
 
-You don't strictly need [bundler.vim][], but it helps.
-
-Once help tags have been generated, you can view the manual with
-`:help rails`.
+While not strictly necessary, [bundler.vim][] and [dispatch.vim][] are highly
+recommended.
 
 [bundler.vim]: https://github.com/tpope/vim-bundler
+[dispatch.vim]: https://github.com/tpope/vim-dispatch
 
 ## FAQ
 
@@ -79,9 +73,9 @@ directory.  Edit a file from a Rails application.
 
 > I opened a new tab.  Why does only the `:Rails` command exist?
 
-This plugin cares about the current file, not the current working
-directory.  Edit a file from a Rails application.  You can use the `:RT`
-family of commands to open a new tab and edit a file at the same time.
+This plugin cares about the current file, not the current working directory.
+Edit a file from a Rails application.  You can use `:AT` and the `:T` family
+of commands to open a new tab and edit a file at the same time.
 
 > Can I use rails.vim to edit Rails engines?
 
