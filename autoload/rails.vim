@@ -910,8 +910,6 @@ function! s:app_has_rails5() abort
   return self.has('rails5') || gemdir =~# '-\%([5-9]\|\d\d\+\)\.[^\/]*$'
 endfunction
 
-call s:add_methods('readable', ['has_rails5'])
-
 " Returns the subset of ['test', 'spec'] present on the app.
 function! s:app_test_suites() dict
   return filter(['test','spec'],'self.has(v:val)')
