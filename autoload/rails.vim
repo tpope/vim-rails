@@ -905,12 +905,19 @@ function! s:app_has(feature) dict
   return features[a:feature]
 endfunction
 
+function! s:app_has_rails5() abort
+  let gemdir = get(rails#app().gems(), 'rails')
+  return self.has('rails5') || gemdir =~# '-\%([5-9]\|\d\d\+\)\.[^\/]*$'
+endfunction
+
+call s:add_methods('readable', ['has_rails5'])
+
 " Returns the subset of ['test', 'spec'] present on the app.
 function! s:app_test_suites() dict
   return filter(['test','spec'],'self.has(v:val)')
 endfunction
 
-call s:add_methods('app',['default_locale','environments','file','has','stylesheet_suffix','test_suites'])
+call s:add_methods('app',['default_locale','environments','file','has','has_rails5','stylesheet_suffix','test_suites'])
 call s:add_methods('file',['path','name','lines','getline'])
 call s:add_methods('buffer',['app','number','path','name','lines','getline','type_name'])
 call s:add_methods('readable',['app','relative','absolute','spec','calculate_file_type','type_name','line_count'])
@@ -1417,7 +1424,7 @@ function! s:readable_default_rake_task(...) dict abort
   elseif self.name() =~# '\<README'
     return 'about'
   elseif self.type_name('controller') && lnum
-    if self.app().has('rails5')
+    if self.app().has_rails5()
       return 'routes -c '.self.controller_name()
     else
       return 'routes CONTROLLER='.self.controller_name()
@@ -1438,7 +1445,7 @@ function! s:readable_default_rake_task(...) dict abort
           let opts = ' TESTOPTS=-n'.method
         endif
       endif
-      if self.app().has('rails5')
+      if self.app().has_rails5()
         return 'test TEST='.s:rquote(test).opts
       elseif test =~# '^test/\%(unit\|models\|jobs\)\>'
         return 'test:units TEST='.s:rquote(test).opts
@@ -1474,7 +1481,7 @@ endfunction
 
 function! s:app_rake_command(...) dict abort
   let cmd = 'rake'
-  if self.has('rails5') && get(a:, 1, '') !=# 'norails' && get(g:, 'rails_make', '') ==# 'rails'
+  if self.has_rails5() && get(a:, 1, '') !=# 'norails' && get(g:, 'rails_make', '') ==# 'rails'
     let cmd = 'rails'
   endif
   if get(a:, 1, '') !=# 'static' && self.has_path('.zeus.sock') && executable('zeus')
@@ -1709,16 +1716,23 @@ function! s:app_generators() dict abort
 endfunction
 
 function! s:Rails(bang, count, arg) abort
+  let use_rake = 0
   if !empty(a:arg)
     let str = a:arg
-  elseif rails#buffer().type_name('test', 'spec', 'cucumber') && !rails#app().has('rails5')
+    let native = '\v^%(application|benchmarker|console|dbconsole|destroy|generate|new|plugin|profiler|runner|server|version)>'
+    if !rails#app().has('rails3')
+      let use_rake = !rails#app().has_file('script/' . matchstr(str, '\S\+'))
+    elseif str !~# '^-' && str !~# native && rails#app().has_rails5()
+      let use_rake = 1
+    endif
+  elseif rails#buffer().type_name('test', 'spec', 'cucumber') && !rails#app().has_rails5()
     return rails#buffer().runner_command(a:bang, a:count, '')
   elseif rails#buffer().name() =~# '^\%(app\|config\|db\|lib\|log\|README\|Rakefile\|test\|spec\|features\)'
     let str = rails#buffer().default_rake_task(a:count)
     if str ==# '--tasks'
       let str = ''
     else
-      let rake = 1
+      let use_rake = 1
     endif
   else
     let str = ''
@@ -1729,7 +1743,7 @@ function! s:Rails(bang, count, arg) abort
     let [mp, efm, cc] = [&l:mp, &l:efm, get(b:, 'current_compiler', '')]
     try
       compiler rails
-      if exists('rake') && !rails#app().has('rails5')
+      if use_rake && !rails#app().has_rails5()
         let &l:makeprg = rails#app().rake_command()
       else
         let str = s:rake2rails(str)
@@ -1962,9 +1976,7 @@ function! rails#complete_rails(ArgLead, CmdLine, P, ...) abort
     return s:completion_filter(['new'], a:ArgLead)
   elseif cmd =~# '^\w*$'
     let cmds = ['generate', 'console', 'server', 'dbconsole', 'destroy', 'plugin', 'runner']
-    if app.has('rails5')
-      call extend(cmds, app.rake_tasks())
-    endif
+    call extend(cmds, app.rake_tasks())
     call sort(cmds)
     return s:completion_filter(cmds, a:ArgLead)
   elseif cmd =~# '^\%([rt]\|runner\|test\|test:db\)\s\+'
@@ -4620,10 +4632,12 @@ endfunction
 
 function! s:app_gems() dict abort
   if self.has('bundler') && exists('*bundler#project')
-    return bundler#project(self.path()).gems()
-  else
-    return {}
+    let project = bundler#project()
+    if has_key(project, 'gems')
+      return bundler#project(self.path()).gems()
+    endif
   endif
+  return {}
 endfunction
 
 function! s:app_has_gem(gem) dict abort
@@ -5207,7 +5221,7 @@ function! s:set_path_options() abort
     if self.controller_name() != ''
       let path += ['app/views/'.self.controller_name(), 'app/views/application', 'public']
     endif
-    if !self.app().has('rails5')
+    if !self.app().has_rails5()
       let path += ['vendor/plugins/*/lib', 'vendor/rails/*/lib']
     endif
     let engine_paths = map(copy(self.app().engines()), 'v:val . "/app/*"')
@@ -5321,12 +5335,12 @@ function! rails#buffer_setup() abort
     call self.setvar('dispatch', ':Preview')
   elseif self.type_name('spec', 'cucumber')
     call self.setvar('dispatch', ':Runner')
-  elseif self.type_name('test') && !self.app().has('rails5')
+  elseif self.type_name('test') && !self.app().has_rails5()
     call self.setvar('dispatch', ':Runner')
   elseif self.name() =~# '^\%(app\|config\|db\|lib\|log\|README\|Rakefile\|test\|spec\|features\)'
     if !exists('dir')
       call self.setvar('dispatch', ':Rails')
-    elseif self.app().has('rails5')
+    elseif self.app().has_rails5()
       call self.setvar('dispatch',
             \ dir .
             \ self.app().ruby_script_command('bin/rails') .
