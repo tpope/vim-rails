@@ -1720,7 +1720,7 @@ function! s:Rails(bang, count, arg) abort
     let native = '\v^%(application|benchmarker|console|dbconsole|destroy|generate|new|plugin|profiler|runner|server|version)>'
     if !rails#app().has('rails3')
       let use_rake = !rails#app().has_file('script/' . matchstr(str, '\S\+'))
-    elseif str !~# '^-' && str !~# native && rails#app().has_rails5()
+    elseif str !~# '^-' && str !~# native
       let use_rake = 1
     endif
   elseif rails#buffer().type_name('test', 'spec', 'cucumber') && !rails#app().has_rails5()
