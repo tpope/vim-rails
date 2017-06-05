@@ -729,8 +729,7 @@ The full list of available options is as follows:
 	Determines the default rake task to run.  Provide {lnum} or {define}
 	to substitute the current line number or 'define' match (typically a
 	method), or just a bare % (like |:_%|) to substitute the current file
-	name.  If a list with two tasks is provided, the first will be used
-	when a line number is given, and the second when it's omitted.
+	name.
 						*rails-projection-compiler*
 "compiler" ~
 	Determines the |:compiler| plugin to use with |rails-:Runner|.
