@@ -1723,7 +1723,7 @@ function! s:Rails(bang, count, arg) abort
     elseif str !~# '^-' && str !~# native
       let use_rake = 1
     endif
-  elseif rails#buffer().name() =~# '^\%(app\|config\|db\|lib\|log\|README\|Rakefile\|test\|spec\|features\)'
+  else
     let str = rails#buffer().default_rake_task(a:count)
     if str ==# '--tasks'
       let str = ''
