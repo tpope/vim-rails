@@ -1473,7 +1473,7 @@ function! s:rake2rails(task) abort
   return task
 endfunction
 
-function! s:readable_default_rails_task(...) dict abort
+function! s:readable_default_task(...) dict abort
   return s:rake2rails(call(self.default_rake_task, a:000, self))
 endfunction
 
@@ -1497,7 +1497,7 @@ function! rails#complete_rake(A,L,P)
   return s:completion_filter(rails#app().rake_tasks(), a:A, ':')
 endfunction
 
-call s:add_methods('readable', ['test_file_candidates', 'test_file', 'default_rake_task', 'default_rails_task'])
+call s:add_methods('readable', ['test_file_candidates', 'test_file', 'default_rake_task', 'default_task'])
 call s:add_methods('app', ['rake_command'])
 
 " }}}1
@@ -5343,7 +5343,7 @@ function! rails#buffer_setup() abort
       call self.setvar('dispatch',
             \ dir .
             \ self.app().ruby_script_command('bin/rails') .
-            \ ' `=rails#buffer(' . self['#'] . ').default_rails_task(v:lnum)`')
+            \ ' `=rails#buffer(' . self['#'] . ').default_task(v:lnum)`')
     else
       call self.setvar('dispatch',
             \ dir . '-compiler=rails ' .
