@@ -740,7 +740,7 @@ function! s:readable_calculate_file_type() dict abort
     let r = "api"
   elseif f =~ '\<test/test_helper\.rb$'
     let r = "test"
-  elseif f =~ '\<spec/spec_helper\.rb$'
+  elseif f =~ '\<spec/\%(spec\|rails\)_helper\.rb$'
     let r = "spec"
   elseif f =~ '_helper\.rb$'
     let r = "helper"
@@ -4783,7 +4783,7 @@ let s:has_projections = {
       \    "spec/*_spec.rb": {"alternate": "app/{}.rb"},
       \    "spec/controllers/*_spec.rb": {
       \      "template": [
-      \        "require 'spec_helper'",
+      \        "require 'rails_helper'",
       \        "",
       \        "describe {camelcase|capitalize|colons} do",
       \        "end"
@@ -4792,7 +4792,7 @@ let s:has_projections = {
       \    },
       \    "spec/features/*_spec.rb": {
       \      "template": [
-      \        "require 'spec_helper'",
+      \        "require 'rails_helper'",
       \        "",
       \        "describe \"{underscore|capitalize|blank}\" do",
       \        "end"
@@ -4801,7 +4801,7 @@ let s:has_projections = {
       \    },
       \    "spec/helpers/*_spec.rb": {
       \      "template": [
-      \        "require 'spec_helper'",
+      \        "require 'rails_helper'",
       \        "",
       \        "describe {camelcase|capitalize|colons} do",
       \        "end"
@@ -4810,7 +4810,7 @@ let s:has_projections = {
       \    },
       \    "spec/integration/*_spec.rb": {
       \      "template": [
-      \        "require 'spec_helper'",
+      \        "require 'rails_helper'",
       \        "",
       \        "describe \"{underscore|capitalize|blank}\" do",
       \        "end"
@@ -4821,7 +4821,7 @@ let s:has_projections = {
       \    "spec/mailers/*_spec.rb": {
       \      "affinity": "controller",
       \      "template": [
-      \        "require 'spec_helper'",
+      \        "require 'rails_helper'",
       \        "",
       \        "describe {camelcase|capitalize|colons} do",
       \        "end"
@@ -4831,7 +4831,7 @@ let s:has_projections = {
       \    "spec/models/*_spec.rb": {
       \      "affinity": "model",
       \      "template": [
-      \        "require 'spec_helper'",
+      \        "require 'rails_helper'",
       \        "",
       \        "describe {camelcase|capitalize|colons} do",
       \        "end"
@@ -4841,7 +4841,7 @@ let s:has_projections = {
       \    "spec/rails_helper.rb": {"type": "integration test"},
       \    "spec/requests/*_spec.rb": {
       \      "template": [
-      \        "require 'spec_helper'",
+      \        "require 'rails_helper'",
       \        "",
       \        "describe \"{underscore|capitalize|blank}\" do",
       \        "end"
