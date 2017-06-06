@@ -1948,7 +1948,7 @@ function! s:app_generator_command(bang, mods, ...) dict abort
   if a:bang || empty(getqflist())
     return ''
   else
-    return s:mods(a:mods) 'cfirst'
+    return s:mods(a:mods) . ' cfirst'
   endif
 endfunction
 
