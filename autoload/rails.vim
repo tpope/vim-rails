@@ -1730,8 +1730,6 @@ function! s:Rails(bang, count, arg) abort
     else
       let use_rake = 1
     endif
-  else
-    let str = ''
   endif
   if str =~# '^\%(c\|console\|db\|dbconsole\|s\|server\)\S\@!' && str !~# ' -d\| --daemon\| --help'
     return rails#app().start_rails_command(str, a:bang)
