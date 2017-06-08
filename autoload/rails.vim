@@ -3855,113 +3855,118 @@ endfunction
 
 call s:add_methods('app', ['user_classes','user_assertions'])
 
-function! rails#buffer_syntax()
+function! rails#ruby_syntax() abort
+  let buffer = rails#buffer()
+  if buffer.type_name() == ''
+    syn keyword rubyRailsMethod params request response session headers cookies flash
+  endif
+  if buffer.type_name() ==# 'model' || buffer.type_name('model-record')
+    syn keyword rubyRailsARMethod attribute default_scope enum named_scope scope serialize store
+    syn keyword rubyRailsARAssociationMethod belongs_to has_one has_many has_and_belongs_to_many composed_of accepts_nested_attributes_for
+    syn keyword rubyRailsARCallbackMethod before_create before_destroy before_save before_update before_validation before_validation_on_create before_validation_on_update before_commit
+    syn keyword rubyRailsARCallbackMethod after_create after_destroy after_save after_update after_validation after_validation_on_create after_validation_on_update after_create_commit after_update_commit after_destroy_commit
+    syn keyword rubyRailsARCallbackMethod around_create around_destroy around_save around_update
+    syn keyword rubyRailsARCallbackMethod after_commit after_find after_initialize after_rollback after_touch
+    syn keyword rubyRailsARClassMethod attr_accessible attr_protected attr_readonly has_secure_password has_secure_token store_accessor
+    syn keyword rubyRailsARValidationMethod validate validates validate_on_create validate_on_update validates_acceptance_of validates_associated validates_confirmation_of validates_each validates_exclusion_of validates_format_of validates_inclusion_of validates_length_of validates_numericality_of validates_presence_of validates_absence_of validates_size_of validates_uniqueness_of validates_with
+    syn keyword rubyRailsMethod logger
+  endif
+  if buffer.type_name('model-observer')
+    syn keyword rubyRailsARMethod observe
+  endif
+  if buffer.type_name('mailer')
+    syn keyword rubyRailsRenderMethod mail render
+    syn keyword rubyRailsControllerMethod attachments default helper helper_attr helper_method layout
+  endif
+  if buffer.type_name('job')
+    syn keyword rubyRailsAPIMethod queue_as rescue_from
+    syn keyword rubyRailsARCallbackMethod before_enqueue around_enqueue after_enqueue before_perform around_perform after_perform
+  endif
+  if buffer.type_name('controller','helper','mailer','view')
+    syn keyword rubyRailsMethod logger url_for polymorphic_path polymorphic_url edit_polymorphic_path edit_polymorphic_url new_polymorphic_path new_polymorphic_url
+  endif
+  if buffer.type_name('helper','view')
+    exe 'syn keyword rubyRailsHelperMethod' s:helpermethods()
+    syn match rubyRailsHelperMethod '\<select\>\%(\s*{\|\s*do\>\|\s*(\=\s*&\)\@!'
+    syn match rubyRailsHelperMethod '\<\%(content_for\w\@!?\=\|current_page?\)'
+    syn match rubyRailsViewMethod '\.\@<!\<\(h\|html_escape\|u\|url_encode\)\>'
+    if buffer.type_name('view-partial')
+      syn keyword rubyRailsMethod local_assigns
+    endif
+  elseif buffer.type_name('controller')
+    syn keyword rubyRailsMethod params request response session headers cookies flash
+    syn keyword rubyRailsRenderMethod render
+    syn keyword rubyRailsControllerMethod helper helper_attr helper_method filter layout serialize exempt_from_layout filter_parameter_logging hide_action cache_sweeper protect_from_forgery caches_page cache_page caches_action expire_page expire_action rescue_from
+    syn keyword rubyRailsRenderMethod head redirect_to redirect_back render_to_string respond_with
+    syn match   rubyRailsRenderMethod '\<respond_to\>?\@!'
+    syn keyword rubyRailsFilterMethod before_filter append_before_filter prepend_before_filter after_filter append_after_filter prepend_after_filter around_filter append_around_filter prepend_around_filter skip_before_filter skip_after_filter skip_filter before_action append_before_action prepend_before_action after_action append_after_action prepend_after_action around_action append_around_action prepend_around_action skip_before_action skip_after_action skip_action
+    syn keyword rubyRailsFilterMethod verify
+  endif
+  if buffer.type_name('db-migration','db-schema')
+    syn keyword rubyRailsMigrationMethod create_table change_table drop_table rename_table create_join_table drop_join_table
+    syn keyword rubyRailsMigrationMethod add_column rename_column change_column change_column_default change_column_null remove_column remove_columns
+    syn keyword rubyRailsMigrationMethod add_foreign_key remove_foreign_key
+    syn keyword rubyRailsMigrationMethod add_timestamps remove_timestamps
+    syn keyword rubyRailsMigrationMethod add_reference remove_reference add_belongs_to remove_belongs_to
+    syn keyword rubyRailsMigrationMethod add_index remove_index rename_index
+    syn keyword rubyRailsMigrationMethod execute transaction reversible revert
+  endif
+  if buffer.type_name('test')
+    if !empty(rails#app().user_assertions())
+      exe "syn keyword rubyRailsUserMethod ".join(rails#app().user_assertions())
+    endif
+    syn keyword rubyRailsTestMethod refute refute_empty refute_equal refute_in_delta refute_in_epsilon refute_includes refute_instance_of refute_kind_of refute_match refute_nil refute_operator refute_predicate refute_respond_to refute_same
+    syn keyword rubyRailsTestMethod add_assertion assert assert_block assert_equal assert_includes assert_in_delta assert_instance_of assert_kind_of assert_match assert_nil assert_no_match assert_not assert_not_equal assert_not_includes assert_not_nil assert_not_same assert_nothing_raised assert_nothing_thrown assert_operator assert_raise assert_respond_to assert_same assert_send assert_throws assert_recognizes assert_generates assert_routing flunk fixtures fixture_path use_transactional_fixtures use_instantiated_fixtures assert_difference assert_no_difference assert_valid
+    syn keyword rubyRailsTestMethod test setup teardown
+    if !buffer.type_name('test-unit')
+      syn match   rubyRailsTestControllerMethod  '\.\@<!\<\%(get\|post\|put\|patch\|delete\|head\|process\|assigns\)\>'
+      syn keyword rubyRailsTestControllerMethod get_via_redirect post_via_redirect put_via_redirect delete_via_redirect request_via_redirect
+      syn keyword rubyRailsTestControllerMethod assert_response assert_redirected_to assert_template assert_recognizes assert_generates assert_routing assert_dom_equal assert_dom_not_equal assert_select assert_select_rjs assert_select_encoded assert_select_email assert_tag assert_no_tag
+    endif
+  elseif buffer.type_name('spec')
+    syn keyword rubyRailsTestMethod describe context it its specify shared_context shared_examples shared_examples_for shared_context include_examples include_context it_should_behave_like it_behaves_like before after around subject fixtures controller_name helper_name scenario feature background given described_class
+    syn match rubyRailsTestMethod '\<let\>!\='
+    syn keyword rubyRailsTestMethod violated pending skip expect expect_any_instance_of allow allow_any_instance_of double instance_double mock mock_model stub_model xit
+    syn match rubyRailsTestMethod '\.\@<!\<stub\>!\@!'
+    if !buffer.type_name('spec-model')
+      syn match   rubyRailsTestControllerMethod  '\.\@<!\<\%(get\|post\|put\|patch\|delete\|head\|process\|assigns\)\>'
+      syn keyword rubyRailsTestControllerMethod  integrate_views render_views
+      syn keyword rubyRailsMethod params request response session flash
+      syn keyword rubyRailsMethod url_for polymorphic_path polymorphic_url edit_polymorphic_path edit_polymorphic_url new_polymorphic_path new_polymorphic_url
+      if buffer.type_name('spec-view')
+        syn keyword rubyRailsTestViewMethod render rendered assign
+      elseif buffer.type_name('spec-helper')
+        syn keyword RubyRailsTestHelperMethod helper
+      endif
+    endif
+  endif
+  if buffer.type_name('task')
+    syn match rubyRailsRakeMethod '^\s*\zs\%(task\|file\|namespace\|desc\|before\|after\|on\)\>\%(\s*=\)\@!'
+  endif
+  if buffer.type_name('config-routes')
+    syn match rubyRailsMethod '\.\zs\%(connect\|named_route\)\>'
+    syn keyword rubyRailsMethod match get put patch post delete redirect root resource resources collection member nested scope namespace controller constraints mount concern concerns
+  endif
+  syn keyword rubyRailsMethod debugger
+  syn keyword rubyRailsMethod alias_attribute alias_method_chain attr_accessor_with_default attr_internal attr_internal_accessor attr_internal_reader attr_internal_writer concerning delegate mattr_accessor mattr_reader mattr_writer superclass_delegating_accessor superclass_delegating_reader superclass_delegating_writer with_options
+  syn keyword rubyRailsMethod cattr_accessor cattr_reader cattr_writer class_inheritable_accessor class_inheritable_array class_inheritable_array_writer class_inheritable_hash class_inheritable_hash_writer class_inheritable_option class_inheritable_reader class_inheritable_writer inheritable_attributes read_inheritable_attribute reset_inheritable_attributes write_inheritable_array write_inheritable_attribute write_inheritable_hash
+  syn keyword rubyRailsInclude require_dependency
+endfunction
+
+function! rails#buffer_syntax() abort
   if !exists("g:rails_no_syntax")
     let buffer = rails#buffer()
     let keywords = split(join(filter(buffer.projected('keywords'), 'type(v:val) == type("")'), ' '))
     let special = filter(copy(keywords), 'v:val =~# ''^\h\k*[?!]$''')
     let regular = filter(copy(keywords), 'v:val =~# ''^\h\k*$''')
     if &syntax == 'ruby'
+      call rails#ruby_syntax()
       if !empty(special)
         exe 'syn match rubyRailsMethod "\<\%('.join(special, '\|').'\)"'
       endif
       if !empty(regular)
         exe 'syn keyword rubyRailsMethod '.join(regular, ' ')
       endif
-      if buffer.type_name() == ''
-        syn keyword rubyRailsMethod params request response session headers cookies flash
-      endif
-      if buffer.type_name() ==# 'model' || buffer.type_name('model-record')
-        syn keyword rubyRailsARMethod attribute default_scope enum named_scope scope serialize store
-        syn keyword rubyRailsARAssociationMethod belongs_to has_one has_many has_and_belongs_to_many composed_of accepts_nested_attributes_for
-        syn keyword rubyRailsARCallbackMethod before_create before_destroy before_save before_update before_validation before_validation_on_create before_validation_on_update before_commit
-        syn keyword rubyRailsARCallbackMethod after_create after_destroy after_save after_update after_validation after_validation_on_create after_validation_on_update after_create_commit after_update_commit after_destroy_commit
-        syn keyword rubyRailsARCallbackMethod around_create around_destroy around_save around_update
-        syn keyword rubyRailsARCallbackMethod after_commit after_find after_initialize after_rollback after_touch
-        syn keyword rubyRailsARClassMethod attr_accessible attr_protected attr_readonly has_secure_password has_secure_token store_accessor
-        syn keyword rubyRailsARValidationMethod validate validates validate_on_create validate_on_update validates_acceptance_of validates_associated validates_confirmation_of validates_each validates_exclusion_of validates_format_of validates_inclusion_of validates_length_of validates_numericality_of validates_presence_of validates_absence_of validates_size_of validates_uniqueness_of validates_with
-        syn keyword rubyRailsMethod logger
-      endif
-      if buffer.type_name('model-observer')
-        syn keyword rubyRailsARMethod observe
-      endif
-      if buffer.type_name('mailer')
-        syn keyword rubyRailsRenderMethod mail render
-        syn keyword rubyRailsControllerMethod attachments default helper helper_attr helper_method layout
-      endif
-      if buffer.type_name('job')
-        syn keyword rubyRailsAPIMethod queue_as rescue_from
-        syn keyword rubyRailsARCallbackMethod before_enqueue around_enqueue after_enqueue before_perform around_perform after_perform
-      endif
-      if buffer.type_name('controller','helper','mailer','view')
-        syn keyword rubyRailsMethod logger url_for polymorphic_path polymorphic_url edit_polymorphic_path edit_polymorphic_url new_polymorphic_path new_polymorphic_url
-      endif
-      if buffer.type_name('helper','view')
-        exe 'syn keyword rubyRailsHelperMethod' s:helpermethods()
-        syn match rubyRailsHelperMethod '\<select\>\%(\s*{\|\s*do\>\|\s*(\=\s*&\)\@!'
-        syn match rubyRailsHelperMethod '\<\%(content_for\w\@!?\=\|current_page?\)'
-        syn match rubyRailsViewMethod '\.\@<!\<\(h\|html_escape\|u\|url_encode\)\>'
-        if buffer.type_name('view-partial')
-          syn keyword rubyRailsMethod local_assigns
-        endif
-      elseif buffer.type_name('controller')
-        syn keyword rubyRailsMethod params request response session headers cookies flash
-        syn keyword rubyRailsRenderMethod render
-        syn keyword rubyRailsControllerMethod helper helper_attr helper_method filter layout serialize exempt_from_layout filter_parameter_logging hide_action cache_sweeper protect_from_forgery caches_page cache_page caches_action expire_page expire_action rescue_from
-        syn keyword rubyRailsRenderMethod head redirect_to redirect_back render_to_string respond_with
-        syn match   rubyRailsRenderMethod '\<respond_to\>?\@!'
-        syn keyword rubyRailsFilterMethod before_filter append_before_filter prepend_before_filter after_filter append_after_filter prepend_after_filter around_filter append_around_filter prepend_around_filter skip_before_filter skip_after_filter skip_filter before_action append_before_action prepend_before_action after_action append_after_action prepend_after_action around_action append_around_action prepend_around_action skip_before_action skip_after_action skip_action
-        syn keyword rubyRailsFilterMethod verify
-      endif
-      if buffer.type_name('db-migration','db-schema')
-        syn keyword rubyRailsMigrationMethod create_table change_table drop_table rename_table create_join_table drop_join_table
-        syn keyword rubyRailsMigrationMethod add_column rename_column change_column change_column_default change_column_null remove_column remove_columns
-        syn keyword rubyRailsMigrationMethod add_foreign_key remove_foreign_key
-        syn keyword rubyRailsMigrationMethod add_timestamps remove_timestamps
-        syn keyword rubyRailsMigrationMethod add_reference remove_reference add_belongs_to remove_belongs_to
-        syn keyword rubyRailsMigrationMethod add_index remove_index rename_index
-        syn keyword rubyRailsMigrationMethod execute transaction reversible revert
-      endif
-      if buffer.type_name('test')
-        if !empty(rails#app().user_assertions())
-          exe "syn keyword rubyRailsUserMethod ".join(rails#app().user_assertions())
-        endif
-        syn keyword rubyRailsTestMethod refute refute_empty refute_equal refute_in_delta refute_in_epsilon refute_includes refute_instance_of refute_kind_of refute_match refute_nil refute_operator refute_predicate refute_respond_to refute_same
-        syn keyword rubyRailsTestMethod add_assertion assert assert_block assert_equal assert_includes assert_in_delta assert_instance_of assert_kind_of assert_match assert_nil assert_no_match assert_not assert_not_equal assert_not_includes assert_not_nil assert_not_same assert_nothing_raised assert_nothing_thrown assert_operator assert_raise assert_respond_to assert_same assert_send assert_throws assert_recognizes assert_generates assert_routing flunk fixtures fixture_path use_transactional_fixtures use_instantiated_fixtures assert_difference assert_no_difference assert_valid
-        syn keyword rubyRailsTestMethod test setup teardown
-        if !buffer.type_name('test-unit')
-          syn match   rubyRailsTestControllerMethod  '\.\@<!\<\%(get\|post\|put\|patch\|delete\|head\|process\|assigns\)\>'
-          syn keyword rubyRailsTestControllerMethod get_via_redirect post_via_redirect put_via_redirect delete_via_redirect request_via_redirect
-          syn keyword rubyRailsTestControllerMethod assert_response assert_redirected_to assert_template assert_recognizes assert_generates assert_routing assert_dom_equal assert_dom_not_equal assert_select assert_select_rjs assert_select_encoded assert_select_email assert_tag assert_no_tag
-        endif
-      elseif buffer.type_name('spec')
-        syn keyword rubyRailsTestMethod describe context it its specify shared_context shared_examples shared_examples_for shared_context include_examples include_context it_should_behave_like it_behaves_like before after around subject fixtures controller_name helper_name scenario feature background given described_class
-        syn match rubyRailsTestMethod '\<let\>!\='
-        syn keyword rubyRailsTestMethod violated pending skip expect expect_any_instance_of allow allow_any_instance_of double instance_double mock mock_model stub_model xit
-        syn match rubyRailsTestMethod '\.\@<!\<stub\>!\@!'
-        if !buffer.type_name('spec-model')
-          syn match   rubyRailsTestControllerMethod  '\.\@<!\<\%(get\|post\|put\|patch\|delete\|head\|process\|assigns\)\>'
-          syn keyword rubyRailsTestControllerMethod  integrate_views render_views
-          syn keyword rubyRailsMethod params request response session flash
-          syn keyword rubyRailsMethod url_for polymorphic_path polymorphic_url edit_polymorphic_path edit_polymorphic_url new_polymorphic_path new_polymorphic_url
-          if buffer.type_name('spec-view')
-            syn keyword rubyRailsTestViewMethod render rendered assign
-          elseif buffer.type_name('spec-helper')
-            syn keyword RubyRailsTestHelperMethod helper
-          endif
-        endif
-      endif
-      if buffer.type_name('task')
-        syn match rubyRailsRakeMethod '^\s*\zs\%(task\|file\|namespace\|desc\|before\|after\|on\)\>\%(\s*=\)\@!'
-      endif
-      if buffer.type_name('config-routes')
-        syn match rubyRailsMethod '\.\zs\%(connect\|named_route\)\>'
-        syn keyword rubyRailsMethod match get put patch post delete redirect root resource resources collection member nested scope namespace controller constraints mount concern concerns
-      endif
-      syn keyword rubyRailsMethod debugger
-      syn keyword rubyRailsMethod alias_attribute alias_method_chain attr_accessor_with_default attr_internal attr_internal_accessor attr_internal_reader attr_internal_writer concerning delegate mattr_accessor mattr_reader mattr_writer superclass_delegating_accessor superclass_delegating_reader superclass_delegating_writer with_options
-      syn keyword rubyRailsMethod cattr_accessor cattr_reader cattr_writer class_inheritable_accessor class_inheritable_array class_inheritable_array_writer class_inheritable_hash class_inheritable_hash_writer class_inheritable_option class_inheritable_reader class_inheritable_writer inheritable_attributes read_inheritable_attribute reset_inheritable_attributes write_inheritable_array write_inheritable_attribute write_inheritable_hash
-      syn keyword rubyRailsInclude require_dependency
 
     elseif (&syntax =~# '^eruby\>' || &syntax == 'haml') && &syntax !~# 'yaml'
       let containedin = 'contained containedin=@'.&syntax.'RailsRegions'
