@@ -3963,14 +3963,6 @@ function! rails#buffer_syntax()
       syn keyword rubyRailsMethod cattr_accessor cattr_reader cattr_writer class_inheritable_accessor class_inheritable_array class_inheritable_array_writer class_inheritable_hash class_inheritable_hash_writer class_inheritable_option class_inheritable_reader class_inheritable_writer inheritable_attributes read_inheritable_attribute reset_inheritable_attributes write_inheritable_array write_inheritable_attribute write_inheritable_hash
       syn keyword rubyRailsInclude require_dependency
 
-      syn region  rubyString   matchgroup=rubyStringDelimiter start=+\%(:order\s*=>\s*\)\@<="+ skip=+\\\\\|\\"+ end=+"+ contains=@rubyStringSpecial,railsOrderSpecial
-      syn region  rubyString   matchgroup=rubyStringDelimiter start=+\%(:order\s*=>\s*\)\@<='+ skip=+\\\\\|\\'+ end=+'+ contains=@rubyStringSpecial,railsOrderSpecial
-      syn match   railsOrderSpecial +\c\<\%(DE\|A\)SC\>+ contained
-      syn region  rubyString   matchgroup=rubyStringDelimiter start=+\%(:conditions\s*=>\s*\[\s*\)\@<="+ skip=+\\\\\|\\"+ end=+"+ contains=@rubyStringSpecial,railsConditionsSpecial
-      syn region  rubyString   matchgroup=rubyStringDelimiter start=+\%(:conditions\s*=>\s*\[\s*\)\@<='+ skip=+\\\\\|\\'+ end=+'+ contains=@rubyStringSpecial,railsConditionsSpecial
-      syn match   railsConditionsSpecial +?\|:\h\w*+ contained
-      syn cluster rubyNotTop add=railsOrderSpecial,railsConditionsSpecial
-
     elseif (&syntax =~# '^eruby\>' || &syntax == 'haml') && &syntax !~# 'yaml'
       let containedin = 'contained containedin=@'.&syntax.'RailsRegions'
       let group = matchstr(&syntax, '^\w\+')
@@ -4043,9 +4035,6 @@ function! s:HiDefaults()
   hi def link railsUserClass                  railsClass
   hi def link railsMethod                     Function
   hi def link railsClass                      Type
-  hi def link railsOrderSpecial               railsStringSpecial
-  hi def link railsConditionsSpecial          railsStringSpecial
-  hi def link railsStringSpecial              Identifier
 endfunction
 
 function! rails#log_syntax()
