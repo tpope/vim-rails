@@ -998,7 +998,6 @@ call s:add_methods('app', ['ruby_script_command','static_rails_command','prepare
 function! s:BufCommands()
   call s:BufNavCommands()
   call s:BufScriptWrappers()
-  command! -buffer -bar -nargs=+ Rnavcommand :call s:Navcommand(<bang>0,<f-args>)
   command! -buffer -bar -nargs=* -bang Rabbrev :call s:Abbrev(<bang>0,<f-args>)
   command! -buffer -bar -nargs=? -bang -count -complete=customlist,rails#complete_rake Rake    :call s:Rake(<bang>0,!<count> && <line1> ? -1 : <count>,<q-args>)
   command! -buffer -bar -nargs=? -bang -range -complete=customlist,s:Complete_preview Rpreview :exe s:deprecate(':Rpreview', ':Preview')|call s:Preview(<bang>0,<line1>,<q-args>)
@@ -1006,7 +1005,6 @@ function! s:BufCommands()
   command! -buffer -bar -nargs=? -bang -range -complete=customlist,s:Complete_preview Preview :call s:Preview(<bang>0,<line1>,<q-args>)
   command! -buffer -bar -nargs=? -bang -complete=customlist,s:Complete_log            Rlog     exe s:deprecate(':Rlog', ':Clog', <bang>0 ? 'Clog<bang> '.<q-args> : s:Plog(0, <q-args>))
   command! -buffer -bar -nargs=? -bang -complete=customlist,s:Complete_log            Clog     exe s:Clog(1<bang>, <mods>, <q-args>)
-  command! -buffer -bar -nargs=* -bang                                                Rset     :exe s:Set(<bang>0,<f-args>)
   command! -buffer -bar -nargs=0 Rtags       :execute rails#app().tags_command()
   command! -buffer -bar -nargs=0 Ctags       :execute rails#app().tags_command()
   command! -buffer -bar -nargs=0 -bang Rrefresh :if <bang>0|unlet! g:autoloaded_rails|source `=s:file`|endif|call s:Refresh(<bang>0)
@@ -2720,23 +2718,6 @@ endfunction
 
 function! s:specList(A,L,P)
   return s:completion_filter(rails#app().relglob("spec/","**/*","_spec.rb"),a:A)
-endfunction
-
-function! s:Navcommand(bang,...)
-  let prefixes = []
-  let suffix = '.rb'
-  let affinity = ''
-  for arg in a:000
-    if arg =~# '^[a-z]\+$'
-      for prefix in ['E', 'S', 'V', 'T', 'D', 'R', 'RE', 'RS', 'RV', 'RT', 'RD']
-        exe 'command! -buffer -bar -bang -nargs=* ' .
-              \ (prefix =~# 'D' ? '-range=0 ' : '') .
-              \ prefix . arg . ' :echoerr ' .
-              \ string(':Rnavcommand has been removed.  See :help rails-projections')
-      endfor
-      break
-    endif
-  endfor
 endfunction
 
 function! s:define_navcommand(name, projection, ...) abort
@@ -4455,11 +4436,6 @@ function! s:AddParenExpand(abbr,expn,...)
   endif
 endfunction
 
-if !exists('g:rails_no_abbreviations') && type(get(g:, 'rails_abbreviations', {})) == type(0)
-  call s:error('Use rails_no_abbreviations not rails_abbreviations to disable abbreviations')
-  let g:rails_no_abbreviations = 1
-endif
-
 function! s:BufAbbreviations()
   " Some of these were cherry picked from the TextMate snippets
   if !exists('g:rails_no_abbreviations')
@@ -4542,7 +4518,7 @@ function! s:BufAbbreviations()
     Rabbrev AJ::  ActiveJob
     " )))))
     for pairs in
-          \ items(type(get(g:, 'rails_abbreviations', 0)) == type({}) ? g:rails_abbreviations : {})
+          \ items(get(g:, 'rails_abbreviations', {}))
       call call(function(s:sid.'Abbrev'), [0, pairs[0]] + s:split(pairs[1]))
     endfor
     for hash in reverse(rails#buffer().projected('abbreviations'))
@@ -5115,10 +5091,6 @@ function! s:readable_projected(key, ...) dict abort
 endfunction
 
 call s:add_methods('readable', ['projected', 'projected_with_raw'])
-
-function! s:Set(bang,...)
-  call s:warn('Rset is obsolete and has no effect')
-endfunction
 
 " }}}1
 " Detection {{{1
