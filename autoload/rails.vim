@@ -627,16 +627,8 @@ function! s:readable_app() dict abort
   return self._app
 endfunction
 
-function! RailsRevision()
+function! rails#revision() abort
   return 1000*matchstr(g:autoloaded_rails,'^\d\+')+matchstr(g:autoloaded_rails,'[1-9]\d*$')
-endfunction
-
-function! RailsRoot()
-  if exists("b:rails_root")
-    return b:rails_root
-  else
-    return ""
-  endif
 endfunction
 
 function! s:app_file(name) dict abort
@@ -687,26 +679,6 @@ function! s:buffer_name() dict abort
       call s:warn("File ".f." does not appear to be under the Rails root ".self.app().path().". Please report to the rails.vim author!")
     endif
     return f
-  endif
-endfunction
-
-function! RailsFilePath()
-  if !exists("b:rails_root")
-    return ""
-  else
-    return rails#buffer().name()
-  endif
-endfunction
-
-function! RailsFile()
-  return RailsFilePath()
-endfunction
-
-function! RailsFileType()
-  if !exists("b:rails_root")
-    return ""
-  else
-    return rails#buffer().type_name()
   endif
 endfunction
 
@@ -1003,7 +975,7 @@ function! s:BufCommands()
     command! -buffer -bar -nargs=? -complete=customlist,s:Complete_environments Rdbext  :call s:BufDatabase(2,<q-args>)|let b:dbext_buffer_defaulted = 1
   endif
   let ext = expand("%:e")
-  if RailsFilePath() =~ '\<app/views/'
+  if rails#buffer().name() =~# '^app/views/'
     " TODO: complete controller names with trailing slashes here
     command! -buffer -bar -bang -nargs=? -range -complete=customlist,s:controllerList Extract  :<line1>,<line2>call s:Extract(<bang>0,'<mods>',<f-args>)
   elseif rails#buffer().name() =~# '^app/helpers/.*\.rb$'
@@ -1014,7 +986,7 @@ function! s:BufCommands()
   if exists(':Extract') == 2
     command! -buffer -bar -bang -nargs=? -range -complete=customlist,s:controllerList Rextract :exe s:deprecate(':Rextract', ':Extract', '<line1>,<line2>Extract<bang> '.<q-args>)
   endif
-  if RailsFilePath() =~ '\<db/migrate/.*\.rb$'
+  if rails#buffer().name() =~# '^db/migrate/.*\.rb$'
     command! -buffer -bar                 Rinvert  :call s:Invert(<bang>0)
   endif
 endfunction
@@ -3502,16 +3474,16 @@ function! s:Extract(bang, mods, ...) range abort
   let last = a:lastline
   let range = first.",".last
   if rails#buffer().type_name('view-layout')
-    if RailsFilePath() =~ '\<app/views/layouts/application\>'
+    if rails#buffer().name() =~# '^app/views/layouts/application\>'
       let curdir = 'app/views/shared'
       if file !~ '/'
         let file = "shared/" .file
       endif
     else
-      let curdir = s:sub(RailsFilePath(),'.*<app/views/layouts/(.*)%(\.\w*)$','app/views/\1')
+      let curdir = s:sub(rails#buffer().name(),'.*<app/views/layouts/(.*)%(\.\w*)$','app/views/\1')
     endif
   else
-    let curdir = fnamemodify(RailsFilePath(),':h')
+    let curdir = fnamemodify(rails#buffer().name(),':h')
   endif
   let curdir = rails_root.'/'.curdir
   let dir = fnamemodify(file,':h')
