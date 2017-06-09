@@ -3168,9 +3168,7 @@ function! s:readable_open_command(cmd, argument, name, projections) dict abort
         let ph = {
               \ 'match': root,
               \ 'file': file,
-              \ 'project': self.app().path(),
-              \ 'S': rails#camelize(root),
-              \ 'h': toupper(root[0]) . tr(rails#underscore(root), '_', ' ')[1:-1]}
+              \ 'project': self.app().path()}
         call map(template, 's:expand_placeholders(v:val, ph)')
         call map(template, 's:gsub(v:val, "\t", "  ")')
         let file = fnamemodify(simplify(file), ':.')
@@ -5005,15 +5003,7 @@ function! s:readable_projected_with_raw(key, ...) dict abort
             \ 'match': root,
             \ 'file': self.path(),
             \ 'project': self.app().path(),
-            \ 's': root,
-            \ 'S': rails#camelize(root),
-            \ 'h': toupper(root[0]) . tr(rails#underscore(root), '_', ' ')[1:-1],
-            \ 'p': rails#pluralize(root),
-            \ 'i': rails#singularize(root),
             \ '%': '%'}, a:0 ? a:1 : {})
-      if suffix =~# '\.js\>'
-        let ph.S = s:gsub(ph.S, '::', '.')
-      endif
       let mine += map(s:getlist(all[pattern], a:key), '[s:expand_placeholders(v:val, ph), v:val]')
     endif
   endfor

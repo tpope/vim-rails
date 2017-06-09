@@ -693,7 +693,7 @@ transformation of the variable portion, based on those available in
 projectionist.vim.  See projectionist.vim's documentation for a comprehensive
 explanation, but you can probably get the gist from the list below.
 
-Older versions of rails.vim used the following deprecated % expansions, shown
+Older versions of rails.vim used the following unsupported % expansions, shown
 here with their {} equivalents:
 
 `%s`: `{}` (Original)
