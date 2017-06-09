@@ -155,8 +155,9 @@ They also allow for jumping to methods or line numbers using the same syntax
 as |:rails-R|, and file creation (with a bit of boilerplate) can be forced by
 adding a ! after the filename (not after the command itself!).
 
-There are also "classic" versions of these commands that start with :R (e.g.,
-:Rmodel, :RSmodel, :RVmodel, :RTmodel, and :RDmodel).
+Additionally, for each unrecognized directory of the form app/{type}s/
+containing at least one file matching *_{type}.rb, a command of the form
+:E{type} is automatically defined.
 
 :Econtroller					|rails-:Econtroller|
 :Eenvironment					|rails-:Eenvironment|

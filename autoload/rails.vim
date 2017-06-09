@@ -4569,6 +4569,35 @@ function! s:app_engines() dict abort
   return self.cache.get('engines')
 endfunction
 
+function! s:app_smart_projections() dict abort
+  let ts = getftime(self.path('app/'))
+  if self.cache.needs('smart_projections', ts)
+    let dict = {}
+    for dir in self.relglob('app/', '*s', '/')
+      let singular = rails#singularize(dir)
+      let glob = 'app/' . dir . '/*_' . singular . '.rb'
+      if dir !~# '\v^%(assets|models|views)$' &&
+            \ !has_key(s:default_projections, glob) &&
+            \ !empty(self.relglob('', glob))
+        let dict[glob] = {'type': s:gsub(tolower(singular), '\A+', ' ')}
+      endif
+    endfor
+    if has_key(dict, 'app/mailers/*_mailer.rb') || self.has_rails5()
+      let dict['app/mailers/*_mailer.rb'] = {
+            \ "affinity": "controller",
+            \ "template": ["class {camelcase|capitalize|colons}Mailer < ActionMailer::Base", "end"],
+            \ "type": "mailer"}
+    else
+      let dict['app/mailers/*.rb'] = {
+            \ "affinity": "controller",
+            \ "template": ["class {camelcase|capitalize|colons} < ActionMailer::Base", "end"],
+            \ "type": "mailer"}
+    endif
+    call self.cache.set('smart_projections', dict, ts)
+  endif
+  return self.cache.get('smart_projections')
+endfunction
+
 function! s:extend_projection(dest, src) abort
   let dest = copy(a:dest)
   for key in keys(a:src)
@@ -4641,11 +4670,6 @@ let s:default_projections = {
       \    "affinity": "model",
       \    "template": ["class {camelcase|capitalize|colons}Job < ActiveJob::Base", "end"],
       \    "type": "job"
-      \  },
-      \  "app/mailers/*.rb": {
-      \    "affinity": "controller",
-      \    "template": ["class {camelcase|capitalize|colons} < ActionMailer::Base", "end"],
-      \    "type": "mailer"
       \  },
       \  "app/models/*.rb": {
       \    "affinity": "model",
@@ -4857,6 +4881,7 @@ function! s:app_projections() dict abort
       call s:combine_projections(dict, v)
     endif
   endfor
+  call s:combine_projections(dict, self.smart_projections())
   call s:combine_projections(dict, get(g:, 'rails_projections', ''))
   for gem in keys(get(g:, 'rails_gem_projections', {}))
     if self.has_gem(gem)
@@ -4898,7 +4923,7 @@ function! s:app_projections() dict abort
   return dict
 endfunction
 
-call s:add_methods('app', ['gems', 'has_gem', 'engines', 'projections'])
+call s:add_methods('app', ['gems', 'has_gem', 'engines', 'smart_projections', 'projections'])
 
 let s:transformations = {}
 
