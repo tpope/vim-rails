@@ -2336,6 +2336,9 @@ function! s:ruby_cfile() abort
   let res = s:findamethod('fixtures','fixtures/\1.yml')
   if res != ""|return res|endif
 
+  let res = s:findamethod('file_fixture','fixtures/files/\1')
+  if res != ""|return res|endif
+
   let res = s:findamethod('\%(\w\+\.\)\=resources','\1_controller.rb')
   if res != ""|return res|endif
 
