@@ -4438,16 +4438,7 @@ function! s:BufAbbreviations()
       Rabbrev coo[ cookies
       Rabbrev fl[ flash
       Rabbrev rr( render
-      Rabbrev rf( render :file\ =>\ 
-      Rabbrev rj( render :json\ =>\ 
-      Rabbrev rp( render :partial\ =>\ 
-      Rabbrev rt( render :text\ =>\ 
-      Rabbrev rx( render :xml\ =>\ 
       " ))))))
-    endif
-    if buffer.type_name('view','helper')
-      Rabbrev dotiw distance_of_time_in_words
-      Rabbrev taiw  time_ago_in_words
     endif
     if buffer.type_name('controller')
       Rabbrev re(  redirect_to
@@ -4481,15 +4472,6 @@ function! s:BufAbbreviations()
       Rabbrev mrnt( rename_table
       Rabbrev mdt(  drop_table
       " )))))))
-    endif
-    if buffer.type_name('test')
-      Rabbrev ase(  assert_equal
-      Rabbrev asko( assert_kind_of
-      Rabbrev asnn( assert_not_nil
-      Rabbrev asr(  assert_raise
-      Rabbrev asre( assert_response
-      Rabbrev art(  assert_redirected_to
-      " ))))))
     endif
     Rabbrev logd( logger.debug
     Rabbrev logi( logger.info
