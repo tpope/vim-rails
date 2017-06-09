@@ -377,8 +377,6 @@ function! s:readable_controller_name(...) dict abort
     return s:sub(f,'.*<app/controllers/(.{-})%(_controller)=\.rb$','\1')
   elseif f =~ '\<app/mailers/.*\.rb$'
     return s:sub(f,'.*<app/mailers/(.{-})\.rb$','\1')
-  elseif f =~ '\<app/apis/.*_api\.rb$'
-    return s:sub(f,'.*<app/apis/(.{-})_api\.rb$','\1')
   elseif f =~ '\<app/jobs/.*\.rb$'
     return s:sub(f,'.*<app/jobs/(.{-})%(_job)=\.rb$','\1')
   elseif f =~ '\<test/\%(functional\|controllers\)/.*_test\.rb$'
@@ -730,13 +728,7 @@ function! s:readable_calculate_file_type() dict abort
   elseif nr > 0 && getbufvar(nr,'rails_file_type') != ''
     return getbufvar(nr,'rails_file_type')
   elseif f =~ '_controller\.rb$' || f =~ '\<app/controllers/.*\.rb$'
-    if join(s:readfile(full_path,50),"\n") =~ '\<wsdl_service_name\>'
-      let r = "controller-api"
-    else
-      let r = "controller"
-    endif
-  elseif f =~ '\<app/apis/.*_api\.rb'
-    let r = "api"
+    let r = "controller"
   elseif f =~ '\<test/test_helper\.rb$'
     let r = "test"
   elseif f =~ '\<spec/\%(spec\|rails\)_helper\.rb$'
@@ -1293,12 +1285,6 @@ function! s:readable_test_file_candidates() dict abort
           \ fnamemodify(f,':r:r:s?\<app/?spec/?')."_spec.rb",
           \ s:sub(s:sub(f,'<app/views/','test/controllers/'),'/[^/]*$','_controller_test.rb'),
           \ s:sub(s:sub(f,'<app/views/','test/functional/'),'/[^/]*$','_controller_test.rb')]
-  elseif self.type_name('controller-api')
-    let tests = [
-          \ s:sub(s:sub(f,'/controllers/','/apis/'),'_controller\.rb$','_api.rb')]
-  elseif self.type_name('api')
-    let tests = [
-          \ s:sub(s:sub(f,'/apis/','/controllers/'),'_api\.rb$','_controller.rb')]
   elseif self.type_name('lib')
     let tests = [
           \ s:sub(f,'<lib/(.*)\.rb$','test/lib/\1_test.rb'),
