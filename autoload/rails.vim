@@ -3955,29 +3955,27 @@ function! rails#buffer_syntax() abort
       endif
 
     elseif (&syntax =~# '^eruby\>' || &syntax == 'haml') && &syntax !~# 'yaml'
-      let containedin = 'contained containedin=@'.&syntax.'RailsRegions'
-      let group = matchstr(&syntax, '^\w\+')
+      let containedin = 'contained containedin=@'.matchstr(&syntax, '^\w\+').'RailsRegions'
       syn case match
       if !empty(special)
-        exe 'syn match '.group.'RailsMethod "\<\%('.join(special, '\|').'\)"' containedin
+        exe 'syn match rubyRailsMethod "\<\%('.join(special, '\|').'\)"' containedin
       endif
       if !empty(regular)
-        exe 'syn keyword '.group.'RailsMethod '.join(regular, ' ') containedin
+        exe 'syn keyword rubyRailsMethod '.join(regular, ' ') containedin
       endif
-      if group == 'haml'
+      if &syntax == 'haml'
         exe 'syn cluster hamlRailsRegions contains=hamlRubyCodeIncluded,hamlRubyCode,hamlRubyHash,@hamlEmbeddedRuby,rubyInterpolation'
       else
         exe 'syn cluster erubyRailsRegions contains=erubyOneLiner,erubyBlock,erubyExpression,rubyInterpolation'
       endif
-      exe 'syn keyword rubyRailsHelperMethod' s:helpermethods() 'contained containedin=@'.group.'RailsRegions'
-      exe 'syn match rubyRailsHelperMethod "\<select\>\%(\s*{\|\s*do\>\|\s*(\=\s*&\)\@!" contained containedin=@'.group.'RailsRegions'
-      exe 'syn match rubyRailsHelperMethod "\<\%(content_for\w\@!?\=\|current_page?\)" contained containedin=@'.group.'RailsRegions'
-      exe 'syn keyword rubyRailsMethod logger url_for polymorphic_path polymorphic_url edit_polymorphic_path edit_polymorphic_url new_polymorphic_path new_polymorphic_url contained containedin=@'.group.'RailsRegions'
-      exe 'syn match rubyRailsViewMethod "\.\@<!\<\(h\|html_escape\|u\|url_encode\)\>" contained containedin=@'.group.'RailsRegions'
+      exe 'syn keyword rubyRailsHelperMethod' s:helpermethods() containedin
+      exe 'syn match rubyRailsHelperMethod "\<select\>\%(\s*{\|\s*do\>\|\s*(\=\s*&\)\@!"' containedin
+      exe 'syn match rubyRailsHelperMethod "\<\%(content_for\w\@!?\=\|current_page?\)"' containedin
+      exe 'syn keyword rubyRailsMethod logger url_for polymorphic_path polymorphic_url edit_polymorphic_path edit_polymorphic_url new_polymorphic_path new_polymorphic_url' containedin
+      exe 'syn match rubyRailsViewMethod "\.\@<!\<\(h\|html_escape\|u\|url_encode\)\>"' containedin
       if buffer.type_name('view-partial')
-        exe 'syn keyword rubyRailsMethod local_assigns contained containedin=@'.group.'RailsRegions'
+        exe 'syn keyword rubyRailsMethod local_assigns' containedin
       endif
-      exe 'syn keyword rubyRailsRenderMethod render contained containedin=@'.group.'RailsRegions'
     endif
 
     if &syntax =~# '^\%(javascript\|coffee\|css\|scss\|sass\)'
