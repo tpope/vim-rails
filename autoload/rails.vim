@@ -2957,7 +2957,7 @@ function! s:viewEdit(cmd, ...) abort
     if !rails#app().has_path(fnamemodify(file, ':h'))
       call mkdir(rails#app().path(fnamemodify(file, ':h')), 'p')
     endif
-    return s:edit(a:cmd, file.djump)
+    return s:edit(a:cmd, file)
   else
     return s:open(a:cmd, 'app/views/'.view)
   endif
