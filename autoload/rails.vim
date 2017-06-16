@@ -3036,9 +3036,18 @@ function! s:stylesheetList(A, L, P) abort
 endfunction
 
 function! s:specEdit(cmd,...) abort
-  let describe = s:sub(s:sub(rails#camelize(a:0 ? a:1 : ''), '^[^:]*::', ''), '!.*', '')
+  let describe = s:sub(s:sub(a:0 ? a:1 : '', '^[^/]*/', ''), '!.*', '')
+  let type = rails#singularize(matchstr(a:0 ? a:1 : '', '\w\+'))
+  if type =~# '^\%(request\|routing\|integration\|feature\)$'
+    let describe = '"' . tr(s:transformations.capitalize(describe, {}), '_', ' ') . '"'
+  elseif type ==# 'view'
+    let describe = '"' . describe . '"'
+  else
+    let describe = rails#camelize(describe)
+  endif
+  let describe .= ', type: :' . type
   return rails#buffer().open_command(a:cmd, a:0 ? a:1 : '', 'spec', [
-        \ {'pattern': 'spec/*_spec.rb', 'template': "require 'rails_helper'\n\ndescribe ".describe." do\nend"},
+        \ {'pattern': 'spec/*_spec.rb', 'template': "require 'rails_helper'\n\nRSpec.describe ".describe." do\nend"},
         \ {'pattern': 'spec/spec_helper.rb'},
         \ {'pattern': 'spec/rails_helper.rb'}])
 endfunction
@@ -4713,7 +4722,7 @@ let s:has_projections = {
       \      "template": [
       \        "require 'rails_helper'",
       \        "",
-      \        "describe {camelcase|capitalize|colons} do",
+      \        "RSpec.describe {camelcase|capitalize|colons}, type: :controller do",
       \        "end"
       \      ],
       \      "type": "functional test"
@@ -4722,7 +4731,7 @@ let s:has_projections = {
       \      "template": [
       \        "require 'rails_helper'",
       \        "",
-      \        "describe \"{underscore|capitalize|blank}\" do",
+      \        "RSpec.describe \"{underscore|capitalize|blank}\", type: :feature do",
       \        "end"
       \      ],
       \      "type": "integration test"
@@ -4731,7 +4740,7 @@ let s:has_projections = {
       \      "template": [
       \        "require 'rails_helper'",
       \        "",
-      \        "describe {camelcase|capitalize|colons} do",
+      \        "RSpec.describe {camelcase|capitalize|colons}, type: :helper do",
       \        "end"
       \      ],
       \      "type": "unit test"
@@ -4740,7 +4749,7 @@ let s:has_projections = {
       \      "template": [
       \        "require 'rails_helper'",
       \        "",
-      \        "describe \"{underscore|capitalize|blank}\" do",
+      \        "RSpec.describe \"{underscore|capitalize|blank}\", type: :integration do",
       \        "end"
       \      ],
       \      "type": "integration test"
@@ -4751,7 +4760,7 @@ let s:has_projections = {
       \      "template": [
       \        "require 'rails_helper'",
       \        "",
-      \        "describe {camelcase|capitalize|colons} do",
+      \        "RSpec.describe {camelcase|capitalize|colons}, type: :mailer do",
       \        "end"
       \      ],
       \      "type": "functional test"
@@ -4761,7 +4770,7 @@ let s:has_projections = {
       \      "template": [
       \        "require 'rails_helper'",
       \        "",
-      \        "describe {camelcase|capitalize|colons} do",
+      \        "RSpec.describe {camelcase|capitalize|colons}, type: :model do",
       \        "end"
       \      ],
       \      "type": "unit test"
@@ -4771,7 +4780,7 @@ let s:has_projections = {
       \      "template": [
       \        "require 'rails_helper'",
       \        "",
-      \        "describe \"{underscore|capitalize|blank}\" do",
+      \        "RSpec.describe \"{underscore|capitalize|blank}\", type: :request do",
       \        "end"
       \      ],
       \      "type": "integration test"
