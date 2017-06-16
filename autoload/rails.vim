@@ -732,10 +732,12 @@ function! s:readable_calculate_file_type() dict abort
     let r = "view-layout-" . e
   elseif f =~ '\<app/views\>.*\.'
     let r = "view-" . e
-  elseif f =~ '\<test/\%(unit\|models\|helpers\|jobs\)/.*_test\.rb$'
-    let r = "test-unit"
-  elseif f =~ '\<test/\%(functional\|controllers\)/.*_test\.rb$'
-    let r = "test-functional"
+  elseif f =~ '\<test/unit/.*_helper\.rb$'
+    let r = "test-helper"
+  elseif f =~ '\<test/unit/.*\.rb$'
+    let r = "test-model"
+  elseif f =~ '\<test/functional/.*_controller_test\.rb$'
+    let r = "test-controller"
   elseif f =~ '\<test/integration/.*_test\.rb$'
     let r = "test-integration"
   elseif f =~ '\<test/lib/.*_test\.rb$'
@@ -3886,7 +3888,7 @@ function! rails#ruby_syntax() abort
     syn keyword rubyRailsTestMethod refute refute_empty refute_equal refute_in_delta refute_in_epsilon refute_includes refute_instance_of refute_kind_of refute_match refute_nil refute_operator refute_predicate refute_respond_to refute_same
     syn keyword rubyRailsTestMethod add_assertion assert assert_block assert_equal assert_includes assert_in_delta assert_instance_of assert_kind_of assert_match assert_nil assert_no_match assert_not assert_not_equal assert_not_includes assert_not_nil assert_not_same assert_nothing_raised assert_nothing_thrown assert_operator assert_raise assert_respond_to assert_same assert_send assert_throws assert_recognizes assert_generates assert_routing flunk fixtures fixture_path use_transactional_fixtures use_instantiated_fixtures assert_difference assert_no_difference assert_valid
     syn keyword rubyRailsTestMethod test setup teardown
-    if !buffer.type_name('test-unit')
+    if buffer.type_name('test-controller', 'test-integration')
       syn match   rubyRailsTestControllerMethod  '\.\@<!\<\%(get\|post\|put\|patch\|delete\|head\|process\|assigns\)\>'
       syn keyword rubyRailsTestControllerMethod get_via_redirect post_via_redirect put_via_redirect delete_via_redirect request_via_redirect
       syn keyword rubyRailsTestControllerMethod assert_response assert_redirected_to assert_template assert_recognizes assert_generates assert_routing assert_dom_equal assert_dom_not_equal assert_select assert_select_rjs assert_select_encoded assert_select_email assert_tag assert_no_tag
@@ -4400,7 +4402,7 @@ function! s:BufAbbreviations()
   if !exists('g:rails_no_abbreviations')
     let buffer = rails#buffer()
     " Limit to the right filetypes.  But error on the liberal side
-    if buffer.type_name('controller','view','helper','test-functional','test-integration')
+    if buffer.type_name('controller','view','helper','test-controller','test-helper','test-integration')
       Rabbrev pa[ params
       Rabbrev rq[ request
       Rabbrev rs[ response
