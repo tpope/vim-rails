@@ -3008,7 +3008,7 @@ function! s:viewEdit(cmd, ...) abort
     return s:error("Cannot find view without controller")
   endif
   let found = rails#buffer().resolve_view(view, line('.'))
-  let djump = a:0 ? matchstr(a:1,'!.*\|#.*\|:\d*\ze\%(:in\)\=$') : ''
+  let djump = a:0 ? matchstr(a:1,'#.*\|:\d*\ze\%(:in\)\=$') : ''
   if !empty(found)
     return s:edit(a:cmd,found.djump)
   elseif a:0 && a:1 =~# '!'
