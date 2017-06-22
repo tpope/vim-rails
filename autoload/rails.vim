@@ -3955,13 +3955,22 @@ function! rails#ruby_syntax() abort
   endif
 
   if buffer.type_name('spec')
-    syn keyword rubyTestMacro describe feature containedin=rubyKeywordAsMethod
-    syn keyword rubyTestMacro context it its specify shared_context shared_examples shared_examples_for shared_context include_examples include_context it_should_behave_like it_behaves_like before after around subject xit scenario background given
-    syn match rubyTestMacro '\<let\>!\='
+    syn match rubyTestHelper '\<subject\>'
+    syn match rubyTestMacro '\<\%(let\|given\)\>!\='
+    syn match rubyTestMacro '\<subject\>!\=\ze\s*\%([({&:]\|do\>\)'
+    syn keyword rubyTestMacro before after around background setup teardown
+    syn keyword rubyTestMacro context describe feature shared_context shared_examples shared_examples_for containedin=rubyKeywordAsMethod
+    syn keyword rubyTestMacro it example specify scenario include_examples include_context it_should_behave_like it_behaves_like
+    syn keyword rubyComment xcontext xdescribe xfeature containedin=rubyKeywordAsMethod
+    syn keyword rubyComment xit xexample xspecify xscenario
   endif
   if buffer.type_name('spec', 'cucumber')
-    syn keyword rubyAssertion pending skip expect expect_any_instance_of allow allow_any_instance_of
+    syn keyword rubyAssertion pending skip expect is_expected expect_any_instance_of allow allow_any_instance_of
     syn keyword rubyTestHelper double instance_double class_double object_double described_class
+  endif
+  if buffer.type_name('spec-controller')
+    syn keyword rubyTestMacro render_views
+    syn keyword rubyTestHelper assigns
   endif
   if buffer.type_name('spec-helper')
     syn keyword rubyTestAction assign
