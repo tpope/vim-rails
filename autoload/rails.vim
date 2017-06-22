@@ -107,7 +107,7 @@ function! s:dot_relative(path) abort
 endfunction
 
 function! s:mods(mods) abort
-  return s:gsub(a:mods, '[<]mods[>]\s*', '')
+  return s:gsub(a:mods, '[<]mods[>]\s*|^\s', '')
 endfunction
 
 function! s:pop_command()
@@ -3204,14 +3204,14 @@ function! s:find(cmd, file) abort
   if file =~# '^\.\.\=\%([\/]\|$\)'
     let file = simplify(rails#app().path() . s:sub(file[1:-1], '^\.', '/..'))
   endif
-  let cmd = (empty(a:cmd) ? '' : s:findcmdfor(a:cmd)) . ' '
+  let cmd = (empty(a:cmd) ? '' : s:findcmdfor(a:cmd))
   if djump =~# '!'
     if !isdirectory(fnamemodify(file, ':h'))
       call mkdir(fnamemodify(file, ':h'), 'p')
     endif
-    return s:editcmdfor(cmd) . s:jumpargs(fnamemodify(file, ':~:.'), djump)
+    return s:editcmdfor(cmd) . ' ' . s:jumpargs(fnamemodify(file, ':~:.'), djump)
   else
-    return cmd . s:jumpargs(file, djump)
+    return cmd . ' ' . s:jumpargs(file, djump)
   endif
 endfunction
 
