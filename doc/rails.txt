@@ -291,8 +291,8 @@ back out of any of the above commands.
 EXECUTABLE WRAPPERS				*rails-exec*
 
 Several commands are provided that wrap the `rails` and `rake` executables.
-Additionally, `rake` can be invoked directly with |:make| (or dispatch.vim's
-:Make).
+Additionally, `rails` (or `rake` on Rails versions older than 5) can be
+invoked directly with |:make| or dispatch.vim's :Make.
 
 						*rails-:Rails*
 :Rails {command} [options]

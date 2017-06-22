@@ -1440,7 +1440,7 @@ endfunction
 
 function! s:app_rake_command(...) dict abort
   let cmd = 'rake'
-  if self.has_rails5() && get(a:, 1, '') !=# 'norails' && get(g:, 'rails_make', '') ==# 'rails'
+  if self.has_rails5() && get(a:, 1, '') !=# 'norails' && get(g:, 'rails_make', '') !=# 'rake'
     let cmd = 'rails'
   endif
   if get(a:, 1, '') !=# 'static' && self.has_path('.zeus.sock') && executable('zeus')
@@ -5316,9 +5316,6 @@ function! rails#buffer_setup() abort
   endif
 
   compiler rails
-  if get(g:, 'rails_make', '') !=# 'rails'
-    let b:current_compiler = 'rake'
-  endif
   let &l:makeprg = self.app().rake_command('static')
   let &l:errorformat .= ',chdir '.escape(self.app().path(), ',')
 
