@@ -4193,24 +4193,21 @@ function! s:BufMappings() abort
   if empty(maparg('<Plug><cfile>', 'c'))
     return
   endif
-  nmap <buffer><silent> <Plug>RailsFind       <SID>:find <Plug><cfile><CR>
-  nmap <buffer><silent> <Plug>RailsSplitFind  <SID>:sfind <Plug><cfile><CR>
-  nmap <buffer><silent> <Plug>RailsTabFind    <SID>:tabfind <Plug><cfile><CR>
   let pattern = '^$\|_gf(v:count\|[Rr]uby\|[Rr]ails'
   if mapcheck('gf', 'n') =~# pattern
-    nmap <buffer> gf         <Plug>RailsFind
+    nmap <buffer><silent> gf         <SID>:find <Plug><cfile><CR>
   endif
   if mapcheck('<C-W>f', 'n') =~# pattern
-    nmap <buffer> <C-W>f     <Plug>RailsSplitFind
+    nmap <buffer><silent> <C-W>f     <SID>:sfind <Plug><cfile><CR>
   endif
   if mapcheck('<C-W><C-F>', 'n') =~# pattern
-    nmap <buffer> <C-W><C-F> <Plug>RailsSplitFind
+    nmap <buffer><silent> <C-W><C-F> <SID>:sfind <Plug><cfile><CR>
   endif
   if mapcheck('<C-W>gf', 'n') =~# pattern
-    nmap <buffer> <C-W>gf    <Plug>RailsTabFind
+    nmap <buffer><silent> <C-W>gf    <SID>:tabfind <Plug><cfile><CR>
   endif
   if mapcheck('<C-R><C-F>', 'c') =~# pattern
-    cmap <buffer> <C-R><C-F> <Plug><cfile>
+    cmap <buffer>         <C-R><C-F> <Plug><cfile>
   endif
 endfunction
 
