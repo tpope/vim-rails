@@ -2342,6 +2342,9 @@ function! s:ruby_cfile() abort
   let res = s:findamethod('fixtures','fixtures/\1.yml')
   if res != ""|return res|endif
 
+  let res = s:findamethod('fixture_file_upload','fixtures/\1')
+  if res != ""|return res|endif
+
   let res = s:findamethod('file_fixture','fixtures/files/\1')
   if res != ""|return res|endif
 
@@ -3989,7 +3992,7 @@ function! rails#ruby_syntax() abort
     syn match   rubyTestAction '\.\@<!\<\%(get\|post\|put\|patch\|delete\|head\|process\)\>'
     syn match   rubyTestAction '\<follow_redirect!'
     syn keyword rubyTestAction get_via_redirect post_via_redirect
-    syn keyword rubyTestHelper request response flash session cookies
+    syn keyword rubyTestHelper request response flash session cookies fixture_file_upload
   endif
   if buffer.type_name('test-system', 'spec-feature', 'cucumber')
     syn keyword rubyTestHelper body current_host current_path current_scope current_url current_window html response_headers source status_code title windows
