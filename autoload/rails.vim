@@ -255,7 +255,7 @@ function! s:lastopeningline(pattern,limit,start)
 endfunction
 
 function! s:readable_define_pattern() dict abort
-  if self.name() =~ '\.yml\%(\.example\)\=$'
+  if self.name() =~ '\.yml\%(\.example\|sample\)\=$'
     return '^\%(\h\k*:\)\@='
   endif
   let define = '^\s*def\s\+\(self\.\)\='
@@ -4721,8 +4721,9 @@ endfunction
 
 let s:default_projections = {
       \  "*.example.yml": {"alternate": "{}.yml"},
-      \  "*.yml": {"alternate": ["{}.example.yml", "{}.yml"]},
+      \  "*.yml": {"alternate": ["{}.example.yml", "{}.yml.example", "{}.yml.sample"]},
       \  "*.yml.example": {"alternate": "{}.yml"},
+      \  "*.yml.sample": {"alternate": "{}.yml"},
       \  "Gemfile": {"alternate": "Gemfile.lock", "type": "lib"},
       \  "Gemfile.lock": {"alternate": "Gemfile"},
       \  "README": {"alternate": "config/database.yml"},
@@ -5280,7 +5281,7 @@ function! rails#buffer_setup() abort
     elseif exists(':SnipMateLoadScope') == 2
       SnipMateLoadScope rails
     endif
-  elseif self.name() =~# '\.yml\%(\.example\)\=$'
+  elseif self.name() =~# '\.yml\%(\.example\|sample\)\=$'
     call self.setvar('&define',self.define_pattern())
   elseif ft =~# '^eruby\>'
     call self.setvar('&define',self.define_pattern())
