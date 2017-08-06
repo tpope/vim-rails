@@ -1938,8 +1938,10 @@ function! s:app_generator_command(bang, mods, ...) dict abort
   try
     let &l:makeprg = self.prepare_rails_command(cmd)
     let &l:errorformat = s:efm_generate . ',chdir '.escape(self.path(), ',')
+    call s:push_chdir(1)
     noautocmd make!
   finally
+    call s:pop_command()
     let &l:errorformat = old_errorformat
     let &l:makeprg = old_makeprg
   endtry
