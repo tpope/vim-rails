@@ -1825,11 +1825,11 @@ function! rails#get_binding_for(pid) abort
     let lsof = '/usr/sbin/lsof'
   endif
   if exists('lsof')
-    let output = system(lsof.' -an -i4tcp -sTCP:LISTEN -p'.a:pid)
+    let output = system(lsof.' -anP -i4tcp -sTCP:LISTEN -p'.a:pid)
     let binding = matchstr(output, '\S\+:\d\+\ze\s\+(LISTEN)\n')
     let binding = s:sub(binding, '^\*', '0.0.0.0')
     if empty(binding)
-      let output = system(lsof.' -an -i6tcp -sTCP:LISTEN -p'.a:pid)
+      let output = system(lsof.' -anP -i6tcp -sTCP:LISTEN -p'.a:pid)
       let binding = matchstr(output, '\S\+:\d\+\ze\s\+(LISTEN)\n')
       let binding = s:sub(binding, '^\*', '[::]')
     endif
