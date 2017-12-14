@@ -1678,7 +1678,7 @@ function! s:Rails(bang, count, arg) abort
   let use_rake = 0
   if !empty(a:arg)
     let str = a:arg
-    let native = '\v^%(application|benchmarker|console|dbconsole|destroy|generate|new|plugin|profiler|runner|server|version)>'
+    let native = '\v^%(application|benchmarker|console|dbconsole|destroy|generate|new|plugin|profiler|runner|server|version|[cgst]\|db)>'
     if !rails#app().has('rails3')
       let use_rake = !rails#app().has_file('script/' . matchstr(str, '\S\+'))
     elseif str !~# '^-' && str !~# native
