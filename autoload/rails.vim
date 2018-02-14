@@ -3894,7 +3894,7 @@ function! rails#ruby_syntax() abort
     syn keyword rubyExceptionHandler rescue_from
     syn match   rubyMacro '\<respond_to\>\ze[( ] *[:*]'
     syn match   rubyResponse '\<respond_to\>\ze[( ] *\%([&{]\|do\>\)'
-    syn keyword rubyResponse render head redirect_to redirect_back respond_with
+    syn keyword rubyResponse render head redirect_to redirect_back respond_with send_data send_file
     syn keyword rubyCallback before_filter append_before_filter prepend_before_filter after_filter append_after_filter prepend_after_filter around_filter append_around_filter prepend_around_filter skip_before_filter skip_after_filter skip_filter before_action append_before_action prepend_before_action after_action append_after_action prepend_after_action around_action append_around_action prepend_around_action skip_before_action skip_after_action skip_action
   endif
 
