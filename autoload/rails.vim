@@ -2304,7 +2304,6 @@ endfunction
 
 function! s:ruby_cfile() abort
   let buffer = rails#buffer()
-  let format = s:format()
 
   let res = s:findit('\v\s*<require\s*\(=\s*File.expand_path\([''"]../(\f+)[''"],\s*__FILE__\s*\)',expand('%:p:h').'/\1')
   if res != ""|return simplify(res.(res !~ '\.[^\/.]\+$' ? '.rb' : ''))|endif
