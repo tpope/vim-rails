@@ -860,6 +860,7 @@ function! s:app_has(feature) dict
         \'rails3': 'config/application.rb',
         \'rails5': 'app/assets/config/manifest.js|config/initializers/application_controller_renderer.rb',
         \'cucumber': 'features/',
+        \'webpack': 'app/javascript/packs',
         \'turnip': 'spec/acceptance/',
         \'sass': 'public/stylesheets/sass/'}
   if self.cache.needs('features')
@@ -1519,10 +1520,27 @@ function! s:readable_preview_urls(lnum) dict abort
     let urls = urls + [s:sub(s:sub(self.name(),'^public/stylesheets/sass/','/stylesheets/'),'\.s[ac]ss$','.css')]
   elseif self.name() =~ '^public/'
     let urls = urls + [s:sub(self.name(),'^public','')]
-  elseif self.name() =~ '^app/assets/stylesheets/'
-    let urls = urls + ['/assets/application.css']
-  elseif self.name() =~ '^app/assets/javascripts/'
-    let urls = urls + ['/assets/application.js']
+  elseif self.name() =~ '^\%(app\|lib\|vendor\)/assets/stylesheets/'
+    call add(urls, '/assets/' . matchstr(self.name(), 'stylesheets/\zs[^.]*') . '.css')
+  elseif self.name() =~ '^\%(app\|lib\|vendor\)/assets/javascripts/'
+    call add(urls, '/assets/' . matchstr(self.name(), 'javascripts/\zs[^.]*') . '.js')
+  elseif self.name() =~ '^app/javascript/packs/'
+    let file = matchstr(self.name(), 'packs/\zs.\{-\}\%(\.erb\)\=$')
+    if file =~# escape(join(self.app().pack_suffixes('css'), '\|'), '.') . '$'
+      let file = fnamemodify(file, ':r') . '.css'
+    elseif file =~# escape(join(self.app().pack_suffixes('js'), '\|'), '.') . '$'
+      let file = fnamemodify(file, ':r') . '.js'
+    endif
+    if self.app().has_path('public/packs/manifest.json')
+      let manifest = rails#json_parse(readfile(rails#app().path('public/packs/manifest.json')))
+    else
+      let manifest = {}
+    endif
+    if has_key(manifest, file)
+      call add(urls, manifest[file])
+    else
+      call add(urls, '/packs/' . file)
+    endif
   elseif self.controller_name() != '' && self.controller_name() != 'application'
     if self.type_name('controller') && self.last_method(a:lnum) != ''
       let handler = self.controller_name().'#'.self.last_method(a:lnum)
@@ -1532,10 +1550,17 @@ function! s:readable_preview_urls(lnum) dict abort
       let handler = self.controller_name().'#'.fnamemodify(self.name(),':t:r:r')
     endif
     if exists('handler')
+      let params = {}
+      for item in self.projected('params')
+        if type(item) == type({})
+          call extend(params, item, 'keep')
+        endif
+      endfor
       for route in self.app().routes()
         if route.method =~# 'GET' && route.handler ==# handler
-          let urls += [s:gsub(s:gsub(route.path, '\([^()]*\)', ''), ':\w+', '1')]
-
+          let path = s:gsub(route.path, '\([^()]*\)', '')
+          let path = substitute(path, '/\(\w\+\)/:\(\w\+\)$', '\="/".submatch(1)."/:".rails#singularize(submatch(1))."_".submatch(2)', 'g')
+          let urls += [substitute(path, ':\(\w\+\)', '\=get(params,submatch(1),1)', 'g')]
         endif
       endfor
     endif
@@ -2425,6 +2450,18 @@ function! s:ruby_cfile() abort
     return s:findasset(res, 'javascripts')
   endif
 
+  let res = s:findfromview('asset_pack_path','\1')
+  if res != ""
+    return buffer.app().resolve_pack(res)
+  endif
+
+  for [type, suf] in [['javascript', '.js'], ['stylesheet', '.css']]
+    let res = s:findfromview(type.'_pack_tag','\1')
+    if res != ""
+      return buffer.app().resolve_pack(res . suf)
+    endif
+  endfor
+
   if buffer.type_name('controller', 'mailer')
     let contr = s:controller()
     let view = s:findit('\s*\<def\s\+\(\k\+\)\>(\=','/\1')
@@ -2928,8 +2965,45 @@ function! s:app_resolve_asset(name, ...) dict abort
   return ''
 endfunction
 
+function! s:app_pack_suffixes(type) dict abort
+  if !self.has('webpack')
+    return []
+  endif
+  if a:type =~# '^stylesheets\=$\|^css$'
+    let suffixes = ['.sass', '.css', '.scss']
+  elseif a:type =~# '^javascripts\=$\|^js$'
+    let suffixes = ['.coffee', '.js', '.jsx', '.ts', '.vue']
+  else
+    return []
+  endif
+  call extend(suffixes, map(copy(suffixes), 'v:val.".erb"'))
+  return s:uniq(suffixes)
+endfunction
+
+function! s:app_resolve_pack(name, ...) dict abort
+  let name = s:sub(a:name, '\.erb$', '')
+  let suffixes = self.pack_suffixes(matchstr(name, '\.\zs\w\+$'))
+  let dir = self.path('app/javascript/packs')
+  if len(suffixes)
+    let base = matchstr(name, '.*\ze\.\w\+$')
+    let suffixesadd = &l:suffixesadd
+    try
+      let &l:suffixesadd = join(suffixes, ',')
+      let exact = findfile(base, escape(dir, ' ,'))
+    finally
+      let &l:suffixesadd = suffixesadd
+    endtry
+    if !empty(exact)
+      return exact
+    endif
+  elseif !a:0 || filereadable(dir . '/' . name)
+    return dir . '/' . name
+  endif
+  return a:0 ? a:1 : dir . '/' . name
+endfunction
+
 call s:add_methods('readable', ['resolve_view', 'resolve_layout'])
-call s:add_methods('app', ['asset_path', 'resolve_asset'])
+call s:add_methods('app', ['asset_path', 'resolve_asset', 'pack_suffixes', 'resolve_pack'])
 
 function! s:findview(name) abort
   let view = rails#buffer().resolve_view(a:name, line('.'))
@@ -2994,6 +3068,7 @@ function! s:AssetEdit(cmd, name, dir, suffix, fallbacks) abort
   endif
   let suffixes = s:suffixes(a:dir)
   for file in map([''] + suffixes, '"app/assets/".a:dir."/".name.v:val') +
+        \ map(rails#app().pack_suffixes(suffixes[0][1:-1]), '"app/javascript/packs/".name.v:val') +
         \ map(copy(a:fallbacks), 'printf(v:val, name)') +
         \ [   'public/'.a:dir.'/'.name.suffixes[0],
         \ 'app/assets/'.a:dir.'/'.name.(name =~# '\.' ? '' : a:suffix)]
@@ -3001,10 +3076,11 @@ function! s:AssetEdit(cmd, name, dir, suffix, fallbacks) abort
       break
     endif
   endfor
+  let jump = matchstr(a:name, '[!#:].*$')
   if name =~# '\.' || a:name =~# '!'
-    return s:edit(a:cmd, file . matchstr(a:name, '[!#:]*'))
+    return s:edit(a:cmd, file . jump)
   else
-    return s:open(a:cmd, file . matchstr(a:name, '[!#:]*'))
+    return s:open(a:cmd, file . jump)
   endif
 endfunction
 
@@ -3027,9 +3103,11 @@ function! s:javascriptList(A, L, P, ...) abort
   let list = rails#app().relglob('app/assets/'.dir.'/','**/*.*','')
   let suffixes = s:suffixes(dir)
   let strip = '\%('.escape(join(suffixes, '\|'), '.*[]~').'\)$'
-  let g:strip = strip
   call map(list,'substitute(v:val,strip,"","")')
   call extend(list, rails#app().relglob("public/".dir."/","**/*",suffixes[0]))
+  for suffix in rails#app().pack_suffixes(suffixes[0][1:-1])
+    call extend(list, rails#app().relglob("app/javascript/packs/","**/*",suffix))
+  endfor
   if !empty(a:0 ? a:2 : [])
     call extend(list, a:2)
     call s:uniq(list)
@@ -3780,7 +3858,7 @@ endfunction
 
 function! s:helpermethods()
   return ""
-        \."action_name asset_path asset_url atom_feed audio_path audio_tag audio_url auto_discovery_link_tag "
+        \."action_name asset_pack_path asset_path asset_url atom_feed audio_path audio_tag audio_url auto_discovery_link_tag "
         \."button_tag button_to "
         \."cache cache_fragment_name cache_hit cache_if cache_unless capture cdata_section check_box check_box_tag collection_check_boxes collection_radio_buttons collection_select color_field color_field_tag compute_asset_extname compute_asset_host compute_asset_path concat content_tag content_tag_for controller controller_name controller_path convert_to_model cookies csrf_meta_tag csrf_meta_tags current_cycle cycle "
         \."date_field date_field_tag date_select datetime_field datetime_field_tag datetime_local_field datetime_local_field_tag datetime_select debug distance_of_time_in_words distance_of_time_in_words_to_now div_for dom_class dom_id "
@@ -3789,14 +3867,14 @@ function! s:helpermethods()
         \."grouped_collection_select grouped_options_for_select "
         \."headers hidden_field hidden_field_tag highlight "
         \."image_alt image_path image_submit_tag image_tag image_url "
-        \."j javascript_cdata_section javascript_include_tag javascript_path javascript_tag javascript_url "
+        \."j javascript_cdata_section javascript_include_tag javascript_pack_tag javascript_path javascript_tag javascript_url "
         \."l label label_tag link_to link_to_if link_to_unless link_to_unless_current localize "
         \."mail_to month_field month_field_tag "
         \."number_field number_field_tag number_to_currency number_to_human number_to_human_size number_to_percentage number_to_phone number_with_delimiter number_with_precision "
         \."option_groups_from_collection_for_select options_for_select options_from_collection_for_select "
         \."params password_field password_field_tag path_to_asset path_to_audio path_to_font path_to_image path_to_javascript path_to_stylesheet path_to_video phone_field phone_field_tag pluralize provide public_compute_asset_path "
         \."radio_button radio_button_tag range_field range_field_tag raw render request request_forgery_protection_token reset_cycle response "
-        \."safe_concat safe_join sanitize sanitize_css search_field search_field_tag select_date select_datetime select_day select_hour select_minute select_month select_second select_tag select_time select_year session simple_format strip_links strip_tags stylesheet_link_tag stylesheet_path stylesheet_url submit_tag "
+        \."safe_concat safe_join sanitize sanitize_css search_field search_field_tag select_date select_datetime select_day select_hour select_minute select_month select_second select_tag select_time select_year session simple_format strip_links strip_tags stylesheet_link_tag stylesheet_pack_tag stylesheet_path stylesheet_url submit_tag "
         \."t tag telephone_field telephone_field_tag text_area text_area_tag text_field text_field_tag time_ago_in_words time_field time_field_tag time_select time_tag time_zone_options_for_select time_zone_select to_sentence translate truncate "
         \."url_field url_field_tag url_for url_to_asset url_to_audio url_to_font url_to_image url_to_javascript url_to_stylesheet url_to_video utf8_enforcer_tag "
         \."video_path video_tag video_url "
@@ -5190,8 +5268,13 @@ function! s:set_path_options() abort
     exe 'cmap <buffer><script><expr> <Plug><cfile>' map
     let &l:include = &l:include.(empty(&l:include) ? '' : '\|') .
           \ '^\s*[[:punct:]]\+=\s*\%(link\|require\|depend_on\|stub\)\w*'
-  elseif name =~# '^node_modules\>\|^app/javascript\>'
-    let &l:suffixesadd = join(s:uniq(['.coffee', '.js', '.jsx', '.ts', '.vue'] + split(&l:suffixesadd, ',') + ['/package.json']), ',')
+  elseif name =~# '^app/javascript\>'
+    let sssuf = self.app().pack_suffixes('css')
+    if len(sssuf) && name =~# '\%(' . escape(join(sssuf, '\|'), '.') . '\)$'
+      let &l:suffixesadd = join(s:uniq(sssuf + split(&l:suffixesadd, ',') + ['/package.json']), ',')
+    else
+      let &l:suffixesadd = join(s:uniq(self.app().pack_suffixes('js') + split(&l:suffixesadd, ',') + ['/package.json']), ',')
+    endif
   else
     if empty(&l:suffixesadd)
       setlocal suffixesadd=.rb
