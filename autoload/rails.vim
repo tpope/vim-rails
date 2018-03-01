@@ -1468,7 +1468,7 @@ function! s:readable_default_rake_task(...) dict abort
 endfunction
 
 function! s:rake2rails(task) abort
-  let task = s:gsub(a:task, '^--task$', '')
+  let task = s:gsub(a:task, '^--tasks$', '')
   let task = s:gsub(task, '<TEST\w*\=', '')
   return task
 endfunction
