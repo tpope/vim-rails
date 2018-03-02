@@ -112,6 +112,18 @@ augroup END
 command! -bang -bar -nargs=* -count -complete=customlist,rails#complete_rails Rails execute rails#command(<bang>0, '<mods>', !<count> && <line1> ? -1 : <count>, <q-args>)
 
 " }}}1
+" db.vim support {{{1
+
+
+call extend(g:, {'db_adapters': {}}, 'keep')
+call extend(g:db_adapters, {
+      \ 'oracle-enhanced': 'oracle',
+      \ 'mysql2': 'mysql',
+      \ 'sqlite3': 'sqlite'}, 'keep')
+
+let g:db_adapter_rails = 'rails#db_'
+
+" }}}1
 " abolish.vim support {{{1
 
 function! s:function(name)
