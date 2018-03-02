@@ -1163,7 +1163,7 @@ endfunction
 " Rake {{{1
 
 function! s:qf_pre() abort
-  let dir = substitute(matchstr(','.&l:errorformat, ',chdir \zs\%(\\.\|[^,]\)*'), '\\,' ,',', 'g')
+  let dir = substitute(matchstr(','.&l:errorformat, ',%\\&chdir \zs\%(\\.\|[^,]\)*'), '\\,' ,',', 'g')
   let cwd = getcwd()
   if !empty(dir) && dir !=# cwd
     let cd = exists('*haslocaldir') && haslocaldir() ? 'lcd' : 'cd'
@@ -5428,7 +5428,12 @@ function! rails#buffer_setup() abort
 
   compiler rails
   let &l:makeprg = self.app().rake_command('static')
-  let &l:errorformat .= ',chdir '.escape(self.app().path(), ',')
+  let &l:errorformat .= ',%\&chdir '.escape(self.app().path(), ',')
+  if &l:makeprg =~# 'rails$'
+    let &l:errorformat .= ',%\&buffer=`=rails#buffer('.self['#'].').default_task(v:lnum)`,%\&default=default'
+  elseif &l:makeprg =~# 'rake$'
+    let &l:errorformat .= ',%\&buffer=`=rails#buffer('.self['#'].').default_rake_task(v:lnum)`'
+  endif
 
   if exists(':Dispatch') == 2 && !exists('g:autoloaded_dispatch')
     runtime! autoload/dispatch.vim
