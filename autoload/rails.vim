@@ -4133,7 +4133,7 @@ function! rails#buffer_syntax() abort
       syn match sprocketsIncluded /\f\+\|"[^"]*"/ contained
       syn match sprocketsIncludedDir /\f\+\|"[^"]*"/ contained skipwhite nextgroup=sprocketsIncluded
     endif
-    if &syntax ==# "scss" || &syntax ==# "sass"
+    if &syntax =~# "\<s[ac]ss\>"
       syn match sassFunction "\<\%(\%(asset\|image\|font\|video\|audio\|javascript\|stylesheet\)-\%(url\|path\)\)\>(\@=" contained
       syn match sassFunction "\<\asset-data-url\>(\@=" contained
     endif
