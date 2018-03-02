@@ -4405,6 +4405,32 @@ endfunction
 
 call s:add_methods('app', ['db_config', 'db_url', 'dbext_settings'])
 
+function! rails#db_canonicalize(url) abort
+  let app = rails#app(db#url#file_path(a:url))
+  if empty(app)
+    throw 'DB: Not a Rails app'
+  endif
+  let env = db#url#fragment(a:url)
+  let url = empty(env) ? app.db_url() : app.db_url(env)
+  if empty(url)
+    throw 'DB: No Rails database for environment '.env
+  endif
+  let url = substitute(url, '^[^:]*\ze:', '\=get(g:db_adapters, submatch(0), submatch(0))', '')
+  let url = substitute(url, '^[^:]*://\%([^/@]*@\)\=\zs\%(localhost\)\=\([/?].*\)\=[?&]socket=\([^&]*\)', '\2\1', '')
+  let url = substitute(url, '[?&].*', '', '')
+  let url = substitute(url, '^mysql://\ze[^@]*$', 'mysql://root@', '')
+  return url
+endfunction
+
+function! rails#db_test_directory(path) abort
+  return filereadable(a:path . '/config/environment.rb') && isdirectory(a:path . '/app')
+endfunction
+
+function! rails#db_complete_fragment(url, ...) abort
+  let app = rails#app(db#url#file_path(a:url))
+  return len(app) ? app.environments() : []
+endfunction
+
 " }}}1
 " Abbreviations {{{1
 
