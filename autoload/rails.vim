@@ -5430,7 +5430,7 @@ function! rails#buffer_setup() abort
   let &l:makeprg = self.app().rake_command('static')
   let &l:errorformat .= ',%\&chdir '.escape(self.app().path(), ',')
   if &l:makeprg =~# 'rails$'
-    let &l:errorformat .= ',%\&buffer=`=rails#buffer('.self['#'].').default_task(v:lnum)`,%\&default=default'
+    let &l:errorformat .= ',%\&buffer=`=rails#buffer('.self['#'].').default_task(v:lnum)`'
   elseif &l:makeprg =~# 'rake$'
     let &l:errorformat .= ',%\&buffer=`=rails#buffer('.self['#'].').default_rake_task(v:lnum)`'
   endif

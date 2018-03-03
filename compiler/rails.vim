@@ -50,6 +50,7 @@ CompilerSet errorformat^=
       \%+Eruby:%.%#(LoadError),
       \%+EUsage:%.%#,
       \%+ECould\ not\ find\ generator%.%#,
-      \%+EType\ 'rails'\ for\ help.
+      \%+EType\ 'rails'\ for\ help.,
+      \%\\&default=default
 
 " -complete=customlist,rails#complete_rails
