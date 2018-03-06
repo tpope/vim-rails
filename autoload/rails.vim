@@ -4310,6 +4310,13 @@ function! s:app_db_config(environment) dict
   elseif self.has_path('config/database.yml')
     try
       let all = rails#yaml_parse_file(self.path('config/database.yml'))
+      for [e, c] in items(all)
+        for [k, v] in type(c) ==# type({}) ? items(c) : []
+          if type(v) ==# get(v:, 't_none', 7)
+            call remove(c, k)
+          endif
+        endfor
+      endfor
       call self.cache.set('db_config', all)
     catch /^invalid/
     endtry
@@ -4346,7 +4353,12 @@ function! s:app_db_config(environment) dict
 endfunction
 
 function! s:url_encode(str, ...) abort
-  return substitute(a:str, '[?@=&<>%#[:space:]' . (a:0 && a:1 == 'path' ? '' : ':/').']', '\=printf("%%%02X", char2nr(submatch(0)))', 'g')
+  if type(a:str) ==# get(v:, 't_bool', 6)
+    let str = a:str ? 'true' : 'false'
+  else
+    let str = a:str
+  endif
+  return substitute(str, '[?@=&<>%#[:space:]' . (a:0 && a:1 == 'path' ? '' : ':/').']', '\=printf("%%%02X", char2nr(submatch(0)))', 'g')
 endfunction
 
 function! s:app_db_url(...) dict abort
