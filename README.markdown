@@ -43,6 +43,9 @@ applications.
 
 * Integration with other plugins.  If [dispatch.vim][] is installed, `:Rails`
   and other command wrappers will use it for asynchronous execution.  Users of
+  [db.vim](https://github.com/tpope/vim-db) and
+  [dbext](http://www.vim.org/script.php?script_id=356) get easy access to
+  their application's database.  Users of
   [abolish.vim](https://github.com/tpope/vim-abolish) get pluralize and
   tableize coercions, and users of [bundler.vim][] get a smattering of
   features.   `:help rails-integration`

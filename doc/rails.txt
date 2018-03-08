@@ -533,13 +533,22 @@ be found at http://www.vim.org/.
 			(defaults to $RAILS_ENV or development) from
 			config/database.yml and uses it to configure dbext.
 			The configuration is cached on a per application
-			basis.  With dbext version 8.00 and newer, this
-			command is called automatically when needed.  When
-			dbext is configured, you can execute SQL directly from
-			Vim: >
+			basis.  The development environment is loaded
+			automatically.  When dbext is configured, you can
+			execute SQL directly from Vim: >
 				:Select * from posts order by id desc
 				:Update comments set author_id = 1
 <
+						*rails-db*
+Created by yours truly, db.vim is a modern take on a Vim database plugin.
+This plugin sets the db.vim default to the application's development database,
+and also provides an interface for accessing any environment of any Rails app:
+>
+  :DB rails:#production
+  :DB rails:/path/to/app
+  :DB rails:/path/to/app#production
+<
+
 						*rails-surround*
 The |surround| plugin available from vim.org enables adding and removing
 "surroundings" like parentheses, quotes, and HTML tags.  Even by itself, it is
