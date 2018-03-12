@@ -4785,15 +4785,9 @@ function! s:app_smart_projections() dict abort
       endif
     endfor
     if has_key(dict, 'app/mailers/*_mailer.rb') || self.has_rails5()
-      let dict['app/mailers/*_mailer.rb'] = {
-            \ "affinity": "controller",
-            \ "template": ["class {camelcase|capitalize|colons}Mailer < ActionMailer::Base", "end"],
-            \ "type": "mailer"}
+      let dict['app/mailers/*_mailer.rb'] = {"type": "mailer"}
     else
-      let dict['app/mailers/*.rb'] = {
-            \ "affinity": "controller",
-            \ "template": ["class {camelcase|capitalize|colons} < ActionMailer::Base", "end"],
-            \ "type": "mailer"}
+      let dict['app/mailers/*.rb'] = {"type": "mailer"}
     endif
     call self.cache.set('smart_projections', dict, ts)
   endif
@@ -4873,6 +4867,10 @@ let s:default_projections = {
       \    "affinity": "model",
       \    "template": ["class {camelcase|capitalize|colons}Job < ActiveJob::Base", "end"],
       \    "type": "job"
+      \  },
+      \  "app/mailers/*.rb": {
+      \    "affinity": "controller",
+      \    "template": ["class {camelcase|capitalize|colons} < ActionMailer::Base", "end"]
       \  },
       \  "app/models/*.rb": {
       \    "affinity": "model",
