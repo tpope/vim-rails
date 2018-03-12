@@ -539,10 +539,11 @@ be found at http://www.vim.org/.
 				:Select * from posts order by id desc
 				:Update comments set author_id = 1
 <
-						*rails-db*
-Created by yours truly, db.vim is a modern take on a Vim database plugin.
-This plugin sets the db.vim default to the application's development database,
-and also provides an interface for accessing any environment of any Rails app:
+						*rails-dadbod*
+Created by yours truly, dadbod.vim is a modern take on a Vim database plugin.
+This plugin sets the dadbod.vim default to the application's development
+database, and also provides an interface for accessing any environment of any
+Rails app:
 >
   :DB rails:#production
   :DB rails:/path/to/app

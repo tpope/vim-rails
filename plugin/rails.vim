@@ -112,7 +112,7 @@ augroup END
 command! -bang -bar -nargs=* -count -complete=customlist,rails#complete_rails Rails execute rails#command(<bang>0, '<mods>', !<count> && <line1> ? -1 : <count>, <q-args>)
 
 " }}}1
-" db.vim support {{{1
+" dadbod.vim support {{{1
 
 
 call extend(g:, {'db_adapters': {}}, 'keep')
