@@ -2584,15 +2584,15 @@ endfunction
 
 call s:add_methods('app', ['commands'])
 
-function! s:addfilecmds(type)
+function! s:addfilecmds(type) abort
   let l = s:sub(a:type,'^.','\l&')
   let cplt = " -complete=customlist,".s:sid.l."List"
-  for prefix in ['E', 'S', 'V', 'T', 'D', 'R', 'RE', 'RS', 'RV', 'RT', 'RD']
-    exe "command! -buffer -bar ".(prefix =~# 'D' ? '-range=0 ' : '')."-nargs=*".cplt." ".prefix.l." :execute s:r_error('".prefix."',s:".l.'Edit("<mods> '.(prefix =~# 'D' ? '<line1>' : '').s:sub(prefix, '^R', '').'<bang>",<f-args>))'
+  for prefix in ['E', 'S', 'V', 'T', 'D']
+    exe "command! -buffer -bar ".(prefix =~# 'D' ? '-range=0 ' : '')."-nargs=*".cplt." ".prefix.l." :execute s:".l.'Edit("<mods> '.(prefix =~# 'D' ? '<line1>' : '').s:sub(prefix, '^R', '').'<bang>",<f-args>)'
   endfor
 endfunction
 
-function! s:BufProjectionCommands()
+function! s:BufProjectionCommands() abort
   call s:addfilecmds("view")
   call s:addfilecmds("migration")
   call s:addfilecmds("schema")
@@ -2735,7 +2735,7 @@ function! s:define_navcommand(name, projection, ...) abort
   if name !~# '^[a-z]\+$'
     return s:error("E182: Invalid command name ".name)
   endif
-  for prefix in ['E', 'S', 'V', 'T', 'D', 'R', 'RE', 'RS', 'RV', 'RT', 'RD']
+  for prefix in ['E', 'S', 'V', 'T', 'D']
     exe 'command! -buffer -bar -bang -nargs=* ' .
           \ (prefix =~# 'D' ? '-range=0 ' : '') .
           \ '-complete=customlist,'.s:sid.'CommandList ' .
@@ -3194,16 +3194,6 @@ function! s:projection_pairs(options)
   return pairs
 endfunction
 
-function! s:r_error(cmd, impl) abort
-  let cmd = matchstr(a:cmd, '\w\+$')
-  if cmd =~# 'R\|^$'
-    let old = s:sub(cmd, '^$', 'R')
-    let instead = s:sub(s:sub(cmd, '^R', ''), '^$', 'E')
-    return 'echoerr ":'.old.' navigation commands are obsolete. Use :'.instead.' commands instead."'
-  endif
-  return a:impl
-endfunction
-
 function! s:readable_open_command(cmd, argument, name, projections) dict abort
   let cmd = s:editcmdfor(s:sub(a:cmd, '^R', ''))
   let djump = ''
@@ -3235,7 +3225,7 @@ function! s:readable_open_command(cmd, argument, name, projections) dict abort
     endif
     if !empty(file) && self.app().has_path(file)
       let file = fnamemodify(self.app().path(file), ':.')
-      return s:r_error(a:cmd, cmd . ' ' . s:jumpargs(file, djump))
+      return cmd . ' ' . s:jumpargs(file, djump)
     endif
   endfor
   if empty(argument)
@@ -3269,9 +3259,9 @@ function! s:readable_open_command(cmd, argument, name, projections) dict abort
         call map(template, 's:expand_placeholders(v:val, ph)')
         call map(template, 's:gsub(v:val, "\t", "  ")')
         let file = fnamemodify(simplify(file), ':.')
-        return s:r_error(a:cmd, cmd . ' ' . s:fnameescape(file) . '|call setline(1, '.string(template).')' . '|set nomod')
+        return cmd . ' ' . s:fnameescape(file) . '|call setline(1, '.string(template).')' . '|set nomod'
       else
-        return s:r_error(a:cmd, cmd . ' +AD ' . s:fnameescape(file))
+        return cmd . ' +AD ' . s:fnameescape(file)
       endif
     endif
   endfor
