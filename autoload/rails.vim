@@ -1942,7 +1942,7 @@ function! rails#complete_rails(ArgLead, CmdLine, P, ...) abort
     return split(glob(a:ArgLead.'*/'), "\n")
   elseif empty(app)
     return s:completion_filter(['new'], a:ArgLead)
-  elseif cmd =~# '^\w*$'
+  elseif cmd =~# '^$\|^\w\S*$'
     let cmds = ['generate', 'console', 'server', 'dbconsole', 'destroy', 'plugin', 'runner']
     call extend(cmds, app.rake_tasks())
     call sort(cmds)
