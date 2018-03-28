@@ -4094,7 +4094,7 @@ function! rails#buffer_syntax() abort
     if &syntax == 'ruby'
       call rails#ruby_syntax()
       if !empty(special)
-        exe 'syn match' group "\<\%('.join(special, '\|').'\)"'
+        exe 'syn match' group '"\<\%('.join(special, '\|').'\)"'
       endif
       if !empty(regular)
         exe 'syn keyword' group join(regular, ' ')
