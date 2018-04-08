@@ -439,7 +439,7 @@ function! s:readable_model_name(...) dict abort
   elseif f =~ '\<\%(test\|spec\)/\%(fixtures\|factories\|fabricators\)/.*\.\w\+$'
     return rails#singularize(s:sub(f,'.*<%(test|spec)/\w+/(.*)\.\w+$','\1'))
   elseif a:0 && a:1
-    return rails#singularize(self.controller_name())
+    return rails#singularize(s:sub(self.controller_name(), '_mailer$', ''))
   endif
   return ""
 endfunction
