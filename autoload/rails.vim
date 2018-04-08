@@ -4024,7 +4024,10 @@ function! rails#ruby_syntax() abort
   endif
   if buffer.type_name('spec', 'cucumber')
     syn keyword rubyAssertion pending skip expect is_expected expect_any_instance_of allow allow_any_instance_of
-    syn keyword rubyTestHelper double instance_double class_double object_double described_class
+    syn keyword rubyTestHelper described_class
+    syn keyword rubyTestHelper double instance_double class_double object_double
+    syn keyword rubyTestHelper spy instance_spy class_spy object_spy
+    syn keyword rubyTestAction stub_const hide_const
   endif
   if buffer.type_name('spec-controller')
     syn keyword rubyTestMacro render_views
