@@ -3906,6 +3906,7 @@ function! rails#ruby_syntax() abort
     syn match   rubyHelper "\<headers\[\@="
     syn keyword rubyHelper attachments
     syn keyword rubyMacro default helper helper_attr helper_method layout
+    syn keyword rubyExceptionHandler rescue_from
 
   elseif buffer.type_name('model-observer')
     syn keyword rubyMacro observe
