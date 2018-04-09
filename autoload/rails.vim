@@ -3929,15 +3929,7 @@ function! rails#ruby_syntax() abort
     syn keyword rubyHelper logger
   endif
 
-  if buffer.type_name('mailer')
-    syn keyword rubyResponse mail render
-    syn match   rubyResponse "\<headers\>"
-    syn match   rubyHelper "\<headers\[\@="
-    syn keyword rubyHelper attachments
-    syn keyword rubyMacro default helper helper_attr helper_method layout
-    syn keyword rubyExceptionHandler rescue_from
-
-  elseif buffer.type_name('model-observer')
+  if buffer.type_name('model-observer')
     syn keyword rubyMacro observe
 
   elseif buffer.type_name() ==# 'model' || buffer.type_name('model-record', 'model-concern')
@@ -3973,13 +3965,27 @@ function! rails#ruby_syntax() abort
   endif
 
   if buffer.type_name('controller')
-    syn keyword rubyHelper params request response session headers cookies flash render_to_string
-    syn keyword rubyMacro helper helper_attr helper_method filter layout serialize exempt_from_layout filter_parameter_logging hide_action cache_sweeper protect_from_forgery caches_page cache_page caches_action expire_page expire_action
-    syn keyword rubyExceptionHandler rescue_from
+    syn keyword rubyHelper params request response session headers cookies flash
+    syn keyword rubyMacro protect_from_forgery
     syn match   rubyMacro '\<respond_to\>\ze[( ] *[:*]'
     syn match   rubyResponse '\<respond_to\>\ze[( ] *\%([&{]\|do\>\)'
     syn keyword rubyResponse render head redirect_to redirect_back respond_with send_data send_file
-    syn keyword rubyCallback before_filter append_before_filter prepend_before_filter after_filter append_after_filter prepend_after_filter around_filter append_around_filter prepend_around_filter skip_before_filter skip_after_filter skip_filter before_action append_before_action prepend_before_action after_action append_after_action prepend_after_action around_action append_around_action prepend_around_action skip_before_action skip_after_action skip_action
+  endif
+
+  if buffer.type_name('controller', 'mailer')
+    syn keyword rubyHelper render_to_string
+    syn keyword rubyCallback before_action append_before_action prepend_before_action after_action append_after_action prepend_after_action around_action append_around_action prepend_around_action skip_before_action skip_after_action skip_action
+    syn keyword rubyMacro helper helper_attr helper_method layout
+    syn keyword rubyExceptionHandler rescue_from
+  endif
+
+  if buffer.type_name('mailer')
+    syn keyword rubyResponse mail render
+    syn match   rubyResponse "\<headers\>"
+    syn match   rubyHelper "\<headers\[\@="
+    syn keyword rubyHelper attachments
+    syn keyword rubyMacro default
+    syn keyword rubyMacro register_interceptor register_interceptors register_observer register_observers
   endif
 
   if buffer.type_name('model-concern', 'controller-concern')
