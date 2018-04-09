@@ -2457,6 +2457,20 @@ function! s:ruby_cfile() abort
     endif
   endif
 
+  let declpat = '^\(\s*\)\(\w\+\)\>\s*(\=\s*:\=\([''"]\=\)\(\%(\w\|::\)\+\)\3'
+  let decl = matchlist(getline('.'), declpat)
+  if len(decl) && len(decl[0]) >= col('.')
+    let declid = synID(line('.'), 1+len(decl[1]), 1)
+    let declbase = rails#underscore(decl[4])
+    if declid ==# hlID('rubyEntities')
+      return rails#singularize(declbase) . '.rb'
+    elseif declid ==# hlID('rubyEntity') || decl[4] =~# '\u'
+      return declbase . '.rb'
+    elseif index([hlID('rubyMacro'), hlID('rubyAttribute')], declid) >= 0
+      return rails#singularize(declbase) . '.rb'
+    endif
+  endif
+
   let synid = synID(line('.'), col('.'), 1)
   let old_isfname = &isfname
   try
