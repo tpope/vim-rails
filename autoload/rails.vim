@@ -562,7 +562,7 @@ function! rails#camelize(str) abort
   return str
 endfunction
 
-function! rails#singularize(word)
+function! rails#singularize(word) abort
   " Probably not worth it to be as comprehensive as Rails but we can
   " still hit the common cases.
   let word = a:word
@@ -580,9 +580,12 @@ function! rails#singularize(word)
   return word
 endfunction
 
-function! rails#pluralize(word)
+function! rails#pluralize(word, ...) abort
   let word = a:word
   if word == ''
+    return word
+  endif
+  if a:0 && a:1 && word !=# rails#singularize(word)
     return word
   endif
   let word = s:sub(word,'[aeio]@<!y$','ie')
