@@ -2457,8 +2457,8 @@ function! s:ruby_cfile() abort
     endif
   endif
 
-  let declpat = '^\(\s*\)\(\w\+\)\>\s*(\=\s*:\=\([''"]\=\)\(\%(\w\|::\)\+\)\3'
-  let decl = matchlist(getline('.'), declpat)
+  let decl = matchlist(getline('.'),
+        \ '^\(\s*\)\(\w\+\)\>\%\(\s\+\|\s*(\s*\):\=\([''"]\=\)\(\%(\w\|::\)\+\)\3')
   if len(decl) && len(decl[0]) >= col('.')
     let declid = synID(line('.'), 1+len(decl[1]), 1)
     let declbase = rails#underscore(decl[4])
