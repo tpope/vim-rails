@@ -548,15 +548,15 @@ call s:add_methods('buffer',['getvar','setvar'])
 " }}}1
 " Public Interface {{{1
 
-function! rails#underscore(str)
+function! rails#underscore(str, ...) abort
   let str = s:gsub(a:str,'::','/')
   let str = s:gsub(str,'(\u+)(\u\l)','\1_\2')
   let str = s:gsub(str,'(\l|\d)(\u)','\1_\2')
   let str = tolower(str)
-  return str
+  return a:0 && a:1 ? s:sub(str, '^/', '') : str
 endfunction
 
-function! rails#camelize(str)
+function! rails#camelize(str) abort
   let str = s:gsub(a:str,'/(.=)','::\u\1')
   let str = s:gsub(str,'%([_-]|<)(.)','\u\1')
   return str
@@ -2115,7 +2115,7 @@ endfunction
 
 function! rails#includeexpr(fname) abort
   if a:fname =~# '\u' && a:fname !~# '[./]'
-    return rails#underscore(a:fname) . '.rb'
+    return rails#underscore(a:fname, 1) . '.rb'
   else
     return a:fname
   endif
@@ -2328,15 +2328,15 @@ function! s:ruby_cfile() abort
   let res = s:findit('\v<File.dirname\(__FILE__\)\s*\+\s*[:''"](\f+)>[''"]=',expand('%:p:h').'\1')
   if res != ""|return simplify(res)|endif
 
-  let res = rails#underscore(s:findit('\v\s*<%(include|extend)\(=\s*<([[:alnum:]_:]+)>','\1'))
-  if res != ""|return res.".rb"|endif
+  let res = s:findit('\v\s*<%(include|extend)\(=\s*<([[:alnum:]_:]+)>','\1')
+  if res != ""|return rails#underscore(res, 1).".rb"|endif
 
   let res = s:findamethod('require','\1')
   if res != ""|return res.(res !~ '\.[^\/.]\+$' ? '.rb' : '')|endif
 
   if !empty(s:findamethod('\w\+', '\1'))
     let class = s:findit('^[^;#]*,\s*\%(:class_name\s*=>\|class_name:\)\s*["'':]\=\([[:alnum:]_:]\+\)','\1')
-    if class != ""|return rails#underscore(class).".rb"|endif
+    if class != ""|return rails#underscore(class, 1).".rb"|endif
   endif
 
   let res = s:findamethod('belongs_to\|has_one\|embedded_in\|embeds_one\|composed_of\|validates_associated\|scaffold','\1.rb')
@@ -2461,7 +2461,7 @@ function! s:ruby_cfile() abort
         \ '^\(\s*\)\(\w\+\)\>\%\(\s\+\|\s*(\s*\):\=\([''"]\=\)\(\%(\w\|::\)\+\)\3')
   if len(decl) && len(decl[0]) >= col('.')
     let declid = synID(line('.'), 1+len(decl[1]), 1)
-    let declbase = rails#underscore(decl[4])
+    let declbase = rails#underscore(decl[4], 1)
     if declid ==# hlID('rubyEntities')
       return rails#singularize(declbase) . '.rb'
     elseif declid ==# hlID('rubyEntity') || decl[4] =~# '\u'
@@ -2494,7 +2494,7 @@ function! s:ruby_cfile() abort
   if cfile =~# '^\l\w*#\w\+$'
     let cfile = s:sub(cfile, '#', '_controller.rb#')
   elseif cfile =~# '\u'
-    let cfile = rails#underscore(cfile) . '.rb'
+    let cfile = rails#underscore(cfile, 1) . '.rb'
   elseif cfile =~# '^\w*_\%(path\|url\)$' && synid != hlID('rubyString')
     let route = s:gsub(cfile, '^hash_for_|_%(path|url)$', '')
     let cfile = rails#app().named_route_file(route)
