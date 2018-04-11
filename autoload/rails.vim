@@ -1541,16 +1541,16 @@ function! s:readable_preview_urls(lnum) dict abort
       let handler = self.controller_name().'#'.fnamemodify(self.name(),':t:r:r')
     endif
     if exists('handler')
-      let params = {}
+      let params = {'controller': matchstr(handler, '.*\ze#'), 'action': matchstr(handler, '#\zs.*')}
       for item in self.projected('params')
         if type(item) == type({})
           call extend(params, item, 'keep')
         endif
       endfor
       for route in self.app().routes()
-        if route.method =~# 'GET' && route.handler ==# handler
+        if route.method =~# 'GET' && handler =~# '^'.s:gsub(route.handler, ':\w+', '\\w\\+').'$'
           let path = s:gsub(route.path, '\([^()]*\)', '')
-          let path = substitute(path, '/\(\w\+\)/:\(\w\+\)$', '\="/".submatch(1)."/:".rails#singularize(submatch(1))."_".submatch(2)', 'g')
+          let path = substitute(path, '/\(\w\+\)/:\%(action$\|controller$\)\@!\(\w\+\)$', '\="/".submatch(1)."/:".rails#singularize(submatch(1))."_".submatch(2)', 'g')
           let urls += [substitute(path, ':\(\w\+\)', '\=get(params,submatch(1),1)', 'g')]
         endif
       endfor
@@ -2535,13 +2535,13 @@ function! s:app_routes() dict abort
     let routes = []
     let paths = {}
     try
-      execute cd fnameescape(rails#app().path())
+      execute cd fnameescape(self.path())
       let output = system(self.rake_command().' routes')
     finally
       execute cd fnameescape(cwd)
     endtry
     for line in split(output, "\n")
-      let matches = matchlist(line, '^ *\(\l\w*\|\) \{-\}\([A-Z|]*\) \+\(\S\+\) \+\([[:alnum:]_/]\+#\w\+\)\%( {.*\)\=$')
+      let matches = matchlist(line, '^ *\(\l\w*\|\) \{-\}\([A-Z|]*\) \+\(\S\+\) \+\([[:alnum:]_/:]\+#:\=\w\+\)\%( {.*\)\=$')
       if !empty(matches)
         let [_, name, method, path, handler; __] = matches
         if !empty(name)
