@@ -3896,6 +3896,20 @@ endfunction
 
 call s:add_methods('app', ['user_classes','user_assertions'])
 
+function! s:highlight_projections(append) abort
+  let buffer = rails#buffer()
+  let keywords = split(join(filter(buffer.projected('keywords'), 'type(v:val) == type("")'), ' '))
+  let special = filter(copy(keywords), 'v:val =~# ''^\h\k*[?!]$''')
+  let regular = filter(copy(keywords), 'v:val =~# ''^\h\k*$''')
+  let group = buffer.type_name('helper', 'view') ? 'rubyHelper' : 'rubyMacro'
+  if !empty(special)
+    exe 'syn match' group '"\<\%('.join(special, '\|').'\)"' a:append
+  endif
+  if !empty(regular)
+    exe 'syn keyword' group join(regular, ' ') a:append
+  endif
+endfunction
+
 function! rails#ruby_syntax() abort
   let buffer = rails#buffer()
 
@@ -4071,23 +4085,13 @@ function! rails#ruby_syntax() abort
     syn keyword rubyTestAction attach_file check choose click_button click_link click_link_or_button click_on fill_in select uncheck unselect
   endif
 
+  call s:highlight_projections('')
 endfunction
 
 function! rails#buffer_syntax() abort
   if !exists("g:rails_no_syntax")
-    let buffer = rails#buffer()
-    let keywords = split(join(filter(buffer.projected('keywords'), 'type(v:val) == type("")'), ' '))
-    let special = filter(copy(keywords), 'v:val =~# ''^\h\k*[?!]$''')
-    let regular = filter(copy(keywords), 'v:val =~# ''^\h\k*$''')
-    let group = buffer.type_name('helper', 'view') ? 'rubyHelper' : 'rubyMacro'
     if &syntax == 'ruby'
       call rails#ruby_syntax()
-      if !empty(special)
-        exe 'syn match' group '"\<\%('.join(special, '\|').'\)"'
-      endif
-      if !empty(regular)
-        exe 'syn keyword' group join(regular, ' ')
-      endif
 
     elseif (&syntax =~# '^eruby\>' || &syntax == 'haml') && &syntax !~# 'yaml'
       syn case match
@@ -4097,21 +4101,16 @@ function! rails#buffer_syntax() abort
         exe 'syn cluster erubyRailsRegions contains=erubyOneLiner,erubyBlock,erubyExpression,rubyInterpolation'
       endif
       let containedin = 'contained containedin=@'.matchstr(&syntax, '^\w\+').'RailsRegions'
-      if !empty(special)
-        exe 'syn match' group '"\<\%('.join(special, '\|').'\)"' containedin
-      endif
-      if !empty(regular)
-        exe 'syn keyword' group join(regular, ' ') containedin
-      endif
       exe 'syn keyword rubyViewHelper' s:helpermethods() containedin
       exe 'syn match rubyViewHelper "\<select\>\%(\s*{\|\s*do\>\|\s*(\=\s*&\)\@!"' containedin
       exe 'syn match rubyViewHelper "\<\%(content_for\w\@!?\=\|current_page?\)"' containedin
       exe 'syn keyword rubyHelper logger' containedin
       exe 'syn keyword rubyUrlHelper url_for polymorphic_path polymorphic_url edit_polymorphic_path edit_polymorphic_url new_polymorphic_path new_polymorphic_url' containedin
       exe 'syn match rubyViewHelper "\.\@<!\<\(h\|html_escape\|u\|url_encode\)\>"' containedin
-      if buffer.type_name('view-partial')
+      if rails#buffer().type_name('view-partial')
         exe 'syn keyword rubyViewHelper local_assigns' containedin
       endif
+      call s:highlight_projections(containedin)
     endif
 
     if &syntax =~# '^\%(javascript\|coffee\|css\|scss\|sass\)'
