@@ -876,12 +876,7 @@ function! s:app_has_rails5() abort dict
   return self.has('rails5') || gemdir =~# '-\%([5-9]\|\d\d\+\)\.[^\/]*$'
 endfunction
 
-" Returns the subset of ['test', 'spec'] present on the app.
-function! s:app_test_suites() dict
-  return filter(['test','spec'],'self.has(v:val)')
-endfunction
-
-call s:add_methods('app',['default_locale','environments','file','has','has_rails5','stylesheet_suffix','test_suites'])
+call s:add_methods('app',['default_locale','environments','file','has','has_rails5','stylesheet_suffix'])
 call s:add_methods('file',['path','name','lines','getline'])
 call s:add_methods('buffer',['app','number','path','name','lines','getline','type_name'])
 call s:add_methods('readable',['app','relative','absolute','spec','calculate_file_type','type_name','line_count'])
