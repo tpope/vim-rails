@@ -4086,16 +4086,17 @@ function! rails#ruby_syntax() abort
   endif
 
   call s:highlight_projections('')
+  call s:highlight_ruby_defaults()
 endfunction
 
 function! rails#buffer_syntax() abort
   if !exists("g:rails_no_syntax")
-    if &syntax == 'ruby'
+    if &syntax ==# 'ruby'
       call rails#ruby_syntax()
 
-    elseif (&syntax =~# '^eruby\>' || &syntax == 'haml') && &syntax !~# 'yaml'
+    elseif (&syntax =~# '^eruby\>' || &syntax ==# 'haml') && &syntax !~# 'yaml'
       syn case match
-      if &syntax == 'haml'
+      if &syntax ==# 'haml'
         exe 'syn cluster hamlRailsRegions contains=hamlRubyCodeIncluded,hamlRubyCode,hamlRubyHash,@hamlEmbeddedRuby,rubyInterpolation'
       else
         exe 'syn cluster erubyRailsRegions contains=erubyOneLiner,erubyBlock,erubyExpression,rubyInterpolation'
@@ -4111,6 +4112,7 @@ function! rails#buffer_syntax() abort
         exe 'syn keyword rubyViewHelper local_assigns' containedin
       endif
       call s:highlight_projections(containedin)
+      call s:highlight_ruby_defaults()
     endif
 
     if &syntax =~# '^\%(javascript\|coffee\|css\|scss\|sass\)'
@@ -4120,15 +4122,18 @@ function! rails#buffer_syntax() abort
       syn keyword sprocketsInclude require_directory require_tree skipwhite nextgroup=sprocketsIncludedDir
       syn match sprocketsIncluded /\f\+\|"[^"]*"/ contained
       syn match sprocketsIncludedDir /\f\+\|"[^"]*"/ contained skipwhite nextgroup=sprocketsIncluded
+      hi def link sprocketsPreProc                PreProc
+      hi def link sprocketsInclude                Include
+      hi def link sprocketsIncludedDir            sprocketsIncluded
+      hi def link sprocketsIncluded               String
     endif
     if &syntax =~# '\<s[ac]ss\>'
       syn region sassFunction contained start="\<\%(asset-data-url\|\%(asset\|image\|font\|video\|audio\|javascript\|stylesheet\)-\(url\|path\)\)\s*(" end=")" contains=cssStringQ,cssStringQQ oneline keepend containedin=cssFontDescriptorBlock
     endif
   endif
-  call s:HiDefaults()
 endfunction
 
-function! s:HiDefaults()
+function! s:highlight_ruby_defaults() abort
   hi def link rubyEntity                      rubyMacro
   hi def link rubyEntities                    rubyMacro
   hi def link rubyExceptionHandler            rubyMacro
@@ -4147,13 +4152,9 @@ function! s:HiDefaults()
   hi def link rubyAssertion                   rubyException
   hi def link rubyTestAction                  rubyControl
   hi def link rubyHelper                      Function
-  hi def link sprocketsPreProc                PreProc
-  hi def link sprocketsInclude                Include
-  hi def link sprocketsIncludedDir            sprocketsIncluded
-  hi def link sprocketsIncluded               String
 endfunction
 
-function! rails#log_syntax()
+function! rails#log_syntax() abort
   if has('conceal')
     syn match railslogEscape      '\e\[[0-9;]*m' conceal
     syn match railslogEscapeMN    '\e\[[0-9;]*m' conceal nextgroup=railslogModelNum,railslogEscapeMN skipwhite contained
