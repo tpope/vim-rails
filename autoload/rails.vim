@@ -5303,7 +5303,7 @@ function! s:set_path_options() abort
       let &l:suffixesadd = join(s:uniq(self.app().pack_suffixes('js') + split(&l:suffixesadd, ',') + ['/package.json']), ',')
     endif
   else
-    if empty(&l:suffixesadd)
+    if empty(&l:suffixesadd) && &filetype !~# '\<\%(sql\|qf\)\>'
       setlocal suffixesadd=.rb
     endif
     if &l:suffixesadd =~# '\.rb\>'
