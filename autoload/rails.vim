@@ -505,7 +505,7 @@ function! s:environment()
   endif
 endfunction
 
-function! s:Complete_environments(...)
+function! s:Complete_environments(...) abort
   return s:completion_filter(rails#app().environments(),a:0 ? a:1 : "")
 endfunction
 
@@ -1444,7 +1444,7 @@ function! s:app_rake_command(...) dict abort
   endif
 endfunction
 
-function! rails#complete_rake(A,L,P)
+function! rails#complete_rake(A,L,P) abort
   return s:completion_filter(rails#app().rake_tasks(), a:A, ':')
 endfunction
 
@@ -1644,7 +1644,7 @@ function! s:Preview(bang, lnum, uri) abort
   endif
 endfunction
 
-function! s:Complete_preview(A,L,P)
+function! s:Complete_preview(A,L,P) abort
   return rails#buffer().preview_urls(a:L =~ '^\d' ? matchstr(a:L,'^\d\+') : line('.'))
 endfunction
 
@@ -1924,10 +1924,6 @@ endfunction
 
 call s:add_methods('app', ['generators','output_command','server_command','generator_command'])
 
-function! s:Complete_script(ArgLead, CmdLine, P) abort
-  return rails#complete_rails(a:ArgLead, a:CmdLine, a:P, rails#app())
-endfunction
-
 function! rails#complete_rails(ArgLead, CmdLine, P, ...) abort
   if a:0
     let app = a:1
@@ -1966,7 +1962,6 @@ function! rails#complete_rails(ArgLead, CmdLine, P, ...) abort
     elseif target ==# 'migration' || target ==# 'session_migration'
       return s:migrationList(a:ArgLead,"","")
     elseif target ==# 'mailer'
-      return s:mailerList(a:ArgLead,"","")
       return s:completion_filter(app.relglob("app/mailers/","**/*",".rb"),a:ArgLead)
     elseif target =~# '^\w*\%(model\|resource\)$' || target =~# '\w*scaffold\%(_controller\)\=$'
       return s:completion_filter(app.relglob('app/models/','**/*','.rb'), a:ArgLead)
@@ -1989,32 +1984,32 @@ function! rails#complete_rails(ArgLead, CmdLine, P, ...) abort
       return filter(["-p","-b","-c","-d","-u","-e","-P","-h","--port=","--binding=","--config=","--daemon","--debugger","--environment=","--pid=","--help"],'s:startswith(v:val,a:ArgLead)')
     endif
   endif
-  return ""
+  return []
 endfunction
 
-function! s:CustomComplete(A,L,P,cmd)
+function! s:CustomComplete(A,L,P,cmd) abort
   let L = "Rscript ".a:cmd." ".s:sub(a:L,'^\h\w*\s+','')
   let P = a:P - strlen(a:L) + strlen(L)
-  return s:Complete_script(a:A,L,P)
+  return rails#complete_rails(a:A, L, P, rails#app())
 endfunction
 
-function! s:Complete_server(A,L,P)
+function! s:Complete_server(A,L,P) abort
   return s:CustomComplete(a:A,a:L,a:P,"server")
 endfunction
 
-function! s:Complete_console(A,L,P)
+function! s:Complete_console(A,L,P) abort
   return s:CustomComplete(a:A,a:L,a:P,"console")
 endfunction
 
-function! s:Complete_generate(A,L,P)
+function! s:Complete_generate(A,L,P) abort
   return s:CustomComplete(a:A,a:L,a:P,"generate")
 endfunction
 
-function! s:Complete_destroy(A,L,P)
+function! s:Complete_destroy(A,L,P) abort
   return s:CustomComplete(a:A,a:L,a:P,"destroy")
 endfunction
 
-function! s:Complete_ruby(A,L,P)
+function! s:Complete_ruby(A,L,P) abort
   return s:completion_filter(rails#app().user_classes()+["ActiveRecord::Base"],a:A)
 endfunction
 
@@ -2097,15 +2092,15 @@ function! s:jump(def, ...) abort
   return ''
 endfunction
 
-function! s:fuzzyglob(arg)
+function! s:fuzzyglob(arg) abort
   return s:gsub(s:gsub(a:arg,'[^/.]','[&]*'),'%(/|^)\.@!|\.','&*')
 endfunction
 
-function! s:Complete_edit(ArgLead, CmdLine, CursorPos)
+function! s:Complete_edit(ArgLead, CmdLine, CursorPos) abort
   return s:completion_filter(rails#app().relglob("",s:fuzzyglob(a:ArgLead)),a:ArgLead)
 endfunction
 
-function! s:Complete_cd(ArgLead, CmdLine, CursorPos)
+function! s:Complete_cd(ArgLead, CmdLine, CursorPos) abort
   let all = rails#app().relglob("",a:ArgLead."*")
   call filter(all,'v:val =~ "/$"')
   return filter(all,'s:startswith(v:val,a:ArgLead)')
@@ -3382,11 +3377,11 @@ function! s:Alternate(cmd,line1,line2,count,...) abort
   return call('s:AR',[a:cmd,0,a:line1,a:line2,a:count]+a:000)
 endfunction
 
-function! s:Related(cmd,line1,line2,count,...)
+function! s:Related(cmd,line1,line2,count,...) abort
   return call('s:AR',[a:cmd,1,a:line1,a:line2,a:count]+a:000)
 endfunction
 
-function! s:Complete_alternate(A,L,P)
+function! s:Complete_alternate(A,L,P) abort
   if a:L =~# '^[[:alpha:]]' || a:A =~# '^\w*:\|^\.\=[\/]'
     return s:Complete_edit(a:A,a:L,a:P)
   else
@@ -3404,7 +3399,7 @@ function! s:Complete_alternate(A,L,P)
   endif
 endfunction
 
-function! s:Complete_related(A,L,P)
+function! s:Complete_related(A,L,P) abort
   if a:L =~# '^[[:alpha:]]' || a:A =~# '^\w*:\|^\.\=[\/]'
     return s:Complete_edit(a:A,a:L,a:P)
   else
