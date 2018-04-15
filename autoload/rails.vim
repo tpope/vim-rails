@@ -5434,6 +5434,7 @@ function! rails#buffer_setup() abort
     let &l:errorformat .= ',%\&buffer=`=rails#buffer('.self['#'].').default_task(v:lnum)`'
   elseif &l:makeprg =~# 'rake$'
     let &l:errorformat .= ',%\&buffer=`=rails#buffer('.self['#'].').default_rake_task(v:lnum)`'
+    let &l:errorformat = substitute(&l:errorformat, '%\\&completion=rails#complete_\zsrails', 'rake', 'g')
   endif
 
   if exists(':Dispatch') == 2 && !exists('g:autoloaded_dispatch')
