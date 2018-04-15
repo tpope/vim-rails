@@ -1151,8 +1151,12 @@ endfunction
 " }}}1
 " Rake {{{1
 
+function! s:efm_dir() abort
+  return substitute(matchstr(','.&l:errorformat, ',%\\&chdir \zs\%(\\.\|[^,]\)*'), '\\,' ,',', 'g')
+endfunction
+
 function! s:qf_pre() abort
-  let dir = substitute(matchstr(','.&l:errorformat, ',%\\&chdir \zs\%(\\.\|[^,]\)*'), '\\,' ,',', 'g')
+  let dir = s:efm_dir()
   let cwd = getcwd()
   if !empty(dir) && dir !=# cwd
     let cd = exists('*haslocaldir') && haslocaldir() ? 'lcd' : 'cd'
@@ -1928,8 +1932,12 @@ function! rails#complete_rails(ArgLead, CmdLine, P, ...) abort
   if a:0
     let app = a:1
   else
-    let manifest = findfile('config/environment.rb', escape(getcwd(), ' ,;').';')
-    let app = empty(manifest) ? {} : rails#app(fnamemodify(manifest, ':p:h:h'))
+    let root = s:efm_dir()
+    if empty(root)
+      let manifest = findfile('config/environment.rb', escape(getcwd(), ' ,;').';')
+      let root = empty(manifest) ? '' : fnamemodify(manifest, ':p:h:h')
+    endif
+    let app = empty(root) ? {} : rails#app(root)
   endif
   let cmd = s:sub(a:CmdLine,'^\u\w*\s+','')
   if cmd =~# '^new\s\+'
