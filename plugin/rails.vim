@@ -99,7 +99,7 @@ augroup railsPluginDetect
   autocmd FileType qf call s:log_detect()
   autocmd FileType railslog call rails#log_setup()
   autocmd Syntax railslog call rails#log_syntax()
-  autocmd Syntax ruby,eruby,haml,javascript,coffee,css,sass,scss
+  autocmd Syntax ruby*,eruby*,haml*,javascript*,coffee*,css*,sass*,scss*
         \ if RailsDetect() | call rails#buffer_syntax() | endif
 
   autocmd User ProjectionistDetect
@@ -113,7 +113,6 @@ command! -bang -bar -nargs=* -count -complete=customlist,rails#complete_rails Ra
 
 " }}}1
 " dadbod.vim support {{{1
-
 
 call extend(g:, {'db_adapters': {}}, 'keep')
 call extend(g:db_adapters, {
