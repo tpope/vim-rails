@@ -4122,8 +4122,7 @@ function! rails#buffer_syntax() abort
       syn match sprocketsIncludedDir /\f\+\|"[^"]*"/ contained skipwhite nextgroup=sprocketsIncluded
     endif
     if &syntax =~# '\<s[ac]ss\>'
-      syn match sassFunction "\<\%(\%(asset\|image\|font\|video\|audio\|javascript\|stylesheet\)-\%(url\|path\)\)\>(\@=" contained
-      syn match sassFunction "\<\asset-data-url\>(\@=" contained
+      syn region sassFunction contained start="\<\%(asset-data-url\|\%(asset\|image\|font\|video\|audio\|javascript\|stylesheet\)-\(url\|path\)\)\s*(" end=")" contains=cssStringQ,cssStringQQ oneline keepend containedin=cssFontDescriptorBlock
     endif
   endif
   call s:HiDefaults()
