@@ -3460,7 +3460,7 @@ function! s:Complete_related(A,L,P) abort
     for path in rails#app().internal_load_path()
       let path = path[strlen(rails#app().path()) + 1 : ]
       if path !~# '[][*]\|^\.\=$\|^vendor\>'
-        for file in rails#app().relglob(path == '' ? '' : path.'/',s:fuzzyglob(rails#underscore(a:A)), a:A =~# '\u' ? '.rb' : '')
+        for file in rails#app().relglob(empty(path) ? '' : path.'/',s:fuzzyglob(rails#underscore(a:A)), a:A =~# '\u' ? '.rb' : '')
           let file = substitute(file, '\.rb$', '', '')
           let seen[file] = 1
         endfor
@@ -3485,7 +3485,7 @@ function! s:readable_alternate_candidates(...) dict abort
     if !empty(projected)
       return projected
     endif
-    if self.type_name('controller','mailer') && lastmethod != ""
+    if self.type_name('controller','mailer') && len(lastmethod)
       let view = self.resolve_view(lastmethod, line('.'))
       if view !=# ''
         return [view]
@@ -3495,7 +3495,7 @@ function! s:readable_alternate_candidates(...) dict abort
     elseif f =~# '^config/environments/'
       return ['config/database.yml#'. fnamemodify(f,':t:r')]
     elseif f ==# 'config/database.yml'
-      if lastmethod != ""
+      if len(lastmethod)
         return ['config/environments/'.lastmethod.'.rb']
       else
         return ['config/application.rb', 'config/environment.rb']
@@ -3506,15 +3506,16 @@ function! s:readable_alternate_candidates(...) dict abort
        return [s:sub(s:sub(f,'/views/','/controllers/'),'/(\k+%(\.\k+)=)\..*$','_controller.rb#\1'),
              \ s:sub(s:sub(f,'/views/','/mailers/'),'/(\k+%(\.\k+)=)\..*$','.rb#\1'),
              \ s:sub(s:sub(f,'/views/','/models/'),'/(\k+)\..*$','.rb#\1')]
-      return [controller, controller2, mailer, model]
     elseif self.type_name('controller')
       return [s:sub(s:sub(f,'/controllers/','/helpers/'),'%(_controller)=\.rb$','_helper.rb')]
     elseif self.type_name('model-record')
       let table_name = matchstr(join(self.getline(1,50),"\n"),'\n\s*self\.table_name\s*=\s*[:"'']\zs\w\+')
-      if table_name == ''
+      if empty(table_name)
         let table_name = rails#pluralize(s:gsub(s:sub(fnamemodify(f,':r'),'.{-}<app/models/',''),'/','_'))
       endif
-      return ['db/schema.rb#'.table_name]
+      return ['db/schema.rb#'.table_name,
+            \ 'db/structure.sql#'.table_name,
+            \ 'db/'.s:environment().'_structure.sql#'.table_name]
     elseif self.type_name('model-observer')
       return [s:sub(f,'_observer\.rb$','.rb')]
     elseif self.type_name('db-schema') && !empty(lastmethod)
@@ -3528,7 +3529,7 @@ function! s:readable_alternate_candidates(...) dict abort
   if f =~# '^db/migrate/'
     let migrations = sort(self.app().relglob('db/migrate/','*','.rb'))
     let me = matchstr(f,'\<db/migrate/\zs.*\ze\.rb$')
-    if !exists('lastmethod') || lastmethod == 'down' || (a:0 && a:1 == 1)
+    if !exists('lastmethod') || lastmethod ==# 'down' || (a:0 && a:1 == 1)
       let candidates = reverse(filter(copy(migrations),'v:val < me'))
       let migration = "db/migrate/".get(candidates,0,migrations[-1]).".rb"
     else
@@ -3547,15 +3548,15 @@ function! s:readable_alternate_candidates(...) dict abort
   elseif f =~# 'spec\.js\.coffee$'
     return [s:sub(s:sub(f, 'spec/javascripts', 'app/assets/javascripts'), '_spec.js.coffee', '.js.coffee')]
   elseif self.type_name('javascript')
-    if f =~ 'public/javascripts'
+    if f =~# 'public/javascripts'
       let to_replace = 'public/javascripts'
     else
       let to_replace = 'app/assets/javascripts'
     endif
-    if f =~ '\.coffee$'
+    if f =~# '\.coffee$'
       let suffix = '.coffee'
       let suffix_replacement = '_spec.coffee'
-    elseif f =~ '[A-Z][a-z]\+\.js$'
+    elseif f =~# '[A-Z][a-z]\+\.js$'
       let suffix = '.js'
       let suffix_replacement = 'Spec.js'
     else
