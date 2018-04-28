@@ -2522,7 +2522,7 @@ endfunction
 
 function! s:app_named_route_file(route_name) dict abort
   for route in self.routes()
-    if get(route, 'name', '') ==# a:route_name
+    if get(route, 'name', '') ==# a:route_name && route.handler =~# '#'
       return s:sub(route.handler, '#', '_controller.rb#')
     endif
   endfor
@@ -2542,7 +2542,7 @@ function! s:app_routes() dict abort
       execute cd fnameescape(cwd)
     endtry
     for line in split(output, "\n")
-      let matches = matchlist(line, '^ *\(\l\w*\|\) \{-\}\([A-Z|]*\) \+\(\S\+\) \+\([[:alnum:]_/:]\+#:\=\w\+\)\%( {.*\)\=$')
+      let matches = matchlist(line, '\C^ *\(\l\w*\|\) \{-\}\([A-Z|]*\) \+\(\S\+\) \+\(redirect(.\{-\})\|[[:alnum:]_/:]\+#:\=\w\+\)\%( {.*\)\=$')
       if !empty(matches)
         let [_, name, method, path, handler; __] = matches
         if !empty(name)
