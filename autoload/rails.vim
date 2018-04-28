@@ -110,6 +110,19 @@ function! s:mods(mods) abort
   return s:gsub(a:mods, '[<]mods[>]\s*|^\s', '')
 endfunction
 
+function! s:webcat() abort
+  if !exists('s:webcat')
+    if executable('curl')
+      let s:webcat = 'curl'
+    elseif executable('wget')
+      let s:webcat = 'wget -qO-'
+    else
+      let s:webcat = ''
+    endif
+  endif
+  return s:webcat
+endfunction
+
 function! s:pop_command()
   if exists("s:command_stack") && len(s:command_stack) > 0
     exe remove(s:command_stack,-1)
@@ -2535,24 +2548,56 @@ function! s:app_routes() dict abort
     let cwd = getcwd()
     let routes = []
     let paths = {}
-    try
-      execute cd fnameescape(self.path())
-      let output = system(self.rake_command().' routes')
-    finally
-      execute cd fnameescape(cwd)
-    endtry
-    for line in split(output, "\n")
-      let matches = matchlist(line, '\C^ *\(\l\w*\|\) \{-\}\([A-Z|]*\) \+\(\S\+\) \+\(redirect(.\{-\})\|[[:alnum:]_/:]\+#:\=\w\+\)\%( {.*\)\=$')
-      if !empty(matches)
-        let [_, name, method, path, handler; __] = matches
-        if !empty(name)
-          let paths[path] = name
-        else
-          let name = get(paths, path, '')
+    let binding = self.server_binding()
+    if len(binding) && len(s:webcat())
+      let html = system(s:webcat() . ' ' . shellescape('http://' . binding . '/rails/info/routes'))
+      for line in split(matchstr(html, '.*<tbody>\zs.*\ze</tbody>'), "\n")
+        let val = matchstr(line, '\C<td data-route-name=''\zs[^'']*''\ze>')
+        if len(val)
+          call add(routes, {'name': val[0:-2]})
         endif
-        call add(routes, {'method': method, 'path': path, 'handler': handler, 'name': name})
-      endif
-    endfor
+        if empty(routes)
+          continue
+        endif
+        let val = matchstr(line, '\C<td data-route-path=''\zs[^'']*\ze''>')
+        if len(val)
+          let routes[-1].path = val
+          if empty(routes[-1].name)
+            let routes[-1].name = get(paths, val, '')
+          else
+            let paths[val] = routes[-1].name
+          endif
+        endif
+        let val = matchstr(line, '\C^\s*\zs[[:upper:]|]\+')
+        if len(val)
+          let routes[-1].method = val
+        endif
+        let val = matchstr(line, '\C<p>\zs\%(redirect(.\{-\})\|\S\+#[^ #<]\+\)')
+        if len(val)
+          let routes[-1].handler = val
+        endif
+      endfor
+    endif
+    if empty(routes)
+      try
+        execute cd fnameescape(self.path())
+        let output = system(self.rake_command().' routes')
+      finally
+        execute cd fnameescape(cwd)
+      endtry
+      for line in split(output, "\n")
+        let matches = matchlist(line, '\C^ *\(\l\w*\|\) \{-\}\([A-Z|]*\) \+\(\S\+\) \+\(redirect(.\{-\})\|[[:alnum:]_/:]\+#:\=\w\+\)\%( {.*\)\=$')
+        if !empty(matches)
+          let [_, name, method, path, handler; __] = matches
+          if !empty(name)
+            let paths[path] = name
+          else
+            let name = get(paths, path, '')
+          endif
+          call add(routes, {'method': method, 'path': path, 'handler': handler, 'name': name})
+        endif
+      endfor
+    endif
     call self.cache.set('routes', routes)
   endif
 
