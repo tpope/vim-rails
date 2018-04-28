@@ -2550,7 +2550,7 @@ function! s:app_routes() dict abort
         else
           let name = get(paths, path, '')
         endif
-        call insert(routes, {'method': method, 'path': path, 'handler': handler, 'name': name})
+        call add(routes, {'method': method, 'path': path, 'handler': handler, 'name': name})
       endif
     endfor
     call self.cache.set('routes', routes)
