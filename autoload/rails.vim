@@ -267,9 +267,14 @@ function! s:lastopeningline(pattern,limit,start)
   return rails#buffer().last_opening_line(a:start,a:pattern,a:limit)
 endfunction
 
+let s:sql_define = substitute(
+      \ '\v\c^\s*create %(or replace )=%(table|%(materialized |recursive )=view|%(unique |fulltext )=index|trigger|function|procedure|sequence|extension) %(if not exists )=%(\i+\.)=[`"]=',
+      \ ' ', '\\s+', 'g')
 function! s:readable_define_pattern() dict abort
-  if self.name() =~ '\.yml\%(\.example\|sample\)\=$'
+  if self.name() =~# '\.yml\%(\.example\|sample\)\=$'
     return '^\%(\h\k*:\)\@='
+  elseif self.name() =~# '\.sql$'
+    return s:sql_define
   endif
   let define = '^\s*def\s\+\(self\.\)\='
   if self.name() =~# '\.rake$'
@@ -2761,12 +2766,18 @@ function! s:migrationList(A,L,P)
   endif
 endfunction
 
-function! s:schemaList(A,L,P)
-  let tables = s:readfile(rails#app().path('db/schema.rb'))
-  let table_re = '^\s\+create_table\s["'':]\zs[^"'',]*\ze'
+function! s:schemaList(A,L,P) abort
+  if rails#app().has_path('db/schema.rb')
+    let tables = s:readfile(rails#app().path('db/schema.rb'))
+    let table_re = '\C^\s\+create_table\s["'':]\zs[^"'',]*\ze'
+  else
+    let tables = s:readfile(rails#app().path('db/structure.sql'))
+    let table_re = s:sql_define . '\zs\i*'
+  endif
   call map(tables,'matchstr(v:val, table_re)')
   call filter(tables,'strlen(v:val)')
-  return s:autocamelize(tables, a:A)
+  call sort(tables)
+  return s:completion_filter(tables, a:A)
 endfunction
 
 function! s:specList(A,L,P)
@@ -5444,7 +5455,7 @@ function! rails#buffer_setup() abort
     elseif exists(':SnipMateLoadScope') == 2
       SnipMateLoadScope rails
     endif
-  elseif self.name() =~# '\.yml\%(\.example\|sample\)\=$'
+  elseif self.name() =~# '\.yml\%(\.example\|sample\)\=$\|\.sql$'
     call self.setvar('&define',self.define_pattern())
   elseif ft =~# '^eruby\>'
     call self.setvar('&define',self.define_pattern())
