@@ -2563,6 +2563,9 @@ function! s:app_routes() dict abort
       for line in split(matchstr(html, '.*<tbody>\zs.*\ze</tbody>'), "\n")
         let val = matchstr(line, '\C<td data-route-name=''\zs[^'']*''\ze>')
         if len(val)
+          if len(routes) && len(routes[-1]) < 4
+            call remove(routes, -1)
+          endif
           call add(routes, {'name': val[0:-2]})
         endif
         if empty(routes)
