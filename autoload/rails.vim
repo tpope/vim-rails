@@ -1500,16 +1500,16 @@ function! s:initOpenURL() abort
   endif
 endfunction
 
-function! s:scanlineforuris(line)
+function! s:scanlineforuris(line) abort
   let url = matchstr(a:line,"\\v\\C%(%(GET|PUT|POST|DELETE)\\s+|\\w+://[^/]*)/[^ \n\r\t<>\"]*[^] .,;\n\r\t<>\":]")
-  if url =~ '\C^\u\+\s\+'
+  if url =~# '^\u\+\s\+'
     let method = matchstr(url,'^\u\+')
     let url = matchstr(url,'\s\+\zs.*')
     if method !=? "GET"
-      let url .= (url =~ '?' ? '&' : '?') . '_method='.tolower(method)
+      let url .= (url =~# '?' ? '&' : '?') . '_method='.tolower(method)
     endif
   endif
-  if url != ""
+  if len(url)
     return [url]
   else
     return []
@@ -1519,27 +1519,27 @@ endfunction
 function! s:readable_preview_urls(lnum) dict abort
   let urls = []
   let start = self.last_method_line(a:lnum) - 1
-  while start > 0 && self.getline(start) =~ '^\s*\%(\%(-\=\|<%\)#.*\)\=$'
+  while start > 0 && self.getline(start) =~# '^\s*\%(\%(-\=\|<%\)#.*\)\=$'
     let urls = s:scanlineforuris(self.getline(start)) + urls
     let start -= 1
   endwhile
   let start = 1
-  while start < self.line_count() && self.getline(start) =~ '^\s*\%(\%(-\=\|<%\)#.*\)\=$'
+  while start < self.line_count() && self.getline(start) =~# '^\s*\%(\%(-\=\|<%\)#.*\)\=$'
     let urls += s:scanlineforuris(self.getline(start))
     let start += 1
   endwhile
-  if has_key(self,'getvar') && self.getvar('rails_preview') != ''
+  if has_key(self,'getvar') && len(self.getvar('rails_preview'))
     let urls += [self.getvar('rails_preview')]
   endif
-  if self.name() =~ '^public/stylesheets/sass/'
+  if self.name() =~# '^public/stylesheets/sass/'
     let urls = urls + [s:sub(s:sub(self.name(),'^public/stylesheets/sass/','/stylesheets/'),'\.s[ac]ss$','.css')]
-  elseif self.name() =~ '^public/'
+  elseif self.name() =~# '^public/'
     let urls = urls + [s:sub(self.name(),'^public','')]
-  elseif self.name() =~ '^\%(app\|lib\|vendor\)/assets/stylesheets/'
+  elseif self.name() =~# '^\%(app\|lib\|vendor\)/assets/stylesheets/'
     call add(urls, '/assets/' . matchstr(self.name(), 'stylesheets/\zs[^.]*') . '.css')
-  elseif self.name() =~ '^\%(app\|lib\|vendor\)/assets/javascripts/'
+  elseif self.name() =~# '^\%(app\|lib\|vendor\)/assets/javascripts/'
     call add(urls, '/assets/' . matchstr(self.name(), 'javascripts/\zs[^.]*') . '.js')
-  elseif self.name() =~ '^app/javascript/packs/'
+  elseif self.name() =~# '^app/javascript/packs/'
     let file = matchstr(self.name(), 'packs/\zs.\{-\}\%(\.erb\)\=$')
     if file =~# escape(join(self.app().pack_suffixes('css'), '\|'), '.') . '$'
       let file = fnamemodify(file, ':r') . '.css'
@@ -1556,8 +1556,8 @@ function! s:readable_preview_urls(lnum) dict abort
     else
       call add(urls, '/packs/' . file)
     endif
-  elseif self.controller_name() != '' && self.controller_name() != 'application'
-    if self.type_name('controller') && self.last_method(a:lnum) != ''
+  elseif len(self.controller_name()) && self.controller_name() !=# 'application'
+    if self.type_name('controller') && len(self.last_method(a:lnum))
       let handler = self.controller_name().'#'.self.last_method(a:lnum)
     elseif self.type_name('controller','view-layout','view-partial')
       let handler = self.controller_name().'#index'
@@ -1572,7 +1572,7 @@ function! s:readable_preview_urls(lnum) dict abort
         endif
       endfor
       for route in self.app().routes()
-        if route.method =~# 'GET' && handler =~# '^'.s:gsub(route.handler, ':\w+', '\\w\\+').'$'
+        if get(route, 'method') =~# 'GET' && get(route, 'handler') =~# '^:\=[[:alnum:]_/]*#:\=\w*$' && handler =~# '^'.s:gsub(route.handler, ':\w+', '\\w\\+').'$'
           let path = s:gsub(route.path, '\([^()]*\)', '')
           let path = substitute(path, '/\(\w\+\)/:\%(action$\|controller$\)\@!\(\w\+\)$', '\="/".submatch(1)."/:".rails#singularize(submatch(1))."_".submatch(2)', 'g')
           let urls += [substitute(path, ':\(\w\+\)', '\=get(params,submatch(1),1)', 'g')]
