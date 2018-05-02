@@ -768,6 +768,11 @@ The full list of available options is as follows:
 	If you provide a ! after the argument to the navigation command (that
 	is, :Euploader foo!, NOT :Euploader! foo), and a new file is created,
 	this will be used as an array of lines to populate the body.
+						*rails-projection-params*
+"railsParams" ~
+	Provides a dictionary of defaults for URL parameters for
+	|rails-:Preview|, for example {"user_id": "2"}.  The fallback for
+	unspecified parameters is "1".
 
 CONFIGURATION					*rails-configuration*
 
