@@ -399,6 +399,8 @@ function! s:readable_controller_name(...) dict abort
     return s:sub(f,'^app/controllers/(.{-})%(_controller)=\.rb$','\1')
   elseif f =~# '^app/mailers/.*\.rb$'
     return s:sub(f,'^app/mailers/(.{-})\.rb$','\1')
+  elseif f =~# '^\%(test\|spec\)/mailers/previews/.*_preview\.rb$'
+    return s:sub(f,'^%(test|spec)/mailers/previews/(.{-})_preview\.rb$','\1')
   elseif f =~# '^app/jobs/.*\.rb$'
     return s:sub(f,'^app/jobs/(.{-})%(_job)=\.rb$','\1')
   elseif f =~# '^test/\%(functional\|controllers\)/.*_test\.rb$'
@@ -732,6 +734,8 @@ function! s:readable_calculate_file_type() dict abort
     let r = "helper"
   elseif f =~# '^app/mailers/.*\.rb'
     let r = "mailer"
+  elseif f =~# '^\%(test\|spec\)/mailers/previews/.*_preview\.rb'
+    let r = "mailerpreview"
   elseif f =~# '^app/jobs/.*\.rb'
     let r = "job"
   elseif f =~# '^app/models/concerns/.*\.rb$'
@@ -1516,6 +1520,45 @@ function! s:scanlineforuris(line) abort
   endif
 endfunction
 
+function! s:readable_params(...) dict abort
+  let lnum = a:0 ? a:1 : 0
+  let params = {}
+  let controller = self.controller_name(1)
+  if len(controller)
+    let params.controller = controller
+  endif
+  if self.type_name('controller') && len(self.last_method(lnum))
+    let params.action = self.last_method(lnum)
+  elseif self.type_name('controller','view-layout','view-partial')
+    let params.action = 'index'
+  elseif self.type_name('view')
+    let params.action = fnamemodify(self.name(),':t:r:r:r')
+    let format = fnamemodify(self.name(), ':r:e')
+    if len(format) && format !=# 'html'
+      let params.format = format
+    endif
+  endif
+  for item in reverse(self.projected('railsParams') + self.projected('params'))
+    if type(item) == type({})
+      call extend(params, item)
+    endif
+  endfor
+  return params
+endfunction
+
+function! s:expand_url(url, params) abort
+  let params = extend({'controller': "\1", 'action': "\1", 'format': "\1"}, a:params, 'keep')
+  let url = substitute(a:url, '\%(/\(\w\+\)/\)\=\zs[:*]\(\h\w*\)',
+        \ '\=strftime(get(s:split(get(params,rails#singularize(submatch(1))."_".submatch(2),get(params,submatch(2),1))), 0, "\1"))', 'g')
+  let url = s:gsub(url, '\([^()]*'."\1".'[^()]*\)', '')
+  let url = s:gsub(url, '[()]', '')
+  if url !~# "\1"
+    return url
+  else
+    return ''
+  endif
+endfunction
+
 function! s:readable_preview_urls(lnum) dict abort
   let urls = []
   let start = self.last_method_line(a:lnum) - 1
@@ -1556,34 +1599,25 @@ function! s:readable_preview_urls(lnum) dict abort
     else
       call add(urls, '/packs/' . file)
     endif
-  elseif len(self.controller_name()) && self.controller_name() !=# 'application'
-    if self.type_name('controller') && len(self.last_method(a:lnum))
-      let handler = self.controller_name().'#'.self.last_method(a:lnum)
-    elseif self.type_name('controller','view-layout','view-partial')
-      let handler = self.controller_name().'#index'
+  elseif self.app().has_file('app/mailers/' . self.controller_name() . '.rb')
+    if self.type_name('mailer', 'mailerpreview') && len(self.last_method(a:lnum))
+      call add(urls, '/rails/mailers/' . self.controller_name() . '/' . self.last_method(a:lnum))
     elseif self.type_name('view')
-      let handler = self.controller_name().'#'.fnamemodify(self.name(),':t:r:r')
+      call add(urls, '/rails/mailers/' . self.controller_name() . '/' . fnamemodify(self.name(),':t:r:r:r'))
     endif
-    if exists('handler')
-      let params = {'controller': matchstr(handler, '.*\ze#'), 'action': matchstr(handler, '#\zs.*')}
-      for item in self.projected('params')
-        if type(item) == type({})
-          call extend(params, item, 'keep')
-        endif
-      endfor
-      for route in self.app().routes()
-        if get(route, 'method') =~# 'GET' && get(route, 'handler') =~# '^:\=[[:alnum:]_/]*#:\=\w*$' && handler =~# '^'.s:gsub(route.handler, ':\w+', '\\w\\+').'$'
-          let path = s:gsub(route.path, '\([^()]*\)', '')
-          let path = substitute(path, '/\(\w\+\)/:\%(action$\|controller$\)\@!\(\w\+\)$', '\="/".submatch(1)."/:".rails#singularize(submatch(1))."_".submatch(2)', 'g')
-          let urls += [substitute(path, ':\(\w\+\)', '\=get(params,submatch(1),1)', 'g')]
-        endif
-      endfor
-    endif
+  else
+    let params = self.params()
+    let handler = get(params, 'controller', '') . '#' . get(params, 'action', '')
+    for route in self.app().routes()
+      if get(route, 'method') =~# 'GET' && get(route, 'handler') =~# '^:\=[[:alnum:]_/]*#:\=\w*$' && handler =~# '^'.s:gsub(route.handler, ':\w+', '\\w\\+').'$'
+        call add(urls, s:expand_url(route.path, params))
+      endif
+    endfor
   endif
   return urls
 endfunction
 
-call s:add_methods('readable', ['preview_urls'])
+call s:add_methods('readable', ['params', 'preview_urls'])
 
 function! s:app_server_pid() dict abort
   for type in ['server', 'unicorn']
@@ -3503,7 +3537,7 @@ function! s:readable_alternate_candidates(...) dict abort
     if !empty(projected)
       return projected
     endif
-    if self.type_name('controller','mailer') && len(lastmethod)
+    if self.type_name('controller', 'mailer', 'mailerpreview') && len(lastmethod)
       let view = self.resolve_view(lastmethod, line('.'))
       if view !=# ''
         return [view]
@@ -3526,6 +3560,9 @@ function! s:readable_alternate_candidates(...) dict abort
              \ s:sub(s:sub(f,'/views/','/models/'),'/(\k+)\..*$','.rb#\1')]
     elseif self.type_name('controller')
       return [s:sub(s:sub(f,'/controllers/','/helpers/'),'%(_controller)=\.rb$','_helper.rb')]
+    elseif self.type_name('mailer')
+      return [s:sub(s:sub(f,'^app/mailers/','test/mailers/previews/'),'\.rb$','_preview.rb'),
+            \ s:sub(s:sub(f,'^app/mailers/','spec/mailers/previews/'),'\.rb$','_preview.rb')]
     elseif self.type_name('model-record')
       let table_name = matchstr(join(self.getline(1,50),"\n"),'\n\s*self\.table_name\s*=\s*[:"'']\zs\w\+')
       if empty(table_name)
@@ -5021,6 +5058,11 @@ let s:has_projections = {
       \      ],
       \      "type": "functional test"
       \    },
+      \    "spec/mailers/previews/*_preview.rb": {
+      \      "affinity": "controller",
+      \      "alternate": "app/mailers/{}.rb",
+      \      "template": ["class {camelcase|capitalize|colons}Preview < ActionMailer::Preview", "end"]
+      \    },
       \    "spec/models/*_spec.rb": {
       \      "affinity": "model",
       \      "template": [
@@ -5092,6 +5134,11 @@ let s:has_projections = {
       \        "end"
       \      ],
       \      "type": "functional test"
+      \    },
+      \    "test/mailers/previews/*_preview.rb": {
+      \      "affinity": "controller",
+      \      "alternate": "app/mailers/{}.rb",
+      \      "template": ["class {camelcase|capitalize|colons}Preview < ActionMailer::Preview", "end"]
       \    },
       \    "test/models/*_test.rb": {
       \      "affinity": "model",
