@@ -371,7 +371,7 @@ endfunction
 
 function! s:readable_controller_name(...) dict abort
   let f = self.name()
-  if has_key(self,'getvar') && self.getvar('rails_controller') != ''
+  if has_key(self,'getvar') && !empty(self.getvar('rails_controller'))
     return self.getvar('rails_controller')
   endif
   let [affinity, root] = self.find_affinity()
@@ -380,36 +380,36 @@ function! s:readable_controller_name(...) dict abort
   elseif affinity ==# 'resource'
     return rails#pluralize(root)
   endif
-  if f =~ '\<app/views/layouts/'
-    return s:sub(f,'.*<app/views/layouts/(.{-})\..*','\1')
-  elseif f =~ '\<app/views/'
-    return s:sub(f,'.*<app/views/(.{-})/\w+%(\.[[:alnum:]_+]+)=\.\w+$','\1')
-  elseif f =~ '\<app/helpers/.*_helper\.rb$'
-    return s:sub(f,'.*<app/helpers/(.{-})_helper\.rb$','\1')
-  elseif f =~ '\<app/controllers/.*\.rb$'
-    return s:sub(f,'.*<app/controllers/(.{-})%(_controller)=\.rb$','\1')
-  elseif f =~ '\<app/mailers/.*\.rb$'
-    return s:sub(f,'.*<app/mailers/(.{-})\.rb$','\1')
-  elseif f =~ '\<app/jobs/.*\.rb$'
-    return s:sub(f,'.*<app/jobs/(.{-})%(_job)=\.rb$','\1')
-  elseif f =~ '\<test/\%(functional\|controllers\)/.*_test\.rb$'
-    return s:sub(f,'.*<test/%(functional|controllers)/(.{-})%(_controller)=_test\.rb$','\1')
-  elseif f =~ '\<test/\%(unit/\)\?helpers/.*_helper_test\.rb$'
-    return s:sub(f,'.*<test/%(unit/)?helpers/(.{-})_helper_test\.rb$','\1')
-  elseif f =~ '\<spec/controllers/.*_spec\.rb$'
-    return s:sub(f,'.*<spec/controllers/(.{-})%(_controller)=_spec\.rb$','\1')
-  elseif f =~ '\<spec/jobs/.*_spec\.rb$'
-    return s:sub(f,'.*<spec/jobs/(.{-})%(_job)=_spec\.rb$','\1')
-  elseif f =~ '\<spec/helpers/.*_helper_spec\.rb$'
-    return s:sub(f,'.*<spec/helpers/(.{-})_helper_spec\.rb$','\1')
-  elseif f =~ '\<spec/views/.*/\w\+_view_spec\.rb$'
-    return s:sub(f,'.*<spec/views/(.{-})/\w+_view_spec\.rb$','\1')
-  elseif f =~ '\<app/models/.*\.rb$' && self.type_name('mailer')
-    return s:sub(f,'.*<app/models/(.{-})\.rb$','\1')
-  elseif f =~ '\<\%(public\|app/assets\)/stylesheets/[^.]\+\.'
-    return s:sub(f,'.*<%(public|app/assets)/stylesheets/(.{-})\..*$','\1')
-  elseif f =~ '\<\%(public\|app/assets\)/javascripts/.[^.]\+\.'
-    return s:sub(f,'.*<%(public|app/assets)/javascripts/(.{-})\..*$','\1')
+  if f =~# '^app/views/layouts/'
+    return s:sub(f,'^app/views/layouts/(.{-})\..*','\1')
+  elseif f =~# '^app/views/'
+    return s:sub(f,'^app/views/(.{-})/\w+%(\.[[:alnum:]_+]+)=\.\w+$','\1')
+  elseif f =~# '^app/helpers/.*_helper\.rb$'
+    return s:sub(f,'^app/helpers/(.{-})_helper\.rb$','\1')
+  elseif f =~# '^app/controllers/.*\.rb$'
+    return s:sub(f,'^app/controllers/(.{-})%(_controller)=\.rb$','\1')
+  elseif f =~# '^app/mailers/.*\.rb$'
+    return s:sub(f,'^app/mailers/(.{-})\.rb$','\1')
+  elseif f =~# '^app/jobs/.*\.rb$'
+    return s:sub(f,'^app/jobs/(.{-})%(_job)=\.rb$','\1')
+  elseif f =~# '^test/\%(functional\|controllers\)/.*_test\.rb$'
+    return s:sub(f,'^test/%(functional|controllers)/(.{-})%(_controller)=_test\.rb$','\1')
+  elseif f =~# '^test/\%(unit/\)\?helpers/.*_helper_test\.rb$'
+    return s:sub(f,'^test/%(unit/)?helpers/(.{-})_helper_test\.rb$','\1')
+  elseif f =~# '^spec/controllers/.*_spec\.rb$'
+    return s:sub(f,'^spec/controllers/(.{-})%(_controller)=_spec\.rb$','\1')
+  elseif f =~# '^spec/jobs/.*_spec\.rb$'
+    return s:sub(f,'^spec/jobs/(.{-})%(_job)=_spec\.rb$','\1')
+  elseif f =~# '^spec/helpers/.*_helper_spec\.rb$'
+    return s:sub(f,'^spec/helpers/(.{-})_helper_spec\.rb$','\1')
+  elseif f =~# '^spec/views/.*/\w\+_view_spec\.rb$'
+    return s:sub(f,'^spec/views/(.{-})/\w+_view_spec\.rb$','\1')
+  elseif f =~# '^app/models/.*\.rb$' && self.type_name('mailer')
+    return s:sub(f,'^app/models/(.{-})\.rb$','\1')
+  elseif f =~# '^\%(public\|app/assets\)/stylesheets/[^.]\+\.'
+    return s:sub(f,'^%(public|app/assets)/stylesheets/(.{-})\..*$','\1')
+  elseif f =~# '^\%(public\|app/assets\)/javascripts/.[^.]\+\.'
+    return s:sub(f,'^%(public|app/assets)/javascripts/(.{-})\..*$','\1')
   elseif a:0 && a:1
     return rails#pluralize(self.model_name())
   endif
@@ -422,7 +422,7 @@ endfunction
 
 function! s:readable_model_name(...) dict abort
   let f = self.name()
-  if has_key(self,'getvar') && self.getvar('rails_model') != ''
+  if has_key(self,'getvar') && !empty(self.getvar('rails_model'))
     return self.getvar('rails_model')
   endif
   let [affinity, root] = self.find_affinity()
@@ -431,26 +431,26 @@ function! s:readable_model_name(...) dict abort
   elseif affinity ==# 'collection'
     return rails#singularize(root)
   endif
-  if f =~ '\<app/models/.*_observer.rb$'
-    return s:sub(f,'.*<app/models/(.*)_observer\.rb$','\1')
-  elseif f =~ '\<app/models/.*\.rb$'
-    return s:sub(f,'.*<app/models/(.*)\.rb$','\1')
-  elseif f =~ '\<test/\%(unit\|models\)/.*_observer_test\.rb$'
-    return s:sub(f,'.*<test/unit/(.*)_observer_test\.rb$','\1')
-  elseif f =~ '\<test/\%(unit\|models\)/.*_test\.rb$'
-    return s:sub(f,'.*<test/%(unit|models)/(.*)_test\.rb$','\1')
-  elseif f =~ '\<spec/models/.*_spec\.rb$'
-    return s:sub(f,'.*<spec/models/(.*)_spec\.rb$','\1')
-  elseif f =~ '\<\%(test\|spec\)/blueprints/.*\.rb$'
-    return s:sub(f,'.*<%(test|spec)/blueprints/(.{-})%(_blueprint)=\.rb$','\1')
-  elseif f =~ '\<\%(test\|spec\)/exemplars/.*_exemplar\.rb$'
-    return s:sub(f,'.*<%(test|spec)/exemplars/(.*)_exemplar\.rb$','\1')
-  elseif f =~ '\<\%(test/\|spec/\)\=factories/.*_factory\.rb$'
-    return s:sub(f,'.*<%(test/|spec/)=factories/(.{-})_factory.rb$','\1')
-  elseif f =~ '\<\%(test/\|spec/\)\=fabricators/.*\.rb$'
-    return s:sub(f,'.*<%(test/|spec/)=fabricators/(.{-})_fabricator.rb$','\1')
-  elseif f =~ '\<\%(test\|spec\)/\%(fixtures\|factories\|fabricators\)/.*\.\w\+$'
-    return rails#singularize(s:sub(f,'.*<%(test|spec)/\w+/(.*)\.\w+$','\1'))
+  if f =~# '^app/models/.*_observer.rb$'
+    return s:sub(f,'^app/models/(.*)_observer\.rb$','\1')
+  elseif f =~# '^app/models/.*\.rb$'
+    return s:sub(f,'^app/models/(.*)\.rb$','\1')
+  elseif f =~# '^test/\%(unit\|models\)/.*_observer_test\.rb$'
+    return s:sub(f,'^test/unit/(.*)_observer_test\.rb$','\1')
+  elseif f =~# '^test/\%(unit\|models\)/.*_test\.rb$'
+    return s:sub(f,'^test/%(unit|models)/(.*)_test\.rb$','\1')
+  elseif f =~# '^spec/models/.*_spec\.rb$'
+    return s:sub(f,'^spec/models/(.*)_spec\.rb$','\1')
+  elseif f =~# '^\%(test\|spec\)/blueprints/.*\.rb$'
+    return s:sub(f,'^%(test|spec)/blueprints/(.{-})%(_blueprint)=\.rb$','\1')
+  elseif f =~# '^\%(test\|spec\)/exemplars/.*_exemplar\.rb$'
+    return s:sub(f,'^%(test|spec)/exemplars/(.*)_exemplar\.rb$','\1')
+  elseif f =~# '^\%(test/\|spec/\)\=factories/.*_factory\.rb$'
+    return s:sub(f,'^%(test/|spec/)=factories/(.{-})_factory.rb$','\1')
+  elseif f =~# '^\%(test/\|spec/\)\=fabricators/.*\.rb$'
+    return s:sub(f,'^%(test/|spec/)=fabricators/(.{-})_fabricator.rb$','\1')
+  elseif f =~# '^\%(test\|spec\)/\%(fixtures\|factories\|fabricators\)/.*\.\w\+$'
+    return rails#singularize(s:sub(f,'^%(test|spec)/\w+/(.*)\.\w+$','\1'))
   elseif a:0 && a:1
     return rails#singularize(s:sub(self.controller_name(), '_mailer$', ''))
   endif
@@ -579,7 +579,7 @@ function! rails#singularize(word) abort
   " Probably not worth it to be as comprehensive as Rails but we can
   " still hit the common cases.
   let word = a:word
-  if word =~? '\.js$' || word == ''
+  if word =~? '\.js$' || empty(word)
     return word
   endif
   let word = s:sub(word,'eople$','ersons')
@@ -595,7 +595,7 @@ endfunction
 
 function! rails#pluralize(word, ...) abort
   let word = a:word
-  if word == ''
+  if empty(word)
     return word
   endif
   if a:0 && a:1 && word !=# rails#singularize(word)
@@ -628,7 +628,7 @@ function! rails#buffer(...)
 endfunction
 
 function! s:buffer_app() dict abort
-  if self.getvar('rails_root') != ''
+  if len(self.getvar('rails_root'))
     return rails#app(self.getvar('rails_root'))
   else
     throw 'Not in a Rails app'
@@ -680,7 +680,7 @@ function! s:buffer_name() dict abort
   let f = s:gsub(resolve(fnamemodify(bufname(self.number()),':p')),'\\ @!','/')
   let f = s:sub(f,'/$','')
   let sep = matchstr(f,'^[^\\/]\{3,\}\zs[\\/]')
-  if sep != ""
+  if len(sep)
     let f = getcwd().sep.f
   endif
   if s:startswith(tolower(f),s:gsub(tolower(app.path()),'\\ @!','/')) || f == ""
@@ -707,106 +707,106 @@ function! s:readable_calculate_file_type() dict abort
   if nr < 0 && exists('+shellslash') && ! &shellslash
     let nr = bufnr('^'.s:gsub(full_path,'/','\\').'$')
   endif
-  if f == ""
-    let r = f
-  elseif nr > 0 && getbufvar(nr,'rails_file_type') != ''
-    return getbufvar(nr,'rails_file_type')
-  elseif f =~# '\<app/controllers/concerns/.*\.rb$'
+  if empty(f)
+    let r = ""
+  elseif nr > 0 && !empty(getbufvar(nr, 'rails_file_type'))
+    return getbufvar(nr, 'rails_file_type')
+  elseif f =~# '^app/controllers/concerns/.*\.rb$'
     let r = "controller-concern"
-  elseif f =~ '_controller\.rb$' || f =~ '\<app/controllers/.*\.rb$'
+  elseif f =~# '_controller\.rb$' || f =~# '^app/controllers/.*\.rb$'
     let r = "controller"
-  elseif f =~ '\<test/test_helper\.rb$'
+  elseif f =~# '^test/test_helper\.rb$'
     let r = "test"
-  elseif f =~ '\<spec/\%(spec\|rails\)_helper\.rb$'
+  elseif f =~# '^spec/\%(spec\|rails\)_helper\.rb$'
     let r = "spec"
-  elseif f =~ '_helper\.rb$'
+  elseif f =~# '_helper\.rb$'
     let r = "helper"
-  elseif f =~ '\<app/mailers/.*\.rb'
+  elseif f =~# '^app/mailers/.*\.rb'
     let r = "mailer"
-  elseif f =~ '\<app/jobs/.*\.rb'
+  elseif f =~# '^app/jobs/.*\.rb'
     let r = "job"
-  elseif f =~# '\<app/models/concerns/.*\.rb$'
+  elseif f =~# '^app/models/concerns/.*\.rb$'
     let r = "model-concern"
-  elseif f =~ '\<app/models/'
+  elseif f =~# '^app/models/'
     let top = "\n".join(s:readfile(full_path,50),"\n")
-    let class = matchstr(top,"\n".'class\s\+\S\+\s*<\s*\<\zs\S\+\>')
+    let class = matchstr(top,"\n".'class\s\+\S\+\s*<\s*^\zs\S\+\>')
     let type = tolower(matchstr(class, '^Application\zs[A-Z]\w*$\|^Acti\w\w\zs[A-Z]\w*\ze::Base'))
-    if type ==# 'mailer' || f =~ '_mailer\.rb$'
+    if type ==# 'mailer' || f =~# '_mailer\.rb$'
       let r = 'mailer'
     elseif class ==# 'ActiveRecord::Observer'
       let r = 'model-observer'
     elseif !empty(type)
       let r = 'model-'.type
-    elseif top =~ '\<\%(self\.\%(table_name\|primary_key\)\|has_one\|has_many\|belongs_to\)\>'
+    elseif top =~# '^\%(self\.\%(table_name\|primary_key\)\|has_one\|has_many\|belongs_to\)\>'
       let r = 'model-record'
     else
       let r = 'model'
     endif
-  elseif f =~ '\<app/views/.*/_\w\+\%(\.[[:alnum:]_+]\+\)\=\.\w\+$'
+  elseif f =~# '^app/views/.*/_\w\+\%(\.[[:alnum:]_+]\+\)\=\.\w\+$'
     let r = "view-partial-" . e
-  elseif f =~ '\<app/views/layouts\>.*\.'
+  elseif f =~# '^app/views/layouts\>.*\.'
     let r = "view-layout-" . e
-  elseif f =~ '\<app/views\>.*\.'
+  elseif f =~# '^app/views\>.*\.'
     let r = "view-" . e
-  elseif f =~ '\<test/unit/.*_helper\.rb$'
+  elseif f =~# '^test/unit/.*_helper\.rb$'
     let r = "test-helper"
-  elseif f =~ '\<test/unit/.*\.rb$'
+  elseif f =~# '^test/unit/.*\.rb$'
     let r = "test-model"
-  elseif f =~ '\<test/functional/.*_controller_test\.rb$'
+  elseif f =~# '^test/functional/.*_controller_test\.rb$'
     let r = "test-controller"
-  elseif f =~ '\<test/integration/.*_test\.rb$'
+  elseif f =~# '^test/integration/.*_test\.rb$'
     let r = "test-integration"
-  elseif f =~ '\<test/lib/.*_test\.rb$'
+  elseif f =~# '^test/lib/.*_test\.rb$'
     let r = "test-lib"
-  elseif f =~ '\<test/\w*s/.*_test\.rb$'
+  elseif f =~# '^test/\w*s/.*_test\.rb$'
     let r = s:sub(f,'.*<test/(\w*)s/.*','test-\1')
-  elseif f =~ '\<test/.*_test\.rb'
+  elseif f =~# '^test/.*_test\.rb'
     let r = "test"
-  elseif f =~ '\<spec/lib/.*_spec\.rb$'
+  elseif f =~# '^spec/lib/.*_spec\.rb$'
     let r = 'spec-lib'
-  elseif f =~ '\<lib/.*\.rb$'
+  elseif f =~# '^lib/.*\.rb$'
     let r = 'lib'
-  elseif f =~ '\<spec/\w*s/.*_spec\.rb$'
+  elseif f =~# '^spec/\w*s/.*_spec\.rb$'
     let r = s:sub(f,'.*<spec/(\w*)s/.*','spec-\1')
-  elseif f =~ '\<features/.*\.feature$'
+  elseif f =~# '^features/.*\.feature$'
     let r = 'cucumber-feature'
-  elseif f =~ '\<features/step_definitions/.*_steps\.rb$'
+  elseif f =~# '^features/step_definitions/.*_steps\.rb$'
     let r = 'cucumber-steps'
-  elseif f =~ '\<features/.*\.rb$'
+  elseif f =~# '^features/.*\.rb$'
     let r = 'cucumber'
-  elseif f =~ '\<spec/.*\.feature$'
+  elseif f =~# '^spec/.*\.feature$'
     let r = 'spec-feature'
-  elseif f =~ '\<\%(test\|spec\)/fixtures\>'
-    if e == "yml"
+  elseif f =~# '^\%(test\|spec\)/fixtures\>'
+    if e ==# "yml"
       let r = "fixtures-yaml"
     else
-      let r = "fixtures" . (e == "" ? "" : "-" . e)
+      let r = "fixtures" . (empty(e) ? "" : "-" . e)
     endif
-  elseif f =~ '\<\%(test\|spec\)/\%(factories\|fabricators\)\>'
+  elseif f =~# '^\%(test\|spec\)/\%(factories\|fabricators\)\>'
     let r = "fixtures-replacement"
-  elseif f =~ '\<spec/.*_spec\.rb'
+  elseif f =~# '^spec/.*_spec\.rb'
     let r = "spec"
-  elseif f =~ '\<spec/support/.*\.rb'
+  elseif f =~# '^spec/support/.*\.rb'
     let r = "spec"
-  elseif f =~ '\<db/migrate\>'
+  elseif f =~# '^db/migrate\>'
     let r = "db-migration"
-  elseif f=~ '\<db/schema\.rb$'
+  elseif f=~# '^db/schema\.rb$'
     let r = "db-schema"
-  elseif f =~ '\.rake$' || f =~ '\<\%(Rake\|Cap\)file$' || f =~ '\<config/deploy\.rb$' || f =~ '\<config/deploy/.*\.rb$'
+  elseif f =~# '\.rake$' || f =~# '^\%(Rake\|Cap\)file$' || f =~# '^config/deploy\.rb$' || f =~# '^config/deploy/.*\.rb$'
     let r = "task"
-  elseif f =~ '\<log/.*\.log$'
+  elseif f =~# '^log/.*\.log$'
     let r = "log"
-  elseif ae ==# "css" || ae =~# "^s[ac]ss$" || ae == "^less$"
+  elseif ae ==# "css" || ae =~# "^s[ac]ss$" || ae ==# "^less$"
     let r = "stylesheet-".ae
   elseif ae ==# "js" || ae ==# "es6"
     let r = "javascript"
-  elseif ae == "coffee"
+  elseif ae ==# "coffee"
     let r = "javascript-coffee"
-  elseif e == "html"
+  elseif e ==# "html"
     let r = e
-  elseif f =~ '\<config/routes\>.*\.rb$'
+  elseif f =~# '^config/routes\>.*\.rb$'
     let r = "config-routes"
-  elseif f =~ '\<config/'
+  elseif f =~# '^config/'
     let r = "config"
   endif
   return r
@@ -814,15 +814,15 @@ endfunction
 
 function! s:buffer_type_name(...) dict abort
   let type = getbufvar(self.number(),'rails_cached_file_type')
-  if type == ''
+  if empty(type)
     let type = self.calculate_file_type()
   endif
-  return call('s:match_type',[type == '-' ? '' : type] + a:000)
+  return call('s:match_type',[type ==# '-' ? '' : type] + a:000)
 endfunction
 
 function! s:readable_type_name(...) dict abort
   let type = self.calculate_file_type()
-  return call('s:match_type',[type == '-' ? '' : type] + a:000)
+  return call('s:match_type',[type ==# '-' ? '' : type] + a:000)
 endfunction
 
 function! s:match_type(type,...)
@@ -844,7 +844,7 @@ function! s:app_default_locale() dict abort
   if self.cache.needs('default_locale')
     let candidates = map(filter(
           \ s:readfile(self.path('config/application.rb')) + s:readfile(self.path('config/environment.rb')),
-          \ 'v:val =~ "^ *config.i18n.default_locale = :[\"'']\\=[A-Za-z-]\\+[\"'']\\= *$"'
+          \ 'v:val =~# "^ *config.i18n.default_locale = :[\"'']\\=[A-Za-z-]\\+[\"'']\\= *$"'
           \ ), 'matchstr(v:val,"[A-Za-z-]\\+\\ze[\"'']\\= *$")')
     call self.cache.set('default_locale', get(candidates, 0, 'en'))
   endif
@@ -856,7 +856,7 @@ function! s:app_stylesheet_suffix() dict abort
     let default = self.has_gem('sass-rails') ? '.scss' : '.css'
     let candidates = map(filter(
           \ s:readfile(self.path('config/application.rb')),
-          \ 'v:val =~ "^ *config.sass.preferred_syntax *= *:[A-Za-z-]\\+ *$"'
+          \ 'v:val =~# "^ *config.sass.preferred_syntax *= *:[A-Za-z-]\\+ *$"'
           \ ), '".".matchstr(v:val,"[A-Za-z-]\\+\\ze *$")')
     call self.cache.set('stylesheet_suffix', get(candidates, 0, default))
   endif
