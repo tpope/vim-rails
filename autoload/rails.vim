@@ -123,6 +123,10 @@ function! s:webcat() abort
   return s:webcat
 endfunction
 
+function! s:active() abort
+  return !empty(get(b:, 'rails_root'))
+endfunction
+
 function! s:pop_command()
   if exists("s:command_stack") && len(s:command_stack) > 0
     exe remove(s:command_stack,-1)
@@ -131,7 +135,7 @@ endfunction
 
 function! s:push_chdir(...)
   if !exists("s:command_stack") | let s:command_stack = [] | endif
-  if exists("b:rails_root") && (a:0 ? getcwd() !=# rails#app().path() : !s:startswith(getcwd(), rails#app().path()))
+  if s:active() && (a:0 ? getcwd() !=# rails#app().path() : !s:startswith(getcwd(), rails#app().path()))
     let chdir = exists("*haslocaldir") && haslocaldir() ? "lchdir " : "chdir "
     call add(s:command_stack,chdir.s:escarg(getcwd()))
     exe chdir.s:escarg(rails#app().path())
@@ -1035,7 +1039,7 @@ function! s:Plog(bang, arg) abort
 endfunction
 
 function! rails#command(bang, mods, count, arg) abort
-  if exists('b:rails_root')
+  if s:active()
     return s:Rails(a:bang, a:count, a:arg)
   elseif a:arg !~# '^new\>'
     return 'echoerr '.string('Usage: rails new <path>')
@@ -1143,7 +1147,7 @@ function! s:Refresh(bang)
   let max = bufnr('$')
   while i <= max
     let rr = getbufvar(i,"rails_root")
-    if rr != ""
+    if !empty(rr)
       call setbufvar(i,"rails_refresh",1)
     endif
     let i += 1
@@ -3866,7 +3870,7 @@ function! s:cache_clear(...) dict
 endfunction
 
 function! rails#cache_clear(...)
-  if exists('b:rails_root')
+  if s:active()
     return call(rails#app().cache.clear,a:000,rails#app().cache)
   endif
 endfunction
@@ -4530,7 +4534,7 @@ function! s:app_dbext_settings(environment) dict abort
 endfunction
 
 function! s:BufDatabase(level, ...)
-  if exists("s:lock_database") || !exists('g:loaded_dbext') || !exists('b:rails_root')
+  if exists("s:lock_database") || !exists('g:loaded_dbext') || !s:active()
     return
   endif
   let self = rails#app()
@@ -5423,7 +5427,7 @@ function! s:set_path_options() abort
 endfunction
 
 function! rails#buffer_setup() abort
-  if !exists('b:rails_root')
+  if !s:active()
     return ''
   endif
   let self = rails#buffer()
