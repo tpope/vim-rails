@@ -4319,7 +4319,7 @@ function! rails#log_setup() abort
   else
     let pos = getpos('.')
     setlocal modifiable
-    silent %s/\%(\e\[[0-9;]*m\|\r$\)//ge
+    silent exe '%s/\m\C\%(\e\[[0-9;]*m\|\r$\)//e' . (&gdefault ? '' : 'g')
     call setpos('.', pos)
   endif
   setlocal readonly nomodifiable
