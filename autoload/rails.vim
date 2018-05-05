@@ -1002,7 +1002,7 @@ function! s:BufCommands()
   let ext = expand("%:e")
   if rails#buffer().name() =~# '^app/views/'
     " TODO: complete controller names with trailing slashes here
-    command! -buffer -bar -bang -nargs=? -range -complete=customlist,s:controllerList Extract  :<line1>,<line2>call s:Extract(<bang>0,'<mods>',<f-args>)
+    command! -buffer -bar -bang -nargs=1 -range -complete=customlist,s:controllerList Extract  :exe s:ViewExtract(<bang>0,'<mods>',<line1>,<line2>,<f-args>)
   elseif rails#buffer().name() =~# '^app/helpers/.*\.rb$'
     command! -buffer -bar -bang -nargs=1 -range Extract  :<line1>,<line2>call s:RubyExtract(<bang>0, '<mods>', 'app/helpers', [], s:sub(<f-args>, '_helper$|Helper$|$', '_helper'))
   elseif rails#buffer().name() =~# '^app/\w\+/.*\.rb$'
@@ -3650,19 +3650,13 @@ call s:add_methods('readable', ['alternate_candidates', 'alternate', 'related'])
 " }}}1
 " Extraction {{{1
 
-function! s:Extract(bang, mods, ...) range abort
-  if a:0 == 0 || a:0 > 1
-    return s:error("Incorrect number of arguments")
-  endif
-  if a:1 =~ '[^a-z0-9_/.]'
+function! s:ViewExtract(bang, mods, first, last, file) abort
+  if a:file =~# '[^a-z0-9_/.]'
     return s:error("Invalid partial name")
   endif
   let rails_root = rails#app().path()
   let ext = expand("%:e")
-  let file = s:sub(a:1,'%(/|^)\zs_\ze[^/]*$','')
-  let first = a:firstline
-  let last = a:lastline
-  let range = first.",".last
+  let file = s:sub(a:file, '%(/|^)\zs_\ze[^/]*$','')
   if rails#buffer().type_name('view-layout')
     if rails#buffer().name() =~# '^app/views/layouts/application\>'
       let curdir = 'app/views/shared'
@@ -3710,8 +3704,9 @@ function! s:Extract(bang, mods, ...) range abort
     let erub1 = ''
     let erub2 = ''
   endif
-  let spaces = matchstr(getline(first),"^ *")
-  let renderstr = 'render "'.fnamemodify(file,":r:r").'"'
+  let spaces = matchstr(getline(a:first), '^ *')
+  let q = get(g:, 'ruby_quote', '"')
+  let renderstr = 'render ' . q . fnamemodify(file, ':r:r') . q
   if ext =~? '^\%(rhtml\|erb\|dryml\)$'
     let renderstr = "<%= ".renderstr." %>"
   elseif ext == "rxml" || ext == "builder"
@@ -3723,35 +3718,19 @@ function! s:Extract(bang, mods, ...) range abort
   elseif ext == "mn"
     let renderstr = "_".renderstr
   endif
-  let buf = @@
-  silent exe range."yank"
-  let partial = @@
-  let @@ = buf
-  let old_ai = &ai
-  try
-    let &ai = 0
-    silent exe "norm! :".first.",".last."change\<CR>".spaces.renderstr."\<CR>.\<CR>"
-  finally
-    let &ai = old_ai
-  endtry
-  if renderstr =~ '<%'
-    norm ^6w
+  let contents = join(map(getline(a:first, a:last), 's:sub(v:val, "^".spaces, "") . "\n"'), '')
+  silent exe a:last.'put =spaces . renderstr'
+  silent exe a:first.','.a:last.'delete _'
+  let filetype = &filetype
+  silent exe s:mods(a:mods) 'split' s:fnameescape(fnamemodify(out, ':.'))
+  let existing_last = line('$')
+  silent $put =contents
+  silent exe '1,' . existing_last . 'delete _'
+  if &filetype !=# filetype
+    return 'setlocal filetype=' . filetype
   else
-    norm ^5w
+    return ''
   endif
-  let ft = &ft
-  let shortout = fnamemodify(out,':.')
-  silent execute s:mods(a:mods) 'split' s:fnameescape(shortout)
-  silent %delete _
-  let &ft = ft
-  let @@ = partial
-  silent put
-  0delete
-  let @@ = buf
-  if spaces != ""
-    silent! exe '%substitute/^'.spaces.'//'
-  endif
-  1
 endfunction
 
 function! s:RubyExtract(bang, mods, root, before, name) range abort
