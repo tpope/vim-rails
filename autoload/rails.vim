@@ -67,7 +67,7 @@ endfunction
 
 function! rails#lencmp(i1, i2) abort
   return len(a:i1) - len(a:i2)
-endfunc
+endfunction
 
 function! s:escarg(p)
   return s:gsub(a:p,'[ !%#]','\\&')
@@ -2981,9 +2981,9 @@ function! s:localeEdit(cmd,...)
   endif
 endfunction
 
-function! s:dotcmp(i1, i2)
+function! s:dotcmp(i1, i2) abort
   return strlen(s:gsub(a:i1,'[^.]', '')) - strlen(s:gsub(a:i2,'[^.]', ''))
-endfunc
+endfunction
 
 let s:view_types = split('rhtml,erb,rxml,builder,rjs,haml',',')
 
