@@ -2449,7 +2449,7 @@ function! s:ruby_cfile() abort
   if res != ""|return res|endif
 
   let res = s:findasymbol('controller','\1_controller.rb')
-  if res != ""|return res|endif
+  if res != ""|return s:sub(res, '^/', '')|endif
 
   let res = s:findasymbol('action','\1')
   if res != ""|return s:findview(res)|endif
