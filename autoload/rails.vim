@@ -742,7 +742,7 @@ function! s:readable_calculate_file_type() dict abort
     let r = "model-concern"
   elseif f =~# '^app/models/'
     let top = "\n".join(s:readfile(full_path,50),"\n")
-    let class = matchstr(top,"\n".'class\s\+\S\+\s*<\s*^\zs\S\+\>')
+    let class = matchstr(top,"\n".'class\s\+\S\+\s*<\s*\<\zs\S\+\>')
     let type = tolower(matchstr(class, '^Application\zs[A-Z]\w*$\|^Acti\w\w\zs[A-Z]\w*\ze::Base'))
     if type ==# 'mailer' || f =~# '_mailer\.rb$'
       let r = 'mailer'
