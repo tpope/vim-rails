@@ -2205,17 +2205,33 @@ function! s:findit(pat,repl)
   endif
 endfunction
 
-function! s:findamethod(func,repl)
-  return s:findit('\s*\<\%('.a:func.'\)\s*(\=\s*[@:'."'".'"]\(\f\+\)\>.\=',a:repl)
+function! s:findamethod(func, ...) abort
+  let l = ''
+  let r = ''
+  if &filetype =~# '\<eruby\>'
+    let l = '\s*\%(<%\)\=[=-]\='
+    let r = '\s*\%(-\=%>\s*\)\='
+  elseif &filetype =~# '\<haml\>'
+    let l = '\s*[=-]'
+  endif
+  let result = s:findit(l.'\s*\<\%('.a:func.'\)\s*(\=\s*\(:\=[''"@]\=\f\+\)\>[''"]\='.r, '\1')
+  return a:0 ? result : substitute(result, '^:\=[''"@]\=', '', '')
 endfunction
 
-function! s:findasymbol(sym,repl)
-  return s:findit('\s*\%(:\%('.a:sym.'\)\s*=>\|\<'.a:sym.':\)\s*(\=\s*[@:'."'".'"]\(\f\+\)\>.\=',a:repl)
+function! s:findasymbol(sym) abort
+  return s:findit('\s*\%(:\%('.a:sym.'\)\s*=>\|\<'.a:sym.':\)\s*(\=\s*[@:'."'".'"]\(\f\+\)\>.\=', '\1')
 endfunction
 
-function! s:findfromview(func,repl)
-  "                     (   )            (           )                      ( \1  )                   (      )
-  return s:findit('\s*\%(<%\)\==\=\s*\<\%('.a:func.'\)\s*(\=\s*[@:'."'".'"]\(\f\+\)\>['."'".'"]\=\s*\%(%>\s*\)\=',a:repl)
+function! s:findapartial(func) abort
+  let res = s:findamethod(a:func, '\1', 1)
+  if empty(res)
+    return ''
+  elseif res =~# '^\w\+\%(\.\w\+\)\=$'
+    let res = rails#singularize(s:sub(res, '^\w*\.', ''))
+    return s:findview(rails#pluralize(res).'/_'.res)
+  else
+    return s:findview(s:sub(s:sub(res, '^:=[''"@]=', ''), '[^/]*$', '_&'))
+  endif
 endfunction
 
 function! s:suffixes(type) abort
@@ -2378,133 +2394,135 @@ function! s:ruby_cfile() abort
   let buffer = rails#buffer()
 
   let res = s:findit('\v\s*<require\s*\(=\s*File.expand_path\([''"]../(\f+)[''"],\s*__FILE__\s*\)',expand('%:p:h').'/\1')
-  if res != ""|return simplify(res.(res !~ '\.[^\/.]\+$' ? '.rb' : ''))|endif
+  if len(res)|return simplify(res.(res !~ '\.[^\/.]\+$' ? '.rb' : ''))|endif
 
   let res = s:findit('\v<File.expand_path\([''"]../(\f+)[''"],\s*__FILE__\s*\)',expand('%:p:h').'/\1')
-  if res != ""|return simplify(res)|endif
+  if len(res)|return simplify(res)|endif
 
   let res = s:findit('\v\s*<require\s*\(=\s*File.dirname\(__FILE__\)\s*\+\s*[:''"](\f+)>.=',expand('%:p:h').'/\1')
-  if res != ""|return simplify(res.(res !~ '\.[^\/.]\+$' ? '.rb' : ''))|endif
+  if len(res)|return simplify(res.(res !~ '\.[^\/.]\+$' ? '.rb' : ''))|endif
 
   let res = s:findit('\v<File.dirname\(__FILE__\)\s*\+\s*[:''"](\f+)>[''"]=',expand('%:p:h').'\1')
-  if res != ""|return simplify(res)|endif
+  if len(res)|return simplify(res)|endif
 
   let res = s:findit('\v\s*<%(include|extend)\(=\s*<([[:alnum:]_:]+)>','\1')
-  if res != ""|return rails#underscore(res, 1).".rb"|endif
+  if len(res)|return rails#underscore(res, 1).".rb"|endif
 
-  let res = s:findamethod('require','\1')
-  if res != ""|return res.(res !~ '\.[^\/.]\+$' ? '.rb' : '')|endif
+  let res = s:findamethod('require')
+  if len(res)|return res.(res !~ '\.[^\/.]\+$' ? '.rb' : '')|endif
 
-  if !empty(s:findamethod('\w\+', '\1'))
+  if !empty(s:findamethod('\w\+'))
     let class = s:findit('^[^;#]*,\s*\%(:class_name\s*=>\|class_name:\)\s*["'':]\=\([[:alnum:]_:]\+\)','\1')
-    if class != ""|return rails#underscore(class, 1).".rb"|endif
+    if len(class)|return rails#underscore(class, 1).".rb"|endif
   endif
 
-  let res = s:findamethod('belongs_to\|has_one\|embedded_in\|embeds_one\|composed_of\|validates_associated\|scaffold','\1.rb')
-  if res != ""|return res|endif
+  let res = s:findamethod('belongs_to\|has_one\|embedded_in\|embeds_one\|composed_of\|validates_associated\|scaffold')
+  if len(res)|return res.'.rb'|endif
 
-  let res = rails#singularize(s:findamethod('has_many\|has_and_belongs_to_many\|embeds_many\|accepts_nested_attributes_for\|expose','\1'))
-  if res != ""|return res.".rb"|endif
+  let res = s:findamethod('has_many\|has_and_belongs_to_many\|embeds_many\|accepts_nested_attributes_for\|expose')
+  if len(res)|return rails#singularize(res).'.rb'|endif
 
-  let res = rails#singularize(s:findamethod('create_table\|change_table\|drop_table\|rename_table\|\%(add\|remove\)_\%(column\|index\|timestamps\|reference\|belongs_to\)\|rename_column\|remove_columns\|rename_index','\1'))
-  if res != ""|return res.".rb"|endif
+  let res = s:findamethod('create_table\|change_table\|drop_table\|rename_table\|\%(add\|remove\)_\%(column\|index\|timestamps\|reference\|belongs_to\)\|rename_column\|remove_columns\|rename_index')
+  if len(res)|return rails#singularize(res).'.rb'|endif
 
-  let res = rails#singularize(s:findasymbol('through','\1'))
-  if res != ""|return res.".rb"|endif
+  let res = s:findasymbol('through')
+  if len(res)|return rails#singularize(res).".rb"|endif
 
-  let res = s:findamethod('fixtures','fixtures/\1.yml')
-  if res != ""|return res|endif
+  let res = s:findamethod('fixtures')
+  if len(res)|return 'fixtures/'.res.'.yml'|endif
 
-  let res = s:findamethod('fixture_file_upload','fixtures/\1')
-  if res != ""|return res|endif
+  let res = s:findamethod('fixture_file_upload')
+  if len(res)|return 'fixtures/'.res|endif
 
-  let res = s:findamethod('file_fixture','fixtures/files/\1')
-  if res != ""|return res|endif
+  let res = s:findamethod('file_fixture')
+  if len(res)|return 'fixtures/files/'.res|endif
 
-  let res = s:findamethod('\%(\w\+\.\)\=resources','\1_controller.rb')
-  if res != ""|return res|endif
+  let res = s:findamethod('\%(\w\+\.\)\=resources')
+  if len(res)|return res.'_controller.rb'|endif
 
-  let res = s:findamethod('\%(\w\+\.\)\=resource','\1')
-  if res != ""|return rails#pluralize(res)."_controller.rb"|endif
+  let res = s:findamethod('\%(\w\+\.\)\=resource')
+  if len(res)|return rails#pluralize(res)."_controller.rb"|endif
 
-  let res = s:findasymbol('to','\1')
+  let res = s:findasymbol('to')
   if res =~ '#'|return s:sub(res,'#','_controller.rb#')|endif
 
-  let res = s:findamethod('root\s*\%(:to\s*=>\|\<to:\)\s*','\1')
+  let res = s:findamethod('root\s*\%(:to\s*=>\|\<to:\)\s*')
   if res =~ '#'|return s:sub(res,'#','_controller.rb#')|endif
 
-  let res = s:findamethod('\%(match\|get\|put\|patch\|post\|delete\|redirect\)\s*(\=\s*[:''"][^''"]*[''"]\=\s*\%(\%(,\s*:to\s*\)\==>\|,\s*to:\)\s*','\1')
+  let res = s:findamethod('\%(match\|get\|put\|patch\|post\|delete\|redirect\)\s*(\=\s*[:''"][^''"]*[''"]\=\s*\%(\%(,\s*:to\s*\)\==>\|,\s*to:\)\s*')
   if res =~ '#'|return s:sub(res,'#','_controller.rb#')|endif
 
   if !buffer.type_name('controller', 'mailer')
-    let res = s:sub(s:sub(s:findasymbol('layout','\1'),'^/',''),'[^/]+$','_&')
-    if res != ""|return s:findview(res)|endif
-    let res = s:sub(s:sub(s:findfromview('render\s*(\=\s*\%(:layout\s\+=>\|layout:\)\s*','\1'),'^/',''),'[^/]+$','_&')
-    if res != ""|return s:findview(res)|endif
+    let res = s:sub(s:sub(s:findasymbol('layout'),'^/',''),'[^/]+$','_&')
+    if len(res)|return s:findview(res)|endif
+    let raw = s:sub(s:findamethod('render\s*(\=\s*\%(:layout\s\+=>\|layout:\)\s*',1),'[^/]+$','_&')
+    if len(res)|return s:findview(res)|endif
   endif
 
-  let res = s:findamethod('layout','\=s:findlayout(submatch(1))')
-  if res != ""|return res|endif
+  let res = s:findamethod('layout')
+  if len(res)|return s:findlayout(res)|endif
 
-  let res = s:findasymbol('layout','\=s:findlayout(submatch(1))')
-  if res != ""|return res|endif
+  let res = s:findasymbol('layout')
+  if len(res)|return s:findlayout(res)|endif
 
-  let res = s:findamethod('helper','\1_helper.rb')
-  if res != ""|return res|endif
+  let res = s:findamethod('helper')
+  if len(res)|return res.'_helper.rb'|endif
 
-  let res = s:findasymbol('controller','\1_controller.rb')
-  if res != ""|return s:sub(res, '^/', '')|endif
+  let res = s:findasymbol('controller')
+  if len(res)|return s:sub(res, '^/', '').'_controller.rb'|endif
 
-  let res = s:findasymbol('action','\1')
-  if res != ""|return s:findview(res)|endif
+  let res = s:findasymbol('action')
+  if len(res)|return s:findview(res)|endif
 
-  let res = s:findasymbol('template','\1')
-  if res != ""|return s:findview(res)|endif
+  let res = s:findasymbol('template')
+  if len(res)|return s:findview(res)|endif
 
-  let res = s:sub(s:sub(s:findasymbol('partial','\1'),'^/',''),'[^/]+$','_&')
-  if res != ""|return s:findview(res)|endif
+  let res = s:sub(s:sub(s:findasymbol('partial'),'^/',''),'[^/]+$','_&')
+  if len(res)|return s:findview(res)|endif
 
-  let res = s:sub(s:sub(s:findfromview('json\.(\=\s*\%(:partial\s\+=>\|partial!\)\s*','\1'),'^/',''),'[^/]+$','_&')
-  if res != ""|return s:findview(res)|endif
+  let res = s:sub(s:sub(s:findamethod('(\=\s*\%(:partial\s\+=>\|partial:\s*\|json.partial!\)\s*'),'^/',''),'[^/]+$','_&')
+  if len(res)|return s:findview(res)|endif
 
-  let res = s:sub(s:sub(s:findfromview('render\s*(\=\s*\%(:partial\s\+=>\|partial:\)\s*','\1'),'^/',''),'[^/]+$','_&')
-  if res != ""|return s:findview(res)|endif
+  let res = s:findapartial('render\%(_to_string\)\=\s*(\=\s*\%(:partial\s\+=>\|partial:\)\s*')
+  if len(res)|return res|endif
 
-  let res = s:findamethod('render\>\s*\%(:\%(template\|action\)\s\+=>\|template:\|action:\)\s*','\1')
-  if res != ""|return s:findview(res)|endif
+  let res = s:findamethod('render\>\s*\%(:\%(template\|action\)\s\+=>\|template:\|action:\)\s*')
+  if len(res)|return s:findview(res)|endif
 
-  let res = s:sub(s:findfromview('render','\1'),'^/','')
-  if !buffer.type_name('controller', 'mailer')
-    let res = s:sub(res,'[^/]+$','_&')
+  if buffer.type_name('controller', 'mailer')
+    let res = s:sub(s:findamethod('render'),'^/','')
+    if len(res)|return s:findview(res)|endif
+  else
+    let res = s:findapartial('render')
+    if len(res)|return res|endif
   endif
-  if res != ""|return s:findview(res)|endif
 
-  let res = s:findamethod('redirect_to\s*(\=\s*\%\(:action\s\+=>\|\<action:\)\s*','\1')
-  if res != ""|return res|endif
+  let res = s:findamethod('redirect_to\s*(\=\s*\%\(:action\s\+=>\|\<action:\)\s*')
+  if len(res)|return res|endif
 
-  let res = s:findfromview('image[_-]\%(\|path\|url\)\|\%(path\|url\)_to_image','\1')
-  if res != ""
+  let res = s:findamethod('image[_-]\%(\|path\|url\)\|\%(path\|url\)_to_image')
+  if len(res)
     return s:findasset(res, 'images')
   endif
 
-  let res = s:findfromview('stylesheet[_-]\%(link_tag\|path\|url\)\|\%(path\|url\)_to_stylesheet','\1')
-  if res != ""
+  let res = s:findamethod('stylesheet[_-]\%(link_tag\|path\|url\)\|\%(path\|url\)_to_stylesheet')
+  if len(res)
     return s:findasset(res, 'stylesheets')
   endif
 
-  let res = s:sub(s:findfromview('javascript_\%(include_tag\|path\|url\)\|\%(path\|url\)_to_javascript','\1'),'/defaults>','/application')
-  if res != ""
+  let res = s:sub(s:findamethod('javascript_\%(include_tag\|path\|url\)\|\%(path\|url\)_to_javascript'),'/defaults>','/application')
+  if len(res)
     return s:findasset(res, 'javascripts')
   endif
 
-  let res = s:findfromview('asset_pack_path','\1')
-  if res != ""
+  let res = s:findamethod('asset_pack_path')
+  if len(res)
     return buffer.app().resolve_pack(res)
   endif
 
   for [type, suf] in [['javascript', '.js'], ['stylesheet', '.css']]
-    let res = s:findfromview(type.'_pack_tag','\1')
-    if res != ""
+    let res = s:findamethod(type.'_pack_tag')
+    if len(res)
       return buffer.app().resolve_pack(res . suf)
     endif
   endfor
@@ -2514,7 +2532,7 @@ function! s:ruby_cfile() abort
     let view = s:findit('\s*\<def\s\+\(\k\+\)\>(\=','/\1')
     if view !=# ''
       let res = rails#buffer().resolve_view(contr.view)
-      if res != ""|return res|endif
+      if len(res)|return res|endif
     endif
   endif
 
@@ -3109,7 +3127,7 @@ call s:add_methods('app', ['asset_path', 'resolve_asset', 'pack_suffixes', 'reso
 
 function! s:findview(name) abort
   let view = rails#buffer().resolve_view(a:name, line('.'))
-  return empty(view) ? a:name : view
+  return empty(view) ? (a:name =~# '\.' ? a:name : a:name . '.' . s:format()) : view
 endfunction
 
 function! s:findlayout(name)
