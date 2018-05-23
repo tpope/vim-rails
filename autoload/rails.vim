@@ -5282,16 +5282,17 @@ function! s:expand_placeholder(placeholder, expansions) abort
   let transforms = split(a:placeholder[1:-2], '|')
   if has_key(a:expansions, get(transforms, 0, '}'))
     let value = a:expansions[remove(transforms, 0)]
-  elseif has_key(a:expansions, 'match')
-    let value = a:expansions.match
   else
-    return "\001"
+    let value = get(a:expansions, 'match', "\001")
   endif
   for transform in transforms
     if !has_key(s:transformations, transform)
       return "\001"
     endif
     let value = s:transformations[transform](value, a:expansions)
+    if value =~# "\001"
+      return "\001"
+    endif
   endfor
   return value
 endfunction
