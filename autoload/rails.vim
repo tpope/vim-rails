@@ -325,17 +325,23 @@ function! s:lastmethod(...)
 endfunction
 
 function! s:readable_format(start) dict abort
-  let format = matchstr(self.getline(a:start), '\%(:formats *=>\|\<formats:\) *\[\= *[:''"]\zs\w\+')
-  if format !=# ''
-    return format
+  if a:start
+    let format = matchstr(self.getline(a:start), '\%(:formats *=>\|\<formats:\) *\[\= *[:''"]\zs\w\+')
+    if format !=# ''
+      return format
+    endif
   endif
   if self.type_name('view')
     let format = fnamemodify(self.path(),':r:e')
-    if format == ''
-      return get({'rhtml': 'html', 'rxml': 'xml', 'rjs': 'js', 'haml': 'html'},fnamemodify(self.path(),':e'),'')
+    if empty(format)
+      return get({'rhtml': 'html', 'rxml': 'xml', 'rjs': 'js', 'haml': 'html'},
+            \ matchstr(self.path(),'\.\zs\w\+$'), '')
     else
       return format
     endif
+  endif
+  if !a:start
+    return ''
   endif
   let rline = self.last_opening_line(a:start,'\C^\s*\%(mail\>.*\|respond_to\)\s*\%(\<do\|{\)\s*|\zs\h\k*\ze|',self.last_method_line(a:start))
   if rline
@@ -2233,6 +2239,14 @@ function! s:findapartial(func) abort
     return s:findview(s:sub(s:sub(res, '^:=[''"@]=', ''), '[^/]*$', '_&'))
   endif
 endfunction
+
+function! s:app_template_handlers() dict abort
+  return s:uniq(['raw', 'erb', 'html', 'builder', 'ruby', 'coffee', 'haml', 'jbuilder'] +
+        \ filter(map(keys(self.projections()),
+        \ 'matchstr(v:val, "^\\Capp/views/\\*\\.\\zs(\\w\\+$")'), 'len(v:val)'))
+endfunction
+
+call s:add_methods('app', ['template_handlers'])
 
 function! s:suffixes(type) abort
   if a:type =~# '^stylesheets\=$\|^css$'
@@ -5468,6 +5482,13 @@ function! s:set_path_options() abort
     if self.controller_name() != ''
       let path += ['app/views/'.self.controller_name(), 'app/views/application', 'public']
     endif
+    let format = self.format(0)
+    for ext in self.app().template_handlers()
+      exe 'setlocal suffixesadd+=.' . ext
+      if len(format)
+        exe 'setlocal suffixesadd+=.' . format . '.' . ext
+      endif
+    endfor
     if !self.app().has_rails5()
       let path += ['vendor/plugins/*/lib', 'vendor/rails/*/lib']
     endif
