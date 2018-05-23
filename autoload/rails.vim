@@ -5301,16 +5301,16 @@ function! s:expand_placeholder(placeholder, expansions) abort
   return value
 endfunction
 
-function! s:expand_placeholders(string, placeholders) abort
+function! s:expand_placeholders(string, placeholders, ...) abort
   if type(a:string) ==# type({}) || type(a:string) == type([])
-    return map(copy(a:string), 's:expand_placeholders(v:val, a:placeholders)')
+    return filter(map(copy(a:string), 's:expand_placeholders(v:val, a:placeholders, 1)'), 'type(v:val) !=# type("") || v:val !~# "\001"')
   elseif type(a:string) !=# type('')
     return a:string
   endif
   let ph = extend({'%': '%'}, a:placeholders)
   let value = substitute(a:string, '{[^{}]*}', '\=s:expand_placeholder(submatch(0), ph)', 'g')
   let value = substitute(value, '%\([^: ]\)', '\=get(ph, submatch(1), "\001")', 'g')
-  return value =~# "\001" ? '' : value
+  return !a:0 && value =~# "\001" ? '' : value
 endfunction
 
 function! s:readable_projected_with_raw(key, ...) dict abort
