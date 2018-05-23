@@ -688,9 +688,13 @@ endfunction
 
 function! s:buffer_name() dict abort
   let app = self.app()
-  let f = s:gsub(resolve(fnamemodify(bufname(self.number()),':p')),'\\ @!','/')
+  let f = fnamemodify(bufname(self.number()), ':p')
+  if f !~# ':[\/][\/]'
+    let f = resolve(f)
+  endif
+  let f = s:gsub(f, '\\ @!', '/')
   let f = s:sub(f,'/$','')
-  let sep = matchstr(f,'^[^\\/]\{3,\}\zs[\\/]')
+  let sep = matchstr(f,'^[^\\/:]\+\zs[\\/]')
   if len(sep)
     let f = getcwd().sep.f
   endif
@@ -5409,10 +5413,6 @@ function! s:set_path_options() abort
       setlocal includeexpr=rails#includeexpr(v:fname)
       cmap <buffer><script><expr> <Plug><cfile> rails#cfile()
     endif
-  endif
-
-  if self.app().path() =~ '://'
-    return
   endif
 
   let old_path_str = &l:path
