@@ -719,12 +719,14 @@ The full list of available options is as follows:
 						*rails-projection-alternate*
 "alternate" ~
 	Determines the destination of the |rails-:A| command.  If this is a
-	list, the first readable file will be used.
+	list, the first readable file will be used.  For a related file, as
+	with :.A and :R, {lnum} and {define} expand to the current line number
+	or 'define' match.
 						*rails-projection-related*
 "related" ~
-	Determines the destination of the |rails-:R| and :.A commands.  In
-	addition to the standard placeholders, {define} can be used for the
-	current 'define' match (typically a method).
+	Deprecated in favor of "alternate" with either a {lnum} or {define}.
+	Use {lnum|nothing} to force a file not to match a plain :A without
+	interpolating anything.
 						*rails-projection-test*
 "test" ~
 	Determines the default test file to run with |:Rails| and
@@ -848,7 +850,9 @@ bundled (requires bundler.vim).
 	      \   "spec/fabricators/*_fabricator.rb": {
 	      \     "command": "fabricator",
 	      \     "affinity": "model",
-	      \     "alternate": "app/models/{}.rb",
+	      \     "alternate": [
+	      \       "db/schema.rb#{plural}{lnum|nothing}",
+	      \       "app/models/{}.rb"],
 	      \     "related": "db/schema.rb#{plural}",
 	      \     "test": "spec/models/{}_spec.rb",
 	      \     "template": "Fabricator :{} do\nend"}}}

@@ -5278,6 +5278,10 @@ function! s:transformations.close(input, o) abort
   return '}'
 endfunction
 
+function! s:transformations.nothing(input, o) abort
+  return ''
+endfunction
+
 function! s:expand_placeholder(placeholder, expansions) abort
   let transforms = split(a:placeholder[1:-2], '|')
   if has_key(a:expansions, get(transforms, 0, '}'))
