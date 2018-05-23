@@ -624,7 +624,7 @@ endfunction
 function! rails#app(...) abort
   let root = s:sub(a:0 && len(a:1) ? a:1 : get(b:, 'rails_root', ''), '[\/]$', '')
   if !empty(root)
-    if !has_key(s:apps, root) && filereadable(root . '/config/environment.rb')
+    if !has_key(s:apps, root)
       let s:apps[root] = deepcopy(s:app_prototype)
       let s:apps[root].root = root
       let s:apps[root]._root = root
