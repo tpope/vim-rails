@@ -5230,15 +5230,18 @@ function! s:app_projections() dict abort
     call self.cache.set('projections', {})
 
     let projections = {}
-    if self.has_path('config/projections.json')
-      try
-        let projections = rails#json_parse(readfile(self.path('config/projections.json')))
-        if type(projections) == type({})
-          call self.cache.set('projections', projections)
-        endif
-      catch /^invalid JSON:/
-      endtry
-    endif
+    for file in ['config/projections.json', '.projections.json']
+      if self.has_path(file)
+        try
+          let projections = rails#json_parse(readfile(self.path(file)))
+          if type(projections) == type({})
+            call self.cache.set('projections', projections)
+            break
+          endif
+        catch /^invalid JSON:/
+        endtry
+      endif
+    endfor
   endif
 
   call s:combine_projections(dict, self.cache.get('projections'))
@@ -5620,6 +5623,7 @@ augroup railsPluginAuto
   autocmd User dbextPreConnection call s:BufDatabase(1)
   autocmd BufWritePost */config/database.yml      call rails#cache_clear("db_config")
   autocmd BufWritePost */config/projections.json  call rails#cache_clear("projections")
+  autocmd BufWritePost */.projections.json        call rails#cache_clear("projections")
   autocmd BufWritePost */test/test_helper.rb      call rails#cache_clear("user_assertions")
   autocmd BufWritePost */config/routes.rb         call rails#cache_clear("routes")
   autocmd BufWritePost */config/application.rb    call rails#cache_clear("default_locale")
