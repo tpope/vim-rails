@@ -901,7 +901,7 @@ function! s:app_has(feature) dict
 endfunction
 
 function! s:app_has_rails5() abort dict
-  let gemdir = get(self.gems(), 'rails')
+  let gemdir = get(self.gems(), 'railties')
   return self.has('rails5') || gemdir =~# '-\%([5-9]\|\d\d\+\)\.[^\/]*$'
 endfunction
 
