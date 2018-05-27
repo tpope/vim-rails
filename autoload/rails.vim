@@ -4233,34 +4233,6 @@ function! rails#sprockets_syntax() abort
   hi def link sprocketsIncluded               String
 endfunction
 
-function! rails#buffer_syntax() abort
-  if !exists("g:rails_no_syntax")
-    if &syntax ==# 'ruby'
-      call rails#ruby_syntax()
-
-    elseif (&syntax =~# '^eruby\>' || &syntax ==# 'haml') && &syntax !~# 'yaml'
-      syn case match
-      if &syntax ==# 'haml'
-        exe 'syn cluster hamlRailsRegions contains=hamlRubyCodeIncluded,hamlRubyCode,hamlRubyHash,@hamlEmbeddedRuby,rubyInterpolation'
-      else
-        exe 'syn cluster erubyRailsRegions contains=erubyOneLiner,erubyBlock,erubyExpression,rubyInterpolation'
-      endif
-      let containedin = 'contained containedin=@'.matchstr(&syntax, '^\w\+').'RailsRegions'
-      exe 'syn keyword rubyViewHelper' s:helpermethods() containedin
-      exe 'syn match rubyViewHelper "\<select\>\%(\s*{\|\s*do\>\|\s*(\=\s*&\)\@!"' containedin
-      exe 'syn match rubyViewHelper "\<\%(content_for\w\@!?\=\|current_page?\)"' containedin
-      exe 'syn keyword rubyHelper logger' containedin
-      exe 'syn keyword rubyUrlHelper url_for polymorphic_path polymorphic_url edit_polymorphic_path edit_polymorphic_url new_polymorphic_path new_polymorphic_url' containedin
-      exe 'syn match rubyViewHelper "\.\@<!\<\(h\|html_escape\|u\|url_encode\)\>"' containedin
-      if rails#buffer().type_name('view-partial')
-        exe 'syn keyword rubyViewHelper local_assigns' containedin
-      endif
-      call s:highlight_projections(containedin)
-      call s:highlight_ruby_defaults()
-    endif
-  endif
-endfunction
-
 function! s:highlight_ruby_defaults() abort
   hi def link rubyEntity                      rubyMacro
   hi def link rubyEntities                    rubyMacro
