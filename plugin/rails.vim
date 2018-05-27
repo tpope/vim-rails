@@ -39,7 +39,7 @@ function! RailsDetect(...) abort
   endif
 endfunction
 
-function! s:log_detect() abort
+function! s:LogDetect() abort
   let path = matchstr(get(w:, 'quickfix_title'), '\<cgetfile \zs.*\ze[\\/]log[\\/].*.log$')
   if !empty(path) && filereadable(path . '/config/environment.rb') && isdirectory(path . '/app')
     let b:rails_root = path
@@ -96,9 +96,7 @@ augroup railsPluginDetect
         \ if &filetype !=# 'ruby' | set filetype=ruby | endif
   autocmd BufReadPost *.log if RailsDetect() | set filetype=railslog | endif
 
-  autocmd FileType qf call s:log_detect()
-  autocmd FileType railslog call rails#log_setup()
-  autocmd Syntax railslog call rails#log_syntax()
+  autocmd FileType qf call s:LogDetect()
 
   autocmd User ProjectionistDetect
         \ if RailsDetect(get(g:, 'projectionist_file', '')) |
