@@ -4217,6 +4217,22 @@ function! rails#ruby_syntax() abort
   call s:highlight_ruby_defaults()
 endfunction
 
+function! rails#sprockets_syntax() abort
+  syn match sprocketsPreProc "\%(\w\s*\)\@<!=" contained containedin=.*Comment skipwhite nextgroup=sprocketsInclude
+  syn keyword sprocketsInclude require_self
+  syn keyword sprocketsInclude require link link_directory link_tree depend_on depend_on_asset stub skipwhite nextgroup=sprocketsIncluded
+  syn keyword sprocketsInclude require_directory require_tree skipwhite nextgroup=sprocketsIncludedDir
+  syn match sprocketsIncluded /\f\+\|"[^"]*"/ contained
+  syn match sprocketsIncludedDir /\f\+\|"[^"]*"/ contained skipwhite nextgroup=sprocketsIncluded
+  if &syntax =~# '\<s[ac]ss\>'
+    syn region sassFunction contained start="\<\%(asset-data-url\|\%(asset\|image\|font\|video\|audio\|javascript\|stylesheet\)-\(url\|path\)\)\s*(" end=")" contains=cssStringQ,cssStringQQ oneline keepend containedin=cssFontDescriptorBlock
+  endif
+  hi def link sprocketsPreProc                PreProc
+  hi def link sprocketsInclude                Include
+  hi def link sprocketsIncludedDir            sprocketsIncluded
+  hi def link sprocketsIncluded               String
+endfunction
+
 function! rails#buffer_syntax() abort
   if !exists("g:rails_no_syntax")
     if &syntax ==# 'ruby'
@@ -4241,22 +4257,6 @@ function! rails#buffer_syntax() abort
       endif
       call s:highlight_projections(containedin)
       call s:highlight_ruby_defaults()
-    endif
-
-    if &syntax =~# '^\%(javascript\|coffee\|css\|scss\|sass\)'
-      syn match sprocketsPreProc "\%(\w\s*\)\@<!=" contained containedin=.*Comment skipwhite nextgroup=sprocketsInclude
-      syn keyword sprocketsInclude require_self
-      syn keyword sprocketsInclude require link link_directory link_tree depend_on depend_on_asset stub skipwhite nextgroup=sprocketsIncluded
-      syn keyword sprocketsInclude require_directory require_tree skipwhite nextgroup=sprocketsIncludedDir
-      syn match sprocketsIncluded /\f\+\|"[^"]*"/ contained
-      syn match sprocketsIncludedDir /\f\+\|"[^"]*"/ contained skipwhite nextgroup=sprocketsIncluded
-      hi def link sprocketsPreProc                PreProc
-      hi def link sprocketsInclude                Include
-      hi def link sprocketsIncludedDir            sprocketsIncluded
-      hi def link sprocketsIncluded               String
-    endif
-    if &syntax =~# '\<s[ac]ss\>'
-      syn region sassFunction contained start="\<\%(asset-data-url\|\%(asset\|image\|font\|video\|audio\|javascript\|stylesheet\)-\(url\|path\)\)\s*(" end=")" contains=cssStringQ,cssStringQQ oneline keepend containedin=cssFontDescriptorBlock
     endif
   endif
 endfunction
