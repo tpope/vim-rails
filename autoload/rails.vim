@@ -3955,31 +3955,6 @@ function! s:resetomnicomplete()
   endif
 endfunction
 
-function! s:helpermethods()
-  return ""
-        \."action_name asset_pack_path asset_path asset_url atom_feed audio_path audio_tag audio_url auto_discovery_link_tag "
-        \."button_tag button_to "
-        \."cache cache_fragment_name cache_if cache_unless capture cdata_section check_box check_box_tag collection_check_boxes collection_radio_buttons collection_select color_field color_field_tag compute_asset_extname compute_asset_host compute_asset_path concat content_tag content_tag_for controller controller_name controller_path convert_to_model cookies csp_meta_tag csrf_meta_tag csrf_meta_tags current_cycle cycle "
-        \."date_field date_field_tag date_select datetime_field datetime_field_tag datetime_local_field datetime_local_field_tag datetime_select debug distance_of_time_in_words distance_of_time_in_words_to_now div_for dom_class dom_id "
-        \."email_field email_field_tag escape_javascript escape_once excerpt "
-        \."favicon_link_tag field_set_tag fields fields_for file_field file_field_tag flash font_path font_url form_for form_tag form_with "
-        \."grouped_collection_select grouped_options_for_select "
-        \."headers hidden_field hidden_field_tag highlight "
-        \."image_alt image_path image_submit_tag image_tag image_url "
-        \."j javascript_cdata_section javascript_include_tag javascript_pack_tag javascript_path javascript_tag javascript_url "
-        \."l label label_tag link_to link_to_if link_to_unless link_to_unless_current localize "
-        \."mail_to month_field month_field_tag "
-        \."number_field number_field_tag number_to_currency number_to_human number_to_human_size number_to_percentage number_to_phone number_with_delimiter number_with_precision "
-        \."option_groups_from_collection_for_select options_for_select options_from_collection_for_select "
-        \."params password_field password_field_tag path_to_asset path_to_audio path_to_font path_to_image path_to_javascript path_to_stylesheet path_to_video phone_field phone_field_tag pluralize preload_link_tag provide public_compute_asset_path "
-        \."radio_button radio_button_tag range_field range_field_tag raw render request request_forgery_protection_token reset_cycle response "
-        \."safe_concat safe_join sanitize sanitize_css search_field search_field_tag select_date select_datetime select_day select_hour select_minute select_month select_second select_tag select_time select_year session simple_format strip_links strip_tags stylesheet_link_tag stylesheet_pack_tag stylesheet_path stylesheet_url submit_tag "
-        \."t tag telephone_field telephone_field_tag text_area text_area_tag text_field text_field_tag time_ago_in_words time_field time_field_tag time_select time_tag time_zone_options_for_select time_zone_select to_sentence translate truncate "
-        \."url_field url_field_tag url_for url_to_asset url_to_audio url_to_font url_to_image url_to_javascript url_to_stylesheet url_to_video utf8_enforcer_tag "
-        \."video_path video_tag video_url "
-        \."week_field week_field_tag word_wrap"
-endfunction
-
 function! s:app_user_classes() dict
   if self.cache.needs("user_classes")
     let controllers = self.relglob("app/controllers/","**/*",".rb")
@@ -4009,20 +3984,6 @@ function! s:app_user_assertions() dict
 endfunction
 
 call s:add_methods('app', ['user_classes','user_assertions'])
-
-function! s:highlight_projections(append) abort
-  let buffer = rails#buffer()
-  let keywords = split(join(filter(buffer.projected('keywords'), 'type(v:val) == type("")'), ' '))
-  let special = filter(copy(keywords), 'v:val =~# ''^\h\k*[?!]$''')
-  let regular = filter(copy(keywords), 'v:val =~# ''^\h\k*$''')
-  let group = buffer.type_name('helper', 'view') ? 'rubyHelper' : 'rubyMacro'
-  if !empty(special)
-    exe 'syn match' group '"\<\%('.join(special, '\|').'\)"' a:append
-  endif
-  if !empty(regular)
-    exe 'syn keyword' group join(regular, ' ') a:append
-  endif
-endfunction
 
 function! rails#ruby_syntax() abort
   let buffer = rails#buffer()
@@ -4063,7 +4024,28 @@ function! rails#ruby_syntax() abort
   endif
 
   if buffer.type_name('helper','view')
-    exe 'syn keyword rubyViewHelper' s:helpermethods()
+    syn keyword rubyViewHelper
+          \ action_name asset_pack_path asset_path asset_url atom_feed audio_path audio_tag audio_url auto_discovery_link_tag
+          \ button_tag button_to
+          \ cache cache_fragment_name cache_if cache_unless capture cdata_section check_box check_box_tag collection_check_boxes collection_radio_buttons collection_select color_field color_field_tag compute_asset_extname compute_asset_host compute_asset_path concat content_tag content_tag_for controller controller_name controller_path convert_to_model cookies csp_meta_tag csrf_meta_tag csrf_meta_tags current_cycle cycle
+          \ date_field date_field_tag date_select datetime_field datetime_field_tag datetime_local_field datetime_local_field_tag datetime_select debug distance_of_time_in_words distance_of_time_in_words_to_now div_for dom_class dom_id
+          \ email_field email_field_tag escape_javascript escape_once excerpt
+          \ favicon_link_tag field_set_tag fields fields_for file_field file_field_tag flash font_path font_url form_for form_tag form_with
+          \ grouped_collection_select grouped_options_for_select
+          \ headers hidden_field hidden_field_tag highlight
+          \ image_alt image_path image_submit_tag image_tag image_url
+          \ j javascript_cdata_section javascript_include_tag javascript_pack_tag javascript_path javascript_tag javascript_url
+          \ l label label_tag link_to link_to_if link_to_unless link_to_unless_current localize
+          \ mail_to month_field month_field_tag
+          \ number_field number_field_tag number_to_currency number_to_human number_to_human_size number_to_percentage number_to_phone number_with_delimiter number_with_precision
+          \ option_groups_from_collection_for_select options_for_select options_from_collection_for_select
+          \ params password_field password_field_tag path_to_asset path_to_audio path_to_font path_to_image path_to_javascript path_to_stylesheet path_to_video phone_field phone_field_tag pluralize preload_link_tag provide public_compute_asset_path
+          \ radio_button radio_button_tag range_field range_field_tag raw render request request_forgery_protection_token reset_cycle response
+          \ safe_concat safe_join sanitize sanitize_css search_field search_field_tag select_date select_datetime select_day select_hour select_minute select_month select_second select_tag select_time select_year session simple_format strip_links strip_tags stylesheet_link_tag stylesheet_pack_tag stylesheet_path stylesheet_url submit_tag
+          \ t tag telephone_field telephone_field_tag text_area text_area_tag text_field text_field_tag time_ago_in_words time_field time_field_tag time_select time_tag time_zone_options_for_select time_zone_select to_sentence translate truncate
+          \ url_field url_field_tag url_for url_to_asset url_to_audio url_to_font url_to_image url_to_javascript url_to_stylesheet url_to_video utf8_enforcer_tag
+          \ video_path video_tag video_url
+          \ week_field week_field_tag word_wrap
     syn match rubyViewHelper '\<select\>\%(\s*{\|\s*do\>\|\s*(\=\s*&\)\@!'
     syn match rubyViewHelper '\<\%(content_for\w\@!?\=\|current_page?\)'
     syn match rubyViewHelper '\.\@<!\<\(h\|html_escape\|u\|url_encode\)\>'
@@ -4205,27 +4187,18 @@ function! rails#ruby_syntax() abort
     syn keyword rubyTestAction attach_file check choose click_button click_link click_link_or_button click_on fill_in select uncheck unselect
   endif
 
-  call s:highlight_projections('')
-  call s:highlight_ruby_defaults()
-endfunction
-
-function! rails#sprockets_syntax() abort
-  syn match sprocketsPreProc "\%(\w\s*\)\@<!=" contained containedin=.*Comment skipwhite nextgroup=sprocketsInclude
-  syn keyword sprocketsInclude require_self
-  syn keyword sprocketsInclude require link link_directory link_tree depend_on depend_on_asset stub skipwhite nextgroup=sprocketsIncluded
-  syn keyword sprocketsInclude require_directory require_tree skipwhite nextgroup=sprocketsIncludedDir
-  syn match sprocketsIncluded /\f\+\|"[^"]*"/ contained
-  syn match sprocketsIncludedDir /\f\+\|"[^"]*"/ contained skipwhite nextgroup=sprocketsIncluded
-  if &syntax =~# '\<s[ac]ss\>'
-    syn region sassFunction contained start="\<\%(asset-data-url\|\%(asset\|image\|font\|video\|audio\|javascript\|stylesheet\)-\(url\|path\)\)\s*(" end=")" contains=cssStringQ,cssStringQQ oneline keepend containedin=cssFontDescriptorBlock
+  let keywords = split(join(filter(rails#buffer().projected('keywords'),
+        \ 'type(v:val) == type("")'), ' '))
+  let special = filter(copy(keywords), 'v:val =~# ''^\h\k*[?!]$''')
+  let regular = filter(copy(keywords), 'v:val =~# ''^\h\k*$''')
+  let group = rails#buffer().type_name('helper', 'view') ? 'rubyHelper' : 'rubyMacro'
+  if !empty(special)
+    exe 'syn match' group '"\<\%('.join(special, '\|').'\)"'
   endif
-  hi def link sprocketsPreProc                PreProc
-  hi def link sprocketsInclude                Include
-  hi def link sprocketsIncludedDir            sprocketsIncluded
-  hi def link sprocketsIncluded               String
-endfunction
+  if !empty(regular)
+    exe 'syn keyword' group join(regular, ' ')
+  endif
 
-function! s:highlight_ruby_defaults() abort
   hi def link rubyEntity                      rubyMacro
   hi def link rubyEntities                    rubyMacro
   hi def link rubyExceptionHandler            rubyMacro
@@ -4244,6 +4217,22 @@ function! s:highlight_ruby_defaults() abort
   hi def link rubyAssertion                   rubyException
   hi def link rubyTestAction                  rubyControl
   hi def link rubyHelper                      Function
+endfunction
+
+function! rails#sprockets_syntax() abort
+  syn match sprocketsPreProc "\%(\w\s*\)\@<!=" contained containedin=.*Comment skipwhite nextgroup=sprocketsInclude
+  syn keyword sprocketsInclude require_self
+  syn keyword sprocketsInclude require link link_directory link_tree depend_on depend_on_asset stub skipwhite nextgroup=sprocketsIncluded
+  syn keyword sprocketsInclude require_directory require_tree skipwhite nextgroup=sprocketsIncludedDir
+  syn match sprocketsIncluded /\f\+\|"[^"]*"/ contained
+  syn match sprocketsIncludedDir /\f\+\|"[^"]*"/ contained skipwhite nextgroup=sprocketsIncluded
+  if &syntax =~# '\<s[ac]ss\>'
+    syn region sassFunction contained start="\<\%(asset-data-url\|\%(asset\|image\|font\|video\|audio\|javascript\|stylesheet\)-\(url\|path\)\)\s*(" end=")" contains=cssStringQ,cssStringQQ oneline keepend containedin=cssFontDescriptorBlock
+  endif
+  hi def link sprocketsPreProc                PreProc
+  hi def link sprocketsInclude                Include
+  hi def link sprocketsIncludedDir            sprocketsIncluded
+  hi def link sprocketsIncluded               String
 endfunction
 
 " }}}1
