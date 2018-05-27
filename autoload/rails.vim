@@ -2180,14 +2180,6 @@ function! s:Complete_cd(ArgLead, CmdLine, CursorPos) abort
   return filter(all,'s:startswith(v:val,a:ArgLead)')
 endfunction
 
-function! rails#includeexpr(fname) abort
-  if a:fname =~# '\u' && a:fname !~# '[./]'
-    return rails#underscore(a:fname, 1) . '.rb'
-  else
-    return a:fname
-  endif
-endfunction
-
 function! s:matchcursor(pat)
   let line = getline(".")
   let lastend = 0
@@ -5335,7 +5327,6 @@ function! s:set_path_options() abort
       setlocal suffixesadd=.rb
     endif
     if &l:suffixesadd =~# '\.rb\>'
-      setlocal includeexpr=rails#includeexpr(v:fname)
       cmap <buffer><script><expr> <Plug><cfile> rails#cfile()
     endif
   endif
@@ -5384,7 +5375,7 @@ function! s:set_path_options() abort
 
   let &l:path = (add_dot ? '.,' : '').s:pathjoin(s:uniq(path + old_path + engine_paths))
   let undo = get(b:, 'undo_ftplugin', '')
-  let b:undo_ftplugin = (empty(undo) ? '' : undo . '|') . 'setl path< sua< inc< inex<'
+  let b:undo_ftplugin = (empty(undo) ? '' : undo . '|') . 'setl path< sua< inc<'
 endfunction
 
 function! rails#buffer_setup() abort
