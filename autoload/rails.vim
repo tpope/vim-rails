@@ -1412,12 +1412,6 @@ function! s:readable_default_rake_task(...) dict abort
     return 'middleware'
   elseif self.name() =~# '\<README'
     return 'about'
-  elseif self.type_name('controller') && lnum
-    if self.app().has_rails5()
-      return 'routes -c '.self.controller_name()
-    else
-      return 'routes CONTROLLER='.self.controller_name()
-    endif
   else
     let test = self.test_file()
     let with_line = test

@@ -385,7 +385,6 @@ File                            Task when given range ~
 test/*_test.rb                  test TEST=test/*_test.rb TESTOPTS=-n<method>
 spec/*_spec.rb                  spec SPEC=spec/*_spec.rb:<line>
 features/*.feature              cucumber FEATURE=features/*.feature:<line>
-app/controllers/*_controller.rb routes -c *
 test/fixtures/*.yml             db:fixtures:identify LABEL=<label>
 db/migrate/*_*.rb               db:migrate:down VERSION=*
 lib/tasks/*.rake                <try to guess currently edited task>
