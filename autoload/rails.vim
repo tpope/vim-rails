@@ -3986,22 +3986,20 @@ endfunction
 call s:add_methods('app', ['user_classes','user_assertions'])
 
 function! rails#ruby_syntax() abort
-  let buffer = rails#buffer()
-
   syn keyword rubyAttribute class_attribute
   syn keyword rubyAttribute attr_internal attr_internal_accessor attr_internal_reader attr_internal_writer
   syn keyword rubyAttribute cattr_accessor cattr_reader cattr_writer mattr_accessor mattr_reader mattr_writer
   syn keyword rubyAttribute thread_cattr_accessor thread_cattr_reader thread_cattr_writer thread_mattr_accessor thread_mattr_reader thread_mattr_writer
   syn keyword rubyMacro alias_attribute concern concerning delegate delegate_missing_to with_options
 
-  if buffer.type_name('channel','controller','helper','job','mailer','model','view')
+  if rails#buffer().type_name('channel','controller','helper','job','mailer','model','view')
     syn keyword rubyHelper logger
   endif
 
-  if buffer.type_name('model-observer')
+  if rails#buffer().type_name('model-observer')
     syn keyword rubyMacro observe
 
-  elseif buffer.type_name() ==# 'model' || buffer.type_name('model-record', 'model-concern')
+  elseif rails#buffer().type_name() ==# 'model' || rails#buffer().type_name('model-record', 'model-concern')
     syn keyword rubyMacro accepts_nested_attributes_for attr_readonly attribute enum serialize store store_accessor
     syn keyword rubyMacro default_scope scope
     syn keyword rubyEntity belongs_to has_one composed_of
@@ -4017,13 +4015,13 @@ function! rails#ruby_syntax() abort
     syn keyword rubyMacro validate has_secure_password has_secure_token
   endif
 
-  if buffer.type_name('job')
+  if rails#buffer().type_name('job')
     syn keyword rubyMacro queue_as
     syn keyword rubyExceptionHandler rescue_from retry_on discard_on
     syn keyword rubyCallback before_enqueue around_enqueue after_enqueue before_perform around_perform after_perform
   endif
 
-  if buffer.type_name('helper','view')
+  if rails#buffer().type_name('helper','view')
     syn keyword rubyViewHelper
           \ action_name asset_pack_path asset_path asset_url atom_feed audio_path audio_tag audio_url auto_discovery_link_tag
           \ button_tag button_to
@@ -4049,12 +4047,12 @@ function! rails#ruby_syntax() abort
     syn match rubyViewHelper '\<select\>\%(\s*{\|\s*do\>\|\s*(\=\s*&\)\@!'
     syn match rubyViewHelper '\<\%(content_for\w\@!?\=\|current_page?\)'
     syn match rubyViewHelper '\.\@<!\<\(h\|html_escape\|u\|url_encode\)\>'
-    if buffer.type_name('view-partial')
+    if rails#buffer().type_name('view-partial')
       syn keyword rubyViewHelper local_assigns
     endif
   endif
 
-  if buffer.type_name('controller')
+  if rails#buffer().type_name('controller')
     syn keyword rubyHelper params request response session headers cookies flash
     syn keyword rubyMacro protect_from_forgery
     syn match   rubyMacro '\<respond_to\>\ze[( ] *[:*]'
@@ -4062,14 +4060,14 @@ function! rails#ruby_syntax() abort
     syn keyword rubyResponse render head redirect_to redirect_back respond_with send_data send_file
   endif
 
-  if buffer.type_name('controller', 'mailer')
+  if rails#buffer().type_name('controller', 'mailer')
     syn keyword rubyHelper render_to_string
     syn keyword rubyCallback before_action append_before_action prepend_before_action after_action append_after_action prepend_after_action around_action append_around_action prepend_around_action skip_before_action skip_after_action skip_action
     syn keyword rubyMacro helper helper_attr helper_method layout
     syn keyword rubyExceptionHandler rescue_from
   endif
 
-  if buffer.type_name('mailer')
+  if rails#buffer().type_name('mailer')
     syn keyword rubyResponse mail render
     syn match   rubyResponse "\<headers\>"
     syn match   rubyHelper "\<headers\[\@="
@@ -4078,16 +4076,16 @@ function! rails#ruby_syntax() abort
     syn keyword rubyMacro register_interceptor register_interceptors register_observer register_observers
   endif
 
-  if buffer.type_name('model-concern', 'controller-concern')
+  if rails#buffer().type_name('model-concern', 'controller-concern')
     syn keyword rubyMacro included class_methods
   endif
 
-  if buffer.type_name('controller','helper','mailer','view') ||
-        \ buffer.type_name('test-controller', 'test-integration', 'test-system', 'spec-request', 'spec-feature', 'cucumber')
+  if rails#buffer().type_name('controller','helper','mailer','view') ||
+        \ rails#buffer().type_name('test-controller', 'test-integration', 'test-system', 'spec-request', 'spec-feature', 'cucumber')
     syn keyword rubyUrlHelper url_for polymorphic_path polymorphic_url edit_polymorphic_path edit_polymorphic_url new_polymorphic_path new_polymorphic_url
   endif
 
-  if buffer.type_name('db-migration','db-schema')
+  if rails#buffer().type_name('db-migration','db-schema')
     syn keyword rubySchema create_table change_table drop_table rename_table create_join_table drop_join_table
     syn keyword rubySchema add_column rename_column change_column change_column_default change_column_null remove_column remove_columns
     syn keyword rubySchema add_foreign_key remove_foreign_key
@@ -4098,11 +4096,11 @@ function! rails#ruby_syntax() abort
     syn keyword rubySchema execute transaction
   endif
 
-  if buffer.type_name('task')
+  if rails#buffer().type_name('task')
     syn match rubyRakeMacro '^\s*\zs\%(task\|file\|namespace\|desc\)\>\%(\s*=\)\@!'
   endif
 
-  if buffer.type_name('config-routes')
+  if rails#buffer().type_name('config-routes')
     syn keyword rubyRoute resource resources collection member new nested shallow
     syn keyword rubyRoute match get put patch post delete root mount
     syn keyword rubyRoute scope controller namespace constraints defaults
@@ -4111,7 +4109,7 @@ function! rails#ruby_syntax() abort
     syn keyword rubyHelper redirect
   endif
 
-  if buffer.type_name('test')
+  if rails#buffer().type_name('test')
     if !empty(rails#app().user_assertions())
       exe "syn keyword rubyUserAssertion ".join(rails#app().user_assertions())
     endif
@@ -4122,14 +4120,14 @@ function! rails#ruby_syntax() abort
     syn keyword rubyAssertion assert_difference assert_no_difference
     syn keyword rubyTestAction travel travel_to travel_back
   endif
-  if buffer.type_name('test-controller', 'test-integration', 'test-system')
+  if rails#buffer().type_name('test-controller', 'test-integration', 'test-system')
     syn keyword rubyAssertion assert_response assert_redirected_to assert_template assert_recognizes assert_generates assert_routing
   endif
-  if buffer.type_name('test-helper', 'test-controller', 'test-integration', 'test-system')
+  if rails#buffer().type_name('test-helper', 'test-controller', 'test-integration', 'test-system')
     syn keyword rubyAssertion assert_dom_equal assert_dom_not_equal assert_select assert_select_encoded assert_select_email
     syn keyword rubyTestHelper css_select
   endif
-  if buffer.type_name('test-system')
+  if rails#buffer().type_name('test-system')
     syn keyword rubyAssertion     assert_matches_css     assert_matches_selector     assert_matches_xpath
     syn keyword rubyAssertion     refute_matches_css     refute_matches_selector     refute_matches_xpath
     syn keyword rubyAssertion assert_not_matches_css assert_not_matches_selector assert_not_matches_xpath
@@ -4138,7 +4136,7 @@ function! rails#ruby_syntax() abort
     syn keyword rubyAssertion    refute_button    refute_checked_field    refute_content    refute_css    refute_current_path    refute_field    refute_link    refute_select    refute_selector    refute_table    refute_text    refute_title    refute_unchecked_field    refute_xpath
   endif
 
-  if buffer.type_name('spec')
+  if rails#buffer().type_name('spec')
     syn match rubyTestHelper '\<subject\>'
     syn match rubyTestMacro '\<\%(let\|given\)\>!\='
     syn match rubyTestMacro '\<subject\>!\=\ze\s*\%([({&:]\|do\>\)'
@@ -4148,37 +4146,37 @@ function! rails#ruby_syntax() abort
     syn keyword rubyComment xcontext xdescribe xfeature containedin=rubyKeywordAsMethod
     syn keyword rubyComment xit xexample xspecify xscenario
   endif
-  if buffer.type_name('spec', 'cucumber')
+  if rails#buffer().type_name('spec', 'cucumber')
     syn keyword rubyAssertion pending skip expect is_expected expect_any_instance_of allow allow_any_instance_of
     syn keyword rubyTestHelper described_class
     syn keyword rubyTestHelper double instance_double class_double object_double
     syn keyword rubyTestHelper spy instance_spy class_spy object_spy
     syn keyword rubyTestAction stub_const hide_const
   endif
-  if buffer.type_name('spec-controller')
+  if rails#buffer().type_name('spec-controller')
     syn keyword rubyTestMacro render_views
     syn keyword rubyTestHelper assigns
   endif
-  if buffer.type_name('spec-helper')
+  if rails#buffer().type_name('spec-helper')
     syn keyword rubyTestAction assign
     syn keyword rubyTestHelper helper
   endif
-  if buffer.type_name('spec-view')
+  if rails#buffer().type_name('spec-view')
     syn keyword rubyTestAction assign render
     syn keyword rubyTestHelper rendered
   endif
 
-  if buffer.type_name('test', 'spec')
+  if rails#buffer().type_name('test', 'spec')
     syn keyword rubyTestMacro fixtures use_transactional_tests use_instantiated_fixtures
     syn keyword rubyTestHelper file_fixture
   endif
-  if buffer.type_name('test-controller', 'test-integration', 'spec-controller', 'spec-request')
+  if rails#buffer().type_name('test-controller', 'test-integration', 'spec-controller', 'spec-request')
     syn match   rubyTestAction '\.\@<!\<\%(get\|post\|put\|patch\|delete\|head\|process\)\>'
     syn match   rubyTestAction '\<follow_redirect!'
     syn keyword rubyTestAction get_via_redirect post_via_redirect
     syn keyword rubyTestHelper request response flash session cookies fixture_file_upload
   endif
-  if buffer.type_name('test-system', 'spec-feature', 'cucumber')
+  if rails#buffer().type_name('test-system', 'spec-feature', 'cucumber')
     syn keyword rubyTestHelper body current_host current_path current_scope current_url current_window html response_headers source status_code title windows
     syn keyword rubyTestHelper page text
     syn keyword rubyTestHelper all field_labeled find find_all find_button find_by_id find_field find_link first
