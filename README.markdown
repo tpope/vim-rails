@@ -43,7 +43,7 @@ applications.
 
 * Integration with other plugins.  If [dispatch.vim][] is installed, `:Rails`
   and other command wrappers will use it for asynchronous execution.  Users of
-  [db.vim](https://github.com/tpope/vim-db) and
+  [dadbod.vim](https://github.com/tpope/vim-dadbod) and
   [dbext](http://www.vim.org/script.php?script_id=356) get easy access to
   their application's database.  Users of
   [abolish.vim](https://github.com/tpope/vim-abolish) get pluralize and
