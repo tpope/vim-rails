@@ -87,7 +87,7 @@ if rails#buffer().type_name('mailer')
   syn keyword rubyResponse mail render
   syn match   rubyResponse "\<headers\>"
   syn match   rubyHelper "\<headers\[\@="
-  syn keyword rubyHelper attachments
+  syn keyword rubyHelper params attachments
   syn keyword rubyMacro default
   syn keyword rubyMacro register_interceptor register_interceptors register_observer register_observers
 endif
