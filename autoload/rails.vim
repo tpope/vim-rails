@@ -3090,7 +3090,7 @@ function! s:app_pack_suffixes(type) dict abort
     return []
   endif
   if a:type =~# '^stylesheets\=$\|^css$'
-    let suffixes = ['.sass', '.css', '.scss']
+    let suffixes = ['.sass', '.scss', '.css']
   elseif a:type =~# '^javascripts\=$\|^js$'
     let suffixes = ['.coffee', '.js', '.jsx', '.ts', '.vue']
   else
@@ -3103,6 +3103,7 @@ endfunction
 function! s:app_resolve_pack(name, ...) dict abort
   let name = s:sub(a:name, '\.erb$', '')
   let suffixes = self.pack_suffixes(matchstr(name, '\.\zs\w\+$'))
+  call extend(suffixes, map(copy(suffixes), '"/index".v:val'))
   let dir = self.path('app/javascript/packs')
   if len(suffixes)
     let base = matchstr(name, '.*\ze\.\w\+$')
@@ -3114,7 +3115,7 @@ function! s:app_resolve_pack(name, ...) dict abort
       let &l:suffixesadd = suffixesadd
     endtry
     if !empty(exact)
-      return exact
+      return fnamemodify(exact, ':p')
     endif
   elseif !a:0 || filereadable(dir . '/' . name)
     return dir . '/' . name
@@ -3187,8 +3188,10 @@ function! s:AssetEdit(cmd, name, dir, suffix, fallbacks) abort
     return s:error("E471: Argument required")
   endif
   let suffixes = s:suffixes(a:dir)
+  let pack_suffixes = rails#app().pack_suffixes(suffixes[0][1:-1])
+  call extend(pack_suffixes, map(copy(pack_suffixes), '"/index".v:val'))
   for file in map([''] + suffixes, '"app/assets/".a:dir."/".name.v:val') +
-        \ map(rails#app().pack_suffixes(suffixes[0][1:-1]), '"app/javascript/packs/".name.v:val') +
+        \ map(pack_suffixes, '"app/javascript/packs/".name.v:val') +
         \ map(copy(a:fallbacks), 'printf(v:val, name)') +
         \ [   'public/'.a:dir.'/'.name.suffixes[0],
         \ 'app/assets/'.a:dir.'/'.name.(name =~# '\.' ? '' : a:suffix)]
@@ -5065,12 +5068,11 @@ function! s:set_path_options() abort
     let &l:include = &l:include.(empty(&l:include) ? '' : '\|') .
           \ '^\s*[[:punct:]]\+=\s*\%(link\|require\|depend_on\|stub\)\w*'
   elseif name =~# '^app/javascript\>'
-    let sssuf = self.app().pack_suffixes('css')
-    if len(sssuf) && name =~# '\%(' . escape(join(sssuf, '\|'), '.') . '\)$'
-      let &l:suffixesadd = join(s:uniq(sssuf + split(&l:suffixesadd, ',') + ['/package.json']), ',')
-    else
-      let &l:suffixesadd = join(s:uniq(self.app().pack_suffixes('js') + split(&l:suffixesadd, ',') + ['/package.json']), ',')
+    let suf = self.app().pack_suffixes('css')
+    if len(suf) && name !~# '\%(' . escape(join(suf, '\|'), '.') . '\)$'
+      let suf = self.app().pack_suffixes('js')
     endif
+    let &l:suffixesadd = join(s:uniq(suf + split(&l:suffixesadd, ',') + ['/package.json'] + map(copy(suf), '"/index".v:val')), ',')
   else
     if empty(&l:suffixesadd) && &filetype !~# '\<\%(sql\|qf\)\>'
       setlocal suffixesadd=.rb
