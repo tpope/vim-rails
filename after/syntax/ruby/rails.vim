@@ -175,7 +175,8 @@ if rails#buffer().type_name('spec-controller')
 endif
 if rails#buffer().type_name('spec-helper')
   syn keyword rubyTestAction assign
-  syn keyword rubyTestHelper helper
+  syn match rubyTestHelper '\<helper\>'
+  syn match rubyTestMacro '\<helper\>!\=\ze\s*\%([({&:]\|do\>\)'
 endif
 if rails#buffer().type_name('spec-view')
   syn keyword rubyTestAction assign render
