@@ -1593,8 +1593,8 @@ function! s:readable_preview_urls(lnum) dict abort
     elseif file =~# escape(join(self.app().pack_suffixes('js'), '\|'), '.') . '$'
       let file = fnamemodify(file, ':r') . '.js'
     endif
-    if self.app().has_path('public/packs/manifest.json')
-      let manifest = rails#json_parse(readfile(rails#app().path('public/packs/manifest.json')))
+    if filereadable(self.app().path('public/packs/manifest.json'))
+      let manifest = rails#json_parse(readfile(self.app().path('public/packs/manifest.json')))
     else
       let manifest = {}
     endif
