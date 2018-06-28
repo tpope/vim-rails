@@ -504,10 +504,9 @@ MISCELLANEOUS COMMANDS				*rails-misc*
 :Rrefresh!		As above, and also reloads rails.vim.
 
 						*rails-:Cd* *rails-:Rcd*
-:Cd [{directory}]	|:cd| to /path/to/railsapp/{directory}.
-
 						*rails-:Lcd* *rails-:Rlcd*
-:Lcd [{directory}]	|:lcd| to /path/to/railsapp/{directory}.
+:Cd [{directory}]	These have been removed.  Install projectionist.vim
+:Lcd [{directory}]	for a replacement.
 
 						*rails-:Ctags* *rails-:Rtags*
 :Ctags			Calls ctags -R on the current application root.

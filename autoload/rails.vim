@@ -2085,10 +2085,6 @@ endfunction
 " Navigation {{{1
 
 function! s:BufNavCommands()
-  command! -buffer -bar -nargs=? -bang -complete=customlist,s:Complete_cd Cd  exe 'cd' s:fnameescape(rails#app().path(<q-args>))
-  command! -buffer -bar -nargs=? -bang -complete=customlist,s:Complete_cd Lcd exe (<bang>0 ? 'cd' : 'lcd') s:fnameescape(rails#app().path(<q-args>))
-  command! -buffer -bar -nargs=? -complete=customlist,s:Complete_cd Rcd   echoerr 'Use :Cd instead'
-  command! -buffer -bar -nargs=? -complete=customlist,s:Complete_cd Rlcd  echoerr 'Use :Lcd instead'
   command! -buffer -bar -nargs=* -range=0 -complete=customlist,s:Complete_alternate A   exe s:Alternate('<mods> E<bang>',<line1>,<line2>,<count>,<f-args>)
   command! -buffer -bar -nargs=* -range=0 -complete=customlist,s:Complete_alternate AE  exe s:Alternate('<mods> E<bang>',<line1>,<line2>,<count>,<f-args>)
   command! -buffer -bar -nargs=* -range=0 -complete=customlist,s:Complete_alternate AS  exe s:Alternate('<mods> S<bang>',<line1>,<line2>,<count>,<f-args>)
