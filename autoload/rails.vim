@@ -255,37 +255,32 @@ endfunction
 function! s:app_find_file(name, ...) dict abort
   let trim = strlen(self.path())+1
   if a:0
-    let path = s:pathjoin(map(s:pathsplit(a:1),'self.path(v:val)'))
+    let path = map(s:pathsplit(a:1),'self.path(v:val)')
   else
-    let path = s:pathjoin([self.path()])
+    let path = [self.path()]
   endif
-  let suffixesadd = s:pathjoin(get(a:000,1,&suffixesadd))
-  let default = get(a:000,2,'')
-  let oldsuffixesadd = &l:suffixesadd
-  try
-    let &l:suffixesadd = suffixesadd
-    " Versions before 7.1.256 returned directories from findfile
-    if type(default) == type(0) && (v:version < 702 || default == -1)
-      let all = findfile(a:name,path,-1)
-      if v:version < 702
-        call filter(all,'!s:isdirectory(v:val)')
-      endif
-      call map(all,'s:gsub(strpart(fnamemodify(v:val,":p"),trim),"\\\\","/")')
-      return default < 0 ? all : get(all,default-1,'')
-    elseif type(default) == type(0)
-      let found = findfile(a:name,path,default)
-    else
-      let i = 1
-      let found = findfile(a:name,path)
-      while v:version < 702 && len(found) && s:isdirectory(found)
-        let i += 1
-        let found = findfile(a:name,path,i)
-      endwhile
-    endif
-    return found == "" && type(default) == type('') ? default : s:gsub(strpart(fnamemodify(found,':p'),trim),'\\','/')
-  finally
-    let &l:suffixesadd = oldsuffixesadd
-  endtry
+  let index = 1
+  let default = ''
+  if a:0 > 1 && type(a:2) == type(0)
+    let index = a:2
+  elseif a:0 > 1 && type(a:2) == type('')
+    let default = a:2
+  endif
+  let results = []
+  for glob in path
+    for dir in s:glob(glob)
+      let dir = substitute(substitute(dir, '[\/]\=$', '/', ''), '^+\ze\a\a\+:', '', '')
+      for suf in [''] + (a:name =~# '/$' ? [] : s:pathsplit(get(a:000, 1, [])))
+        if s:fcall(a:name =~# '/$' ? 'isdirectory' : 'filereadable', dir . a:name . suf)
+          call add(results, dir . a:name . suf)
+        endif
+        if len(results) == index
+          return results[-1]
+        endif
+      endfor
+    endfor
+  endfor
+  return index == -1 ? results : default
 endfunction
 
 call s:add_methods('app',['real','path','spec','root','has_path','has_file','find_file'])
@@ -3509,7 +3504,7 @@ function! s:AR(cmd,related,line1,line2,count,...) abort
           if file =~# '\u'
             let file = rails#underscore(file)
           endif
-          let found = rails#app().find_file(file, rails#app().internal_load_path(), '.rb', a:count)
+          let found = rails#app().find_file(file, rails#app().internal_load_path(), ['.rb'], a:count)
           if !empty(found)
             let file = fnamemodify(found, ':p')
             let c = ''
