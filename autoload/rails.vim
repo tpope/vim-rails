@@ -950,6 +950,10 @@ call s:add_methods('readable',['app','relative','absolute','spec','calculate_fil
 " }}}1
 " Ruby Execution {{{1
 
+function! s:app_has_zeus() dict abort
+  return getftype(self.dir() . '/zeus.sock') ==# 'socket' && executable('zeus')
+endfunction
+
 function! s:app_ruby_script_command(cmd) dict abort
   if has('win32')
     return 'ruby ' . a:cmd
@@ -974,7 +978,7 @@ function! s:app_static_rails_command(cmd) dict abort
 endfunction
 
 function! s:app_prepare_rails_command(cmd) dict abort
-  if self.has_path('.zeus.sock') && a:cmd =~# '^\%(console\|dbconsole\|destroy\|generate\|server\|runner\)\>'
+  if self.has_zeus() && a:cmd =~# '^\%(console\|dbconsole\|destroy\|generate\|server\|runner\)\>'
     return 'zeus '.a:cmd
   endif
   return self.static_rails_command(a:cmd)
@@ -1017,7 +1021,7 @@ function! s:app_execute_rails_command(cmd) dict abort
   return ''
 endfunction
 
-call s:add_methods('app', ['ruby_script_command','static_rails_command','prepare_rails_command','execute_rails_command','start_rails_command'])
+call s:add_methods('app', ['has_zeus', 'ruby_script_command','static_rails_command','prepare_rails_command','execute_rails_command','start_rails_command'])
 
 " }}}1
 " Commands {{{1
@@ -1494,7 +1498,7 @@ function! s:app_rake_command(...) dict abort
   if self.has_rails5() && get(a:, 1, '') !=# 'norails' && get(g:, 'rails_make', '') !=# 'rake'
     let cmd = 'rails'
   endif
-  if get(a:, 1, '') !=# 'static' && self.has_path('.zeus.sock') && executable('zeus')
+  if get(a:, 1, '') !=# 'static' && self.has_zeus()
     return 'zeus ' . cmd
   elseif self.has_path('bin/' . cmd)
     return self.ruby_script_command('bin/' . cmd)
@@ -1866,7 +1870,7 @@ function! s:readable_runner_command(bang, count, arg) dict abort
     if compiler ==# 'ruby'
       let &l:makeprg = self.app().prepare_rails_command('runner')
       let extra = ''
-    elseif &makeprg =~# '^\%(testrb\|rspec\|cucumber\)\>' && self.app().has_path('.zeus.sock')
+    elseif &makeprg =~# '^\%(testrb\|rspec\|cucumber\)\>' && self.app().has_zeus()
       let &l:makeprg = 'zeus ' . &l:makeprg
     elseif compiler ==# 'rubyunit'
       let &l:makeprg = 'ruby -Itest'
