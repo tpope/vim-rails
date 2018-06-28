@@ -144,20 +144,48 @@ function! s:push_chdir(...)
   endif
 endfunction
 
-function! s:app_path(...) dict
-  if a:0 && a:1 =~# '\%(^\|^\w*:\)[\/]'
-    return a:1
+function! s:app_dir() dict abort
+  let pre = substitute(matchstr(self._root, '^\a\a\+\ze:'), '^.', '\u&', '')
+  if empty(pre)
+    return self._root
+  elseif exists('*' . pre . 'Path')
+    return {pre}Path(self._root)
   else
-    return join([self.root]+a:000,'/')
+    return './.'
   endif
 endfunction
 
-function! s:app_has_path(path) dict
+function! s:app_path(...) dict dict
+  if a:0 && a:1 =~# '\%(^\|^\w*:\)[\/]'
+    return a:1
+  else
+    return join([self._root]+a:000,'/')
+  endif
+endfunction
+
+function! s:app_spec(...) dict abort
+  if a:0 && a:1 =~# '\%(^\|^\w*:\)[\/]'
+    return a:1
+  else
+    return join([self._root]+a:000,'/')
+  endif
+endfunction
+
+function! s:app_root(...) dict abort
+  if a:0 && a:1 =~# '\%(^\|^\w*:\)[\/]'
+    return a:1
+  else
+    return join([self._root]+a:000,'/')
+  endif
+endfunction
+
+function! s:app_has_path(path) dict abort
   return getftime(self.path(a:path)) != -1
 endfunction
 
-function! s:app_has_file(file) dict
-  return filereadable(self.path(a:file))
+function! s:app_has_file(file) dict abort
+  let file = self.file(a:file)
+  return a:file =~# '/$' ? isdirectory(file) : filereadable(file)
 endfunction
 
 function! s:app_find_file(name, ...) dict abort
@@ -196,7 +224,7 @@ function! s:app_find_file(name, ...) dict abort
   endtry
 endfunction
 
-call s:add_methods('app',['path','has_path','has_file','find_file'])
+call s:add_methods('app',['dir','path','spec','root','has_path','has_file','find_file'])
 
 " Split a path into a list.
 function! s:pathsplit(path) abort
@@ -632,7 +660,6 @@ function! rails#app(...) abort
   if !empty(root)
     if !has_key(s:apps, root)
       let s:apps[root] = deepcopy(s:app_prototype)
-      let s:apps[root].root = root
       let s:apps[root]._root = root
     endif
     return get(s:apps, root, {})
@@ -905,7 +932,7 @@ function! s:app_has(feature) dict
   if !has_key(features,a:feature)
     let path = get(map,a:feature,a:feature.'/')
     let features[a:feature] =
-          \ !empty(filter(split(path, '|'), 'self.has_path(v:val)'))
+          \ !empty(filter(split(path, '|'), 'self.has_file(v:val)'))
   endif
   return features[a:feature]
 endfunction
