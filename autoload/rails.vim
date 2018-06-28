@@ -127,8 +127,47 @@ function! s:active() abort
   return !empty(get(b:, 'rails_root'))
 endfunction
 
+function! s:fcall(fn, path, ...) abort
+  let ns = matchstr(a:path, '^\a\a\+\ze:')
+  if len(ns) && exists('*' . ns . '#' . a:fn)
+    return call(ns . '#' . a:fn, [a:path] + a:000)
+  else
+    return call(a:fn, [a:path] + a:000)
+  endif
+endfunction
+
+function! s:filereadable(path) abort
+  return s:fcall('filereadable', a:path)
+endfunction
+
+function! s:isdirectory(path) abort
+  return s:fcall('isdirectory', a:path)
+endfunction
+
+function! s:getftime(path) abort
+  return s:fcall('getftime', a:path)
+endfunction
+
+function! s:simplify(path) abort
+  return s:fcall('simplify', a:path)
+endfunction
+
+function! s:glob(path) abort
+  if v:version >= 704
+    return s:fcall('glob', a:path, 0, 1)
+  else
+    return split(s:fcall('glob', a:path), "\n")
+  endif
+endfunction
+
+function! s:mkdir_p(path) abort
+  if a:path !~# '^\a\a\+:' && !isdirectory(fnamemodify(a:path, ':h'))
+    call mkdir(fnamemodify(a:path, ':h'), 'p')
+  endif
+endfunction
+
 function! s:readfile(path, ...) abort
-  if !filereadable(a:path)
+  if !s:filereadable(a:path)
     return []
   elseif a:0
     return readfile(a:path, '', a:1)
@@ -205,12 +244,12 @@ function! s:app_root(...) dict abort
 endfunction
 
 function! s:app_has_path(path) dict abort
-  return getftime(self.path(a:path)) != -1
+  return s:getftime(self.path(a:path)) != -1
 endfunction
 
 function! s:app_has_file(file) dict abort
   let file = self.path(a:file)
-  return a:file =~# '/$' ? isdirectory(file) : filereadable(file)
+  return a:file =~# '/$' ? s:isdirectory(file) : s:filereadable(file)
 endfunction
 
 function! s:app_find_file(name, ...) dict abort
@@ -229,7 +268,7 @@ function! s:app_find_file(name, ...) dict abort
     if type(default) == type(0) && (v:version < 702 || default == -1)
       let all = findfile(a:name,path,-1)
       if v:version < 702
-        call filter(all,'!isdirectory(v:val)')
+        call filter(all,'!s:isdirectory(v:val)')
       endif
       call map(all,'s:gsub(strpart(fnamemodify(v:val,":p"),trim),"\\\\","/")')
       return default < 0 ? all : get(all,default-1,'')
@@ -238,7 +277,7 @@ function! s:app_find_file(name, ...) dict abort
     else
       let i = 1
       let found = findfile(a:name,path)
-      while v:version < 702 && found != "" && isdirectory(found)
+      while v:version < 702 && len(found) && s:isdirectory(found)
         let i += 1
         let found = findfile(a:name,path,i)
       endwhile
@@ -530,7 +569,7 @@ endfunction
 call s:add_methods('readable', ['find_affinity', 'controller_name', 'model_name'])
 
 function! s:file_lines() dict abort
-  let ftime = getftime(self.path())
+  let ftime = s:getftime(self.path())
   if ftime > get(self,'last_lines_ftime',0)
     let self.last_lines = s:readfile(self.path())
     let self.last_lines_ftime = ftime
@@ -2289,7 +2328,7 @@ endfunction
 function! s:findasset(path, dir) abort
   let path = a:path
   if path =~# '^\.\.\=/'
-    let path = simplify(expand('%:p:h') . '/' . path)
+    let path = expand('%:p:h:h') . '/' . path[3:-1]
   endif
   let suffixes = s:suffixes(a:dir)
   let asset = rails#app().resolve_asset(path, suffixes)
@@ -2302,19 +2341,19 @@ function! s:findasset(path, dir) abort
     endif
     if a:dir ==# 'stylesheets' && rails#app().has('sass')
       let sass = rails#app().path('public/stylesheets/sass/' . path)
-      if filereadable(sass)
+      if s:filereadable(sass)
         return sass
-      elseif filereadable(sass.'.sass')
+      elseif s:filereadable(sass.'.sass')
         return sass.'.sass'
-      elseif filereadable(sass.'.scss')
+      elseif s:filereadable(sass.'.scss')
         return sass.'.scss'
       endif
     endif
     let public = rails#app().path('public/' . a:dir . '/' . path)
     let post = get(suffixes, 0, '')
-    if filereadable(public)
+    if s:filereadable(public)
       return public
-    elseif filereadable(public . post)
+    elseif s:filereadable(public . post)
       return public . post
     elseif rails#app().has_path('app/assets/' . a:dir) || !rails#app().has_path('public/' . a:dir)
       let path = rails#app().path('app/assets/' . a:dir . '/' . path)
@@ -2392,7 +2431,7 @@ function! s:asset_cfile() abort
       let sssuf = s:suffixes('stylesheets')
       for ext in [''] + sssuf
         for name in [res.ext, rel.ext]
-          if filereadable(base.'/'.name)
+          if s:filereadable(base.'/'.name)
             return base.'/'.name
           endif
         endfor
@@ -2430,16 +2469,16 @@ function! s:ruby_cfile() abort
   let buffer = rails#buffer()
 
   let res = s:findit('\v\s*<require\s*\(=\s*File.expand_path\([''"]../(\f+)[''"],\s*__FILE__\s*\)',expand('%:p:h').'/\1')
-  if len(res)|return simplify(res.(res !~ '\.[^\/.]\+$' ? '.rb' : ''))|endif
+  if len(res)|return s:simplify(res.(res !~ '\.[^\/.]\+$' ? '.rb' : ''))|endif
 
   let res = s:findit('\v<File.expand_path\([''"]../(\f+)[''"],\s*__FILE__\s*\)',expand('%:p:h').'/\1')
-  if len(res)|return simplify(res)|endif
+  if len(res)|return s:simplify(res)|endif
 
   let res = s:findit('\v\s*<require\s*\(=\s*File.dirname\(__FILE__\)\s*\+\s*[:''"](\f+)>.=',expand('%:p:h').'/\1')
-  if len(res)|return simplify(res.(res !~ '\.[^\/.]\+$' ? '.rb' : ''))|endif
+  if len(res)|return s:simplify(res.(res !~ '\.[^\/.]\+$' ? '.rb' : ''))|endif
 
   let res = s:findit('\v<File.dirname\(__FILE__\)\s*\+\s*[:''"](\f+)>[''"]=',expand('%:p:h').'\1')
-  if len(res)|return simplify(res)|endif
+  if len(res)|return s:simplify(res)|endif
 
   let res = s:findit('\v\s*<%(include|extend)\(=\s*<([[:alnum:]_:]+)>','\1')
   if len(res)|return rails#underscore(res, 1).".rb"|endif
@@ -2796,14 +2835,14 @@ function! s:app_relglob(path,glob,...) dict
     let &shellslash = 1
   endif
   let path = a:path
-  if path !~ '^/' && path !~ '^\w:'
+  if path !~ '^/' && path !~ '^\a\+:'
     let path = self.path(path)
   endif
   let suffix = a:0 ? a:1 : ''
-  let full_paths = split(glob(path.a:glob.suffix),"\n")
+  let full_paths = s:glob(path.a:glob.suffix)
   let relative_paths = []
   for entry in full_paths
-    if suffix == '' && isdirectory(entry) && entry !~ '/$'
+    if empty(suffix) && s:isdirectory(entry) && entry !~ '/$'
       let entry .= '/'
     endif
     let relative_paths += [entry[strlen(path) : -strlen(suffix)-1]]
@@ -2954,7 +2993,7 @@ function! s:app_migration(file) dict
   else
     let glob = '*'.rails#underscore(arg).'*rb'
   endif
-  let files = split(glob(self.path('db/migrate/').glob),"\n")
+  let files = s:glob(self.path('db/migrate/').glob)
   call map(files,'strpart(v:val,1+strlen(self.path()))')
   if arg ==# ''
     return get(files,-1,'')
@@ -3021,7 +3060,7 @@ function! s:fixturesEdit(cmd,...)
   let e = e == '' ? e : '.'.e
   let c = fnamemodify(c,':r')
   let dirs = ['test/fixtures', 'spec/fixtures', 'test/factories', 'spec/factories']
-  let file = get(filter(copy(dirs), 'isdirectory(rails#app().path(v:val))'), 0, dirs[0]).'/'.c.e
+  let file = get(filter(copy(dirs), 's:isdirectory(rails#app().path(v:val))'), 0, dirs[0]).'/'.c.e
   if file =~ '\.\w\+$' && rails#app().find_file(c.e, dirs) ==# ''
     return s:edit(a:cmd,file)
   else
@@ -3153,7 +3192,7 @@ function! s:app_resolve_pack(name, ...) dict abort
     if !empty(exact)
       return fnamemodify(exact, ':p')
     endif
-  elseif !a:0 || filereadable(dir . '/' . name)
+  elseif !a:0 || s:filereadable(dir . '/' . name)
     return dir . '/' . name
   endif
   return a:0 ? a:1 : dir . '/' . name
@@ -3195,9 +3234,7 @@ function! s:viewEdit(cmd, ...) abort
     return s:edit(a:cmd,found.djump)
   elseif a:0 && a:1 =~# '!'
     let file = 'app/views/'.view
-    if !rails#app().has_path(fnamemodify(file, ':h'))
-      call mkdir(rails#app().path(fnamemodify(file, ':h')), 'p')
-    endif
+    call s:mkdir_p(rails#app().path(fnamemodify(file, ':h')))
     return s:edit(a:cmd, file)
   else
     return s:open(a:cmd, 'app/views/'.view)
@@ -3406,9 +3443,7 @@ function! s:readable_open_command(cmd, argument, name, projections) dict abort
     if self.app().has_path(prefix)
       let relative = prefix . (suffix =~# '\.rb$' ? rails#underscore(root) : root) . suffix
       let file = self.app().path(relative)
-      if !isdirectory(fnamemodify(file, ':h'))
-        call mkdir(fnamemodify(file, ':h'), 'p')
-      endif
+      call s:mkdir_p(fnamemodify(file, ':h'))
       if has_key(projection, 'template')
         let template = s:split(projection.template)
         let ph = {
@@ -3417,7 +3452,7 @@ function! s:readable_open_command(cmd, argument, name, projections) dict abort
               \ 'project': self.app().path()}
         call map(template, 's:expand_placeholders(v:val, ph)')
         call map(template, 's:gsub(v:val, "\t", "  ")')
-        let file = fnamemodify(simplify(file), ':.')
+        let file = fnamemodify(s:simplify(file), ':.')
         return cmd . ' ' . s:fnameescape(file) . '|call setline(1, '.string(template).')' . '|set nomod'
       else
         return cmd . ' +AD ' . s:fnameescape(file)
@@ -3433,13 +3468,11 @@ function! s:find(cmd, file) abort
   let djump = matchstr(a:file,'!.*\|#\zs.*\|:\zs\d*\ze\%(:in\)\=$')
   let file = s:sub(a:file,'[#!].*|:\d*%(:in)=$','')
   if file =~# '^\.\.\=\%([\/]\|$\)'
-    let file = simplify(rails#app().path() . s:sub(file[1:-1], '^\.', '/..'))
+    let file = s:simplify(rails#app().path() . s:sub(file[1:-1], '^\.', '/..'))
   endif
   let cmd = (empty(a:cmd) ? '' : s:findcmdfor(a:cmd))
   if djump =~# '!'
-    if !isdirectory(fnamemodify(file, ':h'))
-      call mkdir(fnamemodify(file, ':h'), 'p')
-    endif
+    call s:mkdir_p(rails#app().path(fnamemodify(file, ':h')))
     return s:editcmdfor(cmd) . ' ' . s:jumpargs(fnamemodify(file, ':~:.'), djump)
   else
     return cmd . ' ' . s:jumpargs(file, djump)
@@ -3499,7 +3532,7 @@ function! s:AR(cmd,related,line1,line2,count,...) abort
     else
       silent %delete_
       call setline(1, template)
-      if !modified && !filereadable(expand('%'))
+      if !modified && !s:filereadable(expand('%'))
         setlocal nomodified
       endif
     endif
@@ -3553,8 +3586,8 @@ function! s:Complete_alternate(A,L,P) abort
   else
     let seen = {}
     for glob in filter(s:pathsplit(&l:path), 's:startswith(v:val,rails#app().path())')
-      for path in split(glob(glob), "\n")
-        for file in split(glob(path.'/'.s:fuzzyglob(a:A)), "\n")
+      for path in s:glob(glob)
+        for file in s:glob(path.'/'.s:fuzzyglob(a:A))
           let file = file[strlen(path) + 1 : ]
           let file = substitute(file, '\%('.escape(tr(&l:suffixesadd, ',', '|'), '.|').'\)$', '', '')
           let seen[file] = 1
@@ -3743,20 +3776,18 @@ function! s:ViewExtract(bang, mods, first, last, file) abort
     let out = (rails_root).dir."/_".fname
   elseif dir == "" || dir == "."
     let out = (curdir)."/_".fname
-  elseif isdirectory(curdir."/".dir)
+  elseif s:isdirectory(curdir."/".dir)
     let out = (curdir)."/".dir."/_".fname
   else
     let out = (rails_root)."/app/views/".dir."/_".fname
   endif
-  if filereadable(out) && !a:bang
+  if s:filereadable(out) && !a:bang
     return s:error('E13: File exists (add ! to override)')
   endif
-  if !isdirectory(fnamemodify(out,':h'))
-    if a:bang
-      call mkdir(fnamemodify(out,':h'),'p')
-    else
-      return s:error('No such directory')
-    endif
+  if a:bang
+    call s:mkdir_p(fnamemodify(out, ':h'))
+  elseif out !~# '^\a\a\+:' && !isdirectory(fnamemodify(out,':h'))
+    return s:error('No such directory')
   endif
   if ext =~? '^\%(rhtml\|erb\|dryml\)$'
     let erub1 = '\<\%\s*'
@@ -3803,11 +3834,10 @@ function! s:RubyExtract(bang, mods, root, before, name) range abort
   endif
   call append(a:firstline-1, repeat(' ', indent).'include '.rails#camelize(a:name))
   let out = rails#app().path(a:root, a:name . '.rb')
-  if filereadable(out) && !a:bang
-    return s:error('E13: File exists (add ! to override)')
-  endif
-  if !isdirectory(fnamemodify(out, ':h'))
-    call mkdir(fnamemodify(out, ':h'), 'p')
+  if a:bang
+    call s:mkdir_p(out)
+  elseif out !~# '^\a\a\+:' && !isdirectory(fnamemodify(out,':h'))
+    return s:error('No such directory')
   endif
   execute s:mods(a:mods) 'split' s:fnameescape(out)
   silent %delete_
@@ -4310,7 +4340,7 @@ function! rails#db_canonicalize(url) abort
 endfunction
 
 function! rails#db_test_directory(path) abort
-  return filereadable(a:path . '/config/environment.rb') && isdirectory(a:path . '/app')
+  return s:filereadable(a:path . '/config/environment.rb') && s:isdirectory(a:path . '/app')
 endfunction
 
 function! rails#db_complete_fragment(url, ...) abort
@@ -4554,7 +4584,7 @@ function! s:app_engines() dict abort
 endfunction
 
 function! s:app_smart_projections() dict abort
-  let ts = getftime(self.path('app/'))
+  let ts = s:getftime(self.path('app/'))
   if self.cache.needs('smart_projections', ts)
     let dict = {}
     for dir in self.relglob('app/', '*s', '/')
