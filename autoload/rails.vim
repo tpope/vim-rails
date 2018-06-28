@@ -159,24 +159,25 @@ endfunction
 
 function! s:push_chdir(...)
   if !exists("s:command_stack") | let s:command_stack = [] | endif
-  if s:active() && (a:0 ? getcwd() !=# rails#app().path() : !s:startswith(getcwd(), rails#app().path()))
+  if s:active() && (a:0 ? getcwd() !=# rails#app().path() : !s:startswith(getcwd(), rails#app().real()))
     let chdir = exists("*haslocaldir") && haslocaldir() ? "lchdir " : "chdir "
     call add(s:command_stack,chdir.s:escarg(getcwd()))
-    exe chdir.s:escarg(rails#app().path())
+    exe chdir.s:escarg(rails#app().real())
   else
     call add(s:command_stack,"")
   endif
 endfunction
 
-function! s:app_dir() dict abort
+function! s:app_real(...) dict abort
   let pre = substitute(matchstr(self._root, '^\a\a\+\ze:'), '^.', '\u&', '')
   if empty(pre)
-    return self._root
+    let real = self._root
   elseif exists('*' . pre . 'Path')
-    return {pre}Path(self._root)
+    let real = {pre}Path(self._root)
   else
-    return './.'
+    return ''
   endif
+  return join([real]+a:000,'/')
 endfunction
 
 function! s:app_path(...) dict dict
@@ -248,7 +249,7 @@ function! s:app_find_file(name, ...) dict abort
   endtry
 endfunction
 
-call s:add_methods('app',['dir','path','spec','root','has_path','has_file','find_file'])
+call s:add_methods('app',['real','path','spec','root','has_path','has_file','find_file'])
 
 " Split a path into a list.
 function! s:pathsplit(path) abort
@@ -959,7 +960,7 @@ call s:add_methods('readable',['app','relative','absolute','spec','calculate_fil
 " Ruby Execution {{{1
 
 function! s:app_has_zeus() dict abort
-  return getftype(self.dir() . '/zeus.sock') ==# 'socket' && executable('zeus')
+  return getftype(self.real('zeus.sock')) ==# 'socket' && executable('zeus')
 endfunction
 
 function! s:app_ruby_script_command(cmd) dict abort
@@ -971,9 +972,9 @@ function! s:app_ruby_script_command(cmd) dict abort
 endfunction
 
 function! s:app_static_rails_command(cmd) dict abort
-  if self.has_path('bin/rails')
+  if filereadable(self.real('bin/rails'))
     let cmd = 'bin/rails '.a:cmd
-  elseif self.has_path('script/rails')
+  elseif filereadable(self.real('script/rails'))
     let cmd = 'script/rails '.a:cmd
   elseif !self.has('rails3')
     let cmd = 'script/'.a:cmd
@@ -1067,7 +1068,7 @@ function! s:Complete_log(A, L, P) abort
 endfunction
 
 function! s:Clog(bang, mods, arg) abort
-  let lf = rails#app().path('log/' . (empty(a:arg) ? s:environment() : a:arg) . '.log')
+  let lf = rails#app().real('log/' . (empty(a:arg) ? s:environment() : a:arg) . '.log')
   if !filereadable(lf)
     return 'cgetfile ' . s:fnameescape(lf)
   endif
@@ -1076,7 +1077,7 @@ function! s:Clog(bang, mods, arg) abort
   let cwd = getcwd()
   try
     compiler rails
-    exe chdir s:fnameescape(rails#app().path())
+    exe chdir s:fnameescape(rails#app().real())
     exe 'cgetfile' s:fnameescape(lf)
   finally
     let [&l:mp, &l:efm, b:current_compiler] = [mp, efm, cc]
@@ -1156,8 +1157,8 @@ function! s:app_tags_command() dict abort
   let cd = exists('*haslocaldir') && haslocaldir() ? 'lcd' : 'cd'
   let cwd = getcwd()
   try
-    execute cd fnameescape(self.path())
-    if self.has_path('.ctags')
+    execute cd fnameescape(self.real())
+    if filereadable('.ctags')
       let args = []
     else
       let args = s:split(get(g:, 'rails_ctags_arguments', '--languages=Ruby'))
@@ -1508,7 +1509,7 @@ function! s:app_rake_command(...) dict abort
   endif
   if get(a:, 1, '') !=# 'static' && self.has_zeus()
     return 'zeus ' . cmd
-  elseif self.has_path('bin/' . cmd)
+  elseif filereadable(self.real('bin/' . cmd))
     return self.ruby_script_command('bin/' . cmd)
   elseif self.has('bundler')
     return 'bundle exec ' . cmd
@@ -1632,8 +1633,8 @@ function! s:readable_preview_urls(lnum) dict abort
     elseif file =~# escape(join(self.app().pack_suffixes('js'), '\|'), '.') . '$'
       let file = fnamemodify(file, ':r') . '.js'
     endif
-    if filereadable(self.app().path('public/packs/manifest.json'))
-      let manifest = rails#json_parse(readfile(self.app().path('public/packs/manifest.json')))
+    if filereadable(self.app().real('public/packs/manifest.json'))
+      let manifest = rails#json_parse(readfile(self.app().real('public/packs/manifest.json')))
     else
       let manifest = {}
     endif
@@ -1664,7 +1665,7 @@ call s:add_methods('readable', ['params', 'preview_urls'])
 
 function! s:app_server_pid() dict abort
   for type in ['server', 'unicorn']
-    let pidfile = self.path('tmp/pids/'.type.'.pid')
+    let pidfile = self.real('tmp/pids/'.type.'.pid')
     if filereadable(pidfile)
       let pid = get(readfile(pidfile, 'b', 1), 0, 0)
       if pid
@@ -1882,7 +1883,7 @@ function! s:readable_runner_command(bang, count, arg) dict abort
       let &l:makeprg = 'zeus ' . &l:makeprg
     elseif compiler ==# 'rubyunit'
       let &l:makeprg = 'ruby -Itest'
-    elseif self.app().has_path('bin/' . &l:makeprg)
+    elseif filereadable(self.app().real('bin/' . &l:makeprg))
       let &l:makeprg = self.app().ruby_script_command('bin/' . &l:makeprg)
     elseif &l:makeprg !~# '^bundle\>' && self.app().has('bundler')
       let &l:makeprg = 'bundle exec ' . &l:makeprg
@@ -2683,7 +2684,7 @@ function! s:app_routes() dict abort
     endif
     if empty(routes)
       try
-        execute cd fnameescape(self.path())
+        execute cd fnameescape(self.real())
         let output = system(self.rake_command().' routes')
       finally
         execute cd fnameescape(cwd)
@@ -4085,11 +4086,12 @@ endfunction
 
 function! s:app_db_config(environment) dict
   let all = {}
+  let dbfile = self.real('config/database.yml')
   if !self.cache.needs('db_config')
     let all = self.cache.get('db_config')
-  elseif self.has_path('config/database.yml')
+  elseif filereadable(dbfile)
     try
-      let all = rails#yaml_parse_file(self.path('config/database.yml'))
+      let all = rails#yaml_parse_file(dbfile)
       for [e, c] in items(all)
         for [k, v] in type(c) ==# type({}) ? items(c) : []
           if type(v) ==# get(v:, 't_none', 7)
@@ -4143,8 +4145,8 @@ endfunction
 
 function! s:app_db_url(...) dict abort
   let env = a:0 ? a:1 : s:environment()
-  if self.has_gem('dotenv') && filereadable(self.path('.env'))
-    for line in readfile(self.path('.env'))
+  if self.has_gem('dotenv') && filereadable(self.real('.env'))
+    for line in readfile(self.real('.env'))
       let match = matchstr(line, '^\s*DATABASE_URL=[''"]\=\zs[^''" ]*')
       if !empty(match)
         return match
@@ -5237,7 +5239,7 @@ function! rails#buffer_setup() abort
 
   compiler rails
   let &l:makeprg = self.app().rake_command('static')
-  let &l:errorformat .= ',%\&chdir '.escape(self.app().path(), ',')
+  let &l:errorformat .= ',%\&chdir '.escape(self.app().real(), ',')
   if &l:makeprg =~# 'rails$'
     let &l:errorformat .= ',%\&buffer=`=rails#buffer('.self['#'].').default_task(v:lnum)`'
   elseif &l:makeprg =~# 'rake$'
@@ -5249,7 +5251,7 @@ function! rails#buffer_setup() abort
     runtime! autoload/dispatch.vim
   endif
   if exists('*dispatch#dir_opt')
-    let dir = dispatch#dir_opt(self.app().path())
+    let dir = dispatch#dir_opt(self.app().real())
   endif
 
   let dispatch = self.projected('dispatch')
