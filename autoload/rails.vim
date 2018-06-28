@@ -184,7 +184,7 @@ function! s:app_has_path(path) dict abort
 endfunction
 
 function! s:app_has_file(file) dict abort
-  let file = self.file(a:file)
+  let file = self.path(a:file)
   return a:file =~# '/$' ? isdirectory(file) : filereadable(file)
 endfunction
 
