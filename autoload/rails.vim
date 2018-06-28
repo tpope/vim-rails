@@ -127,6 +127,30 @@ function! s:active() abort
   return !empty(get(b:, 'rails_root'))
 endfunction
 
+function! s:readfile(path, ...) abort
+  if !filereadable(a:path)
+    return []
+  elseif a:0
+    return readfile(a:path, '', a:1)
+  else
+    return readfile(a:path)
+  endif
+endfunction
+
+function! s:readbuf(path,...) abort
+  let nr = bufnr('^'.a:path.'$')
+  if nr < 0 && exists('+shellslash') && ! &shellslash
+    let nr = bufnr('^'.s:gsub(a:path,'/','\\').'$')
+  endif
+  if bufloaded(nr)
+    return getbufline(nr,1,a:0 ? a:1 : '$')
+  elseif a:0
+    return s:readfile(a:path, a:1)
+  else
+    return s:readfile(a:path)
+  endif
+endfunction
+
 function! s:pop_command()
   if exists("s:command_stack") && len(s:command_stack) > 0
     exe remove(s:command_stack,-1)
@@ -504,22 +528,6 @@ endfunction
 
 call s:add_methods('readable', ['find_affinity', 'controller_name', 'model_name'])
 
-function! s:readfile(path,...)
-  let nr = bufnr('^'.a:path.'$')
-  if nr < 0 && exists('+shellslash') && ! &shellslash
-    let nr = bufnr('^'.s:gsub(a:path,'/','\\').'$')
-  endif
-  if bufloaded(nr)
-    return getbufline(nr,1,a:0 ? a:1 : '$')
-  elseif !filereadable(a:path)
-    return []
-  elseif a:0
-    return readfile(a:path,'',a:1)
-  else
-    return readfile(a:path)
-  endif
-endfunction
-
 function! s:file_lines() dict abort
   let ftime = getftime(self.path())
   if ftime > get(self,'last_lines_ftime',0)
@@ -778,7 +786,7 @@ function! s:readable_calculate_file_type() dict abort
   elseif f =~# '^app/models/concerns/.*\.rb$'
     let r = "model-concern"
   elseif f =~# '^app/models/'
-    let top = "\n".join(s:readfile(full_path,50),"\n")
+    let top = "\n".join(s:readbuf(full_path,50),"\n")
     let class = matchstr(top,"\n".'class\s\+\S\+\s*<\s*\<\zs\S\+\>')
     let type = tolower(matchstr(class, '^Application\zs[A-Z]\w*$\|^Acti\w\w\zs[A-Z]\w*\ze::Base'))
     if type ==# 'mailer' || f =~# '_mailer\.rb$'
@@ -4098,7 +4106,7 @@ function! s:app_db_config(environment) dict
   elseif self.has_gem('rails-default-database')
     let db = ''
     if self.has_file('config/application.rb')
-      for line in readfile(self.path('config/application.rb'), 32)
+      for line in s:readfile(self.path('config/application.rb'), 32)
         let db = matchstr(line,'^\s*config\.database_name\s*=\s*[''"]\zs.\{-\}\ze[''"]')
         if !empty(db)
           break
@@ -4878,7 +4886,7 @@ function! s:app_projections() dict abort
       for path in ['lib/', 'lib/rails/']
         for file in findfile(path.'projections.json', gem_path, -1)
           try
-            call s:combine_projections(gem_projections, rails#json_parse(readfile(self.path(file))))
+            call s:combine_projections(gem_projections, rails#json_parse(s:readfile(self.path(file))))
           catch
           endtry
         endfor
@@ -4894,7 +4902,7 @@ function! s:app_projections() dict abort
     for file in ['config/projections.json', '.projections.json']
       if self.has_path(file)
         try
-          let projections = rails#json_parse(readfile(self.path(file)))
+          let projections = rails#json_parse(s:readfile(self.path(file)))
           if type(projections) == type({})
             call self.cache.set('projections', projections)
             break
