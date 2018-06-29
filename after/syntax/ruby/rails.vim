@@ -47,7 +47,7 @@ if rails#buffer().type_name('helper','view')
         \ favicon_link_tag field_set_tag fields fields_for file_field file_field_tag flash font_path font_url form_for form_tag form_with
         \ grouped_collection_select grouped_options_for_select
         \ headers hidden_field hidden_field_tag highlight
-        \ image_alt image_path image_submit_tag image_tag image_url
+        \ image_alt image_pack_tag image_path image_submit_tag image_tag image_url
         \ j javascript_cdata_section javascript_include_tag javascript_pack_tag javascript_path javascript_tag javascript_url
         \ l label label_tag link_to link_to_if link_to_unless link_to_unless_current localize
         \ mail_to month_field month_field_tag
