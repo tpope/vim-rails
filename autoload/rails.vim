@@ -2362,7 +2362,7 @@ function! s:findasset(path, dir) abort
   return path . post
 endfunction
 
-function! s:is_embedded_ruby() abort
+function! rails#is_embedded_ruby() abort
   let groups = [
         \ 'erubyBlock', 'erubyExpression', 'erubyComment', 'erubyOneLiner',
         \ 'hamlRuby']
@@ -2384,7 +2384,7 @@ function! s:cfile_delegate(expr) abort
 endfunction
 
 function! rails#embedded_cfile(...) abort
-  if s:is_embedded_ruby()
+  if rails#is_embedded_ruby()
     let expr = 'rails#cfile('.(a:0 > 1 ? string(a:2) : '').')'
   else
     let expr = s:cfile_delegate(a:0 ? a:1 : '')
