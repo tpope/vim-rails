@@ -3056,7 +3056,7 @@ function! s:fixturesEdit(cmd,...)
   let c = fnamemodify(c,':r')
   let dirs = ['test/fixtures', 'spec/fixtures', 'test/factories', 'spec/factories']
   let file = get(filter(copy(dirs), 's:isdirectory(rails#app().path(v:val))'), 0, dirs[0]).'/'.c.e
-  if file =~ '\.\w\+$' && rails#app().find_file(c.e, dirs) ==# ''
+  if file =~ '\.\w\+$' && rails#app().find_file(c.e, dirs, []) ==# ''
     return s:edit(a:cmd,file)
   else
     return s:open(a:cmd, rails#app().find_file(c.e, dirs, ['.yml', '.csv', '.rb'], file))
