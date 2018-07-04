@@ -26,7 +26,18 @@ function! RailsDetect(...) abort
     return 1
   endif
   let fn = fnamemodify(a:0 ? a:1 : expand('%'), ':p')
-  if fn =~# ':[\/]\{2\}'
+  let ns = matchstr(fn, '^\a\a\+\ze:')
+  if len(ns) && exists('*' . ns . '#filereadable') && exists('*' . ns . '#isdirectory')
+    let fn = substitute(fn, '[^:\/#]*$', '', '')
+    while fn =~# '^\a\a\+:.'
+      if {ns}#filereadable(fn . 'config/environment.rb') && {ns}#isdirectory(fn . 'app')
+        let b:rails_root = substitute(fn, '[:\/#]$', '', '')
+        return 1
+      endif
+      let fn = substitute(fn, '[^:\/#]*[:\/#][^:\/#]*$', '', '')
+    endwhile
+    return 0
+  elseif len(ns) || fn =~# ':[\/]\{2\}'
     return 0
   endif
   if !isdirectory(fn)
