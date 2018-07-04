@@ -5122,7 +5122,7 @@ function! s:set_path_options() abort
     endif
     let &l:suffixesadd = join(s:uniq(suf + split(&l:suffixesadd, ',') + ['/package.json'] + map(copy(suf), '"/index".v:val')), ',')
   else
-    if empty(&l:suffixesadd) && &filetype !~# '\<\%(sql\|qf\)\>'
+    if empty(&l:suffixesadd) && &filetype =~# '\<\%(ruby\|eruby\|haml\|markdown\)\>'
       setlocal suffixesadd=.rb
     endif
     if &l:suffixesadd =~# '\.rb\>'
