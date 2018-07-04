@@ -5186,7 +5186,7 @@ function! s:set_path_options() abort
     call add(path, self.app().path())
   endif
 
-  call map(path, 'self.app().path(v:val)')
+  call map(path, 'substitute(self.app().path(v:val), "^\\a\\a\\+:", "+&", "")')
 
   let &l:path = (add_dot ? '.,' : '').s:pathjoin(s:uniq(path + old_path + engine_paths))
   let undo = get(b:, 'undo_ftplugin', '')
