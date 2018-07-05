@@ -252,13 +252,8 @@ function! s:app_has_file(file) dict abort
   return a:file =~# '/$' ? s:isdirectory(file) : s:filereadable(file)
 endfunction
 
-function! s:app_find_file(name, ...) dict abort
-  let trim = strlen(self.path())+1
-  if a:0
-    let path = map(s:pathsplit(a:1),'self.path(v:val)')
-  else
-    let path = [self.path()]
-  endif
+function! s:find_file(name, ...) abort
+  let path = s:pathsplit(a:0 ? a:1 : &path)
   let index = 1
   let default = ''
   if a:0 > 1 && type(a:2) == type(0)
@@ -281,6 +276,15 @@ function! s:app_find_file(name, ...) dict abort
     endfor
   endfor
   return index == -1 ? results : default
+endfunction
+
+function! s:app_find_file(name, ...) dict abort
+  if a:0
+    let path = map(s:pathsplit(a:1),'self.path(v:val)')
+  else
+    let path = [self.path()]
+  endif
+  return s:find_file(a:name, path, a:0 > 1 ? a:2 : '')
 endfunction
 
 call s:add_methods('app',['real','path','spec','root','has_path','has_file','find_file'])
@@ -2326,7 +2330,7 @@ function! s:findasset(path, dir) abort
     let path = expand('%:p:h:h') . '/' . path[3:-1]
   endif
   let suffixes = s:suffixes(a:dir)
-  let asset = rails#app().resolve_asset(path, suffixes)
+  let asset = s:resolve_asset(rails#app().asset_path(), path, suffixes)
   if len(asset)
     return asset
   endif
@@ -2393,28 +2397,32 @@ function! rails#embedded_cfile(...) abort
 endfunction
 
 function! s:asset_cfile() abort
-  let buffer = rails#buffer()
-
   let dir = ''
+  if s:active()
+    let path = rails#app().asset_path()
+  else
+    let parent = matchstr(expand('%:p'), '.*\ze[\/]assets[\/]')
+    let path = len(parent) ? [parent . '/*'] : []
+  endif
 
-  if buffer.type_name('javascript')
+  if &sua =~# '\.js\>'
     let dir = 'javascripts'
-  elseif buffer.type_name('stylesheet')
+  elseif &sua =~# '\.css\>'
     let dir = 'stylesheets'
 
     let asset = ''
     let sssuf = s:suffixes('stylesheets')
     let res = s:findit('\%(^\s*[[:alnum:]-]\+:\s\+\)\=\<[[:alnum:]-]\+-\%(path\|url\)(["'']\=\([^"''() ]*\)', '\1')
     if !empty(res)
-      let asset = rails#app().resolve_asset(res)
+      let asset = s:resolve_asset(path, res)
     endif
     let res = s:findit('\%(^\s*[[:alnum:]-]\+:\s\+\)\=\<stylesheet-\%(path\|url\)(["'']\=\([^"''() ]*\)', '\1')
     if !empty(res)
-      let asset = rails#app().resolve_asset(res, sssuf)
+      let asset = s:resolve_asset(path, res, sssuf)
     endif
     let res = s:findit('\%(^\s*[[:alnum:]-]\+:\s\+\)\=\<javascript-\%(path\|url\)(["'']\=\([^"''() ]*\)', '\1')
     if !empty(res)
-      let asset = rails#app().resolve_asset(res, s:suffixes('javascripts'))
+      let asset = s:resolve_asset(path, res, s:suffixes('javascripts'))
     endif
     if !empty(asset)
       return asset
@@ -2431,17 +2439,17 @@ function! s:asset_cfile() abort
           endif
         endfor
       endfor
-      let asset = rails#app().resolve_asset(res, sssuf)
+      let asset = s:resolve_asset(path, res, sssuf)
       if empty(asset) && expand('%:e') =~# '^s[ac]ss$'
-        let asset = rails#app().resolve_asset(rel, sssuf)
+        let asset = s:resolve_asset(path, rel, sssuf)
       endif
       return empty(asset) ? 'app/assets/stylesheets/'.res : asset
     endif
   endif
 
   let res = s:findit('^\s*\%(//\|[*#]\)=\s*\%(link\|require\|depend_on\|stub\)\w*\s*["'']\=\([^"'' ]*\)', '\1')
-  if !empty(res)
-    let asset = rails#app().resolve_asset(res, dir)
+  if !empty(res) && exists('l:dir')
+    let asset = s:resolve_asset(path, res, dir)
     return empty(asset) ? res : asset
   endif
   return ''
@@ -3140,15 +3148,10 @@ function! s:app_asset_path() dict abort
         \ self.cache.get('gem_assets'))
 endfunction
 
-function! s:app_resolve_asset(name, ...) dict abort
-  let path = join(map(copy(self.asset_path()), 'escape(v:val, " ,")'), ',')
+function! s:resolve_asset(path, name, ...) abort
+  let path = type(a:path) == type([]) ? join(map(copy(a:path), 'escape(v:val, " ,")'), ',') : a:path
   let suffixesadd = &l:suffixesadd
-  try
-    let &l:suffixesadd = join(a:0 ? (type(a:1) ==# type([]) ? a:1 : s:suffixes(a:1)) : [], ',')
-    let exact = findfile(a:name, path)
-  finally
-    let &l:suffixesadd = suffixesadd
-  endtry
+  let exact = s:find_file(a:name, path, a:0 ? (type(a:1) ==# type([]) ? a:1 : s:suffixes(a:1)) : [])
   if !empty(exact)
     return fnamemodify(exact, ':p')
   endif
@@ -3194,7 +3197,7 @@ function! s:app_resolve_pack(name, ...) dict abort
 endfunction
 
 call s:add_methods('readable', ['resolve_view', 'resolve_layout'])
-call s:add_methods('app', ['asset_path', 'resolve_asset', 'pack_suffixes', 'resolve_pack'])
+call s:add_methods('app', ['asset_path', 'pack_suffixes', 'resolve_pack'])
 
 function! s:findview(name) abort
   let view = rails#buffer().resolve_view(a:name, line('.'))
