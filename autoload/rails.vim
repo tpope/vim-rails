@@ -3168,23 +3168,18 @@ function! s:app_resolve_pack(name, ...) dict abort
   let name = s:sub(a:name, '\.erb$', '')
   let suffixes = self.pack_suffixes(matchstr(name, '\.\zs\w\+$'))
   call extend(suffixes, map(copy(suffixes), '"/index".v:val'))
-  let dir = self.path('app/javascript/packs')
+  let dir = self.path('app/javascript/packs/')
   if len(suffixes)
-    let base = matchstr(name, '.*\ze\.\w\+$')
-    let suffixesadd = &l:suffixesadd
-    try
-      let &l:suffixesadd = join(suffixes, ',')
-      let exact = findfile(base, escape(dir, ' ,'))
-    finally
-      let &l:suffixesadd = suffixesadd
-    endtry
-    if !empty(exact)
-      return fnamemodify(exact, ':p')
-    endif
-  elseif !a:0 || s:filereadable(dir . '/' . name)
-    return dir . '/' . name
+    let base = dir . substitute(name, '\.\w\+$', '', '')
+    for suffix in [''] + suffixes
+      if s:filereadable(base . suffix)
+        return base . suffix
+      endif
+    endfor
+  elseif !a:0 || s:filereadable(dir . name)
+    return dir . name
   endif
-  return a:0 ? a:1 : dir . '/' . name
+  return a:0 ? a:1 : dir . name
 endfunction
 
 call s:add_methods('readable', ['resolve_view', 'resolve_layout'])
