@@ -5114,11 +5114,9 @@ function! s:set_path_options() abort
   let suffixes = join(s:suffixes(assetdir), ',')
   if !empty(assetdir)
     let delegate = ''
-    if exists(':chistory')
-      let cfilemap = maparg('<Plug><cfile>', 'c', 0, 1)
-      if get(cfilemap, 'buffer') && cfilemap.expr && cfilemap.rhs !~# 'rails#\|Ruby'
-        let delegate = string(maparg('<Plug><cfile>', 'c'))
-      endif
+    let cfilemap = v:version + has('patch032') >= 704 ? maparg('<Plug><cfile>', 'c', 0, 1) : {}
+    if get(cfilemap, 'buffer') && cfilemap.expr && cfilemap.rhs !~# 'rails#\|Ruby'
+      let delegate = string(maparg('<Plug><cfile>', 'c'))
     endif
     let map = 'rails#asset_cfile('.delegate.')'
     if len(suffixes)
