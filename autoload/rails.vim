@@ -1666,9 +1666,9 @@ function! s:readable_preview_urls(lnum) dict abort
     call add(urls, '/assets/' . matchstr(self.name(), 'javascripts/\zs[^.]*') . '.js')
   elseif self.name() =~# '^app/javascript/packs/'
     let file = matchstr(self.name(), 'packs/\zs.\{-\}\%(\.erb\)\=$')
-    if file =~# escape(join(self.app().pack_suffixes('css'), '\|'), '.') . '$'
+    if file =~# escape(join(rails#pack_suffixes('css'), '\|'), '.') . '$'
       let file = fnamemodify(file, ':r') . '.css'
-    elseif file =~# escape(join(self.app().pack_suffixes('js'), '\|'), '.') . '$'
+    elseif file =~# escape(join(rails#pack_suffixes('js'), '\|'), '.') . '$'
       let file = fnamemodify(file, ':r') . '.js'
     endif
     if filereadable(self.app().real('public/packs/manifest.json'))
@@ -3149,10 +3149,7 @@ function! s:resolve_asset(path, name, ...) abort
   return ''
 endfunction
 
-function! s:app_pack_suffixes(type) dict abort
-  if !self.has('webpack')
-    return []
-  endif
+function! rails#pack_suffixes(type) abort
   if a:type =~# '^stylesheets\=$\|^css$'
     let suffixes = ['.sass', '.scss', '.css']
   elseif a:type =~# '^javascripts\=$\|^js$'
@@ -3166,7 +3163,7 @@ endfunction
 
 function! s:app_resolve_pack(name, ...) dict abort
   let name = s:sub(a:name, '\.erb$', '')
-  let suffixes = self.pack_suffixes(matchstr(name, '\.\zs\w\+$'))
+  let suffixes = rails#pack_suffixes(matchstr(name, '\.\zs\w\+$'))
   call extend(suffixes, map(copy(suffixes), '"/index".v:val'))
   let dir = self.path('app/javascript/packs/')
   if len(suffixes)
@@ -3183,7 +3180,7 @@ function! s:app_resolve_pack(name, ...) dict abort
 endfunction
 
 call s:add_methods('readable', ['resolve_view', 'resolve_layout'])
-call s:add_methods('app', ['asset_path', 'pack_suffixes', 'resolve_pack'])
+call s:add_methods('app', ['asset_path', 'resolve_pack'])
 
 function! s:findview(name) abort
   let view = rails#buffer().resolve_view(a:name, line('.'))
@@ -3245,7 +3242,7 @@ function! s:AssetEdit(cmd, name, dir, suffix, fallbacks) abort
     return s:error("E471: Argument required")
   endif
   let suffixes = s:suffixes(a:dir)
-  let pack_suffixes = rails#app().pack_suffixes(suffixes[0][1:-1])
+  let pack_suffixes = rails#app().has('webpack') ? rails#pack_suffixes(suffixes[0][1:-1]) : []
   call extend(pack_suffixes, map(copy(pack_suffixes), '"/index".v:val'))
   for file in map([''] + suffixes, '"app/assets/".a:dir."/".name.v:val') +
         \ map(pack_suffixes, '"app/javascript/packs/".name.v:val') +
@@ -3285,7 +3282,7 @@ function! s:javascriptList(A, L, P, ...) abort
   let strip = '\%('.escape(join(suffixes, '\|'), '.*[]~').'\)$'
   call map(list,'substitute(v:val,strip,"","")')
   call extend(list, rails#app().relglob("public/".dir."/","**/*",suffixes[0]))
-  for suffix in rails#app().pack_suffixes(suffixes[0][1:-1])
+  for suffix in rails#app().has('webpack') ? rails#pack_suffixes(suffixes[0][1:-1]) : []
     call extend(list, rails#app().relglob("app/javascript/packs/","**/*",suffix))
   endfor
   if !empty(a:0 ? a:2 : [])
@@ -5119,9 +5116,9 @@ function! s:set_path_options() abort
     let &l:include = &l:include.(empty(&l:include) ? '' : '\|') .
           \ '^\s*[[:punct:]]\+=\s*\%(link\|require\|depend_on\|stub\)\w*'
   elseif name =~# '^app/javascript\>'
-    let suf = self.app().pack_suffixes('css')
+    let suf = rails#pack_suffixes('css')
     if len(suf) && name !~# '\%(' . escape(join(suf, '\|'), '.') . '\)$'
-      let suf = self.app().pack_suffixes('js')
+      let suf = rails#pack_suffixes('js')
     endif
     let &l:suffixesadd = join(s:uniq(suf + split(&l:suffixesadd, ',') + ['/package.json'] + map(copy(suf), '"/index".v:val')), ',')
   else
