@@ -2389,14 +2389,14 @@ endfunction
 
 function! rails#embedded_cfile(...) abort
   if rails#is_embedded_ruby()
-    let expr = 'rails#cfile('.(a:0 > 1 ? string(a:2) : '').')'
+    let expr = 'rails#ruby_cfile('.(a:0 > 1 ? string(a:2) : '').')'
   else
     let expr = s:cfile_delegate(a:0 ? a:1 : '')
   endif
   return eval(expr)
 endfunction
 
-function! s:asset_cfile() abort
+function! s:sprockets_cfile() abort
   let dir = ''
   if s:active()
     let path = rails#app().asset_path()
@@ -2455,8 +2455,8 @@ function! s:asset_cfile() abort
   return ''
 endfunction
 
-function! rails#asset_cfile(...) abort
-  let file = s:dot_relative(s:asset_cfile())
+function! rails#sprockets_cfile(...) abort
+  let file = s:dot_relative(s:sprockets_cfile())
   if empty(file)
     return eval(s:cfile_delegate(a:0 ? a:1 : ''))
   endif
@@ -2671,7 +2671,7 @@ function! s:ruby_cfile() abort
   return cfile
 endfunction
 
-function! rails#cfile(...) abort
+function! rails#ruby_cfile(...) abort
   let cfile = s:find('find', s:ruby_cfile())[5:-1]
   return empty(cfile) ? (a:0 ? eval(a:1) : expand('<cfile>')) : cfile
 endfunction
@@ -5121,7 +5121,7 @@ function! s:set_path_options() abort
     if get(cfilemap, 'buffer') && cfilemap.expr && cfilemap.rhs !~# 'rails#\|Ruby'
       let delegate = string(maparg('<Plug><cfile>', 'c'))
     endif
-    let map = 'rails#asset_cfile('.delegate.')'
+    let map = 'rails#sprockets_cfile('.delegate.')'
     if len(suffixes)
       let &l:suffixesadd = suffixes
     endif
@@ -5143,7 +5143,7 @@ function! s:set_path_options() abort
       setlocal suffixesadd=.rb
     endif
     if &l:suffixesadd =~# '\.rb\>'
-      cmap <buffer><script><expr> <Plug><cfile> rails#cfile()
+      cmap <buffer><script><expr> <Plug><cfile> rails#ruby_cfile()
     endif
   endif
 
