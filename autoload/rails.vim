@@ -5013,35 +5013,81 @@ endfunction
 
 call s:add_methods('app', ['internal_load_path'])
 
+function! rails#update_path(before, after) abort
+  if &l:path =~# '\v^\.%(,/%(usr|emx)/include)=,,$'
+    let before = []
+    let after = []
+  else
+    let before = &l:path =~# '^\.\%(,\|$\)' ? ['.'] : []
+    let after = s:pathsplit(s:sub(&l:path, '^\.%(,|$)', ''))
+  endif
+
+  let r = 'substitute(v:val, "^\\a\\a\\+:", "+&", "")'
+  let &l:path = s:pathjoin(s:uniq(before + map(a:before, r) + after + map(a:after, r)))
+endfunction
+
+function! rails#sprockets_setup(type) abort
+  if &l:include =~# 'link\\|require\\|depend_on\\|stub'
+    return
+  endif
+
+  if !exists('*RailsDetect') || !RailsDetect()
+    let parent = matchstr(expand('%:p'), '.*\ze[\/]assets[\/]')
+    if parent !~# '\<\%(app\|lib\|vendor\)$' && empty(s:glob(parent.'/*.gemspec'))
+      return
+    endif
+    call rails#update_path([parent . '/assets/*'], [])
+  else
+    call rails#update_path(rails#app().asset_path(), [])
+  endif
+
+  let &l:include .= (empty(&l:include) ? '' : '\|') .
+        \ '^\s*[[:punct:]]\+=\s*\%(link\|require\|depend_on\|stub\)\w*'
+
+  let &l:suffixesadd = join(s:suffixes(a:type), ',')
+  if &filetype =~# '\<eruby\>'
+    setlocal suffixesadd+=.rb
+  endif
+
+  let b:undo_ftplugin = get(b:, 'undo_ftplugin', 'exe') . '|setlocal pa= sua= inc='
+
+  let map = ''
+  let cfilemap = v:version + has('patch032') >= 704 ? maparg('<Plug><cfile>', 'c', 0, 1) : {}
+  if get(cfilemap, 'buffer') && cfilemap.expr && cfilemap.rhs !~# 'rails#\|Ruby'
+    let map = string(maparg('<Plug><cfile>', 'c'))
+  endif
+  let map = 'rails#sprockets_cfile(' . map . ')'
+  if &filetype =~# 'eruby'
+    let map = 'rails#is_embedded_ruby() ? rails#ruby_cfile() : ' . map
+  endif
+  exe 'cmap <buffer><script><expr> <Plug><cfile>' map
+  let b:undo_ftplugin .= "|exe 'sil! cunmap <buffer> <Plug><cfile>'"
+endfunction
+
+function! rails#webpacker_setup(type) abort
+  let suf = rails#pack_suffixes(a:type)
+  let &l:suffixesadd = join(s:uniq(suf + split(&l:suffixesadd, ',') + ['/package.json'] + map(copy(suf), '"/index".v:val')), ',')
+  let parent = matchstr(expand('%:p'), '.*\ze[\/]\w\+[\/]javascript[\/]packs')
+  if len(parent) && isdirectory(parent . '/node_modules')
+    call rails#update_path([], [parent . '/node_modules'])
+  endif
+  let b:undo_ftplugin = get(b:, 'undo_ftplugin', 'exe') . '|setlocal pa= sua='
+endfunction
+
 function! s:set_path_options() abort
   let self = rails#buffer()
   let name = self.name()
 
   let assetdir = matchstr(name, '^\%(public/\|\w\+/assets/\)\zs[^/]\+')
-  let suffixes = join(s:suffixes(assetdir), ',')
   if !empty(assetdir)
-    let delegate = ''
-    let cfilemap = v:version + has('patch032') >= 704 ? maparg('<Plug><cfile>', 'c', 0, 1) : {}
-    if get(cfilemap, 'buffer') && cfilemap.expr && cfilemap.rhs !~# 'rails#\|Ruby'
-      let delegate = string(maparg('<Plug><cfile>', 'c'))
-    endif
-    let map = 'rails#sprockets_cfile('.delegate.')'
-    if len(suffixes)
-      let &l:suffixesadd = suffixes
-    endif
-    if name =~# '\.erb$'
-      let map = 'rails#is_embedded_ruby() ? rails#ruby_cfile() : ' . map
-      setlocal suffixesadd^=.rb
-    endif
-    exe 'cmap <buffer><script><expr> <Plug><cfile>' map
-    let &l:include = &l:include.(empty(&l:include) ? '' : '\|') .
-          \ '^\s*[[:punct:]]\+=\s*\%(link\|require\|depend_on\|stub\)\w*'
+    call rails#sprockets_setup(assetdir)
   elseif name =~# '^app/javascript\>'
     let suf = rails#pack_suffixes('css')
-    if len(suf) && name !~# '\%(' . escape(join(suf, '\|'), '.') . '\)$'
-      let suf = rails#pack_suffixes('js')
+    if len(suf) && name =~# '\%(' . escape(join(suf, '\|'), '.') . '\)$'
+      call rails#webpacker_setup('css')
+    else
+      call rails#webpacker_setup('js')
     endif
-    let &l:suffixesadd = join(s:uniq(suf + split(&l:suffixesadd, ',') + ['/package.json'] + map(copy(suf), '"/index".v:val')), ',')
   else
     if empty(&l:suffixesadd) && &filetype =~# '\<\%(ruby\|eruby\|haml\|markdown\)\>'
       setlocal suffixesadd=.rb
@@ -5051,51 +5097,37 @@ function! s:set_path_options() abort
     endif
   endif
 
-  let old_path_str = &l:path
-  if old_path_str =~# '\v^\.%(,/%(usr|emx)/include)=,,$'
-    let add_dot = 0
-    let old_path = []
-  else
-    let add_dot = old_path_str =~# '^\.\%(,\|$\)'
-    let old_path = s:pathsplit(s:sub(old_path_str,'^\.%(,|$)',''))
+  if &l:suffixesadd =~# '\.rb\>'
+    call rails#ruby_setup()
   endif
+endfunction
 
+function! rails#ruby_setup() abort
+  let self = rails#buffer()
   let path = filter(self.projected('path'), 'type(v:val) == type("")')
 
-  let engine_paths = []
-  if &l:suffixesadd =~# '\.rb\>'
-    let path += self.app().internal_load_path()
-    let path += ['app/views']
-    if self.controller_name() != ''
-      let path += ['app/views/'.self.controller_name(), 'app/views/application', 'public']
-    endif
-    let format = self.format(0)
-    for ext in self.app().template_handlers()
-      exe 'setlocal suffixesadd+=.' . ext
-      if len(format)
-        exe 'setlocal suffixesadd+=.' . format . '.' . ext
-      endif
-    endfor
-    if !self.app().has_rails5()
-      let path += ['vendor/plugins/*/lib', 'vendor/rails/*/lib']
-    endif
-    let engine_paths = map(copy(self.app().engines()), 'v:val . "/app/*"')
+  let path += self.app().internal_load_path()
+  let path += ['app/views']
+  if len(self.controller_name())
+    let path += ['app/views/'.self.controller_name(), 'app/views/application', 'public']
   endif
-
-  if self.name() =~# '^node_modules\>\|^app/javascript\>'
-    call extend(path, ['node_modules'])
-    let add_dot = 1
-  elseif !empty(assetdir)
-    call extend(path, self.app().asset_path())
-  else
-    call add(path, self.app().path())
+  let format = self.format(0)
+  for ext in self.app().template_handlers()
+    exe 'setlocal suffixesadd+=.' . ext
+    if len(format)
+      exe 'setlocal suffixesadd+=.' . format . '.' . ext
+    endif
+  endfor
+  if !self.app().has_rails5()
+    let path += ['vendor/plugins/*/lib', 'vendor/rails/*/lib']
   endif
+  call add(path, self.app().path())
 
-  call map(path, 'substitute(self.app().path(v:val), "^\\a\\a\\+:", "+&", "")')
+  call map(path, 'self.app().path(v:val)')
+  let engine_paths = map(copy(self.app().engines()), 'v:val . "/app/*"')
+  call rails#update_path(path, engine_paths)
 
-  let &l:path = (add_dot ? '.,' : '').s:pathjoin(s:uniq(path + old_path + engine_paths))
-  let undo = get(b:, 'undo_ftplugin', '')
-  let b:undo_ftplugin = (empty(undo) ? '' : undo . '|') . 'setl path< sua< inc<'
+  let b:undo_ftplugin = get(b:, 'undo_ftplugin', 'exe') . '|setlocal pa= sua= inc='
 endfunction
 
 function! rails#buffer_setup() abort
