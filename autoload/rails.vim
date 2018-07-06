@@ -2521,17 +2521,7 @@ function! s:ruby_cfile() abort
   let res = s:match_method('\%(match\|get\|put\|patch\|post\|delete\|redirect\)\s*(\=\s*[:''"][^''"]*[''"]\=\s*\%(\%(,\s*:to\s*\)\==>\|,\s*to:\)\s*')
   if res =~ '#'|return s:sub(res,'#','_controller.rb#')|endif
 
-  if !buffer.type_name('controller', 'mailer')
-    let res = s:sub(s:sub(s:match_symbol('layout'),'^/',''),'[^/]+$','_&')
-    if len(res)|return s:findview(res)|endif
-    let raw = s:sub(s:match_method('render\s*(\=\s*\%(:layout\s\+=>\|layout:\)\s*',1),'[^/]+$','_&')
-    if len(res)|return s:findview(res)|endif
-  endif
-
   let res = s:match_method('layout')
-  if len(res)|return s:findlayout(res)|endif
-
-  let res = s:match_symbol('layout')
   if len(res)|return s:findlayout(res)|endif
 
   let res = s:match_method('helper')
@@ -2559,9 +2549,24 @@ function! s:ruby_cfile() abort
   if len(res)|return s:findview(res)|endif
 
   if buffer.type_name('controller', 'mailer')
+    let res = s:sub(s:match_symbol('layout'),'^/','')
+    if len(res)|return s:findlayout(res)|endif
+    let raw = s:sub(s:match_method('render\s*(\=\s*\%(:layout\s\+=>\|layout:\)\s*',1),'^/','')
+    if len(res)|return s:findview(res)|endif
     let res = s:sub(s:match_method('render'),'^/','')
     if len(res)|return s:findview(res)|endif
+
+    let contr = s:controller()
+    let view = s:match_it('\s*\<def\s\+\(\k\+\)\>(\=','/\1')
+    if len(view)
+      let res = buffer.resolve_view(contr.view)
+      if len(res)|return res|endif
+    endif
   else
+    let res = s:sub(s:match_symbol('layout'),'^/','')
+    if len(res)|return s:findview(s:sub(res, '[^/]+$', '_&'))|endif
+    let raw = s:sub(s:match_method('render\s*(\=\s*\%(:layout\s\+=>\|layout:\)\s*',1),'^/','')
+    if len(res)|return s:findview(s:sub(res, '[^/]+$', '_&'))|endif
     let res = s:match_partial('render')
     if len(res)|return res|endif
   endif
@@ -2595,15 +2600,6 @@ function! s:ruby_cfile() abort
       return buffer.app().resolve_pack(res . suf)
     endif
   endfor
-
-  if buffer.type_name('controller', 'mailer')
-    let contr = s:controller()
-    let view = s:match_it('\s*\<def\s\+\(\k\+\)\>(\=','/\1')
-    if view !=# ''
-      let res = rails#buffer().resolve_view(contr.view)
-      if len(res)|return res|endif
-    endif
-  endif
 
   let decl = matchlist(getline('.'),
         \ '^\(\s*\)\(\w\+\)\>\%\(\s\+\|\s*(\s*\):\=\([''"]\=\)\(\%(\w\|::\)\+\)\3')
