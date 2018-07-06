@@ -15,7 +15,7 @@ endif
 if rails#buffer().type_name('model-observer')
   syn keyword rubyMacro observe
 
-elseif rails#buffer().type_name() ==# 'model' || rails#buffer().type_name('model-record', 'model-concern')
+elseif rails#buffer().type_name('model')
   syn keyword rubyMacro accepts_nested_attributes_for attr_readonly attribute enum serialize store store_accessor
   syn keyword rubyMacro default_scope scope
   syn keyword rubyEntity belongs_to has_one composed_of
