@@ -2387,15 +2387,6 @@ function! s:cfile_delegate(expr) abort
   return expr
 endfunction
 
-function! rails#embedded_cfile(...) abort
-  if rails#is_embedded_ruby()
-    let expr = 'rails#ruby_cfile('.(a:0 > 1 ? string(a:2) : '').')'
-  else
-    let expr = s:cfile_delegate(a:0 ? a:1 : '')
-  endif
-  return eval(expr)
-endfunction
-
 function! s:sprockets_cfile() abort
   let dir = ''
   if s:active()
@@ -5126,7 +5117,7 @@ function! s:set_path_options() abort
       let &l:suffixesadd = suffixes
     endif
     if name =~# '\.erb$'
-      let map = 'rails#embedded_cfile('.string(map).')'
+      let map = 'rails#is_embedded_ruby() ? rails#ruby_cfile() : ' . map
       setlocal suffixesadd^=.rb
     endif
     exe 'cmap <buffer><script><expr> <Plug><cfile>' map
