@@ -202,16 +202,16 @@ if rails#buffer().type_name('test-system', 'spec-feature', 'cucumber')
   syn keyword rubyTestAction attach_file check choose click_button click_link click_link_or_button click_on fill_in select uncheck unselect
 endif
 
-let keywords = split(join(filter(rails#buffer().projected('keywords'),
+let s:keywords = split(join(filter(rails#buffer().projected('keywords'),
       \ 'type(v:val) == type("")'), ' '))
-let special = filter(copy(keywords), 'v:val =~# ''^\h\k*[?!]$''')
-let regular = filter(copy(keywords), 'v:val =~# ''^\h\k*$''')
-let group = rails#buffer().type_name('helper', 'view') ? 'rubyHelper' : 'rubyMacro'
-if !empty(special)
-  exe 'syn match' group '"\<\%('.join(special, '\|').'\)"'
+let s:special = filter(copy(s:keywords), 'v:val =~# ''^\h\k*[?!]$''')
+let s:regular = filter(copy(s:keywords), 'v:val =~# ''^\h\k*$''')
+let s:group = rails#buffer().type_name('helper', 'view') ? 'rubyHelper' : 'rubyMacro'
+if !empty(s:special)
+  exe 'syn match' group '"\<\%('.join(s:special, '\|').'\)"'
 endif
-if !empty(regular)
-  exe 'syn keyword' group join(regular, ' ')
+if !empty(s:regular)
+  exe 'syn keyword' group join(s:regular, ' ')
 endif
 
 hi def link rubyEntity                      rubyMacro
