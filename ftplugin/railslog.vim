@@ -30,10 +30,10 @@ if exists('+concealcursor')
   setlocal concealcursor=nc conceallevel=2
   let b:undo_ftplugin .= ' concealcursor< conceallevel<'
 else
-  let pos = getpos('.')
+  let s:pos = getpos('.')
   setlocal modifiable
   silent exe '%s/\m\C\%(\e\[[0-9;]*m\|\r$\)//e' . (&gdefault ? '' : 'g')
-  call setpos('.', pos)
+  call setpos('.', s:pos)
 endif
 setlocal readonly nomodifiable
 let b:undo_ftplugin .= ' noreadonly modifiable'
