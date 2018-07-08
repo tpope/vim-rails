@@ -2548,7 +2548,8 @@ function! s:ruby_cfile() abort
   let res = s:match_method('render\>\s*\%(:\%(template\|action\)\s\+=>\|template:\|action:\)\s*')
   if len(res)|return s:findview(res)|endif
 
-  if buffer.type_name('controller', 'mailer')
+  let contr = matchstr(expand('%:p'), '.*[\/]app[\/]\%(controllers[\/].*\ze_controller\|mailers[\/].*\ze\|models[\/].*_mailer\ze\)\.rb$')
+  if len(contr)
     let res = s:sub(s:match_symbol('layout'),'^/','')
     if len(res)|return s:findlayout(res)|endif
     let raw = s:sub(s:match_method('render\s*(\=\s*\%(:layout\s\+=>\|layout:\)\s*',1),'^/','')
@@ -2556,11 +2557,14 @@ function! s:ruby_cfile() abort
     let res = s:sub(s:match_method('render'),'^/','')
     if len(res)|return s:findview(res)|endif
 
-    let contr = s:controller()
-    let view = s:match_it('\s*\<def\s\+\(\k\+\)\>(\=','/\1')
-    if len(view)
-      let res = buffer.resolve_view(contr.view)
+    let viewpath = substitute(contr, '\([\/]\)app\zs[\/]\%(controllers\|mailers\|models\)\([\/].*\)', '\1views\2\1', '')
+    let view = s:match_it('\s*\<def\s\+\(\k\+\)\>(\=','\1')
+    if len(viewpath) && len(view)
+      let res = s:glob(viewpath . view . '.html.*')
+      if len(res)|return res[0]|endif
+      let res = s:glob(viewpath . view . '.*')
       if len(res)|return res|endif
+      return substitute(viewpath, '.*[\/]app[\/]views[\/]', '', '') . view . '.html'
     endif
   else
     let res = s:sub(s:match_symbol('layout'),'^/','')
@@ -2589,15 +2593,26 @@ function! s:ruby_cfile() abort
     return s:findasset(res, 'javascripts')
   endif
 
-  let res = s:match_method('asset_pack_path')
-  if len(res)
-    return buffer.app().resolve_pack(res)
-  endif
-
-  for [type, suf] in [['javascript', '.js'], ['stylesheet', '.css']]
-    let res = s:match_method(type.'_pack_tag')
-    if len(res)
-      return buffer.app().resolve_pack(res . suf)
+  for [type, suf] in [['javascript', '.js'], ['stylesheet', '.css'], ['asset', '']]
+    let res = s:match_method(type.'_pack_\%(path\|tag\)')
+    let appdir = matchstr(expand('%:p'), '.*[\/]app[\/]\ze\%(views\|helpers\)[\/]')
+    if empty(appdir) && s:active()
+      let appdir = rails#app().path('app/')
+    endif
+    if len(res) && len(appdir)
+      let name = res . suf
+      let suffixes = rails#pack_suffixes(matchstr(name, '\.\zs\w\+$'))
+      call extend(suffixes, map(copy(suffixes), '"/index".v:val'))
+      let dir = appdir . 'javascript' . appdir[-1:-1] . 'packs' . appdir[-1:-1]
+      if len(suffixes)
+        let base = dir . substitute(name, '\.\w\+$', '', '')
+        for suffix in [''] + suffixes
+          if s:filereadable(base . suffix)
+            return base . suffix
+          endif
+        endfor
+        return dir . name
+      endif
     endif
   endfor
 
@@ -2641,7 +2656,7 @@ function! s:ruby_cfile() abort
     let cfile = rails#underscore(cfile, 1) . '.rb'
   elseif cfile =~# '^\w*_\%(path\|url\)$' && synid != hlID('rubyString')
     let route = s:gsub(cfile, '^hash_for_|_%(path|url)$', '')
-    let cfile = rails#app().named_route_file(route)
+    let cfile = s:active() ? rails#app().named_route_file(route) : ''
     if empty(cfile)
       let cfile = s:sub(route, '^formatted_', '')
       if cfile =~# '^\%(new\|edit\)_'
@@ -3157,29 +3172,11 @@ function! rails#pack_suffixes(type) abort
   return s:uniq(suffixes)
 endfunction
 
-function! s:app_resolve_pack(name, ...) dict abort
-  let name = s:sub(a:name, '\.erb$', '')
-  let suffixes = rails#pack_suffixes(matchstr(name, '\.\zs\w\+$'))
-  call extend(suffixes, map(copy(suffixes), '"/index".v:val'))
-  let dir = self.path('app/javascript/packs/')
-  if len(suffixes)
-    let base = dir . substitute(name, '\.\w\+$', '', '')
-    for suffix in [''] + suffixes
-      if s:filereadable(base . suffix)
-        return base . suffix
-      endif
-    endfor
-  elseif !a:0 || s:filereadable(dir . name)
-    return dir . name
-  endif
-  return a:0 ? a:1 : dir . name
-endfunction
-
 call s:add_methods('readable', ['resolve_view', 'resolve_layout'])
-call s:add_methods('app', ['asset_path', 'resolve_pack'])
+call s:add_methods('app', ['asset_path'])
 
 function! s:findview(name) abort
-  let view = rails#buffer().resolve_view(a:name, line('.'))
+  let view = s:active() ? rails#buffer().resolve_view(a:name, line('.')) : ''
   return empty(view) ? (a:name =~# '\.' ? a:name : a:name . '.' . s:format()) : view
 endfunction
 
