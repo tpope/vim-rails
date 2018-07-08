@@ -1085,7 +1085,7 @@ function! s:BufCommands()
   command! -buffer -bar -nargs=0 Ctags       :execute rails#app().tags_command()
   command! -buffer -bar -nargs=0 -bang Rrefresh :if <bang>0|unlet! g:autoloaded_rails|source `=s:file`|endif|call s:Refresh(<bang>0)
   if exists("g:loaded_dbext")
-    command! -buffer -bar -nargs=? -complete=customlist,s:Complete_environments Rdbext  :call s:BufDatabase(2,<q-args>)|let b:dbext_buffer_defaulted = 1
+    command! -buffer -bar -nargs=? -complete=customlist,s:Complete_environments Rdbext  :echoerr 'Install dadbod.vim and let g:dadbod_manage_dbext = 1'
   endif
   let ext = expand("%:e")
   if rails#buffer().name() =~# '^app/views/'
@@ -4214,94 +4214,7 @@ function! s:app_db_url(...) dict abort
   return url
 endfunction
 
-function! s:app_dbext_settings(environment) dict abort
-  let config = self.db_config(a:environment)
-  if has_key(config, 'adapter')
-    let dict = {}
-    let adapter = config.adapter
-    let adapter = get({
-          \ 'mysql2': 'mysql',
-          \ 'postgresql': 'pgsql',
-          \ 'sqlite3': 'sqlite',
-          \ 'sqlserver': 'sqlsrv',
-          \ 'sybase': 'asa',
-          \ 'oracle': 'ora',
-          \ 'oracle_enhanced': 'ora'},
-          \ adapter, adapter)
-    let dict.type = toupper(adapter)
-    let dict.user = get(config, 'username', '')
-    let dict.passwd = get(config, 'password', '')
-    if adapter == 'mysql'
-      if empty(dict.user)
-        let dict.user = 'root'
-      endif
-      if dict.passwd == ''
-        " Hack to override password from .my.cnf
-        let dict.extra = ' --password='
-      endif
-    endif
-    let dict.dbname = get(config, 'database', get(config, 'dbfile', ''))
-    if len(dict.dbname) && dict.dbname !~ '^:' && adapter =~? '^sqlite'
-      let dict.dbname = self.path(dict.dbname)
-    endif
-    let dict.profile = ''
-    if adapter == 'ora'
-      let dict.srvname = get(config, 'database', '')
-    else
-      let dict.srvname = get(config, 'host', '')
-    endif
-    let dict.host = get(config, 'host', '')
-    let dict.port = get(config, 'port', '')
-    let dict.dsnname = get(config, 'dsn', '')
-    if dict.host =~? '^\cDBI:'
-      if dict.host =~? '\c\<Trusted[_ ]Connection\s*=\s*yes\>'
-        let dict.integratedlogin = 1
-      endif
-      let dict.host = matchstr(dict.host,'\c\<\%(Server\|Data Source\)\s*=\s*\zs[^;]*')
-    endif
-    call filter(dict,'len(v:val)')
-    return dict
-  endif
-  return {}
-endfunction
-
-function! s:BufDatabase(level, ...)
-  if exists("s:lock_database") || !exists('g:loaded_dbext') || !s:active()
-    return
-  endif
-  let self = rails#app()
-  if a:level > 1
-    call self.cache.clear('db_config')
-  elseif exists('g:rails_no_dbext')
-    return
-  endif
-  if (a:0 && !empty(a:1))
-    let env = a:1
-  else
-    let env = s:environment()
-  endif
-  if self.cache.needs('db_config') && a:level <= 0
-    return
-  endif
-  let dict = self.dbext_settings(env)
-  if empty(dict)
-    return
-  endif
-  for key in ['type', 'profile', 'bin', 'user', 'passwd', 'dbname', 'srvname', 'host', 'port', 'dsnname', 'extra', 'integratedlogin']
-    let b:dbext_{key} = get(dict,key,'')
-  endfor
-  if b:dbext_type == 'SQLITE'
-    " dbext seems to have overlooked the release of sqlite3 a decade ago
-    let g:dbext_default_SQLITE_bin = "sqlite3"
-  endif
-  if b:dbext_type == 'PGSQL'
-    let $PGPASSWORD = b:dbext_passwd
-  elseif exists('$PGPASSWORD')
-    let $PGPASSWORD = ''
-  endif
-endfunction
-
-call s:add_methods('app', ['db_config', 'db_url', 'dbext_settings'])
+call s:add_methods('app', ['db_config', 'db_url'])
 
 function! rails#db_canonicalize(url) abort
   let app = rails#app(db#url#file_path(a:url))
@@ -5304,8 +5217,6 @@ augroup railsPluginAuto
   autocmd!
   autocmd User BufEnterRails call s:RefreshBuffer()
   autocmd User BufEnterRails call s:resetomnicomplete()
-  autocmd User BufEnterRails call s:BufDatabase(-1)
-  autocmd User dbextPreConnection call s:BufDatabase(1)
   autocmd BufWritePost */config/database.yml      call rails#cache_clear("db_config")
   autocmd BufWritePost */config/projections.json  call rails#cache_clear("projections")
   autocmd BufWritePost */.projections.json        call rails#cache_clear("projections")

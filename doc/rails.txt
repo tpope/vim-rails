@@ -525,18 +525,6 @@ Integration with the Vim Universe ~
 A handful of Vim plugins are enhanced by rails.vim.  All plugins mentioned can
 be found at http://www.vim.org/.
 
-						*rails-:Rdbext* *rails-dbext*
-:Rdbext [{environment}] This command is only provided when the |dbext| plugin
-			is installed.  Loads the {environment} configuration
-			(defaults to $RAILS_ENV or development) from
-			config/database.yml and uses it to configure dbext.
-			The configuration is cached on a per application
-			basis.  The development environment is loaded
-			automatically.  When dbext is configured, you can
-			execute SQL directly from Vim: >
-				:Select * from posts order by id desc
-				:Update comments set author_id = 1
-<
 						*rails-dadbod*
 Created by yours truly, dadbod.vim is a modern take on a Vim database plugin.
 This plugin sets the dadbod.vim default to the application's development
@@ -547,6 +535,9 @@ Rails app:
   :DB rails:/path/to/app
   :DB rails:/path/to/app#production
 <
+						*rails-:Rdbext* *rails-dbext*
+Native support for dbext has been removed.  Install dadbod.vim and enable
+|g:dadbod_manage_dbext| to achieve the same effect.
 
 						*rails-surround*
 The |surround| plugin available from vim.org enables adding and removing
