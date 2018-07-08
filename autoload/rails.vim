@@ -5217,14 +5217,12 @@ function! rails#buffer_setup() abort
     if exists("g:loaded_ragtag")
       call self.setvar('ragtag_stylesheet_link_tag', "<%= stylesheet_link_tag '\r' %>")
       call self.setvar('ragtag_javascript_include_tag', "<%= javascript_include_tag '\r' %>")
-      call self.setvar('ragtag_doctype_index', 10)
     endif
   elseif ft =~# '^haml\>'
     call self.setvar('&define',self.define_pattern())
     if exists("g:loaded_ragtag")
       call self.setvar('ragtag_stylesheet_link_tag', "= stylesheet_link_tag '\r'")
       call self.setvar('ragtag_javascript_include_tag', "= javascript_include_tag '\r'")
-      call self.setvar('ragtag_doctype_index', 10)
     endif
   elseif ft =~# 'html\>'
     call self.setvar('&define', '\<id=["'']\=')
