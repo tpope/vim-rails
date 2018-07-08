@@ -671,7 +671,7 @@ function! rails#singularize(word) abort
   " Probably not worth it to be as comprehensive as Rails but we can
   " still hit the common cases.
   let word = a:word
-  if word =~? '\.js$' || empty(word)
+  if word =~? '\.js$\|redis$' || empty(word)
     return word
   endif
   let word = s:sub(word,'eople$','ersons')
