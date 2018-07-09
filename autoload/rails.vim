@@ -4040,32 +4040,6 @@ function! rails#sprockets_syntax() abort
 endfunction
 
 " }}}1
-" Mappings {{{1
-
-nnoremap <SID>: :<C-U><C-R>=v:count ? v:count : ''<CR>
-function! s:BufMappings() abort
-  if empty(maparg('<Plug><cfile>', 'c'))
-    return
-  endif
-  let pattern = '^$\|_gf(v:count\|[Rr]uby\|[Rr]ails'
-  if mapcheck('gf', 'n') =~# pattern
-    nmap <buffer><silent> gf         <SID>:find <Plug><cfile><CR>
-  endif
-  if mapcheck('<C-W>f', 'n') =~# pattern
-    nmap <buffer><silent> <C-W>f     <SID>:sfind <Plug><cfile><CR>
-  endif
-  if mapcheck('<C-W><C-F>', 'n') =~# pattern
-    nmap <buffer><silent> <C-W><C-F> <SID>:sfind <Plug><cfile><CR>
-  endif
-  if mapcheck('<C-W>gf', 'n') =~# pattern
-    nmap <buffer><silent> <C-W>gf    <SID>:tabfind <Plug><cfile><CR>
-  endif
-  if mapcheck('<C-R><C-F>', 'c') =~# pattern
-    cmap <buffer>         <C-R><C-F> <Plug><cfile>
-  endif
-endfunction
-
-" }}}1
 " Database {{{1
 
 let s:yaml = {}
@@ -4806,6 +4780,31 @@ endfunction
 
 call s:add_methods('app', ['internal_load_path'])
 
+nnoremap <SID>: :<C-U><C-R>=v:count ? v:count : ''<CR>
+function! s:map_gf() abort
+  let pattern = '^$\|_gf(v:count\|[Rr]uby\|[Rr]ails'
+  if mapcheck('gf', 'n') =~# pattern
+    nmap <buffer><silent> gf         <SID>:find <Plug><cfile><CR>
+    let b:undo_ftplugin .= "|sil! exe 'nunmap <buffer> gf'"
+  endif
+  if mapcheck('<C-W>f', 'n') =~# pattern
+    nmap <buffer><silent> <C-W>f     <SID>:sfind <Plug><cfile><CR>
+    let b:undo_ftplugin .= "|sil! exe 'nunmap <buffer> <C-W>f'"
+  endif
+  if mapcheck('<C-W><C-F>', 'n') =~# pattern
+    nmap <buffer><silent> <C-W><C-F> <SID>:sfind <Plug><cfile><CR>
+    let b:undo_ftplugin .= "|sil! exe 'nunmap <buffer> <C-W><C-F>'"
+  endif
+  if mapcheck('<C-W>gf', 'n') =~# pattern
+    nmap <buffer><silent> <C-W>gf    <SID>:tabfind <Plug><cfile><CR>
+    let b:undo_ftplugin .= "|sil! exe 'nunmap <buffer> <C-W>gf'"
+  endif
+  if mapcheck('<C-R><C-F>', 'c') =~# pattern
+    cmap <buffer>         <C-R><C-F> <Plug><cfile>
+    let b:undo_ftplugin .= "|sil! exe 'cunmap <buffer> <C-R><C-F>'"
+  endif
+endfunction
+
 function! rails#update_path(before, after) abort
   if &l:path =~# '\v^\.%(,/%(usr|emx)/include)=,,$'
     let before = []
@@ -4845,6 +4844,7 @@ function! rails#sprockets_setup(type) abort
   let map = 'rails#sprockets_cfile(' . map . ')'
   exe 'cmap <buffer><script><expr> <Plug><cfile>' map
   let b:undo_ftplugin .= "|exe 'sil! cunmap <buffer> <Plug><cfile>'"
+  call s:map_gf()
 endfunction
 
 function! rails#webpacker_setup(type) abort
@@ -4885,6 +4885,7 @@ function! rails#ruby_setup() abort
   let engine_paths = s:gem_subdirs('app')
   call rails#update_path(path, engine_paths)
   cmap <buffer><script><expr> <Plug><cfile> rails#ruby_cfile()
+  call s:map_gf()
 endfunction
 
 function! rails#buffer_setup() abort
@@ -4900,7 +4901,6 @@ function! rails#buffer_setup() abort
     let &l:tags = rp . '/tags,' . rp . '/tmp/tags,' . &tags
   endif
 
-  call s:BufMappings()
   call s:BufCommands()
   call s:BufProjectionCommands()
 
