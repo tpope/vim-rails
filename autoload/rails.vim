@@ -2755,26 +2755,31 @@ endfunction
 
 call s:add_methods('app', ['commands'])
 
-function! s:addfilecmds(type) abort
+function! s:addfilecmds(type, defer) abort
   let l = s:sub(a:type,'^.','\l&')
   let cplt = " -complete=customlist,".s:sid.l."List"
+  if a:defer && exists(':E' . l) == 2
+    return
+  endif
   for prefix in ['E', 'S', 'V', 'T', 'D']
     exe "command! -buffer -bar ".(prefix =~# 'D' ? '-range=0 ' : '')."-nargs=*".cplt." ".prefix.l." :execute s:".l.'Edit("<mods> '.(prefix =~# 'D' ? '<line1>' : '').s:sub(prefix, '^R', '').'<bang>",<f-args>)'
   endfor
 endfunction
 
 function! s:BufProjectionCommands() abort
-  call s:addfilecmds("view")
-  call s:addfilecmds("migration")
-  call s:addfilecmds("schema")
-  call s:addfilecmds("layout")
-  call s:addfilecmds("fixtures")
-  call s:addfilecmds("locale")
+  let deepest = get(sort(keys(get(b:, 'projectionist', {})), 'rails#lencmp'), -1, '')
+  let defer = len(deepest) > len(rails#app().path())
+  call s:addfilecmds("view", defer)
+  call s:addfilecmds("migration", defer)
+  call s:addfilecmds("schema", defer)
+  call s:addfilecmds("layout", defer)
+  call s:addfilecmds("fixtures", defer)
+  call s:addfilecmds("locale", defer)
   if rails#app().has('spec')
-    call s:addfilecmds("spec")
+    call s:addfilecmds("spec", defer)
   endif
-  call s:addfilecmds("stylesheet")
-  call s:addfilecmds("javascript")
+  call s:addfilecmds("stylesheet", defer)
+  call s:addfilecmds("javascript", defer)
   for [name, command] in items(rails#app().commands())
     call s:define_navcommand(name, command)
   endfor
@@ -2904,7 +2909,7 @@ function! s:specList(A,L,P)
   return s:completion_filter(rails#app().relglob("spec/","**/*","_spec.rb"),a:A)
 endfunction
 
-function! s:define_navcommand(name, projection, ...) abort
+function! s:define_navcommand(name, projection) abort
   if empty(a:projection)
     return
   endif
@@ -2918,8 +2923,7 @@ function! s:define_navcommand(name, projection, ...) abort
           \ '-complete=customlist,'.s:sid.'CommandList ' .
           \ prefix . name . ' :execute s:CommandEdit(' .
           \ string('<mods> '.(prefix =~# 'D' ? '<line1>' : '') . prefix . "<bang>") . ',' .
-          \ string(a:name) . ',' . string(a:projection) . ',<f-args>)' .
-          \ (a:0 ? '|' . a:1 : '')
+          \ string(a:name) . ',' . string(a:projection) . ',<f-args>)'
   endfor
 endfunction
 
