@@ -2350,18 +2350,6 @@ function! s:findasset(path, dir) abort
   return path . post
 endfunction
 
-function! rails#is_embedded_ruby() abort
-  let groups = [
-        \ 'erubyBlock', 'erubyExpression', 'erubyComment', 'erubyOneLiner',
-        \ 'hamlRuby']
-  call map(groups, 'hlID(v:val)')
-  for id in synstack(line('.'), col('.'))
-    if index(groups, id) >= 0 || synIDattr(id, 'name') =~# '^ruby'
-      return 1
-    endif
-  endfor
-endfunction
-
 function! s:cfile_delegate(expr) abort
   let expr = empty(a:expr) ? matchstr(&includeexpr, '.*\<v:fname\>.*') : a:expr
   if empty(expr)
@@ -4846,9 +4834,6 @@ function! rails#sprockets_setup(type) abort
         \ '^\s*[[:punct:]]\+=\s*\%(link\|require\|depend_on\|stub\)\w*'
 
   let &l:suffixesadd = join(s:suffixes(a:type), ',')
-  if &filetype =~# '\<eruby\>'
-    setlocal suffixesadd+=.rb
-  endif
 
   let b:undo_ftplugin = get(b:, 'undo_ftplugin', 'exe') . '|setlocal pa= sua= inc='
 
@@ -4858,9 +4843,6 @@ function! rails#sprockets_setup(type) abort
     let map = string(maparg('<Plug><cfile>', 'c'))
   endif
   let map = 'rails#sprockets_cfile(' . map . ')'
-  if &filetype =~# 'eruby'
-    let map = 'rails#is_embedded_ruby() ? rails#ruby_cfile() : ' . map
-  endif
   exe 'cmap <buffer><script><expr> <Plug><cfile>' map
   let b:undo_ftplugin .= "|exe 'sil! cunmap <buffer> <Plug><cfile>'"
 endfunction
@@ -4873,34 +4855,6 @@ function! rails#webpacker_setup(type) abort
     call rails#update_path([], [parent . '/node_modules'])
   endif
   let b:undo_ftplugin = get(b:, 'undo_ftplugin', 'exe') . '|setlocal pa= sua='
-endfunction
-
-function! s:set_path_options() abort
-  let self = rails#buffer()
-  let name = self.name()
-
-  let assetdir = matchstr(name, '^\%(public/\|\w\+/assets/\)\zs[^/]\+')
-  if !empty(assetdir)
-    call rails#sprockets_setup(assetdir)
-  elseif name =~# '^app/javascript\>'
-    let suf = rails#pack_suffixes('css')
-    if len(suf) && name =~# '\%(' . escape(join(suf, '\|'), '.') . '\)$'
-      call rails#webpacker_setup('css')
-    else
-      call rails#webpacker_setup('js')
-    endif
-  else
-    if empty(&l:suffixesadd) && &filetype =~# '\<\%(ruby\|eruby\|haml\|markdown\)\>'
-      setlocal suffixesadd=.rb
-    endif
-    if &l:suffixesadd =~# '\.rb\>'
-      cmap <buffer><script><expr> <Plug><cfile> rails#ruby_cfile()
-    endif
-  endif
-
-  if &l:suffixesadd =~# '\.rb\>'
-    call rails#ruby_setup()
-  endif
 endfunction
 
 function! rails#ruby_setup() abort
@@ -4930,8 +4884,7 @@ function! rails#ruby_setup() abort
 
   let engine_paths = s:gem_subdirs('app')
   call rails#update_path(path, engine_paths)
-
-  let b:undo_ftplugin = get(b:, 'undo_ftplugin', 'exe') . '|setlocal pa= sua= inc='
+  cmap <buffer><script><expr> <Plug><cfile> rails#ruby_cfile()
 endfunction
 
 function! rails#buffer_setup() abort
@@ -4941,8 +4894,6 @@ function! rails#buffer_setup() abort
   let self = rails#buffer()
   let ft = self.getvar('&filetype')
   let b:rails_cached_file_type = self.calculate_file_type()
-
-  call s:set_path_options()
 
   let rp = s:gsub(self.app().path(),'[ ,]','\\&')
   if stridx(&tags,rp.'/tags') == -1
