@@ -4869,29 +4869,37 @@ function! rails#webpacker_setup(type) abort
 endfunction
 
 function! rails#ruby_setup() abort
-  if !s:active()
-    return
-  endif
-  let path = rails#app().internal_load_path()
-  let path += [rails#app().path('app/views')]
-  if len(rails#buffer().controller_name())
-    let path += [rails#app().path('app/views/'.rails#buffer().controller_name()), rails#app().path('app/views/application')]
-  endif
-  let format = rails#buffer().format(0)
   let exts = ['raw', 'erb', 'html', 'builder', 'ruby', 'coffee', 'haml', 'jbuilder']
-  call extend(exts,
-        \ filter(map(keys(rails#app().projections()),
-        \ 'matchstr(v:val, "^\\Capp/views/\\*\\.\\zs(\\w\\+$")'), 'len(v:val)'))
+  if s:active()
+    let path = rails#app().internal_load_path()
+    let path += [rails#app().path('app/views')]
+    if len(rails#buffer().controller_name())
+      let path += [rails#app().path('app/views/'.rails#buffer().controller_name()), rails#app().path('app/views/application')]
+    endif
+    call add(path, rails#app().path())
+    if !rails#app().has_rails5()
+      let path += [rails#app().path('vendor/plugins/*/lib'), rails#app().path('vendor/rails/*/lib')]
+    endif
+    call extend(exts,
+          \ filter(map(keys(rails#app().projections()),
+          \ 'matchstr(v:val, "^\\Capp/views/\\*\\.\\zs(\\w\\+$")'), 'len(v:val)'))
+  else
+    let full = matchstr(expand('%:p'), '.*[\/]\%(app\|config\|lib\|test\|spec\)\ze[\/]')
+    let name = fnamemodify(full, ':t')
+    let dir = fnamemodify(full, ':h')
+    if len(dir) && (name ==# 'app' || s:isdirectory(dir . '/app')) && (name ==# 'lib' || s:isdirectory(dir . '/lib'))
+      let path = [dir . '/app/*', dir . '/lib']
+    else
+      return
+    endif
+  endif
+  let format = matchstr(expand('%:p'), '[\/]app[\/]views[\/].*\.\zs\w\+\ze\.\w\+$')
   for ext in exts
     if len(format)
       exe 'setlocal suffixesadd+=.' . format . '.' . ext
     endif
     exe 'setlocal suffixesadd+=.' . ext
   endfor
-  if !rails#app().has_rails5()
-    let path += [rails#app().path('vendor/plugins/*/lib'), rails#app().path('vendor/rails/*/lib')]
-  endif
-  call add(path, rails#app().path())
 
   let engine_paths = s:gem_subdirs('app')
   call rails#update_path(path, engine_paths)
