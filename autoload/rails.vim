@@ -2300,14 +2300,6 @@ function! s:match_partial(func) abort
   endif
 endfunction
 
-function! s:app_template_handlers() dict abort
-  return s:uniq(['raw', 'erb', 'html', 'builder', 'ruby', 'coffee', 'haml', 'jbuilder'] +
-        \ filter(map(keys(self.projections()),
-        \ 'matchstr(v:val, "^\\Capp/views/\\*\\.\\zs(\\w\\+$")'), 'len(v:val)'))
-endfunction
-
-call s:add_methods('app', ['template_handlers'])
-
 function! s:suffixes(type) abort
   if a:type =~# '^stylesheets\=$\|^css$'
     let exts = ['css', 'scss', 'css.scss', 'sass', 'css.sass']
@@ -5103,28 +5095,31 @@ function! s:set_path_options() abort
 endfunction
 
 function! rails#ruby_setup() abort
-  let self = rails#buffer()
-  let path = filter(self.projected('path'), 'type(v:val) == type("")')
-
-  let path += self.app().internal_load_path()
-  let path += ['app/views']
-  if len(self.controller_name())
-    let path += ['app/views/'.self.controller_name(), 'app/views/application', 'public']
+  if !s:active()
+    return
   endif
-  let format = self.format(0)
-  for ext in self.app().template_handlers()
+  let path = rails#app().internal_load_path()
+  let path += [rails#app().path('app/views')]
+  if len(rails#buffer().controller_name())
+    let path += [rails#app().path('app/views/'.rails#buffer().controller_name()), rails#app().path('app/views/application')]
+  endif
+  let format = rails#buffer().format(0)
+  let exts = ['raw', 'erb', 'html', 'builder', 'ruby', 'coffee', 'haml', 'jbuilder']
+  call extend(exts,
+        \ filter(map(keys(rails#app().projections()),
+        \ 'matchstr(v:val, "^\\Capp/views/\\*\\.\\zs(\\w\\+$")'), 'len(v:val)'))
+  for ext in exts
     exe 'setlocal suffixesadd+=.' . ext
     if len(format)
       exe 'setlocal suffixesadd+=.' . format . '.' . ext
     endif
   endfor
-  if !self.app().has_rails5()
-    let path += ['vendor/plugins/*/lib', 'vendor/rails/*/lib']
+  if !rails#app().has_rails5()
+    let path += [rails#app().path('vendor/plugins/*/lib'), rails#app().path('vendor/rails/*/lib')]
   endif
-  call add(path, self.app().path())
+  call add(path, rails#app().path())
 
-  call map(path, 'self.app().path(v:val)')
-  let engine_paths = map(copy(self.app().engines()), 'v:val . "/app/*"')
+  let engine_paths = map(copy(rails#app().engines()), 'v:val . "/app/*"')
   call rails#update_path(path, engine_paths)
 
   let b:undo_ftplugin = get(b:, 'undo_ftplugin', 'exe') . '|setlocal pa= sua= inc='
