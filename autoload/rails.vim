@@ -3525,6 +3525,21 @@ function! s:AR(cmd,related,line1,line2,count,...) abort
       let file = rails#buffer().alternate(line)
     endif
     let has_path = !empty(file) && rails#app().has_path(file)
+    if empty(file) && exists('b:projectionist') && exists('*projectionist#query_file')
+      try
+        let expn = line ? {'lnum': line} : {}
+        let method = rails#buffer().last_method(line)
+        if len(method)
+          let expn.define = method
+        endif
+        for alt in projectionist#query_file('alternate', expn)
+          if s:getftime(alt) !=# -1
+            return s:find(a:cmd, alt)
+          endif
+        endfor
+      catch
+      endtry
+    endif
     let confirm = &confirm || (histget(':', -1) =~# '\%(^\||\)\s*conf\%[irm]\>')
     if confirm && !line && !has_path
       let projected = rails#buffer().projected_with_raw('alternate')
