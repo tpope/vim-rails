@@ -38,7 +38,7 @@ applications.
 
 * Fully customizable. Define "projections" at the global, app, or gem
   level to define navigation commands and override the alternate file,
-  default rake task, syntax highlighting, abbreviations, and more.
+  default rake task, syntax highlighting, and more.
   `:help rails-projections`.
 
 * Integration with other plugins.  If [dispatch.vim][] is installed, `:Rails`

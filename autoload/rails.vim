@@ -1076,7 +1076,7 @@ call s:add_methods('app', ['has_zeus', 'ruby_script_command','static_rails_comma
 function! s:BufCommands()
   call s:BufNavCommands()
   call s:BufScriptWrappers()
-  command! -buffer -bar -nargs=* -bang Rabbrev :call s:Abbrev(<bang>0,<f-args>)
+  command! -buffer -bar -nargs=* -bang Rabbrev :echoerr "Rabbrev has been removed."
   command! -buffer -bar -nargs=? -bang -count -complete=customlist,rails#complete_rake Rake    :call s:Rake(<bang>0,!<count> && <line1> ? -1 : <count>,<q-args>)
   command! -buffer -bar -nargs=? -bang -range -complete=customlist,s:Complete_preview Rbrowse :call s:Preview(<bang>0,<line1>,<q-args>)
   command! -buffer -bar -nargs=? -bang -range -complete=customlist,s:Complete_preview Preview :call s:Preview(<bang>0,<line1>,<q-args>)
@@ -4264,186 +4264,6 @@ function! rails#db_complete_fragment(url, ...) abort
 endfunction
 
 " }}}1
-" Abbreviations {{{1
-
-function! s:selectiveexpand(pat,good,default,...)
-  if a:0 > 0
-    let nd = a:1
-  else
-    let nd = ""
-  endif
-  let c = nr2char(getchar(0))
-  let good = a:good
-  if c == "" " ^]
-    return s:sub(good.(a:0 ? " ".a:1 : ''),'\s+$','')
-  elseif c == "\t"
-    return good.(a:0 ? " ".a:1 : '')
-  elseif c =~ a:pat
-    return good.c.(a:0 ? a:1 : '')
-  else
-    return a:default.c
-  endif
-endfunction
-
-function! s:AddSelectiveExpand(abbr,pat,expn,...)
-  let expn  = s:gsub(s:gsub(a:expn        ,'[\"|]','\\&'),'\<','\\<Lt>')
-  let expn2 = s:gsub(s:gsub(a:0 ? a:1 : '','[\"|]','\\&'),'\<','\\<Lt>')
-  if a:0
-    exe "inoreabbrev <buffer> <silent> ".a:abbr." <C-R>=<SID>selectiveexpand(".string(a:pat).",\"".expn."\",".string(a:abbr).",\"".expn2."\")<CR>"
-  else
-    exe "inoreabbrev <buffer> <silent> ".a:abbr." <C-R>=<SID>selectiveexpand(".string(a:pat).",\"".expn."\",".string(a:abbr).")<CR>"
-  endif
-endfunction
-
-function! s:AddTabExpand(abbr,expn)
-  call s:AddSelectiveExpand(a:abbr,'..',a:expn)
-endfunction
-
-function! s:AddBracketExpand(abbr,expn)
-  call s:AddSelectiveExpand(a:abbr,'[[.]',a:expn)
-endfunction
-
-function! s:AddColonExpand(abbr,expn)
-  call s:AddSelectiveExpand(a:abbr,'[:.]',a:expn)
-endfunction
-
-function! s:AddParenExpand(abbr,expn,...)
-  if a:0
-    call s:AddSelectiveExpand(a:abbr,'(',a:expn,a:1)
-  else
-    call s:AddSelectiveExpand(a:abbr,'(',a:expn,'')
-  endif
-endfunction
-
-function! s:BufAbbreviations()
-  " Some of these were cherry picked from the TextMate snippets
-  if !exists('g:rails_no_abbreviations')
-    let buffer = rails#buffer()
-    " Limit to the right filetypes.  But error on the liberal side
-    if buffer.type_name('controller','view','helper','test-controller','test-helper','test-integration')
-      Rabbrev pa[ params
-      Rabbrev rq[ request
-      Rabbrev rs[ response
-      Rabbrev se[ session
-      Rabbrev hd[ headers
-      Rabbrev coo[ cookies
-      Rabbrev fl[ flash
-      Rabbrev rr( render
-      " ))))))
-    endif
-    if buffer.type_name('controller')
-      Rabbrev re(  redirect_to
-      Rabbrev rst( respond_to
-      " ))
-    endif
-    if buffer.type_name() ==# 'model' || buffer.type_name('model-record')
-      Rabbrev bt(    belongs_to
-      Rabbrev ho(    has_one
-      Rabbrev hm(    has_many
-      Rabbrev habtm( has_and_belongs_to_many
-      Rabbrev co(    composed_of
-      Rabbrev va(    validates_associated
-      Rabbrev vb(    validates_acceptance_of
-      Rabbrev vc(    validates_confirmation_of
-      Rabbrev ve(    validates_exclusion_of
-      Rabbrev vf(    validates_format_of
-      Rabbrev vi(    validates_inclusion_of
-      Rabbrev vl(    validates_length_of
-      Rabbrev vn(    validates_numericality_of
-      Rabbrev vp(    validates_presence_of
-      Rabbrev vu(    validates_uniqueness_of
-      " )))))))))))))))
-    endif
-    if buffer.type_name('db-migration','db-schema')
-      Rabbrev mac(  add_column
-      Rabbrev mrnc( rename_column
-      Rabbrev mrc(  remove_column
-      Rabbrev mct(  create_table
-      Rabbrev mcht( change_table
-      Rabbrev mrnt( rename_table
-      Rabbrev mdt(  drop_table
-      " )))))))
-    endif
-    Rabbrev logd( logger.debug
-    Rabbrev logi( logger.info
-    Rabbrev logw( logger.warn
-    Rabbrev loge( logger.error
-    Rabbrev logf( logger.fatal
-    Rabbrev AR::  ActiveRecord
-    Rabbrev AV::  ActionView
-    Rabbrev AC::  ActionController
-    Rabbrev AD::  ActionDispatch
-    Rabbrev AS::  ActiveSupport
-    Rabbrev AM::  ActionMailer
-    Rabbrev AO::  ActiveModel
-    Rabbrev AJ::  ActiveJob
-    " )))))
-    for pairs in
-          \ items(get(g:, 'rails_abbreviations', {}))
-      call call(function(s:sid.'Abbrev'), [0, pairs[0]] + s:split(pairs[1]))
-    endfor
-    for hash in reverse(rails#buffer().projected('abbreviations'))
-      for pairs in items(hash)
-        call call(function(s:sid.'Abbrev'), [0, pairs[0]] + s:split(pairs[1]))
-      endfor
-    endfor
-  endif
-endfunction
-
-function! s:Abbrev(bang,...) abort
-  if !exists("b:rails_abbreviations")
-    let b:rails_abbreviations = {}
-  endif
-  if a:0 > 3 || (a:bang && (a:0 != 1))
-    return s:error("Rabbrev: invalid arguments")
-  endif
-  if a:0 == 0
-    for key in sort(keys(b:rails_abbreviations))
-      echo key . join(b:rails_abbreviations[key],"\t")
-    endfor
-    return
-  endif
-  let lhs = a:1
-  let root = s:sub(lhs,'%(::|\(|\[)$','')
-  if a:bang
-    if has_key(b:rails_abbreviations,root)
-      call remove(b:rails_abbreviations,root)
-    endif
-    exe "iunabbrev <buffer> ".root
-    return
-  endif
-  if a:0 > 3 || a:0 < 2
-    return s:error("Rabbrev: invalid arguments")
-  endif
-  let rhs = a:2
-  if has_key(b:rails_abbreviations,root)
-    call remove(b:rails_abbreviations,root)
-  endif
-  if lhs =~ '($'
-    let b:rails_abbreviations[root] = ["(", rhs . (a:0 > 2 ? "\t".a:3 : "")]
-    if a:0 > 2
-      call s:AddParenExpand(root,rhs,a:3)
-    else
-      call s:AddParenExpand(root,rhs)
-    endif
-    return
-  endif
-  if a:0 > 2
-    return s:error("Rabbrev: invalid arguments")
-  endif
-  if lhs =~ ':$'
-    call s:AddColonExpand(root,rhs)
-  elseif lhs =~ '\[$'
-    call s:AddBracketExpand(root,rhs)
-  elseif lhs =~ '\w$'
-    call s:AddTabExpand(lhs,rhs)
-  else
-    return s:error("Rabbrev: unimplemented")
-  endif
-  let b:rails_abbreviations[root] = [matchstr(lhs,'\W*$'),rhs]
-endfunction
-
-" }}}1
 " Projections {{{1
 
 function! rails#json_parse(string) abort
@@ -5147,7 +4967,6 @@ function! rails#buffer_setup() abort
   call s:BufMappings()
   call s:BufCommands()
   call s:BufProjectionCommands()
-  call s:BufAbbreviations()
 
   if ft =~# '^ruby\>'
     call self.setvar('&define',self.define_pattern())

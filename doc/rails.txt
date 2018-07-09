@@ -15,7 +15,6 @@ Author:  Tim Pope <http://tpo.pe/>
 |rails-integration|             Integration
 |rails-vim-integration|             Integration with the Vim Universe
 |rails-rails-integration|           Integration with the Rails Universe
-|rails-abbreviations|           Abbreviations
 |rails-syntax|                  Syntax Highlighting
 |rails-projections|             Projections
 |rails-configuration|           Configuration
@@ -585,55 +584,7 @@ controller/mailer specs respectively.  For everything else, you can use
 
 ABBREVIATIONS				*rails-abbreviations* *rails-snippets*
 
-Abbreviations are "snippets lite".  They may later be extracted into a
-separate plugin, or removed entirely.
-
-						*rails-:Rabbrev*
-:Rabbrev		List all Rails abbreviations.
-
-:Rabbrev {abbr} {expn} [{extra}]
-			Define a new Rails abbreviation. {extra} is permitted
-			if and only if {expn} ends with "(".
-
-						*rails-:Rabbrev!*
-:Rabbrev! {abbr}	Remove an abbreviation.
-
-Rails abbreviations differ from regular abbreviations in that they only expand
-after a <C-]> (see |i_CTRL-]|) or a <Tab> (if <Tab> does not work, it is
-likely mapped by another plugin).  If the abbreviation ends in certain
-punctuation marks, additional expansions are possible.  A few examples will
-hopefully clear this up (all of the following are enabled by default in
-appropriate file types).
-
-Command				Sequence typed		Resulting text ~
-Rabbrev rp( render :partial\ =>	rp(			render(:partial =>
-Rabbrev rp( render :partial\ =>	rp<Tab>			render :partial =>
-Rabbrev vs( validates_size_of	vs(			validates_size_of(
-Rabbrev pa[ params		pa[:id]			params[:id]
-Rabbrev pa[ params		pa<C-]>			params
-Rabbrev pa[ params		pa.inspect		params.inspect
-Rabbrev AR:: ActionRecord	AR::Base		ActiveRecord::Base
-
-In short, ( expands on (, :: expands on . and :, and [ expands on . and [.
-These trailing punctuation marks are NOT part of the final abbreviation, and
-you cannot have two mappings that differ only by punctuation.
-
-You must escape spaces in your expansion, either as "\ " or as "<Space>".  For
-an abbreviation ending with "(", you may define where to insert the
-parenthesis by splitting the expansion into two parts (divided by an unescaped
-space).
-
-You can also define abbreviations as a hash in |g:rails_abbreviations| or by
-using |rails-projection-abbreviations|:
->
-	let g:rails_abbreviations = {
-		\ "AE::": "ActiveResource",
-		\ "p[": "params",
-		\ "rj(": ["render", "json: "]}
-<
-Many abbreviations are provided by default: use :Rabbrev to list them.  They
-vary depending on the type of file (models have different abbreviations than
-controllers).
+Abbreviations have been removed without replacement.
 
 SYNTAX HIGHLIGHTING				*rails-syntax*
 
