@@ -208,10 +208,10 @@ let s:special = filter(copy(s:keywords), 'v:val =~# ''^\h\k*[?!]$''')
 let s:regular = filter(copy(s:keywords), 'v:val =~# ''^\h\k*$''')
 let s:group = rails#buffer().type_name('helper', 'view') ? 'rubyHelper' : 'rubyMacro'
 if !empty(s:special)
-  exe 'syn match' group '"\<\%('.join(s:special, '\|').'\)"'
+  exe 'syn match' s:group '"\<\%('.join(s:special, '\|').'\)"'
 endif
 if !empty(s:regular)
-  exe 'syn keyword' group join(s:regular, ' ')
+  exe 'syn keyword' s:group join(s:regular, ' ')
 endif
 
 hi def link rubyEntity                      rubyMacro
