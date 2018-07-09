@@ -2322,7 +2322,7 @@ function! s:findasset(path, dir) abort
     let path = expand('%:p:h:h') . '/' . path[3:-1]
   endif
   let suffixes = s:suffixes(a:dir)
-  let asset = s:resolve_asset(rails#app().asset_path(), path, suffixes)
+  let asset = s:resolve_asset(path, suffixes)
   if len(asset)
     return asset
   endif
@@ -2381,12 +2381,6 @@ endfunction
 
 function! s:sprockets_cfile() abort
   let dir = ''
-  if s:active()
-    let path = rails#app().asset_path()
-  else
-    let parent = matchstr(expand('%:p'), '.*\ze[\/]assets[\/]')
-    let path = len(parent) ? [parent . '/*'] : []
-  endif
 
   if &sua =~# '\.js\>'
     let dir = 'javascripts'
@@ -2397,15 +2391,15 @@ function! s:sprockets_cfile() abort
     let sssuf = s:suffixes('stylesheets')
     let res = s:match_it('\%(^\s*[[:alnum:]-]\+:\s\+\)\=\<[[:alnum:]-]\+-\%(path\|url\)(["'']\=\([^"''() ]*\)', '\1')
     if !empty(res)
-      let asset = s:resolve_asset(path, res)
+      let asset = s:resolve_asset(res)
     endif
     let res = s:match_it('\%(^\s*[[:alnum:]-]\+:\s\+\)\=\<stylesheet-\%(path\|url\)(["'']\=\([^"''() ]*\)', '\1')
     if !empty(res)
-      let asset = s:resolve_asset(path, res, sssuf)
+      let asset = s:resolve_asset(res, sssuf)
     endif
     let res = s:match_it('\%(^\s*[[:alnum:]-]\+:\s\+\)\=\<javascript-\%(path\|url\)(["'']\=\([^"''() ]*\)', '\1')
     if !empty(res)
-      let asset = s:resolve_asset(path, res, s:suffixes('javascripts'))
+      let asset = s:resolve_asset(res, s:suffixes('javascripts'))
     endif
     if !empty(asset)
       return asset
@@ -2422,9 +2416,9 @@ function! s:sprockets_cfile() abort
           endif
         endfor
       endfor
-      let asset = s:resolve_asset(path, res, sssuf)
+      let asset = s:resolve_asset(res, sssuf)
       if empty(asset) && expand('%:e') =~# '^s[ac]ss$'
-        let asset = s:resolve_asset(path, rel, sssuf)
+        let asset = s:resolve_asset(rel, sssuf)
       endif
       return empty(asset) ? 'app/assets/stylesheets/'.res : asset
     endif
@@ -2432,7 +2426,7 @@ function! s:sprockets_cfile() abort
 
   let res = s:match_it('^\s*\%(//\|[*#]\)=\s*\%(link\|require\|depend_on\|stub\)\w*\s*["'']\=\([^"'' ]*\)', '\1')
   if !empty(res) && exists('l:dir')
-    let asset = s:resolve_asset(path, res, dir)
+    let asset = s:resolve_asset(res, dir)
     return empty(asset) ? res : asset
   endif
   return ''
@@ -3123,27 +3117,55 @@ function! s:readable_resolve_layout(name, ...) dict abort
   return view
 endfunction
 
-function! s:app_asset_path() dict abort
-  let gems = self.gems()
-  if self.cache.needs('gem_assets', gems)
-    let path = []
-    let gempath = escape(join(values(gems),','), ' ')
-    if !empty(gempath)
-      call extend(path, finddir('app/assets/', gempath, -1))
-      call extend(path, finddir('lib/assets/', gempath, -1))
-      call extend(path, finddir('vendor/assets/', gempath, -1))
-      call extend(path, finddir('assets/', gempath, -1))
-      call map(path, 'v:val . "*"')
-      call sort(path)
-    endif
-    call self.cache.set('gem_assets', path, gems)
+let s:gem_subdirs = {}
+function! s:gem_subdirs(...) abort
+  let gems = []
+  let project = exists('*bundler#project') ? bundler#project() : {}
+  if has_key(project, 'sorted')
+    let gems = bundler#project().sorted()
+  elseif has_key(project, 'paths')
+    let gems = values(bundler#project().paths())
   endif
-  return extend([self.path('app/assets/*'), self.path('lib/assets/*'), self.path('vendor/assets/*'), self.path('node_modules')],
-        \ self.cache.get('gem_assets'))
+  let gempath = escape(join(gems,','), ' ')
+  if empty(gempath)
+    return []
+  endif
+  let key = gempath . "\n" . join(a:000, ',')
+  if !has_key(s:gem_subdirs, key)
+    if len(s:gem_subdirs) > 512
+      let s:gem_subdirs = {}
+    endif
+    let path = []
+    for subdir in a:000
+      call extend(path, finddir(subdir, gempath, -1))
+    endfor
+    call map(path, 'fnamemodify(v:val . "/*", ":p")')
+    call sort(path)
+    let s:gem_subdirs[key] = path
+  endif
+  return copy(s:gem_subdirs[key])
 endfunction
 
-function! s:resolve_asset(path, name, ...) abort
-  let path = type(a:path) == type([]) ? join(map(copy(a:path), 'escape(v:val, " ,")'), ',') : a:path
+function! s:asset_path() abort
+  let path = []
+  let root = ''
+  let parent = matchstr(expand('%:p'), '.*\ze[\/]assets[\/]')
+  if parent =~# '[\/]\%(app\|lib\|vendor\)$'
+    let root = substitute(parent, '[\/]\%(app\|lib\|vendor\)$', '', '')
+  elseif !empty(s:glob(parent.'/*.gemspec'))
+    let root = parent
+    call add(path, parent . '/assets/*')
+  endif
+  if len(root)
+    call extend(path, map(['app/assets/*', 'lib/assets/*', 'vendor/assets/*', 'node_modules'], 'root . "/" . v:val'))
+  endif
+  return path
+endfunction
+
+function! s:resolve_asset(name, ...) abort
+  let paths = s:asset_path()
+  call extend(paths, s:gem_subdirs('app/assets', 'lib/assets', 'vendor/assets', 'assets'))
+  let path = join(map(paths, 'escape(v:val, " ,")'), ',')
   let suffixesadd = &l:suffixesadd
   let exact = s:find_file(a:name, path, a:0 ? (type(a:1) ==# type([]) ? a:1 : s:suffixes(a:1)) : [])
   if !empty(exact)
@@ -3165,7 +3187,6 @@ function! rails#pack_suffixes(type) abort
 endfunction
 
 call s:add_methods('readable', ['resolve_view', 'resolve_layout'])
-call s:add_methods('app', ['asset_path'])
 
 function! s:findview(name) abort
   let view = s:active() ? rails#buffer().resolve_view(a:name, line('.')) : ''
@@ -4466,19 +4487,6 @@ function! s:app_has_gem(gem) dict abort
   endif
 endfunction
 
-function! s:app_engines() dict abort
-  let gems = self.gems()
-  if self.cache.needs('engines', gems)
-    let gempath = escape(join(values(gems),','), ' ')
-    if empty(gempath)
-      call self.cache.set('engines', [], gems)
-    else
-      call self.cache.set('engines', sort(map(finddir('app', gempath, -1), 'fnamemodify(v:val, ":h")')), gems)
-    endif
-  endif
-  return self.cache.get('engines')
-endfunction
-
 function! s:app_smart_projections() dict abort
   let ts = s:getftime(self.path('app/'))
   if self.cache.needs('smart_projections', ts)
@@ -4845,7 +4853,7 @@ function! s:app_projections() dict abort
   return dict
 endfunction
 
-call s:add_methods('app', ['gems', 'has_gem', 'engines', 'smart_projections', 'projections'])
+call s:add_methods('app', ['gems', 'has_gem', 'smart_projections', 'projections'])
 
 let s:transformations = {}
 
@@ -5023,15 +5031,11 @@ function! rails#sprockets_setup(type) abort
     return
   endif
 
-  if !exists('*RailsDetect') || !RailsDetect()
-    let parent = matchstr(expand('%:p'), '.*\ze[\/]assets[\/]')
-    if parent !~# '\<\%(app\|lib\|vendor\)$' && empty(s:glob(parent.'/*.gemspec'))
-      return
-    endif
-    call rails#update_path([parent . '/assets/*'], [])
-  else
-    call rails#update_path(rails#app().asset_path(), [])
+  let path = s:asset_path()
+  if empty(path)
+    return
   endif
+  call rails#update_path(path, s:gem_subdirs('app/assets', 'lib/assets', 'vendor/assets', 'assets'))
 
   let &l:include .= (empty(&l:include) ? '' : '\|') .
         \ '^\s*[[:punct:]]\+=\s*\%(link\|require\|depend_on\|stub\)\w*'
@@ -5119,7 +5123,7 @@ function! rails#ruby_setup() abort
   endif
   call add(path, rails#app().path())
 
-  let engine_paths = map(copy(rails#app().engines()), 'v:val . "/app/*"')
+  let engine_paths = s:gem_subdirs('app')
   call rails#update_path(path, engine_paths)
 
   let b:undo_ftplugin = get(b:, 'undo_ftplugin', 'exe') . '|setlocal pa= sua= inc='
