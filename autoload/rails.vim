@@ -1254,14 +1254,6 @@ function! s:Refresh(bang)
   endif
 endfunction
 
-function! s:RefreshBuffer()
-  if exists("b:rails_refresh") && b:rails_refresh
-    let b:rails_refresh = 0
-    let &filetype = &filetype
-    unlet! b:rails_refresh
-  endif
-endfunction
-
 " }}}1
 " Rake {{{1
 
@@ -4013,16 +4005,6 @@ let s:app_prototype.cache = s:cache_prototype
 " }}}1
 " Syntax {{{1
 
-function! s:resetomnicomplete()
-  if exists("+completefunc") && &completefunc == 'syntaxcomplete#Complete'
-    if exists("g:loaded_syntax_completion")
-      " Ugly but necessary, until we have our own completion
-      unlet g:loaded_syntax_completion
-      silent! delfunction syntaxcomplete#Complete
-    endif
-  endif
-endfunction
-
 function! s:app_user_classes() dict
   if self.cache.needs("user_classes")
     let controllers = self.relglob("app/controllers/","**/*",".rb")
@@ -5069,8 +5051,20 @@ endfunction
 
 augroup railsPluginAuto
   autocmd!
-  autocmd User BufEnterRails call s:RefreshBuffer()
-  autocmd User BufEnterRails call s:resetomnicomplete()
+  autocmd BufEnter *
+        \ if s:active() |
+        \   if get(b:, 'rails_refresh') |
+        \     let b:rails_refresh = 0 |
+        \     let &filetype = &filetype |
+        \     unlet! b:rails_refresh |
+        \   endif |
+        \   if exists("+completefunc") && &completefunc ==# 'syntaxcomplete#Complete' |
+        \     if exists("g:loaded_syntax_completion") |
+        \       unlet g:loaded_syntax_completion |
+        \       silent! delfunction syntaxcomplete#Complete |
+        \     endif |
+        \   endif |
+        \ endif
   autocmd BufWritePost */config/database.yml      call rails#cache_clear("db_config")
   autocmd BufWritePost */config/projections.json  call rails#cache_clear("projections")
   autocmd BufWritePost */.projections.json        call rails#cache_clear("projections")

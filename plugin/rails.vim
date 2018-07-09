@@ -81,8 +81,6 @@ endfunction
 
 augroup railsPluginDetect
   autocmd!
-  autocmd BufEnter * if exists("b:rails_root")|call s:doau_user('BufEnterRails')|endif
-  autocmd BufLeave * if exists("b:rails_root")|call s:doau_user('BufLeaveRails')|endif
 
   autocmd BufNewFile,BufReadPost *
         \ if RailsDetect(expand("<afile>:p")) && empty(&filetype) |
