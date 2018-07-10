@@ -683,11 +683,6 @@ The full list of available options is as follows:
 						*rails-projection-keywords*
 "keywords" ~
 	Provides a whitespace delimited list of keywords to syntax highlight.
-						*rails-projection-abbreviations*
-"abbreviations" ~
-	Provides a dictionary of abbreviations to define.  See
-	|rails-abbreviations|.  You might consider setting this in a "*"
-	projection.
 						*rails-projection-command*
 "command" ~
 	Names a navigation command to be created.  Use the same name on
@@ -726,7 +721,6 @@ configuration.
 If you would like to set your own custom Vim settings whenever a Rails file is
 loaded, you can use an autocommand like the following in your vimrc: >
 
-	autocmd User Rails		silent! Lcd
 	autocmd User Rails		map <buffer> <F9> :Rails<CR>
 
 There used to be autocommands that fire based on the "type" or file name of
@@ -740,27 +734,9 @@ can be placed in a "macros/rails.vim" file in the 'runtimepath' (for example,
 "~/.vim/macros/rails.vim").  This file is sourced by rails.vim each time a
 Rails file is loaded.
 
-						*config/rails.vim*
-This file used to be sourced automatically from the root of the application,
-but has been superseded by |rails-projections|.
-
-						*rails-:Rnavcommand*
-:Rnavcommand		This command has been superseded by
-			|rails-projections|.
-
-						*rails-:Rset*
-:Rset			This command has been superseded by
-			|rails-projections|.
-
 GLOBAL SETTINGS					*rails-global-settings*
 
 When all else fails, set a global.
-
-						*g:rails_abbreviations*
-Dictionary of additional abbreviations.  See |rails-abbreviations|.
-
-This variable was formerly used to globally disable abbreviations.  Use
-g:rails_no_abbreviations if you want to do that.
 
 						*g:rails_ctags_arguments*
 Additional arguments to pass to ctags from |:rails-Ctags|.  Defaults to
@@ -793,7 +769,6 @@ bundled (requires bundler.vim).
 	      \     "alternate": [
 	      \       "db/schema.rb#{plural}{lnum|nothing}",
 	      \       "app/models/{}.rb"],
-	      \     "related": "db/schema.rb#{plural}",
 	      \     "test": "spec/models/{}_spec.rb",
 	      \     "template": "Fabricator :{} do\nend"}}}
 <
