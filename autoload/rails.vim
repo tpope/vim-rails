@@ -5027,22 +5027,15 @@ function! rails#buffer_setup() abort
     let &l:errorformat = substitute(&l:errorformat, '%\\&completion=rails#complete_\zsrails', 'rake', 'g')
   endif
 
-  if exists(':Dispatch') == 2 && !exists('g:autoloaded_dispatch')
-    runtime! autoload/dispatch.vim
-  endif
-  if exists('*dispatch#dir_opt')
-    let dir = dispatch#dir_opt(self.app().real())
-  endif
+  let dir = '-dir=' . substitute(s:fnameescape(fnamemodify(self.app().real(), ':~')), '^\\\~', '\~', '') . ' '
 
   let dispatch = self.projected('dispatch')
-  if !empty(dispatch) && exists('dir')
+  if !empty(dispatch)
     call self.setvar('dispatch', dir . dispatch[0])
   elseif self.name() =~# '^public'
     call self.setvar('dispatch', ':Preview')
   elseif self.name() =~# '^\%(app\|config\|db\|lib\|log\|README\|Rakefile\|test\|spec\|features\)'
-    if !exists('dir')
-      call self.setvar('dispatch', ':Rails')
-    elseif self.app().has_rails5()
+    if self.app().has_rails5()
       call self.setvar('dispatch',
             \ dir .
             \ self.app().ruby_script_command('bin/rails') .
