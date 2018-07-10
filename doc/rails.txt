@@ -633,7 +633,7 @@ Vim syntax looks a lot like JSON, but with funky |line-continuation|:
 	      \     "test/unit/{}_uploader_test.rb",
 	      \     "spec/models/{}_uploader_spec.rb"
 	      \   ],
-	      \   "keywords": "process version"
+	      \   "rubyMacro": ["process", "version"]
 	      \ },
 	      \ "features/support/*.rb": {"command": "support"},
 	      \ "features/support/env.rb": {"command": "support"}}
@@ -682,7 +682,7 @@ The full list of available options is as follows:
 	Determines the |:compiler| plugin to use with |rails-:Runner|.
 						*rails-projection-keywords*
 "keywords" ~
-	Provides a whitespace delimited list of keywords to syntax highlight.
+	Obsolete: see rubyMacro, rubyAction, and rubyHelper below.
 						*rails-projection-command*
 "command" ~
 	Names a navigation command to be created.  Use the same name on
@@ -705,11 +705,23 @@ The full list of available options is as follows:
 	If you provide a ! after the argument to the navigation command (that
 	is, :Euploader foo!, NOT :Euploader! foo), and a new file is created,
 	this will be used as an array of lines to populate the body.
-						*rails-projection-params*
+						*rails-projection-railsParams*
 "railsParams" ~
 	Provides a dictionary of defaults for URL parameters for
 	|rails-:Preview|, for example {"user_id": "2"}.  The fallback for
 	unspecified parameters is "1".
+						*rails-projection-rubyMacro*
+"rubyMacro" ~
+	List of keywords to highlight as class declarations (like
+	before_action or validates_presence_of).
+						*rails-projection-rubyAction*
+"rubyAction" ~
+	List of keywords to highlight as imperative methods (like
+	redirect_to or create_table).
+						*rails-projection-rubyHelper*
+"rubyHelper" ~
+	List of keywords to highlight as functional methods (like
+	params or any view helper).
 
 CONFIGURATION					*rails-configuration*
 

@@ -9,6 +9,7 @@ hi def link rubyMacro                       Macro
 hi def link rubyRoute                       rubyControl
 hi def link rubySchema                      rubyControl
 hi def link rubyResponse                    rubyControl
+hi def link rubyAction                      rubyControl
 hi def link rubyUrlHelper                   rubyHelper
 hi def link rubyViewHelper                  rubyHelper
 hi def link rubyTestHelper                  rubyHelper
@@ -228,14 +229,31 @@ syn keyword rubyAttribute cattr_accessor cattr_reader cattr_writer mattr_accesso
 syn keyword rubyAttribute thread_cattr_accessor thread_cattr_reader thread_cattr_writer thread_mattr_accessor thread_mattr_reader thread_mattr_writer
 syn keyword rubyMacro alias_attribute concern concerning delegate delegate_missing_to with_options
 
-let s:keywords = split(join(filter(rails#buffer().projected('keywords'),
-      \ 'type(v:val) == type("")'), ' '))
-let s:special = filter(copy(s:keywords), 'v:val =~# ''^\h\k*[?!]$''')
-let s:regular = filter(copy(s:keywords), 'v:val =~# ''^\h\k*$''')
-let s:group = rails#buffer().type_name('helper', 'view') ? 'rubyHelper' : 'rubyMacro'
-if !empty(s:special)
-  exe 'syn match' s:group '"\<\%('.join(s:special, '\|').'\)"'
-endif
-if !empty(s:regular)
-  exe 'syn keyword' s:group join(s:regular, ' ')
-endif
+let s:special = {
+      \ '[': '\>\[\@=',
+      \ ']': '\>[[.]\@!',
+      \ '{': '\>\%(\s*{\|\s*do\>\)\@=',
+      \ '}': '\>\%(\s*{\|\s*do\>\)\@!'}
+function! s:highlight(group, ...) abort
+  let value = rails#buffer().projected(a:0 ? a:1 : a:group)
+  let words = split(join(filter(value, 'type(v:val) == type("")'), ' '))
+  let special = filter(copy(words), 'type(v:val) == type("") && v:val =~# ''^\h\k*[][{}?!]$''')
+  let regular = filter(copy(words), 'type(v:val) == type("") && v:val =~# ''^\h\k*$''')
+  if !empty(special)
+    exe 'syn match' a:group substitute(
+          \ '"\<\%('.join(special, '\|').'\)"',
+          \ '[][{}]', '\=get(s:special, submatch(0), submatch(0))', 'g')
+  endif
+  if !empty(regular)
+    exe 'syn keyword' a:group join(regular, ' ')
+  endif
+endfunction
+
+call s:highlight(
+      \ rails#buffer().type_name('helper', 'view') ? 'rubyHelper' : 'rubyMacro',
+      \ 'keywords')
+call s:highlight('rubyMacro')
+call s:highlight('rubyAction')
+call s:highlight('rubyHelper')
+call s:highlight('rubyEntity')
+call s:highlight('rubyEntities')
