@@ -170,9 +170,9 @@ function! s:readfile(path, ...) abort
   if !s:filereadable(a:path)
     return []
   elseif a:0
-    return readfile(a:path, '', a:1)
+    return s:fcall('readfile', a:path, '', a:1)
   else
-    return readfile(a:path)
+    return s:fcall('readfile', a:path)
   endif
 endfunction
 
