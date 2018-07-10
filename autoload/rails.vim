@@ -3433,6 +3433,9 @@ function! s:readable_open_command(cmd, argument, name, projections) dict abort
       call s:mkdir_p(fnamemodify(file, ':h'))
       if has_key(projection, 'template')
         let template = s:split(projection.template)
+        if type(get(template, 0)) == type([])
+          let template = template[0]
+        endif
         let ph = {
               \ 'match': root,
               \ 'file': file,
