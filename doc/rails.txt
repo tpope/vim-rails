@@ -677,10 +677,6 @@ The full list of available options is as follows:
 	to substitute the current line number or 'define' match (typically a
 	method), or just a bare % (like |:_%|) to substitute the current file
 	name.
-						*rails-projection-compiler*
-"compiler" ~
-	Determines the |:compiler| plugin to use with |rails-:Runner|.
-						*rails-projection-keywords*
 "keywords" ~
 	Obsolete: see rubyMacro, rubyAction, and rubyHelper below.
 						*rails-projection-command*
@@ -710,6 +706,12 @@ The full list of available options is as follows:
 	Provides a dictionary of defaults for URL parameters for
 	|rails-:Preview|, for example {"user_id": "2"}.  The fallback for
 	unspecified parameters is "1".
+						*rails-projection-compiler*
+						*rails-projection-railsRunner*
+"railsRunner" ~
+	Determines the command (and |:compiler| plugin) to use with
+	|rails-:Runner| in lieu of a literal `rails runner`.  Can be
+	"minitest", "rspec", or "cucumber".
 						*rails-projection-rubyMacro*
 "rubyMacro" ~
 	List of keywords to highlight as class declarations (like
