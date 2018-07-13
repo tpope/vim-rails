@@ -1621,12 +1621,12 @@ function! s:readable_params(...) dict abort
 endfunction
 
 function! s:expand_url(url, params) abort
-  let params = extend({'controller': "\1", 'action': "\1", 'format': "\1"}, a:params, 'keep')
+  let params = extend({'controller': "\030", 'action': "\030", 'format': "\030"}, a:params, 'keep')
   let url = substitute(a:url, '\%(/\(\w\+\)/\)\=\zs[:*]\(\h\w*\)',
-        \ '\=strftime(get(s:split(get(params,rails#singularize(submatch(1))."_".submatch(2),get(params,submatch(2),1))), 0, "\1"))', 'g')
-  let url = s:gsub(url, '\([^()]*'."\1".'[^()]*\)', '')
+        \ '\=strftime(get(s:split(get(params,rails#singularize(submatch(1))."_".submatch(2),get(params,submatch(2),1))), 0, "\030"))', 'g')
+  let url = s:gsub(url, '\([^()]*'."\030".'[^()]*\)', '')
   let url = s:gsub(url, '[()]', '')
-  if url !~# "\1"
+  if url !~# "\030"
     return url
   else
     return ''
@@ -4689,15 +4689,15 @@ function! s:expand_placeholder(placeholder, expansions) abort
   if has_key(a:expansions, get(transforms, 0, '}'))
     let value = a:expansions[remove(transforms, 0)]
   else
-    let value = get(a:expansions, 'match', "\001")
+    let value = get(a:expansions, 'match', "\030")
   endif
   for transform in transforms
     if !has_key(s:transformations, transform)
-      return "\001"
+      return "\030"
     endif
     let value = s:transformations[transform](value, a:expansions)
-    if value =~# "\001"
-      return "\001"
+    if value =~# "\030"
+      return "\030"
     endif
   endfor
   return value
@@ -4705,14 +4705,14 @@ endfunction
 
 function! s:expand_placeholders(string, placeholders, ...) abort
   if type(a:string) ==# type({}) || type(a:string) == type([])
-    return filter(map(copy(a:string), 's:expand_placeholders(v:val, a:placeholders, 1)'), 'type(v:val) !=# type("") || v:val !~# "\001"')
+    return filter(map(copy(a:string), 's:expand_placeholders(v:val, a:placeholders, 1)'), 'type(v:val) !=# type("") || v:val !~# "\030"')
   elseif type(a:string) !=# type('')
     return a:string
   endif
   let ph = extend({'%': '%'}, a:placeholders)
   let value = substitute(a:string, '{[^{}]*}', '\=s:expand_placeholder(submatch(0), ph)', 'g')
-  let value = substitute(value, '%\([^: ]\)', '\=get(ph, submatch(1), "\001")', 'g')
-  return !a:0 && value =~# "\001" ? '' : value
+  let value = substitute(value, '%\([^: ]\)', '\=get(ph, submatch(1), "\030")', 'g')
+  return !a:0 && value =~# "[\001-\006\016-\037]" ? '' : value
 endfunction
 
 function! s:readable_projected_with_raw(key, ...) dict abort
