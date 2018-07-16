@@ -2,4 +2,7 @@ if !exists('*RailsDetect') || !RailsDetect()
   finish
 endif
 
-call rails#ruby_setup()
+try
+  call rails#ruby_setup()
+catch /^E117:.*rails#ruby_setup/
+endtry
