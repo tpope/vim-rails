@@ -4,5 +4,5 @@ endif
 
 try
   call rails#ruby_setup()
-catch /^E117:.*rails#ruby_setup/
+catch /^Vim\%((\a\+)\)\=:E117:.*rails#ruby_setup/
 endtry

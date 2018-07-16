@@ -5,5 +5,5 @@ try
   if expand('%:p') =~# '[\/]javascript[\/]packs[\/]'
     call rails#webpacker_setup('js')
   endif
-catch /^E117:/
+catch /^Vim\%((\a\+)\)\=:E117:/
 endtry
