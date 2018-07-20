@@ -161,8 +161,8 @@ function! s:glob(path) abort
 endfunction
 
 function! s:mkdir_p(path) abort
-  if a:path !~# '^\a\a\+:' && !isdirectory(fnamemodify(a:path, ':h'))
-    call mkdir(fnamemodify(a:path, ':h'), 'p')
+  if a:path !~# '^\a\a\+:' && !isdirectory(a:path)
+    call mkdir(a:path, 'p')
   endif
 endfunction
 
