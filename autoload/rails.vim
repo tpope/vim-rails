@@ -211,8 +211,8 @@ function! s:app_real(...) dict abort
   let pre = substitute(matchstr(self._root, '^\a\a\+\ze:'), '^.', '\u&', '')
   if empty(pre)
     let real = self._root
-  elseif exists('*' . pre . 'Path')
-    let real = {pre}Path(self._root)
+  elseif exists('*' . pre . 'Real')
+    let real = {pre}Real(self._root)
   else
     return ''
   endif
