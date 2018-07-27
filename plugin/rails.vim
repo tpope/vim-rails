@@ -27,7 +27,7 @@ function! RailsDetect(...) abort
   endif
   let fn = fnamemodify(a:0 ? a:1 : expand('%'), ':p')
   let ns = matchstr(fn, '^\a\a\+\ze:')
-  if len(ns) && exists('*' . ns . '#filereadable') && exists('*' . ns . '#isdirectory')
+  if len(ns) && exists('*' . ns . '#filereadable') && exists('*' . ns . '#isdirectory') && !get(g:, 'projectionist_ignore_' . ns)
     let fn = substitute(fn, '[^:\/#]*$', '', '')
     while fn =~# '^\a\a\+:.'
       if {ns}#filereadable(fn . 'config/environment.rb') && {ns}#isdirectory(fn . 'app')
