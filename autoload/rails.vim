@@ -763,12 +763,14 @@ function! s:buffer_number() dict abort
 endfunction
 
 function! s:buffer_path() dict abort
-  return s:gsub(fnamemodify(bufname(self.number()),':p'),'\\ @!','/')
+  let bufname = bufname(self.number())
+  return empty(bufname) ? '' : s:gsub(fnamemodify(bufname,':p'),'\\ @!','/')
 endfunction
 
 function! s:buffer_name() dict abort
   let app = self.app()
-  let f = fnamemodify(bufname(self.number()), ':p')
+  let bufname = bufname(self.number())
+  let f = len(bufname) ? fnamemodify(bufname, ':p') : ''
   if f !~# ':[\/][\/]'
     let f = resolve(f)
   endif
@@ -798,14 +800,8 @@ function! s:readable_calculate_file_type() dict abort
   endif
   let r = "-"
   let full_path = self.path()
-  let nr = bufnr('^'.full_path.'$')
-  if nr < 0 && exists('+shellslash') && ! &shellslash
-    let nr = bufnr('^'.s:gsub(full_path,'/','\\').'$')
-  endif
   if empty(f)
     let r = ""
-  elseif nr > 0 && !empty(getbufvar(nr, 'rails_file_type'))
-    return getbufvar(nr, 'rails_file_type')
   elseif f =~# '^app/controllers/concerns/.*\.rb$'
     let r = "controller-concern"
   elseif f =~# '_controller\.rb$' || f =~# '^app/controllers/.*\.rb$'
