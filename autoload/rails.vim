@@ -4316,10 +4316,6 @@ function! s:combine_projections(dest, src, ...) abort
 endfunction
 
 let s:default_projections = {
-      \  "*.example.yml": {"alternate": "{}.yml"},
-      \  "*.yml": {"alternate": ["{}.example.yml", "{}.yml.example", "{}.yml.sample"]},
-      \  "*.yml.example": {"alternate": "{}.yml"},
-      \  "*.yml.sample": {"alternate": "{}.yml"},
       \  "Gemfile": {"alternate": "Gemfile.lock", "type": "lib"},
       \  "Gemfile.lock": {"alternate": "Gemfile"},
       \  "README": {"alternate": "config/database.yml"},
@@ -4369,6 +4365,16 @@ let s:default_projections = {
       \    "template": ["class {camelcase|capitalize|colons}Serializer < ActiveModel::Serializer", "end"],
       \    "type": "serializer"
       \  },
+      \  "config/*.yml": {
+      \    "alternate": [
+      \      "config/{}.example.yml",
+      \      "config/{}.yml.example",
+      \      "config/{}.yml.sample"
+      \    ]
+      \  },
+      \  "config/*.example.yml": {"alternate": "config/{}.yml"},
+      \  "config/*.yml.example": {"alternate": "config/{}.yml"},
+      \  "config/*.yml.sample": {"alternate": "config/{}.yml"},
       \  "config/application.rb": {"alternate": "config/routes.rb"},
       \  "config/environment.rb": {"alternate": "config/routes.rb"},
       \  "config/environments/*.rb": {
@@ -4380,8 +4386,8 @@ let s:default_projections = {
       \    "alternate": ["config/application.rb", "config/environment.rb"],
       \    "type": "initializer"
       \  },
-      \  "gems.rb": {"alternate": "gems.locked", "type": "lib"},
       \  "gems.locked": {"alternate": "gems.rb"},
+      \  "gems.rb": {"alternate": "gems.locked", "type": "lib"},
       \  "lib/*.rb": {"type": "lib"},
       \  "lib/tasks/*.rake": {"type": "task"}
       \}
