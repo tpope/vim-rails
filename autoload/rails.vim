@@ -2540,7 +2540,7 @@ function! s:ruby_cfile() abort
       let res = s:glob(viewpath . view . '.html.*')
       if len(res)|return res[0]|endif
       let res = s:glob(viewpath . view . '.*')
-      if len(res)|return res|endif
+      if len(res)|return res[0]|endif
       return substitute(viewpath, '.*[\/]app[\/]views[\/]', '', '') . view . '.html'
     endif
   else
