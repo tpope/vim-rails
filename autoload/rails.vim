@@ -4883,10 +4883,10 @@ function! rails#ruby_setup() abort
         \ filter(map(keys(rails#app().projections()),
         \ 'matchstr(v:val, "^\\Capp/views/\\*\\.\\zs(\\w\\+$")'), 'len(v:val)'))
   for ext in exts
-    exe 'setlocal suffixesadd+=.' . ext
     if len(format)
       exe 'setlocal suffixesadd+=.' . format . '.' . ext
     endif
+    exe 'setlocal suffixesadd+=.' . ext
   endfor
   if !rails#app().has_rails5()
     let path += [rails#app().path('vendor/plugins/*/lib'), rails#app().path('vendor/rails/*/lib')]
