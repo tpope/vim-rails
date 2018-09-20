@@ -227,7 +227,8 @@ syn keyword rubyAttribute class_attribute
 syn keyword rubyAttribute attr_internal attr_internal_accessor attr_internal_reader attr_internal_writer
 syn keyword rubyAttribute cattr_accessor cattr_reader cattr_writer mattr_accessor mattr_reader mattr_writer
 syn keyword rubyAttribute thread_cattr_accessor thread_cattr_reader thread_cattr_writer thread_mattr_accessor thread_mattr_reader thread_mattr_writer
-syn keyword rubyMacro alias_attribute concern concerning delegate delegate_missing_to with_options
+syn keyword rubyMacro concern concerning delegate delegate_missing_to with_options
+syn keyword rubyMacro alias_attribute alias_method
 
 let s:special = {
       \ '[': '\>\[\@=',
