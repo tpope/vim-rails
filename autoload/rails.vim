@@ -4326,7 +4326,10 @@ let s:default_projections = {
       \  "README.*": {"alternate": "config/database.yml"},
       \  "Rakefile": {"type": "task"},
       \  "app/channels/*_channel.rb": {
-      \    "template": ["class {camelcase|capitalize|colons}Channel < ActionCable::Channel", "end"],
+      \    "template": [
+      \      "class {camelcase|capitalize|colons}Channel < ActionCable::Channel",
+      \      "end"
+      \    ],
       \    "type": "channel"
       \  },
       \  "app/controllers/*_controller.rb": {
@@ -4353,12 +4356,18 @@ let s:default_projections = {
       \  },
       \  "app/jobs/*_job.rb": {
       \    "affinity": "model",
-      \    "template": ["class {camelcase|capitalize|colons}Job < ActiveJob::Base", "end"],
+      \    "template": [
+      \      "class {camelcase|capitalize|colons}Job < ActiveJob::Base",
+      \      "end"
+      \    ],
       \    "type": "job"
       \  },
       \  "app/mailers/*.rb": {
       \    "affinity": "controller",
-      \    "template": ["class {camelcase|capitalize|colons} < ActionMailer::Base", "end"]
+      \    "template": [
+      \      "class {camelcase|capitalize|colons} < ActionMailer::Base",
+      \      "end"
+      \    ]
       \  },
       \  "app/models/*.rb": {
       \    "affinity": "model",
@@ -4366,7 +4375,10 @@ let s:default_projections = {
       \    "type": "model"
       \  },
       \  "app/serializers/*_serializer.rb": {
-      \    "template": ["class {camelcase|capitalize|colons}Serializer < ActiveModel::Serializer", "end"],
+      \    "template": [
+      \      "class {camelcase|capitalize|colons}Serializer < ActiveModel::Serializer",
+      \      "end"
+      \    ],
       \    "type": "serializer"
       \  },
       \  "config/*.yml": {
