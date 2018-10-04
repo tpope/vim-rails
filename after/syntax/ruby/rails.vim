@@ -153,6 +153,7 @@ if s:path =~# '/spec/.*_spec\.rb$'
   syn keyword rubyTestMacro it example specify scenario include_examples include_context it_should_behave_like it_behaves_like
   syn keyword rubyComment xcontext xdescribe xfeature containedin=rubyKeywordAsMethod
   syn keyword rubyComment xit xexample xspecify xscenario
+  syn keyword RubyAssertion raise_error
 endif
 if s:path =~# '/spec/.*_spec\.rb$\|/features/step_definitions/.*\.rb$'
   syn keyword rubyAssertion pending skip expect is_expected expect_any_instance_of allow allow_any_instance_of
