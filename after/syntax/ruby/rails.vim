@@ -83,7 +83,7 @@ endif
 
 if s:path =~# '/app/controllers/.*\.rb$'
   syn keyword rubyHelper params request response session headers cookies flash
-  syn keyword rubyMacro protect_from_forgery
+  syn keyword rubyMacro protect_from_forgery skip_forgery_protection
   syn match   rubyMacro '\<respond_to\>\ze[( ] *[:*]'
   syn match   rubyResponse '\<respond_to\>\ze[( ] *\%([&{]\|do\>\)'
   syn keyword rubyResponse render head redirect_to redirect_back respond_with send_data send_file
