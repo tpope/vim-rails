@@ -3742,14 +3742,10 @@ function! s:ViewExtract(bang, mods, first, last, file) abort
   let ext = expand("%:e")
   let file = s:sub(a:file, '%(/|^)\zs_\ze[^/]*$','')
   if rails#buffer().type_name('view-layout')
-    if rails#buffer().name() =~# '^app/views/layouts/application\>'
-      let curdir = 'app/views/shared'
-      if file !~ '/'
-        let file = "shared/" .file
-      endif
-    else
-      let curdir = s:sub(rails#buffer().name(),'.*<app/views/layouts/(.*)%(\.\w*)$','app/views/\1')
+    if file !~ '/'
+      let file = "application/" .file
     endif
+    let curdir = s:sub(rails#buffer().name(),'.*<app/views/layouts/(.*)%(\.\w*)$','app/views/\1')
   else
     let curdir = fnamemodify(rails#buffer().name(),':h')
   endif
