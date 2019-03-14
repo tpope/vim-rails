@@ -1530,7 +1530,7 @@ function! s:readable_default_rake_task(...) dict abort
 endfunction
 
 function! s:rake2rails(task) abort
-  let task = s:gsub(a:task, '^--tasks$', '')
+  let task = s:gsub(a:task, '^--tasks$', '--help')
   let task = s:gsub(task, '<TEST\w*\=', '')
   return task
 endfunction
@@ -4992,9 +4992,9 @@ function! rails#buffer_setup() abort
   let &l:makeprg = self.app().rake_command('static')
   let &l:errorformat .= ',%\&chdir '.escape(self.app().real(), ',')
   if &l:makeprg =~# 'rails$'
-    let &l:errorformat .= ',%\&buffer=`=rails#buffer('.self['#'].').default_task(v:lnum)`'
+    let &l:errorformat .= ",%\\&buffer=%%:s/.*/\\=rails#buffer(submatch(0)).default_task(exists('l#') ? l# : 0)/"
   elseif &l:makeprg =~# 'rake$'
-    let &l:errorformat .= ',%\&buffer=`=rails#buffer('.self['#'].').default_rake_task(v:lnum)`'
+    let &l:errorformat .= ",%\\&buffer=%%:s/.*/\\=rails#buffer(submatch(0)).default_rake_task(exists('l#') ? l# : 0)/"
     let &l:errorformat = substitute(&l:errorformat, '%\\&completion=rails#complete_\zsrails', 'rake', 'g')
   endif
 
@@ -5010,12 +5010,12 @@ function! rails#buffer_setup() abort
       call self.setvar('dispatch',
             \ dir .
             \ self.app().ruby_script_command('bin/rails') .
-            \ ' `=rails#buffer(' . self['#'] . ').default_task(v:lnum)`')
+            \ " %:s/.*/\\=rails#buffer(submatch(0)).default_task(exists('l#') ? l# : 0)/")
     else
       call self.setvar('dispatch',
             \ dir . '-compiler=rails ' .
             \ self.app().rake_command('static') .
-            \ ' `=rails#buffer(' . self['#'] . ').default_rake_task(v:lnum)`')
+            \ " %:s/.*/\\=rails#buffer(submatch(0)).default_rake_task(exists('l#') ? l# : 0)/")
     endif
   endif
 
