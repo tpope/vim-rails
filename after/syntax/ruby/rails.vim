@@ -179,6 +179,7 @@ if rails#buffer().type_name('test')
   endif
   syn keyword rubyTestMacro test setup teardown
   syn keyword rubyAssertion assert_difference assert_no_difference
+  syn keyword rubyAssertion assert_changes    assert_no_changes
   syn keyword rubyTestAction travel travel_to travel_back
 endif
 if rails#buffer().type_name('test-controller', 'test-integration', 'test-system')
