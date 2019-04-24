@@ -21,7 +21,7 @@ hi def link rubyHelper                      Function
 let s:has_app = exists('*RailsDetect') && RailsDetect()
 let s:path = tr(expand('%:p'), '\', '/')
 
-if s:path =~# '\v/app/%(channels|controllers|helpers|jobs|mailers|models)/.*\.rb$\|/app/views/'
+if s:path =~# '\v/app/%(channels|controllers|helpers|jobs|mailers|models)/.*\.rb$|/app/views/'
   syn keyword rubyHelper logger
 endif
 
