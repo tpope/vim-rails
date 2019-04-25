@@ -1254,7 +1254,7 @@ endfunction
 " Rake {{{1
 
 function! s:efm_dir() abort
-  return substitute(matchstr(','.&l:errorformat, ',%\\&chdir \zs\%(\\.\|[^,]\)*'), '\\,' ,',', 'g')
+  return substitute(matchstr(','.&l:errorformat, ',%\\&\%(ch\)\=dir[ =]\zs\%(\\.\|[^,]\)*'), '\\,' ,',', 'g')
 endfunction
 
 function! s:qf_pre() abort
@@ -1293,7 +1293,11 @@ function! s:app_rake_tasks() dict abort
   return self.cache.get('rake_tasks')
 endfunction
 
-call s:add_methods('app', ['rake_tasks'])
+function! s:app_efm_suffix() dict abort
+  return ',%\&dir=' . escape(self.real(), ',')
+endfunction
+
+call s:add_methods('app', ['rake_tasks', 'efm_suffix'])
 
 function! s:make(bang, args, ...)
   if exists(':Make') == 2
@@ -1320,7 +1324,7 @@ function! s:Rake(bang, lnum, arg) abort
     compiler rails
     let b:current_compiler = 'rake'
     let &l:makeprg = rails#app().rake_command('norails')
-    let &l:errorformat .= ',chdir '.escape(self.path(), ',')
+    let &l:errorformat .= self.efm_suffix()
     let arg = a:arg
     if arg == ''
       let arg = rails#buffer().default_rake_task(lnum)
@@ -1858,7 +1862,7 @@ function! s:Rails(bang, count, arg) abort
         let str = s:rake2rails(str)
         let &l:makeprg = rails#app().prepare_rails_command('$*')
       endif
-      let &l:errorformat .= ',chdir '.escape(rails#app().path(), ',')
+      let &l:errorformat .= rails#app().efm_suffix()
       call s:make(a:bang, str)
     finally
       let [&l:mp, &l:efm, b:current_compiler] = [mp, efm, cc]
@@ -1930,7 +1934,7 @@ function! s:readable_runner_command(bang, count, arg) dict abort
       let &l:makeprg = 'bundle exec ' . &l:makeprg
     endif
 
-    let &l:errorformat .= ',chdir '.escape(self.app().path(), ',')
+    let &l:errorformat .= self.app().efm_suffix()
 
     call s:make(a:bang, arg . extra)
     return ''
@@ -2052,7 +2056,7 @@ function! s:app_generator_command(bang, mods, ...) dict abort
   let old_errorformat = &l:errorformat
   try
     let &l:makeprg = self.prepare_rails_command(cmd)
-    let &l:errorformat = s:efm_generate . ',chdir '.escape(self.path(), ',')
+    let &l:errorformat = s:efm_generate . self.efm_suffix()
     call s:push_chdir(1)
     noautocmd make!
   finally
@@ -4990,7 +4994,7 @@ function! rails#buffer_setup() abort
 
   compiler rails
   let &l:makeprg = self.app().rake_command('static')
-  let &l:errorformat .= ',%\&chdir '.escape(self.app().real(), ',')
+  let &l:errorformat .= self.app().efm_suffix()
   if &l:makeprg =~# 'rails$'
     let &l:errorformat .= ",%\\&buffer=%%:s/.*/\\=rails#buffer(submatch(0)).default_task(exists('l#') ? l# : 0)/"
   elseif &l:makeprg =~# 'rake$'
