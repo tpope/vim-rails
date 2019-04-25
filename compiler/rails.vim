@@ -53,7 +53,7 @@ CompilerSet errorformat^=
       \%+EType\ 'rails'\ for\ help.,
       \%\\&completion=rails#complete_rails,
       \%\\&console=console,
-      \%\\&start=server,
+      \%\\&start=console,
       \%\\&terminal=%\\C%\\%%(console%\\\|dbconsole%\\\|server%\\\|%[cs]%\\\|db%\\)%\\>:%\\@!%\\ze%.%#,
       \%\\&default=default
 
