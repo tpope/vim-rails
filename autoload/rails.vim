@@ -965,7 +965,7 @@ function! s:app_has(feature) dict
         \'rails3': 'config/application.rb',
         \'rails5': 'app/assets/config/manifest.js|config/initializers/application_controller_renderer.rb',
         \'cucumber': 'features/',
-        \'webpack': 'app/javascript/packs',
+        \'webpack': 'app/javascript/packs/',
         \'turnip': 'spec/acceptance/',
         \'sass': 'public/stylesheets/sass/'}
   if self.cache.needs('features')
