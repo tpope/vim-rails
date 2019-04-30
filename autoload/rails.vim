@@ -1078,7 +1078,7 @@ function! s:BufCommands()
   command! -buffer -bar -nargs=? -bang -range -complete=customlist,s:Complete_preview Preview :call s:Preview(<bang>0,<line1>,<q-args>)
   command! -buffer -bar -nargs=? -bang -complete=customlist,s:Complete_log            Clog     exe s:Clog(1<bang>, '<mods>', <q-args>)
   command! -buffer -bar -nargs=0 Rtags       :echoerr "Use :Ctags"
-  command! -buffer -bar -nargs=0 Ctags       :execute rails#app().tags_command()
+  command! -buffer -bar -nargs=0 Ctags       :execute s:TagsCommand()
   command! -buffer -bar -nargs=0 -bang Rrefresh :if <bang>0|unlet! g:autoloaded_rails|source `=s:file`|endif|call s:Refresh(<bang>0)
   if exists("g:loaded_dbext")
     command! -buffer -bar -nargs=? -complete=customlist,s:Complete_environments Rdbext  :echoerr 'Install dadbod.vim and let g:dadbod_manage_dbext = 1'
@@ -1171,7 +1171,7 @@ function! rails#command(bang, mods, count, arg) abort
   return ''
 endfunction
 
-function! s:app_tags_command() dict abort
+function! s:TagsCommand() abort
   if exists("g:Tlist_Ctags_Cmd")
     let cmd = g:Tlist_Ctags_Cmd
   elseif executable("exuberant-ctags")
@@ -1191,7 +1191,7 @@ function! s:app_tags_command() dict abort
   let cd = exists('*haslocaldir') && haslocaldir() ? 'lcd' : 'cd'
   let cwd = getcwd()
   try
-    execute cd fnameescape(self.real())
+    execute cd fnameescape(rails#app().real())
     if filereadable('.ctags')
       let args = []
     else
@@ -1203,8 +1203,6 @@ function! s:app_tags_command() dict abort
   endtry
   return ''
 endfunction
-
-call s:add_methods('app',['tags_command'])
 
 function! s:Refresh(bang)
   if exists("g:rubycomplete_rails") && g:rubycomplete_rails && has("ruby") && exists('g:rubycomplete_completions')
@@ -1802,12 +1800,12 @@ endfunction
 
 function! s:BufScriptWrappers()
   command! -buffer -bang -bar -nargs=* -complete=customlist,s:Complete_environments Console   :Rails<bang> console <args>
-  command! -buffer -bang -bar -nargs=* -complete=customlist,s:Complete_generate Generate      :execute rails#app().generator_command(<bang>0,'<mods>','generate',<f-args>)
-  command! -buffer -bar -nargs=*       -complete=customlist,s:Complete_destroy  Destroy       :execute rails#app().generator_command(1,'<mods>','destroy',<f-args>)
-  command! -buffer -bar -nargs=? -bang -complete=customlist,s:Complete_server   Server        :execute rails#app().server_command(0, <bang>0, <q-args>)
-  command! -buffer -bang -nargs=? -range=0 -complete=customlist,s:Complete_edit Runner        :execute rails#buffer().runner_command(<bang>0, <count>?<line1>:0, <q-args>)
-  command! -buffer       -nargs=1 -range=0 -complete=customlist,s:Complete_ruby Rp            :execute rails#app().output_command(<count>==<line2>?<count>:-1, 'p begin '.<q-args>.' end')
-  command! -buffer       -nargs=1 -range=0 -complete=customlist,s:Complete_ruby Rpp           :execute rails#app().output_command(<count>==<line2>?<count>:-1, 'require %{pp}; pp begin '.<q-args>.' end')
+  command! -buffer -bang -bar -nargs=* -complete=customlist,s:Complete_generate Generate      :execute s:GeneratorCommand(<bang>0,'<mods>','generate',<f-args>)
+  command! -buffer -bar -nargs=*       -complete=customlist,s:Complete_destroy  Destroy       :execute s:GeneratorCommand(1,'<mods>','destroy',<f-args>)
+  command! -buffer -bar -nargs=? -bang -complete=customlist,s:Complete_server   Server        :execute s:ServerCommand(0, <bang>0, <q-args>)
+  command! -buffer -bang -nargs=? -range=0 -complete=customlist,s:Complete_edit Runner        :execute s:RunnerCommand(<bang>0, <count>?<line1>:0, <q-args>)
+  command! -buffer       -nargs=1 -range=0 -complete=customlist,s:Complete_ruby Rp            :execute s:OutputCommand(<count>==<line2>?<count>:-1, 'p begin '.<q-args>.' end')
+  command! -buffer       -nargs=1 -range=0 -complete=customlist,s:Complete_ruby Rpp           :execute s:OutputCommand(<count>==<line2>?<count>:-1, 'require %{pp}; pp begin '.<q-args>.' end')
 endfunction
 
 function! s:app_generators() dict abort
@@ -1872,7 +1870,7 @@ function! s:Rails(bang, count, arg) abort
   endif
 endfunction
 
-function! s:readable_runner_command(bang, count, arg) dict abort
+function! s:RunnerCommand(bang, count, arg) abort
   let old_makeprg = &l:makeprg
   let old_errorformat = &l:errorformat
   let old_compiler = get(b:, 'current_compiler', '')
@@ -1880,11 +1878,11 @@ function! s:readable_runner_command(bang, count, arg) dict abort
     if !empty(a:arg)
       let arg = a:arg
     elseif a:count
-      let arg = self.name()
+      let arg = rails#buffer().name()
     else
-      let arg = self.test_file()
+      let arg = rails#buffer().test_file()
       if empty(arg)
-        let arg = self.name()
+        let arg = rails#buffer().name()
       endif
     endif
 
@@ -1893,7 +1891,7 @@ function! s:readable_runner_command(bang, count, arg) dict abort
       let extra = ':'.a:count
     endif
 
-    let file = arg ==# self.name() ? self : self.app().file(arg)
+    let file = arg ==# rails#buffer().name() ? rails#buffer() : rails#app().file(arg)
     if arg =~# '^test/.*_test\.rb$'
       let compiler = 'rubyunit'
       if a:count > 0
@@ -1922,19 +1920,19 @@ function! s:readable_runner_command(bang, count, arg) dict abort
     execute 'compiler' compiler
 
     if compiler ==# 'ruby'
-      let &l:makeprg = self.app().prepare_rails_command('runner')
+      let &l:makeprg = rails#app().prepare_rails_command('runner')
       let extra = ''
-    elseif &makeprg =~# '^\%(testrb\|rspec\|cucumber\)\>' && self.app().has_zeus()
+    elseif &makeprg =~# '^\%(testrb\|rspec\|cucumber\)\>' && rails#app().has_zeus()
       let &l:makeprg = 'zeus ' . &l:makeprg
     elseif compiler ==# 'rubyunit'
       let &l:makeprg = 'ruby -Itest'
-    elseif filereadable(self.app().real('bin/' . &l:makeprg))
-      let &l:makeprg = self.app().ruby_script_command('bin/' . &l:makeprg)
-    elseif &l:makeprg !~# '^bundle\>' && self.app().has('bundler')
+    elseif filereadable(rails#app().real('bin/' . &l:makeprg))
+      let &l:makeprg = rails#app().ruby_script_command('bin/' . &l:makeprg)
+    elseif &l:makeprg !~# '^bundle\>' && rails#app().has('bundler')
       let &l:makeprg = 'bundle exec ' . &l:makeprg
     endif
 
-    let &l:errorformat .= self.app().efm_suffix()
+    let &l:errorformat .= rails#app().efm_suffix()
 
     call s:make(a:bang, arg . extra)
     return ''
@@ -1950,10 +1948,8 @@ function! s:readable_runner_command(bang, count, arg) dict abort
   return ''
 endfunction
 
-call s:add_methods('readable', ['runner_command'])
-
-function! s:app_output_command(count, code) dict
-  let str = self.prepare_rails_command('runner '.s:rquote(a:code))
+function! s:OutputCommand(count, code) abort
+  let str = rails#app().prepare_rails_command('runner '.s:rquote(a:code))
   call s:push_chdir(1)
   try
     let res = s:sub(system(str),'\n$','')
@@ -2001,7 +1997,8 @@ function! rails#get_binding_for(pid) abort
   return ''
 endfunction
 
-function! s:app_server_command(kill, bg, arg) dict abort
+function! s:ServerCommand(kill, bg, arg) abort
+  let self = rails#app()
   let arg = empty(a:arg) ? '' : ' '.a:arg
   let flags = ' -d\| --daemon\| --help'
   if a:kill || a:arg =~# '^ *[!-]$' || (a:bg && arg =~# flags)
@@ -2048,15 +2045,15 @@ let s:efm_generate =
       \ s:color_efm('', '%m%\>', '%f') .
       \ '%-G%.%#'
 
-function! s:app_generator_command(bang, mods, ...) dict abort
-  call self.cache.clear('user_classes')
-  call self.cache.clear('features')
+function! s:GeneratorCommand(bang, mods, ...) abort
+  call rails#app().cache.clear('user_classes')
+  call rails#app().cache.clear('features')
   let cmd = join(map(copy(a:000),'s:rquote(v:val)'),' ')
   let old_makeprg = &l:makeprg
   let old_errorformat = &l:errorformat
   try
-    let &l:makeprg = self.prepare_rails_command(cmd)
-    let &l:errorformat = s:efm_generate . self.efm_suffix()
+    let &l:makeprg = rails#app().prepare_rails_command(cmd)
+    let &l:errorformat = s:efm_generate . rails#app().efm_suffix()
     call s:push_chdir(1)
     noautocmd make!
   finally
@@ -2071,7 +2068,7 @@ function! s:app_generator_command(bang, mods, ...) dict abort
   endif
 endfunction
 
-call s:add_methods('app', ['generators','output_command','server_command','generator_command'])
+call s:add_methods('app', ['generators'])
 
 function! rails#complete_rails(ArgLead, CmdLine, P, ...) abort
   if a:0
