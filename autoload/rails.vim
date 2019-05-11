@@ -2208,7 +2208,7 @@ function! s:jump(def, ...) abort
     let include = &l:include
     try
       setlocal include=
-      exe 'djump' def
+      exe 'keepjumps djump' def
     catch /^Vim(djump):E387/
     catch
       let error = 1
@@ -2225,7 +2225,7 @@ function! s:jump(def, ...) abort
         if !success
           try
             setlocal include=
-            exe 'djump' def
+            exe 'keepjumps djump' def
           catch
           finally
             let &l:include = include
