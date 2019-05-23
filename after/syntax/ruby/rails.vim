@@ -1,6 +1,6 @@
 hi def link rubyEntity                      rubyMacro
 hi def link rubyEntities                    rubyMacro
-hi def link rubyExceptionHandler            rubyMacro
+hi def link rubyExceptionMacro              rubyMacro
 hi def link rubyValidation                  rubyMacro
 hi def link rubyCallback                    rubyMacro
 hi def link rubyRakeMacro                   rubyMacro
@@ -46,7 +46,7 @@ endif
 
 if s:path =~# '/app/jobs/.*\.rb$'
   syn keyword rubyMacro queue_as
-  syn keyword rubyExceptionHandler rescue_from retry_on discard_on
+  syn keyword rubyExceptionMacro rescue_from retry_on discard_on
   syn keyword rubyCallback before_enqueue around_enqueue after_enqueue before_perform around_perform after_perform
 endif
 
@@ -89,11 +89,12 @@ if s:path =~# '/app/controllers/.*\.rb$'
   syn keyword rubyResponse render head redirect_to redirect_back respond_with send_data send_file
 endif
 
+let b:rails_path = s:path
 if s:path =~# '/app/controllers/.*\.rb$\|/app/mailers/.*\.rb$\|/app/models/.*_mailer\.rb$'
   syn keyword rubyHelper render_to_string
   syn keyword rubyCallback before_action append_before_action prepend_before_action after_action append_after_action prepend_after_action around_action append_around_action prepend_around_action skip_before_action skip_after_action skip_action
   syn keyword rubyMacro helper helper_attr helper_method layout
-  syn keyword rubyExceptionHandler rescue_from
+  syn keyword rubyExceptionMacro rescue_from
 endif
 
 if s:path =~# '/app/mailers/.*\.rb$\|/app/models/.*_mailer\.rb$'
