@@ -97,7 +97,7 @@ augroup railsPluginDetect
         \ endif
   autocmd FileType * if RailsDetect() | call rails#buffer_setup() | endif
 
-  autocmd BufNewFile,BufReadPost *.yml,*.yml.example,*.yml.sample
+  autocmd BufNewFile,BufReadPost */config/*.yml{,.example,.sample},*/{test,spec}/fixtures/*.yml
         \ if &filetype !=# 'eruby.yaml' && RailsDetect() |
         \   set filetype=eruby.yaml |
         \ endif
