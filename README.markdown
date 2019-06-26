@@ -102,6 +102,11 @@ version only.
 It got yanked after increasing contention over JavaScript.  Check out
 [sleuth.vim](https://github.com/tpope/vim-sleuth).
 
+> :A like commands conflicts with vim-projectionist. Can I disable them?
+
+Yes, there's an option, which disables those commands:
+`let vim_rails_map_buf_nav_commands = 0
+`
 ## Self-Promotion
 
 Like rails.vim? Follow the repository on
