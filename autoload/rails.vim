@@ -822,7 +822,7 @@ function! s:readable_calculate_file_type() dict abort
     let r = "model-concern"
   elseif f =~# '^app/models/'
     let top = "\n".join(s:readbuf(full_path,50),"\n")
-    let class = matchstr(top,"\n".'class\s\+\S\+\s*<\s*\<\zs\S\+\>')
+    let class = matchstr(top,"\n".'\s*class\s\+\S\+\s*<\s*\<\zs\S\+\>')
     let type = tolower(matchstr(class, '^Application\zs[A-Z]\w*$\|^Acti\w\w\zs[A-Z]\w*\ze::Base'))
     if type ==# 'mailer' || f =~# '_mailer\.rb$'
       let r = 'mailer'
@@ -830,7 +830,7 @@ function! s:readable_calculate_file_type() dict abort
       let r = 'model-observer'
     elseif !empty(type)
       let r = 'model-'.type
-    elseif top =~# '^\%(self\.\%(table_name\|primary_key\)\|has_one\|has_many\|belongs_to\)\>'
+    elseif top =~# '\n\s*\%(self\.\%(table_name\|primary_key\)\|has_one\|has_many\|belongs_to\)\>'
       let r = 'model-record'
     else
       let r = 'model'
