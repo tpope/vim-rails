@@ -237,22 +237,18 @@ syn keyword rubyAttribute thread_cattr_accessor thread_cattr_reader thread_cattr
 syn keyword rubyMacro alias_attribute concern concerning delegate delegate_missing_to with_options
 
 let s:special = {
-      \ '[': '\>\[\@=',
-      \ ']': '\>[[.]\@!',
-      \ '{': '\>\%(\s*{\|\s*do\>\)\@=',
-      \ '}': '\>\%(\s*{\|\s*do\>\)\@!'}
+      \ '[': '\[\@=',
+      \ ']': '[[.]\@!',
+      \ '{': '\%(\s*{\|\s\+do\>\)\@=',
+      \ '}': '\%(\s*{\|\s\+do\>\)\@!'}
 function! s:highlight(group, ...) abort
   let value = rails#buffer().projected(a:0 ? a:1 : a:group)
   let words = split(join(filter(value, 'type(v:val) == type("")'), ' '))
-  let special = filter(copy(words), 'type(v:val) == type("") && v:val =~# ''^\h\k*[][{}?!]$''')
-  let regular = filter(copy(words), 'type(v:val) == type("") && v:val =~# ''^\h\k*$''')
-  if !empty(special)
+  call filter(words, 'type(v:val) == type("") && v:val =~# ''^\h\k*[!?]\=[][{}]\=$''')
+  if !empty(words)
     exe 'syn match' a:group substitute(
-          \ '"\<\%('.join(special, '\|').'\)"',
+          \ '"\<\%('.join(words, '\|').'\)\%(\k\@<!\|\k\@!:\@!\)"',
           \ '[][{}]', '\=get(s:special, submatch(0), submatch(0))', 'g')
-  endif
-  if !empty(regular)
-    exe 'syn keyword' a:group join(regular, ' ')
   endif
 endfunction
 
