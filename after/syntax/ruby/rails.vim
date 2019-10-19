@@ -37,7 +37,7 @@ elseif s:path =~# '/app/models/.*\.rb$'
   syn keyword rubyCallback before_create before_destroy before_save before_update
   syn keyword rubyCallback  after_create  after_destroy  after_save  after_update
   syn keyword rubyCallback around_create around_destroy around_save around_update
-  syn keyword rubyCallback after_commit after_create_commit after_update_commit after_destroy_commit after_rollback
+  syn keyword rubyCallback after_commit after_create_commit after_update_commit after_save_commit after_destroy_commit after_rollback
   syn keyword rubyCallback after_find after_initialize after_touch
   syn keyword rubyValidation validates validates_acceptance_of validates_associated validates_confirmation_of validates_each validates_exclusion_of validates_format_of validates_inclusion_of validates_length_of validates_numericality_of validates_presence_of validates_absence_of validates_size_of validates_with
   syn keyword rubyValidation validates_associated validates_uniqueness_of
