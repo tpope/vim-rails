@@ -253,19 +253,19 @@ function! s:app_has_file(file) dict abort
 endfunction
 
 function! s:find_file(name, ...) abort
-  let path = s:pathsplit(a:0 ? a:1 : &path)
-  let index = 1
+  let args = copy(a:000)
+  let path = s:pathsplit(len(args) ? remove(args, 0) : &path)
+  let suffixes = s:pathsplit(len(args) ? remove(args, 0) : [])
   let default = ''
-  if a:0 > 1 && type(a:2) == type(0)
-    let index = a:2
-  elseif a:0 > 1 && type(a:2) == type('')
-    let default = a:2
+  if type(get(args, 0)) == type('')
+    let default = remove(args, 0)
   endif
+  let index = get(args, 0, 1)
   let results = []
   for glob in path
     for dir in s:glob(glob)
       let dir = substitute(substitute(dir, '[\/]\=$', '/', ''), '^+\ze\a\a\+:', '', '')
-      for suf in [''] + (a:name =~# '/$' ? [] : s:pathsplit(get(a:000, 1, [])))
+      for suf in [''] + (a:name =~# '/$' ? [] : suffixes)
         if s:fcall(a:name =~# '/$' ? 'isdirectory' : 'filereadable', dir . a:name . suf)
           call add(results, dir . a:name . suf)
         endif
@@ -284,7 +284,7 @@ function! s:app_find_file(name, ...) dict abort
   else
     let path = [self.path()]
   endif
-  return s:find_file(a:name, path, a:0 > 1 ? a:2 : '')
+  return call('s:find_file', [a:name, path] + a:000[1:-1])
 endfunction
 
 call s:add_methods('app',['real','path','spec','root','has_path','has_file','find_file'])
