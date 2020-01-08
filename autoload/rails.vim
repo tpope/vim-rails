@@ -3331,8 +3331,8 @@ function! s:findcmdfor(cmd) abort
     let cmd = a:cmd
   endif
   let cmd = s:mods(cmd)
-  let num = matchstr(cmd, '.\{-\}\ze\a*$')
-  let cmd = matchstr(cmd, '\a*$')
+  let num = matchstr(cmd, '.\{-\}\ze\a\+')
+  let cmd = matchstr(cmd, '\a\+.*')
   if cmd == '' || cmd == 'E' || cmd == 'F'
     return num.'find'.bang
   elseif cmd == 'S'
