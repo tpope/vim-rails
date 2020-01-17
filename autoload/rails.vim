@@ -2437,6 +2437,20 @@ function! rails#sprockets_cfile(...) abort
   endif
 endfunction
 
+function! s:file_for_nested_constant(const) abort
+  let file = rails#underscore(a:const, 1) . '.rb'
+  if file =~# '/'
+    let absolute = s:find_file(file)
+    if empty(absolute)
+      let parent = substitute(file, '/[^/]*\.rb$', '.rb', '')
+      if len(s:find_file(parent))
+        return parent
+      endif
+    endif
+  endif
+  return file
+endfunction
+
 function! s:ruby_cfile() abort
   let buffer = rails#buffer()
 
@@ -2453,14 +2467,14 @@ function! s:ruby_cfile() abort
   if len(res)|return s:simplify(res)|endif
 
   let res = s:match_it('\v\s*<%(include|extend)\(=\s*<([[:alnum:]_:]+)>','\1')
-  if len(res)|return rails#underscore(res, 1).".rb"|endif
+  if len(res)|return s:file_for_nested_constant(res)|endif
 
   let res = s:match_method('require')
   if len(res)|return res.(res !~ '\.[^\/.]\+$' ? '.rb' : '')|endif
 
   if !empty(s:match_method('\w\+'))
     let class = s:match_it('^[^;#]*,\s*\%(:class_name\s*=>\|class_name:\)\s*["'':]\=\([[:alnum:]_:]\+\)','\1')
-    if len(class)|return rails#underscore(class, 1).".rb"|endif
+    if len(class)|return s:file_for_nested_constant(class)|endif
   endif
 
   let res = s:match_method('belongs_to\|has_one\|embedded_in\|embeds_one\|composed_of\|validates_associated\|scaffold')
@@ -2631,7 +2645,7 @@ function! s:ruby_cfile() abort
   if cfile =~# '^\l\w*#\w\+$'
     let cfile = s:sub(cfile, '#', '_controller.rb#')
   elseif cfile =~# '\u'
-    let cfile = rails#underscore(cfile, 1) . '.rb'
+    let cfile = s:file_for_nested_constant(cfile)
   elseif cfile =~# '^\w*_\%(path\|url\)$' && synid != hlID('rubyString')
     let route = s:gsub(cfile, '^hash_for_|_%(path|url)$', '')
     let cfile = s:active() ? rails#app().named_route_file(route) : ''
