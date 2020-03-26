@@ -117,6 +117,7 @@ endif
 
 if s:path =~# '/db/migrate/.*\.rb$\|/db/schema\.rb$'
   syn keyword rubySchema create_table change_table drop_table rename_table create_join_table drop_join_table
+  syn keyword rubySchema create_schema drop_schema
   syn keyword rubySchema add_column rename_column change_column change_column_default change_column_null remove_column remove_columns
   syn keyword rubySchema add_foreign_key remove_foreign_key
   syn keyword rubySchema add_timestamps remove_timestamps
