@@ -4825,7 +4825,7 @@ call s:add_methods('app', ['internal_load_path'])
 nnoremap <SID>: :<C-U><C-R>=v:count ? v:count : ''<CR>
 function! s:map_gf() abort
   let pattern = '^$\|_gf(v:count\|[Rr]uby\|[Rr]ails'
-  if mapcheck('gf', 'n') =~# pattern
+  if mapcheck('gf', 'n') =~# pattern.'\|^gf$'
     nmap <buffer><silent> gf         <SID>:find <Plug><cfile><CR>
     let b:undo_ftplugin .= "|sil! exe 'nunmap <buffer> gf'"
   endif
