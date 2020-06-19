@@ -180,7 +180,7 @@ if rails#buffer().type_name('test')
   syn keyword rubyAssertion assert_difference assert_no_difference
   syn keyword rubyAssertion assert_changes    assert_no_changes
   syn keyword rubyAssertion assert_emails assert_enqueued_emails assert_no_emails assert_no_enqueued_emails
-  syn keyword rubyTestAction travel travel_to travel_back
+  syn keyword rubyTestAction travel travel_to travel_back freeze_time unfreeze_time
 endif
 if rails#buffer().type_name('test-controller', 'test-integration', 'test-system')
   syn keyword rubyAssertion assert_response assert_redirected_to assert_template assert_recognizes assert_generates assert_routing
