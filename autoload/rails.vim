@@ -6,7 +6,7 @@
 if exists('g:autoloaded_rails') || &cp
   finish
 endif
-let g:autoloaded_rails = '4.3'
+let g:autoloaded_rails = '6.0'
 
 let s:cpo_save = &cpo
 set cpo&vim
@@ -155,6 +155,7 @@ function! s:app_find_file(name, ...) dict abort
   endtry
 endfunction
 
+" TODO: disabled
 call s:add_methods('app',['path','has_file','find_file'])
 
 " Split a path into a list.  From pathogen.vim
@@ -378,6 +379,10 @@ function! s:readable_model_name(...) dict abort
     return s:sub(f,'.*<app/models/(.*)_observer\.rb$','\1')
   elseif f =~ '\<app/uploaders/.*_uploader.rb$'
     return s:sub(f,'.*<app/uploaders/(.*)_uploader\.rb$','\1')
+  elseif f =~ '\<app/misc/.*.rb$'
+    return s:sub(f,'.*<app/misc/(.*)\.rb$','\1')
+  elseif f =~ '\<app/forms/.*_form.rb$'
+    return s:sub(f,'.*<app/forms/(.*)_form\.rb$','\1')
   elseif f =~ '\<app/models/.*\.rb$'
     return s:sub(f,'.*<app/models/(.*)\.rb$','\1')
   elseif f =~ '\<test/unit/.*_observer_test\.rb$'
@@ -2163,6 +2168,8 @@ function! s:BufFinderCommands()
   call s:addfilecmds("environment")
   call s:addfilecmds("initializer")
   call s:addfilecmds("uploader")
+  call s:addfilecmds("form")
+  call s:addfilecmds("misc")
   call s:addfilecmds("loop")
   call s:addfilecmds("factory")
   call s:addfilecmds("cell")
@@ -2283,6 +2290,14 @@ endfunction
 
 function! s:uploaderList(A,L,P)
   return s:autocamelize(rails#app().relglob("app/uploaders/", "**/*", "_uploader.rb"),a:A)
+endfunction
+
+function! s:formList(A,L,P)
+  return s:autocamelize(rails#app().relglob("app/forms/", "**/*", "_form.rb"),a:A)
+endfunction
+
+function! s:miscList(A,L,P)
+  return s:autocamelize(rails#app().relglob("app/misc/", "**/*", ".rb"),a:A)
 endfunction
 
 function! s:cellList(A,L,P)
@@ -2712,8 +2727,12 @@ function! s:mailerEdit(cmd,...)
   return s:EditSimpleRb(a:cmd,"mailer",a:0? a:1 : s:controller(1),"app/mailers/\napp/models/",".rb")
 endfunction
 
-function! s:uploaderEdit(cmd,...)
-  return s:EditSimpleRb(a:cmd, "uploader", a:0 ? a:1 : s:model(1), "app/uploaders/", "_uploader.rb")
+function! s:formEdit(cmd,...)
+  return s:EditSimpleRb(a:cmd, "form", a:0 ? a:1 : "", "app/forms/", "_form.rb")
+endfunction
+
+function! s:miscEdit(cmd,...)
+  return s:EditSimpleRb(a:cmd, "misc", a:0 ? a:1 : "", "app/misc/", ".rb")
 endfunction
 
 function! s:loopEdit(cmd,...)
