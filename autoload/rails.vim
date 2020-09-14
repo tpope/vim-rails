@@ -1312,6 +1312,8 @@ function! s:make(bang, args, ...)
   endif
 endfunction
 
+let s:efm_notes = '%-P%f:,\ \ *\ [%\ %#%l]\ [%t%*[^]]] %m,\ \ *\ [%[\ ]%#%l] %m,%-Q'
+
 function! s:Rake(bang, lnum, arg) abort
   let self = rails#app()
   let lnum = a:lnum < 0 ? 0 : a:lnum
@@ -1333,7 +1335,7 @@ function! s:Rake(bang, lnum, arg) abort
     endif
     let self.options['last_rake_task'] = arg
     if arg =~# '^notes\>'
-      let &l:errorformat = '%-P%f:,\ \ *\ [%\ %#%l]\ [%t%*[^]]] %m,\ \ *\ [%[\ ]%#%l] %m,%-Q'
+      let &l:errorformat = s:efm_notes . self.efm_suffix()
       call s:make(a:bang, arg)
     elseif arg =~# '^\%(stats\|routes\|secret\|middleware\|time:zones\|db:\%(charset\|collation\|fixtures:identify\>.*\|migrate:status\|version\)\)\%([: ]\|$\)'
       let &l:errorformat = '%D(in\ %f),%+G%.%#'
@@ -1859,6 +1861,9 @@ function! s:Rails(bang, count, arg) abort
       else
         let str = s:rake2rails(str)
         let &l:makeprg = rails#app().prepare_rails_command('$*')
+      endif
+      if str =~# '^notes\>'
+        let &l:errorformat = s:efm_notes
       endif
       let &l:errorformat .= rails#app().efm_suffix()
       call s:make(a:bang, str)
