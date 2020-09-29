@@ -17,6 +17,7 @@ hi def link rubyUserAssertion               rubyAssertion
 hi def link rubyAssertion                   rubyException
 hi def link rubyTestAction                  rubyControl
 hi def link rubyHelper                      Function
+hi def link rubyDebug                       Debug
 
 let s:has_app = exists('*RailsDetect') && RailsDetect()
 let s:path = tr(expand('%:p'), '\', '/')
@@ -157,6 +158,8 @@ if s:path =~# '/spec/.*_spec\.rb$'
   syn keyword rubyTestMacro before after around background setup teardown
   syn keyword rubyTestMacro context describe feature shared_context shared_examples shared_examples_for containedin=rubyKeywordAsMethod
   syn keyword rubyTestMacro it example specify scenario include_examples include_context it_should_behave_like it_behaves_like
+  syn keyword rubyDebug fcontext fdescribe containedin=rubyKeywordAsMethod
+  syn keyword rubyDebug fit fexample fspecify
   syn keyword rubyComment xcontext xdescribe xfeature containedin=rubyKeywordAsMethod
   syn keyword rubyComment xit xexample xspecify xscenario
 endif
