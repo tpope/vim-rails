@@ -4360,6 +4360,9 @@ let s:default_projections = {
       \    ],
       \    "type": "controller"
       \  },
+      \  "app/controllers/application_controller.rb": {
+      \    "type": "controller"
+      \  },
       \  "app/controllers/concerns/*.rb": {
       \    "affinity": "controller",
       \    "template": [
