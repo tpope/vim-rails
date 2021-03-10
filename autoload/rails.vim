@@ -4206,6 +4206,7 @@ function! s:app_db_url(...) dict abort
     endif
   endif
   if !empty(config)
+    call filter(config, 'type(v:val) != type([]) && type(v:val) != type({})')
     let url .= '?' . join(map(items(config), 'v:val[0]."=".s:url_encode(v:val[1])'), '&')
   endif
   return url
