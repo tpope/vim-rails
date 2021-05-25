@@ -4919,7 +4919,7 @@ function! rails#ruby_setup() abort
     endif
     call extend(exts,
           \ filter(map(keys(rails#app().projections()),
-          \ 'matchstr(v:val, "^\\Capp/views/\\*\\.\\zs(\\w\\+$")'), 'len(v:val)'))
+          \ 'matchstr(v:val, "^\\Capp/views/\\*\\.\\zs\\w\\+$")'), 'len(v:val)'))
   else
     let full = matchstr(expand('%:p'), '.*[\/]\%(app\|config\|lib\|test\|spec\)\ze[\/]')
     let name = fnamemodify(full, ':t')
