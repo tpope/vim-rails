@@ -2628,9 +2628,10 @@ function! s:ruby_cfile() abort
   endif
 
   let synid = synID(line('.'), col('.'), 1)
+  let synstring = synid == hlID('rubyString') || synid == hlID('rubyBackslashEscape')
   let old_isfname = &isfname
   try
-    if synid == hlID('rubyString')
+    if synstring
       set isfname+=:
       let cfile = expand("<cfile>")
     else
@@ -2649,9 +2650,9 @@ function! s:ruby_cfile() abort
   let cfile = s:sub(cfile, ':0x\x+$', '') " For #<Object:0x...> style output
   if cfile =~# '^\l\w*#\w\+$'
     let cfile = s:sub(cfile, '#', '_controller.rb#')
-  elseif cfile =~# '\u'
+  elseif cfile =~# '^\u[[:alnum:]]*\%($\|::\)'
     let cfile = s:file_for_nested_constant(cfile)
-  elseif cfile =~# '^\w*_\%(path\|url\)$' && synid != hlID('rubyString')
+  elseif cfile =~# '^\w*_\%(path\|url\)$' && !synstring
     let route = s:gsub(cfile, '^hash_for_|_%(path|url)$', '')
     let cfile = s:active() ? rails#app().named_route_file(route) : ''
     if empty(cfile)
@@ -2664,7 +2665,7 @@ function! s:ruby_cfile() abort
         let cfile = cfile.'_controller.rb#index'
       endif
     endif
-  elseif cfile !~# '\.'
+  elseif cfile !~# '\.' && !synstring
     let cfile .= '.rb'
   endif
   return cfile
