@@ -3351,20 +3351,20 @@ function! s:findcmdfor(cmd) abort
     let cmd = a:cmd
   endif
   let cmd = s:mods(cmd)
-  let num = matchstr(cmd, '.\{-\}\ze\a\+')
-  let cmd = matchstr(cmd, '\a\+.*')
+  let mods_num = matchstr(cmd, '^.\{-\}\ze\a\+\%(\s*+\d\+\)\=$')
+  let cmd = strpart(cmd, len(mods_num))
   if cmd == '' || cmd == 'E' || cmd == 'F'
-    return num.'find'.bang
+    return mods_num.'find'.bang
   elseif cmd == 'S'
-    return num.'sfind'.bang
+    return mods_num.'sfind'.bang
   elseif cmd == 'V'
-    return 'vert '.num.'sfind'.bang
+    return 'vert '.mods_num.'sfind'.bang
   elseif cmd == 'T'
-    return num.'tab sfind'.bang
+    return mods_num.'tab sfind'.bang
   elseif cmd == 'D'
-    return num.'read'.bang
+    return mods_num.'read'.bang
   else
-    return num.cmd.bang
+    return mods_num.cmd.bang
   endif
 endfunction
 
