@@ -405,7 +405,7 @@ function! s:readable_last_method(start) dict abort
     let string = matchstr(line,'^\s*\w\+\s*\([''"]\)\zs.*\ze\1')
     return 'test_'.s:gsub(string,' +','_')
   elseif lnum
-    return s:sub(matchstr(line,'\%('.self.define_pattern().'\)\zs\h\%(\k\|[:.]\)*[?!=]\='),':$','')
+    return s:sub(matchstr(line,'\%('.self.define_pattern().'\m\)\zs\h\%(\k\|[:.]\)*[?!=]\='),':$','')
   else
     return ""
   endif
