@@ -87,7 +87,8 @@ augroup railsPluginDetect
         \   call rails#buffer_setup() |
         \ endif
   autocmd VimEnter *
-        \ if empty(expand("<amatch>")) && RailsDetect(getcwd()) |
+        \ if get(g:, 'rails_vim_enter', get(g:, 'projectionist_vim_enter', 1)) &&
+        \     empty(expand("<amatch>")) && RailsDetect(getcwd()) |
         \   call rails#buffer_setup() |
         \   call s:doau_user('BufEnterRails') |
         \ endif
