@@ -4855,16 +4855,16 @@ function! s:map_gf() abort
 endfunction
 
 function! rails#update_path(before, after) abort
-  if &l:path =~# '\v^\.%(,/%(usr|emx)/include)=,,$'
-    let before = []
-    let after = []
+  if &l:path =~# '\v^\.%(,/%(usr|emx)/include)=,,$|^$'
+    let append = ''
+    let old = []
   else
-    let before = &l:path =~# '^\.\%(,\|$\)' ? ['.'] : []
-    let after = s:pathsplit(s:sub(&l:path, '^\.%(,|$)', ''))
+    let append = matchstr(&l:path, '\%(,\.\)\=\%(,,\)$')
+    let old = s:pathsplit(&l:path[0 : -len(append) - 1])
   endif
 
   let r = 'substitute(v:val, "^\\a\\a\\+:", "+&", "")'
-  let &l:path = s:pathjoin(s:uniq(before + map(a:before, r) + after + map(a:after, r)))
+  let &l:path = s:pathjoin(s:uniq(map(a:before, r) + old + map(a:after, r))) . append
 endfunction
 
 function! rails#sprockets_setup(type) abort
