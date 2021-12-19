@@ -27,7 +27,9 @@ function! RailsDetect(...) abort
   endif
   let path = a:0 ? a:1 : @%
   if exists('*ProjectionistHas')
-    if path !~# '^/\|^\a\+:'
+    if len(&l:buftype)
+      let path = fnamemodify(path, ':p')
+    elseif path !~# '^$\|^/\|^\a\+:\|^\\\\'
       let path = getcwd() . '/' . path
     endif
     let previous = ''
