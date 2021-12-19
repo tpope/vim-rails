@@ -25,25 +25,23 @@ function! RailsDetect(...) abort
   if exists('b:rails_root')
     return 1
   endif
-  let fn = fnamemodify(a:0 ? a:1 : expand('%'), ':p')
-  let ns = matchstr(fn, '^\a\a\+\ze:')
-  if len(ns) && exists('*' . ns . '#filereadable') && exists('*' . ns . '#isdirectory') && !get(g:, 'projectionist_ignore_' . ns)
-    let fn = substitute(fn, '[^:\/#]*$', '', '')
-    while fn =~# '^\a\a\+:.'
-      if {ns}#filereadable(fn . 'config/environment.rb') && {ns}#isdirectory(fn . 'app')
-        let b:rails_root = substitute(fn, '[:\/#]$', '', '')
+  let path = a:0 ? a:1 : @%
+  if exists('*ProjectionistHas')
+    if path !~# '^/\|^\a\+:'
+      let path = getcwd() . '/' . path
+    endif
+    let previous = ''
+    while path !=# previous && path !~# '^\.\=$\|^[\/][\/][^\/]*$'
+      if ProjectionistHas('config/environment.rb&app/', path)
+        let b:rails_root = path
         return 1
       endif
-      let fn = substitute(fn, '[^:\/#]*[:\/#][^:\/#]*$', '', '')
+      let previous = path
+      let path = fnamemodify(path, ':h')
     endwhile
     return 0
-  elseif len(ns) || fn =~# ':[\/]\{2\}'
-    return 0
   endif
-  if !isdirectory(fn)
-    let fn = fnamemodify(fn, ':h')
-  endif
-  let file = findfile('config/environment.rb', escape(fn, ', ').';')
+  let file = findfile('config/environment.rb', escape(fnamemodify(path, ':p:h'), ', ').';')
   if !empty(file) && isdirectory(fnamemodify(file, ':p:h:h') . '/app')
     let b:rails_root = fnamemodify(file, ':p:h:h')
     return 1
@@ -83,7 +81,7 @@ augroup railsPluginDetect
   autocmd!
 
   autocmd BufNewFile,BufReadPost *
-        \ if RailsDetect(expand("<afile>:p")) && empty(&filetype) |
+        \ if RailsDetect(expand("<afile>")) && empty(&filetype) |
         \   call rails#buffer_setup() |
         \ endif
   autocmd VimEnter *
