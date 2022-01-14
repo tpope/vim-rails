@@ -4,7 +4,7 @@
 
 " Install this file as plugin/rails.vim.
 
-if exists('g:loaded_rails') || &cp || v:version < 700
+if exists('g:loaded_rails') || &cp || v:version < 800
   finish
 endif
 let g:loaded_rails = 1

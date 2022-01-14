@@ -87,14 +87,6 @@ function! s:rquote(str)
   endif
 endfunction
 
-function! s:fnameescape(file) abort
-  if exists('*fnameescape')
-    return fnameescape(a:file)
-  else
-    return escape(a:file," \t\n*?[{`$\\%#'\"|!<")
-  endif
-endfunction
-
 function! s:dot_relative(path) abort
   let slash = matchstr(a:path, '^\%(\w\:\)\=\zs[\/]')
   if !empty(slash)
@@ -107,7 +99,7 @@ function! s:dot_relative(path) abort
 endfunction
 
 function! s:mods(mods) abort
-  return s:gsub(a:mods, '[<]mods[>]\s*|^\s', '')
+  return substitute(a:mods, '^\s', '', '')
 endfunction
 
 function! s:webcat() abort
@@ -153,11 +145,7 @@ function! s:simplify(path) abort
 endfunction
 
 function! s:glob(path) abort
-  if v:version >= 704
-    return s:fcall('glob', a:path, 0, 1)
-  else
-    return split(s:fcall('glob', a:path), "\n")
-  endif
+  return s:fcall('glob', a:path, 0, 1)
 endfunction
 
 function! s:mkdir_p(path) abort
@@ -199,9 +187,9 @@ endfunction
 function! s:push_chdir(...)
   if !exists("s:command_stack") | let s:command_stack = [] | endif
   if s:active() && (a:0 ? getcwd() !=# rails#app().path() : !s:startswith(getcwd(), rails#app().real()))
-    let chdir = exists("*haslocaldir") && haslocaldir() ? "lchdir " : "chdir "
-    call add(s:command_stack,chdir.s:escarg(getcwd()))
-    exe chdir.s:escarg(rails#app().real())
+    let cd = haslocaldir() ? 'lcd' : exists(':tcd') && haslocaldir(-1) ? 'tcd' : 'cd'
+    call add(s:command_stack,cd . ' ' . s:escarg(getcwd()))
+    exe cd s:escarg(rails#app().real())
   else
     call add(s:command_stack,"")
   endif
@@ -1104,26 +1092,26 @@ endfunction
 function! s:Clog(bang, mods, arg) abort
   let lf = rails#app().real('log/' . (empty(a:arg) ? s:environment() : a:arg) . '.log')
   if !filereadable(lf)
-    return 'cgetfile ' . s:fnameescape(lf)
+    return 'cgetfile ' . fnameescape(lf)
   endif
   let [mp, efm, cc] = [&l:mp, &l:efm, get(b:, 'current_compiler', '')]
-  let chdir = exists("*haslocaldir") && haslocaldir() ? 'lchdir' : 'chdir'
+  let chdir = haslocaldir() ? 'lcd' : exists(':tcd') && haslocaldir(-1) ? 'tcd' : 'cd'
   let cwd = getcwd()
   try
     compiler rails
-    exe chdir s:fnameescape(rails#app().real())
-    exe 'cgetfile' s:fnameescape(lf)
+    exe chdir fnameescape(rails#app().real())
+    exe 'cgetfile' fnameescape(lf)
   finally
     let [&l:mp, &l:efm, b:current_compiler] = [mp, efm, cc]
     if empty(cc) | unlet! b:current_compiler | endif
-    exe chdir s:fnameescape(cwd)
+    exe chdir fnameescape(cwd)
   endtry
   return s:mods(a:mods) . ' copen|$'
 endfunction
 
 function! s:Plog(bang, arg) abort
   let lf = rails#app().path('log/' . (empty(a:arg) ? s:environment() : a:arg) . '.log')
-  return 'pedit' . (a:bang ? '!' : '') . ' +$ ' . s:fnameescape(lf)
+  return 'pedit' . (a:bang ? '!' : '') . ' +$ ' . fnameescape(lf)
 endfunction
 
 function! rails#command(bang, mods, count, arg) abort
@@ -1154,16 +1142,16 @@ function! rails#command(bang, mods, count, arg) abort
   let dir = matchstr(arg, ' ["'']\=\zs[^- "''][^ "'']\+')
   if isdirectory(dir)
     let old_errorformat = &l:errorformat
-    let chdir = exists("*haslocaldir") && haslocaldir() ? 'lchdir' : 'chdir'
+    let chdir = haslocaldir() ? 'lcd' : exists(':tcd') && haslocaldir(-1) ? 'tcd' : 'cd'
     let cwd = getcwd()
     try
-      exe chdir s:fnameescape(dir)
+      exe chdir fnameescape(dir)
       let &l:errorformat = s:efm_generate
       exe 'cgetfile' temp
       return 'copen|cfirst'
     finally
       let &l:errorformat = old_errorformat
-      exe chdir s:fnameescape(cwd)
+      exe chdir fnameescape(cwd)
     endtry
   elseif exists('error') && !error && !empty(dir)
     call s:warn("Couldn't find app directory")
@@ -1188,7 +1176,7 @@ function! s:TagsCommand() abort
     call s:error("ctags not found")
     return ''
   endif
-  let cd = exists('*haslocaldir') && haslocaldir() ? 'lcd' : 'cd'
+  let cd = haslocaldir() ? 'lcd' : exists(':tcd') && haslocaldir(-1) ? 'tcd' : 'cd'
   let cwd = getcwd()
   try
     execute cd fnameescape(rails#app().real())
@@ -1259,7 +1247,7 @@ function! s:qf_pre() abort
   let dir = s:efm_dir()
   let cwd = getcwd()
   if !empty(dir) && dir !=# cwd
-    let cd = exists('*haslocaldir') && haslocaldir() ? 'lcd' : 'cd'
+    let cd = haslocaldir() ? 'lcd' : exists(':tcd') && haslocaldir(-1) ? 'tcd' : 'cd'
     execute 'lcd' fnameescape(dir)
     let s:qf_post = cd . ' ' . fnameescape(cwd)
   endif
@@ -2434,7 +2422,7 @@ function! rails#sprockets_cfile(...) abort
   if empty(file)
     return eval(s:cfile_delegate(a:0 ? a:1 : ''))
   endif
-  let escaped = s:fnameescape(file)
+  let escaped = fnameescape(file)
   if file ==# escaped
     return file
   else
@@ -2687,7 +2675,7 @@ endfunction
 
 function! s:app_routes() dict abort
   if self.cache.needs('routes')
-    let cd = exists('*haslocaldir') && haslocaldir() ? 'lcd' : 'cd'
+    let cd = haslocaldir() ? 'lcd' : exists(':tcd') && haslocaldir(-1) ? 'tcd' : 'cd'
     let cwd = getcwd()
     let routes = []
     let paths = {}
@@ -3432,7 +3420,7 @@ function! s:readable_open_command(cmd, argument, name, projections) dict abort
     if empty(defaults)
       return 'echoerr "E471: Argument required"'
     else
-      return cmd . ' ' . s:fnameescape(defaults[0])
+      return cmd . ' ' . fnameescape(defaults[0])
     endif
   endif
   if djump !~# '^!'
@@ -3459,9 +3447,9 @@ function! s:readable_open_command(cmd, argument, name, projections) dict abort
         call map(template, 's:expand_placeholders(v:val, ph)')
         call map(template, 's:gsub(v:val, "\t", "  ")')
         let file = fnamemodify(s:simplify(file), ':.')
-        return cmd . ' ' . s:fnameescape(file) . '|call setline(1, '.string(template).')' . '|set nomod'
+        return cmd . ' ' . fnameescape(file) . '|call setline(1, '.string(template).')' . '|set nomod'
       else
-        return cmd . ' +AD ' . s:fnameescape(file)
+        return cmd . ' +AD ' . fnameescape(file)
       endif
     endif
   endfor
@@ -3829,7 +3817,7 @@ function! s:ViewExtract(bang, mods, first, last, file) abort
   silent exe a:last.'put =spaces . renderstr'
   silent exe a:first.','.a:last.'delete _'
   let filetype = &filetype
-  silent exe s:mods(a:mods) 'split' s:fnameescape(fnamemodify(out, ':.'))
+  silent exe s:mods(a:mods) 'split' fnameescape(fnamemodify(out, ':.'))
   let existing_last = line('$')
   silent $put =contents
   silent exe '1,' . existing_last . 'delete _'
@@ -3854,7 +3842,7 @@ function! s:RubyExtract(bang, mods, root, before, name) range abort
   elseif out !~# '^\a\a\+:' && !isdirectory(fnamemodify(out,':h'))
     return s:error('No such directory')
   endif
-  execute s:mods(a:mods) 'split' s:fnameescape(out)
+  execute s:mods(a:mods) 'split' fnameescape(out)
   silent %delete_
   call setline(1, ['module '.rails#camelize(a:name)] + a:before + content + ['end'])
 endfunction
@@ -4245,19 +4233,7 @@ endfunction
 " Projections {{{1
 
 function! rails#json_parse(string) abort
-  let string = type(a:string) == type([]) ? join(a:string, ' ') : a:string
-  if exists('*json_decode')
-    return json_decode(string)
-  endif
-  let [null, false, true] = ['', 0, 1]
-  let stripped = substitute(string,'\C"\(\\.\|[^"\\]\)*"','','g')
-  if stripped !~# "[^,:{}\\[\\]0-9.\\-+Eaeflnr-u \n\r\t]"
-    try
-      return eval(substitute(string,"[\r\n]"," ",'g'))
-    catch
-    endtry
-  endif
-  throw "invalid JSON: ".string
+  return json_decode(type(a:string) == type([]) ? join(a:string, ' ') : a:string)
 endfunction
 
 function! s:app_gems() dict abort
@@ -4886,7 +4862,7 @@ function! rails#sprockets_setup(type) abort
   let b:undo_ftplugin = get(b:, 'undo_ftplugin', 'exe') . '|setlocal pa= sua= inc='
 
   let map = ''
-  let cfilemap = v:version + has('patch032') >= 704 ? maparg('<Plug><cfile>', 'c', 0, 1) : {}
+  let cfilemap = maparg('<Plug><cfile>', 'c', 0, 1)
   if get(cfilemap, 'buffer') && cfilemap.expr && cfilemap.rhs !~# 'rails#\|Ruby'
     let map = string(maparg('<Plug><cfile>', 'c'))
   endif
@@ -5020,7 +4996,7 @@ function! rails#buffer_setup() abort
     let &l:errorformat = substitute(&l:errorformat, '%\\&completion=rails#complete_\zsrails', 'rake', 'g')
   endif
 
-  let dir = '-dir=' . substitute(s:fnameescape(fnamemodify(self.app().real(), ':~')), '^\\\~', '\~', '') . ' '
+  let dir = '-dir=' . substitute(fnameescape(fnamemodify(self.app().real(), ':~')), '^\\\~', '\~', '') . ' '
 
   let dispatch = self.projected('dispatch')
   if !empty(dispatch)
