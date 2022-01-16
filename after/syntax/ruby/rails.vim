@@ -84,10 +84,11 @@ endif
 
 if s:path =~# '/app/controllers/.*\.rb$'
   syn keyword rubyHelper params request response session headers cookies flash
-  syn keyword rubyMacro protect_from_forgery skip_forgery_protection
+  syn keyword rubyMacro protect_from_forgery skip_forgery_protection http_basic_authenticate_with
   syn match   rubyMacro '\<respond_to\>\ze[( ] *[:*]'
   syn match   rubyResponse '\<respond_to\>\ze[( ] *\%([&{]\|do\>\)'
   syn keyword rubyResponse render head redirect_to redirect_back respond_with send_data send_file
+  syn keyword rubyResponse authenticate_or_request_with_http_basic authenticate_with_http_basic http_basic_authenticate_or_request_with request_http_basic_authentication
 endif
 
 let b:rails_path = s:path
