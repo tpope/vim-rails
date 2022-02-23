@@ -795,7 +795,7 @@ lib/rails/projections.json.
 					*g:vim_rails_map_buf_nav_commands*
 disables A AE AS AV AT AD AR R RE RS RV RT RD commands
 >
-	let vim_rails_map_buf_nav_commands = 0
+	let g:vim_rails_map_buf_nav_commands = 0
 <
 
 ABOUT					*rails-about* *rails-plugin-author*
