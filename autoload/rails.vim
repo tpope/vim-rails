@@ -3062,7 +3062,12 @@ function! s:fixturesEdit(cmd,...)
   if file =~ '\.\w\+$' && rails#app().find_file(c.e, dirs, []) ==# ''
     return s:edit(a:cmd,file)
   else
-    return s:open(a:cmd, rails#app().find_file(c.e, dirs, ['.yml', '.csv', '.rb'], file))
+    let exts = ['.yml','.csv','.rb']
+    call extend(exts,
+          \ filter(map(keys(filter(copy(rails#app().projections()), 'get(v:val, "type") is# "fixtures"')),
+          \ 'matchstr(v:val, "^\\C\\%(test\\|spec\\)/factories/\\*\\zs.\\+$")'), 'len(v:val)'))
+    call s:uniq(exts)
+    return s:open(a:cmd, rails#app().find_file(c.e, dirs, exts, file))
   endif
 endfunction
 
