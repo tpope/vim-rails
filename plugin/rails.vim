@@ -41,6 +41,12 @@ function! RailsDetect(...) abort
     let path = getcwd() . (exists('+shellslash') && !&shellslash ? '\' : '/') . path
   endif
   let path = substitute(path, '[' . s:slash . '/]$', '', '')
+  try
+    if exists('*ExcludeBufferFromDiscovery') && ExcludeBufferFromDiscovery(file, 'projectionist')
+      return
+    endif
+  catch
+  endtry
 
   if exists('*ProjectionistHas')
     let previous = ''
