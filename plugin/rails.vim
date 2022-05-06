@@ -38,7 +38,8 @@ function! RailsDetect(...) abort
     return
   endif
   if !s:IsAbs(path)
-    let path = getcwd() . (exists('+shellslash') && !&shellslash ? '\' : '/') . path
+    let s = exists('+shellslash') && !&shellslash ? '\' : '/'
+    let path = substitute(getcwd(), '\' . s . '\=$', s, '') . path
   endif
   let path = substitute(path, '[' . s:slash . '/]$', '', '')
   try
