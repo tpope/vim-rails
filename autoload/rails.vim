@@ -2295,9 +2295,13 @@ function! s:match_partial(func) abort
   elseif res =~# '^\w\+\%(\.\w\+\)\=$'
     let res = rails#singularize(s:sub(res, '^\w*\.', ''))
     return s:findview(rails#pluralize(res).'/_'.res)
-  else
-    return s:findview(s:sub(s:sub(res, '^:=[''"@]=', ''), '[^/]*$', '_&'))
+  elseif res =~# '^@\w\+$'
+    let view = s:findview('_' . rails#singularize(res[1:-1]), '')
+    if !empty(view)
+      return view
+    endif
   endif
+  return s:findview(s:sub(s:sub(res, '^:=[''"@]=', ''), '[^/]*$', '_&'))
 endfunction
 
 function! s:suffixes(type) abort
@@ -3200,9 +3204,9 @@ endfunction
 
 call s:add_methods('readable', ['resolve_view', 'resolve_layout'])
 
-function! s:findview(name) abort
+function! s:findview(name, ...) abort
   let view = s:active() ? rails#buffer().resolve_view(a:name, line('.')) : ''
-  return empty(view) ? (a:name =~# '\.' ? a:name : a:name . '.' . s:format()) : view
+  return len(view) ? view : a:0 ? a:1 : (a:name =~# '\.' ? a:name : a:name . '.' . s:format())
 endfunction
 
 function! s:findlayout(name)
