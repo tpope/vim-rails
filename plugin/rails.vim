@@ -122,6 +122,8 @@ augroup railsPluginDetect
         \ endif
   autocmd BufNewFile,BufReadPost *.rjs,*.rxml,*.builder,*.jbuilder,*.ruby
         \ if &filetype !=# 'ruby' | set filetype=ruby | endif
+  autocmd BufNewFile,BufReadPost *.turbo_stream.erb
+        \ if &filetype !=# 'eruby.html' | set filetype=eruby.html | endif
   autocmd BufReadPost *.log if RailsDetect() | set filetype=railslog | endif
 
   autocmd FileType qf call s:LogDetect()
