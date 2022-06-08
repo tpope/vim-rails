@@ -4647,7 +4647,7 @@ function! s:app_projections() dict abort
             call self.cache.set('projections', projections)
             break
           endif
-        catch /^invalid JSON:/
+        catch /^Vim(\a\+):E474:/
         endtry
       endif
     endfor
