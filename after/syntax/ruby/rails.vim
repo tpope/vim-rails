@@ -20,7 +20,11 @@ hi def link rubyHelper                      Function
 hi def link rubyDebug                       Debug
 
 let s:has_app = exists('*RailsDetect') && RailsDetect()
-let s:path = tr(expand('%:p'), '\', '/')
+if s:has_app
+  let s:path = '/' . rails#buffer().relative()
+else
+  let s:path = tr(expand('%:p'), '\', '/')
+endif
 
 if s:path =~# '\v/app/%(channels|controllers|helpers|jobs|mailers|models)/.*\.rb$|/app/views/'
   syn keyword rubyHelper logger
@@ -115,8 +119,7 @@ if s:path =~# '/app/\w\+/concerns/.*\.rb$'
   syn keyword rubyMacro included class_methods
 endif
 
-if s:path =~# '\v/app/%(controllers|helpers|mailers).*\.rb$|/app/views/' ||
-      \ s:has_app && rails#buffer().type_name('test-controller', 'test-integration', 'test-system', 'spec-request', 'spec-feature', 'cucumber')
+if s:path =~# '\v/app/%(controllers|helpers|mailers)/.*\.rb$|/app/views/|/test/(controllers|integration|system)/.*_test\.rb$|/spec/(features|requests)/.*_spec\.rb'
   syn keyword rubyUrlHelper url_for polymorphic_path polymorphic_url edit_polymorphic_path edit_polymorphic_url new_polymorphic_path new_polymorphic_url
 endif
 
@@ -175,12 +178,8 @@ if s:path =~# '/spec/.*_spec\.rb$\|/features/step_definitions/.*\.rb$'
   syn keyword rubyTestAction stub_const hide_const
 endif
 
-if !s:has_app
-  finish
-endif
-
-if rails#buffer().type_name('test')
-  if !empty(rails#app().user_assertions())
+if s:path =~# '\v/test/%(channels|controllers|helpers|integration|mailers|models|system)/.*_test\.rb$'
+  if s:has_app && !empty(rails#app().user_assertions())
     exe "syn keyword rubyUserAssertion ".join(rails#app().user_assertions())
   endif
   syn keyword rubyTestMacro test setup teardown
@@ -189,14 +188,15 @@ if rails#buffer().type_name('test')
   syn keyword rubyAssertion assert_emails assert_enqueued_emails assert_no_emails assert_no_enqueued_emails
   syn keyword rubyTestAction travel travel_to travel_back freeze_time unfreeze_time
 endif
-if rails#buffer().type_name('test-controller', 'test-integration', 'test-system')
+if s:path =~# '\v/test/%(controllers|integration|system)/.*_test\.rb$'
   syn keyword rubyAssertion assert_response assert_redirected_to assert_template assert_recognizes assert_generates assert_routing
 endif
-if rails#buffer().type_name('test-helper', 'test-controller', 'test-integration', 'test-system')
+if s:path =~# '\v/test/%(controllers|helpers|integration|system)/.*_test\.rb$'
   syn keyword rubyAssertion assert_dom_equal assert_dom_not_equal assert_select assert_select_encoded assert_select_email
   syn keyword rubyTestHelper css_select
 endif
-if rails#buffer().type_name('test-system')
+if s:path =~# '/test/system/.*_test\.rb$' ||
+      \ s:has_app && rails#buffer().type_name('test-system')
   syn keyword rubyAssertion     assert_matches_css     assert_matches_selector     assert_matches_xpath
   syn keyword rubyAssertion     refute_matches_css     refute_matches_selector     refute_matches_xpath
   syn keyword rubyAssertion assert_not_matches_css assert_not_matches_selector assert_not_matches_xpath
@@ -205,37 +205,42 @@ if rails#buffer().type_name('test-system')
   syn keyword rubyAssertion    refute_button    refute_checked_field    refute_content    refute_css    refute_current_path    refute_field    refute_link    refute_select    refute_selector    refute_table    refute_text    refute_title    refute_unchecked_field    refute_xpath
 endif
 
-if rails#buffer().type_name('spec-controller')
+if s:path =~# '/spec/controllers/.*_spec.rb'
   syn keyword rubyTestMacro render_views
   syn keyword rubyTestHelper assigns
 endif
-if rails#buffer().type_name('spec-helper')
+if s:path =~# '/spec/helpers/.*_spec.rb'
   syn keyword rubyTestAction assign
   syn match rubyTestHelper '\<helper\>'
   syn match rubyTestMacro '\<helper\>!\=\ze\s*\%([({&:]\|do\>\)'
 endif
-if rails#buffer().type_name('spec-view')
+if s:path =~# '/spec/views/.*_spec.rb'
   syn keyword rubyTestAction assign render
   syn keyword rubyTestHelper rendered
 endif
 
-if rails#buffer().type_name('test', 'spec')
+if s:has_app && rails#buffer().type_name('test', 'spec')
   syn keyword rubyTestMacro fixtures use_transactional_tests use_instantiated_fixtures
   syn keyword rubyTestHelper file_fixture
 endif
-if rails#buffer().type_name('test-controller', 'test-integration', 'spec-controller', 'spec-request')
+if s:path =~# '\v/test/%(controllers|integration)/.*_test\.rb$|/spec/%(controllers|requests)/.*_spec\.rb$'
   syn match   rubyTestAction '\.\@<!\<\%(get\|post\|put\|patch\|delete\|head\|process\)\>'
   syn match   rubyTestAction '\<follow_redirect!'
   syn keyword rubyTestAction get_via_redirect post_via_redirect
   syn keyword rubyTestHelper request response flash session cookies fixture_file_upload
 endif
-if rails#buffer().type_name('test-system', 'spec-feature', 'cucumber')
+if s:path =~# '/test/system/.*_test\.rb$\|/spec/features/.*_spec\.rb$' ||
+      \ s:has_app && rails#buffer().type_name('cucumber')
   syn keyword rubyTestHelper body current_host current_path current_scope current_url current_window html response_headers source status_code title windows
   syn keyword rubyTestHelper page text
   syn keyword rubyTestHelper all field_labeled find find_all find_button find_by_id find_field find_link first
   syn keyword rubyTestAction evaluate_script execute_script go_back go_forward open_new_window save_and_open_page save_and_open_screenshot save_page save_screenshot switch_to_frame switch_to_window visit window_opened_by within within_element within_fieldset within_frame within_table within_window
   syn match   rubyTestAction "\<reset_session!"
   syn keyword rubyTestAction attach_file check choose click_button click_link click_link_or_button click_on fill_in select uncheck unselect
+endif
+
+if !s:has_app
+  finish
 endif
 
 syn keyword rubyAttribute class_attribute
