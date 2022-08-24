@@ -92,8 +92,8 @@ endif
 if s:path =~# '/app/controllers/.*\.rb$'
   syn keyword rubyHelper params request response session headers cookies flash
   syn keyword rubyMacro protect_from_forgery skip_forgery_protection http_basic_authenticate_with
-  syn match   rubyMacro '\<respond_to\>\ze[( ] *[:*]'
-  syn match   rubyResponse '\<respond_to\>\ze[( ] *\%([&{]\|do\>\)'
+  syn match   rubyMacro '\v<respond_to>\ze[( ] *[:*]'
+  syn match   rubyResponse '\v<respond_to>\ze +%([&{]|do>)'
   syn keyword rubyResponse render head redirect_to redirect_back respond_with send_data send_file
   syn keyword rubyResponse authenticate_or_request_with_http_basic authenticate_with_http_basic http_basic_authenticate_or_request_with request_http_basic_authentication
 endif
@@ -108,8 +108,8 @@ endif
 
 if s:path =~# '/app/mailers/.*\.rb$\|/app/models/.*_mailer\.rb$'
   syn keyword rubyResponse mail render
-  syn match   rubyResponse "\<headers\>"
-  syn match   rubyHelper "\<headers\[\@="
+  syn match   rubyResponse '\v<headers>[!?:]@!'
+  syn match   rubyHelper '\v<headers\[@='
   syn keyword rubyHelper params attachments
   syn keyword rubyMacro default
   syn keyword rubyMacro register_interceptor register_interceptors register_observer register_observers
@@ -119,7 +119,7 @@ if s:path =~# '/app/\w\+/concerns/.*\.rb$'
   syn keyword rubyMacro included class_methods
 endif
 
-if s:path =~# '\v/app/%(controllers|helpers|mailers)/.*\.rb$|/app/views/|/test/(controllers|integration|system)/.*_test\.rb$|/spec/(features|requests)/.*_spec\.rb'
+if s:path =~# '\v/app/%(controllers|helpers|mailers)/.*\.rb$|/app/views/|/test/(controllers|integration|system)/.*_test\.rb$|/spec/(features|requests)/.*_spec\.rb$'
   syn keyword rubyUrlHelper url_for polymorphic_path polymorphic_url edit_polymorphic_path edit_polymorphic_url new_polymorphic_path new_polymorphic_url
 endif
 
@@ -136,7 +136,7 @@ if s:path =~# '/db/migrate/.*\.rb$\|/db/schema\.rb$'
 endif
 
 if s:path =~# '\.rake$\|/Rakefile[^/]*$'
-  syn match rubyRakeMacro '^\s*\zs\%(task\|file\|namespace\|desc\)\>\%(\s*=\)\@!'
+  syn match rubyRakeMacro '\v^\s*\zs%(task|file|namespace|desc)>%([!?:]|\s*[=])@!'
 endif
 
 if s:path =~# '/config/routes\>.*\.rb$'
@@ -159,9 +159,9 @@ if s:path =~# '/test\%(/\|/.*/\)test_[^\/]*\.rb$\|/test/.*_test\.rb$\|/features/
 endif
 
 if s:path =~# '/spec/.*_spec\.rb$'
-  syn match rubyTestHelper '\<subject\>'
-  syn match rubyTestMacro '\<\%(let\|given\)\>!\='
-  syn match rubyTestMacro '\<subject\>!\=\ze\s*\%([({&:]\|do\>\)'
+  syn match rubyTestHelper '\v<subject>[!?:]@!'
+  syn match rubyTestMacro '\v<%(let|given)!=[[:keyword:]!?:]@!'
+  syn match rubyTestMacro '\v<subject>!=\ze%(\s*[(]|\s+[{&:]|\s+do\>)'
   syn keyword rubyTestMacro before after around background setup teardown
   syn keyword rubyTestMacro context describe feature shared_context shared_examples shared_examples_for containedin=rubyKeywordAsMethod
   syn keyword rubyTestMacro it example specify scenario include_examples include_context it_should_behave_like it_behaves_like
@@ -180,7 +180,7 @@ endif
 
 if s:path =~# '\v/test/%(channels|controllers|helpers|integration|mailers|models|system)/.*_test\.rb$'
   if s:has_app && !empty(rails#app().user_assertions())
-    exe "syn keyword rubyUserAssertion ".join(rails#app().user_assertions())
+    exe "syn match rubyUserAssertion '\\v<%(" . escape(join(rails#app().user_assertions(), '|'), '?') . ")[[:keyword:]?!:]@!'"
   endif
   syn keyword rubyTestMacro test setup teardown
   syn keyword rubyAssertion assert_difference assert_no_difference
@@ -205,16 +205,16 @@ if s:path =~# '/test/system/.*_test\.rb$' ||
   syn keyword rubyAssertion    refute_button    refute_checked_field    refute_content    refute_css    refute_current_path    refute_field    refute_link    refute_select    refute_selector    refute_table    refute_text    refute_title    refute_unchecked_field    refute_xpath
 endif
 
-if s:path =~# '/spec/controllers/.*_spec.rb'
+if s:path =~# '/spec/controllers/.*_spec\.rb$'
   syn keyword rubyTestMacro render_views
   syn keyword rubyTestHelper assigns
 endif
-if s:path =~# '/spec/helpers/.*_spec.rb'
+if s:path =~# '/spec/helpers/.*_spec\.rb$'
   syn keyword rubyTestAction assign
-  syn match rubyTestHelper '\<helper\>'
-  syn match rubyTestMacro '\<helper\>!\=\ze\s*\%([({&:]\|do\>\)'
+  syn match rubyTestHelper '\v<helper>[!?:]@!'
+  syn match rubyTestMacro '\v<helper>!=\ze%(\s*[(]|\s+[{&:]|\s+do\>)'
 endif
-if s:path =~# '/spec/views/.*_spec.rb'
+if s:path =~# '/spec/views/.*_spec\.rb$'
   syn keyword rubyTestAction assign render
   syn keyword rubyTestHelper rendered
 endif
@@ -224,8 +224,8 @@ if s:has_app && rails#buffer().type_name('test', 'spec')
   syn keyword rubyTestHelper file_fixture
 endif
 if s:path =~# '\v/test/%(controllers|integration)/.*_test\.rb$|/spec/%(controllers|requests)/.*_spec\.rb$'
-  syn match   rubyTestAction '\.\@<!\<\%(get\|post\|put\|patch\|delete\|head\|process\)\>'
-  syn match   rubyTestAction '\<follow_redirect!'
+  syn match   rubyTestAction '\v\.@<!<%(get|post|put|patch|delete|head|process)>[?!:]@!'
+  syn match   rubyTestAction '\v<follow_redirect![[:keyword:]!?:]@!'
   syn keyword rubyTestAction get_via_redirect post_via_redirect
   syn keyword rubyTestHelper request response flash session cookies fixture_file_upload
 endif
@@ -235,7 +235,7 @@ if s:path =~# '/test/system/.*_test\.rb$\|/spec/features/.*_spec\.rb$' ||
   syn keyword rubyTestHelper page text
   syn keyword rubyTestHelper all field_labeled find find_all find_button find_by_id find_field find_link first
   syn keyword rubyTestAction evaluate_script execute_script go_back go_forward open_new_window save_and_open_page save_and_open_screenshot save_page save_screenshot switch_to_frame switch_to_window visit window_opened_by within within_element within_fieldset within_frame within_table within_window
-  syn match   rubyTestAction "\<reset_session!"
+  syn match   rubyTestAction '\v<reset_session![[:keyword:]!?:]@!'
   syn keyword rubyTestAction attach_file check choose click_button click_link click_link_or_button click_on fill_in select uncheck unselect
 endif
 
@@ -260,7 +260,7 @@ function! s:highlight(group, ...) abort
   call filter(words, 'type(v:val) == type("") && v:val =~# ''^\h\k*[!?]\=[][{}]\=$''')
   if !empty(words)
     exe 'syn match' a:group substitute(
-          \ '"\<\%('.join(words, '\|').'\)\%(\k\@<!\|\k\@!:\@!\)"',
+          \ '"\<\%('.join(words, '\|').'\)[[:keyword:]!?:]\@!"',
           \ '[][{}]', '\=get(s:special, submatch(0), submatch(0))', 'g')
   endif
 endfunction
