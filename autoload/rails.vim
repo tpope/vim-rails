@@ -1737,6 +1737,7 @@ call s:add_methods('app', ['server_pid', 'server_binding'])
 
 function! s:Preview(bang, lnum, uri) abort
   let binding = rails#app().server_binding()
+  let uri_scheme = get(g:, 'rails_uri_scheme', 'http').'://'
   if empty(binding)
     let binding = '0.0.0.0:3000'
   endif
@@ -1746,12 +1747,12 @@ function! s:Preview(bang, lnum, uri) abort
   if uri =~ '://'
     "
   elseif uri =~# '^[[:alnum:]-]\+\.'
-    let uri = 'http://'.s:sub(uri, '^[^/]*\zs', matchstr(root, ':\d\+$'))
+    let uri = uri_scheme.s:sub(uri, '^[^/]*\zs', matchstr(root, ':\d\+$'))
   elseif uri =~# '^[[:alnum:]-]\+\%(/\|$\)'
     let domain = s:sub(binding, '^localhost>', 'lvh.me')
-    let uri = 'http://'.s:sub(uri, '^[^/]*\zs', '.'.domain)
+    let uri = uri_scheme.s:sub(uri, '^[^/]*\zs', '.'.domain)
   else
-    let uri = 'http://'.binding.'/'.s:sub(uri,'^/','')
+    let uri = uri_scheme.binding.'/'.s:sub(uri,'^/','')
   endif
   call s:initOpenURL()
   if (exists(':OpenURL') == 2) && !a:bang
