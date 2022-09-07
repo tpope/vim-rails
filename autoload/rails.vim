@@ -3532,6 +3532,9 @@ function! s:AR(cmd,related,line1,line2,count,...) abort
   elseif a:cmd =~# 'D'
     let modified = &l:modified
     let template = s:split(get(rails#buffer().projected('template'), 0, []))
+    if type(get(template, 0)) == v:t_list
+      let template = template[0]
+    endif
     call map(template, 's:gsub(v:val, "\t", "  ")')
     if a:line2 == a:count
       call append(a:line2, template)
