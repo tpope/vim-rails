@@ -27,32 +27,32 @@ else
 endif
 
 if s:path =~# '\v/app/%(channels|controllers|helpers|jobs|mailers|models)/.*\.rb$|/app/views/'
-  syn keyword rubyHelper logger
+  syn match rubyHelper '\v<%(logger)>[!?:]@!'
 endif
 
 if s:path =~# '/app/models/.*_observer\.rb$'
-  syn keyword rubyMacro observe
+  syn match rubyMacro '\v<%(observe)>[!?:]@!'
 
 elseif s:path =~# '/app/models/.*\.rb$'
-  syn keyword rubyMacro accepts_nested_attributes_for attr_readonly attribute enum serialize store store_accessor
-  syn keyword rubyMacro default_scope scope
-  syn keyword rubyEntity belongs_to has_one composed_of
-  syn keyword rubyEntities has_many has_and_belongs_to_many
-  syn keyword rubyCallback before_validation after_validation
-  syn keyword rubyCallback before_create before_destroy before_save before_update
-  syn keyword rubyCallback  after_create  after_destroy  after_save  after_update
-  syn keyword rubyCallback around_create around_destroy around_save around_update
-  syn keyword rubyCallback after_commit after_create_commit after_update_commit after_save_commit after_destroy_commit after_rollback
-  syn keyword rubyCallback after_find after_initialize after_touch
-  syn keyword rubyValidation validates validates_acceptance_of validates_associated validates_confirmation_of validates_each validates_exclusion_of validates_format_of validates_inclusion_of validates_length_of validates_numericality_of validates_presence_of validates_absence_of validates_size_of validates_with
-  syn keyword rubyValidation validates_associated validates_uniqueness_of
-  syn keyword rubyMacro validate has_rich_text has_secure_password has_secure_token has_one_attached has_many_attached delegated_type
+  syn match rubyMacro '\v<%(accepts_nested_attributes_for|attr_readonly|attribute|enum|serialize|store|store_accessor)>[!?:]@!'
+  syn match rubyMacro '\v<%(default_scope|scope)>[!?:]@!'
+  syn match rubyEntity '\v<%(belongs_to|has_one|composed_of)>[!?:]@!'
+  syn match rubyEntities '\v<%(has_many|has_and_belongs_to_many)>[!?:]@!'
+  syn match rubyCallback '\v<%(before_validation|after_validation)>[!?:]@!'
+  syn match rubyCallback '\v<%(before_create|before_destroy|before_save|before_update)>[!?:]@!'
+  syn match rubyCallback '\v<%(after_create|after_destroy|after_save|after_update)>[!?:]@!'
+  syn match rubyCallback '\v<%(around_create|around_destroy|around_save|around_update)>[!?:]@!'
+  syn match rubyCallback '\v<%(after_commit|after_create_commit|after_update_commit|after_save_commit|after_destroy_commit|after_rollback)>[!?:]@!'
+  syn match rubyCallback '\v<%(after_find|after_initialize|after_touch)>[!?:]@!'
+  syn match rubyValidation '\v<%(validates|validates_acceptance_of|validates_associated|validates_confirmation_of|validates_each|validates_exclusion_of|validates_format_of|validates_inclusion_of|validates_length_of|validates_numericality_of|validates_presence_of|validates_absence_of|validates_size_of|validates_with)>[!?:]@!'
+  syn match rubyValidation '\v<%(validates_associated|validates_uniqueness_of)>[!?:]@!'
+  syn match rubyMacro '\v<%(validate|has_rich_text|has_secure_password|has_secure_token|has_one_attached|has_many_attached|delegated_type)>[!?:]@!'
 endif
 
 if s:path =~# '/app/jobs/.*\.rb$'
-  syn keyword rubyMacro queue_as
-  syn keyword rubyExceptionMacro rescue_from retry_on discard_on
-  syn keyword rubyCallback before_enqueue around_enqueue after_enqueue before_perform around_perform after_perform
+  syn match rubyMacro '\v<%(queue_as)>[!?:]@!'
+  syn match rubyExceptionMacro '\v<%(rescue_from|retry_on|discard_on)>[!?:]@!'
+  syn match rubyCallback '\v<%(before_enqueue|around_enqueue|after_enqueue|before_perform|around_perform|after_perform)>[!?:]@!'
 endif
 
 if s:path =~# '/app/helpers/.*_helper\.rb$\|/app/views/'
@@ -90,49 +90,49 @@ if s:path =~# '/app/helpers/.*_helper\.rb$\|/app/views/'
 endif
 
 if s:path =~# '/app/controllers/.*\.rb$'
-  syn keyword rubyHelper params request response session headers cookies flash
-  syn keyword rubyMacro protect_from_forgery skip_forgery_protection http_basic_authenticate_with
+  syn match rubyHelper '\v<%(params|request|response|session|headers|cookies|flash)>[!?:]@!'
+  syn match rubyMacro '\v<%(protect_from_forgery|skip_forgery_protection|http_basic_authenticate_with)>[!?:]@!'
   syn match   rubyMacro '\v<respond_to>\ze[( ] *[:*]'
   syn match   rubyResponse '\v<respond_to>\ze +%([&{]|do>)'
-  syn keyword rubyResponse render head redirect_to redirect_back respond_with send_data send_file
-  syn keyword rubyResponse authenticate_or_request_with_http_basic authenticate_with_http_basic http_basic_authenticate_or_request_with request_http_basic_authentication
+  syn match rubyResponse '\v<%(render|head|redirect_to|redirect_back|respond_with|send_data|send_file)>[!?:]@!'
+  syn match rubyResponse '\v<%(authenticate_or_request_with_http_basic|authenticate_with_http_basic|http_basic_authenticate_or_request_with|request_http_basic_authentication)>[!?:]@!'
 endif
 
 let b:rails_path = s:path
 if s:path =~# '/app/controllers/.*\.rb$\|/app/mailers/.*\.rb$\|/app/models/.*_mailer\.rb$'
-  syn keyword rubyHelper render_to_string
-  syn keyword rubyCallback before_action append_before_action prepend_before_action after_action append_after_action prepend_after_action around_action append_around_action prepend_around_action skip_before_action skip_after_action skip_action
-  syn keyword rubyMacro helper helper_attr helper_method layout
-  syn keyword rubyExceptionMacro rescue_from
+  syn match rubyHelper '\v<%(render_to_string)>[!?:]@!'
+  syn match rubyCallback '\v<%(before_action|append_before_action|prepend_before_action|after_action|append_after_action|prepend_after_action|around_action|append_around_action|prepend_around_action|skip_before_action|skip_after_action|skip_action)>[!?:]@!'
+  syn match rubyMacro '\v<%(helper|helper_attr|helper_method|layout)>[!?:]@!'
+  syn match rubyExceptionMacro '\v<%(rescue_from)>[!?:]@!'
 endif
 
 if s:path =~# '/app/mailers/.*\.rb$\|/app/models/.*_mailer\.rb$'
-  syn keyword rubyResponse mail render
+  syn match rubyResponse '\v<%(mail|render)>[!?:]@!'
   syn match   rubyResponse '\v<headers>[!?:]@!'
   syn match   rubyHelper '\v<headers\[@='
-  syn keyword rubyHelper params attachments
-  syn keyword rubyMacro default
-  syn keyword rubyMacro register_interceptor register_interceptors register_observer register_observers
+  syn match rubyHelper '\v<%(params|attachments)>[!?:]@!'
+  syn match rubyMacro '\v<%(default)>[!?:]@!'
+  syn match rubyMacro '\v<%(register_interceptor|register_interceptors|register_observer|register_observers)>[!?:]@!'
 endif
 
 if s:path =~# '/app/\w\+/concerns/.*\.rb$'
-  syn keyword rubyMacro included class_methods
+  syn match rubyMacro '\v<%(included|class_methods)>[!?:]@!'
 endif
 
 if s:path =~# '\v/app/%(controllers|helpers|mailers)/.*\.rb$|/app/views/|/test/(controllers|integration|system)/.*_test\.rb$|/spec/(features|requests)/.*_spec\.rb$'
-  syn keyword rubyUrlHelper url_for polymorphic_path polymorphic_url edit_polymorphic_path edit_polymorphic_url new_polymorphic_path new_polymorphic_url
+  syn match rubyUrlHelper '\v<%(url_for|polymorphic_path|polymorphic_url|edit_polymorphic_path|edit_polymorphic_url|new_polymorphic_path|new_polymorphic_url)>[!?:]@!'
 endif
 
 if s:path =~# '/db/migrate/.*\.rb$\|/db/schema\.rb$'
-  syn keyword rubySchema create_table change_table drop_table rename_table create_join_table drop_join_table
-  syn keyword rubySchema create_schema drop_schema
-  syn keyword rubySchema add_column rename_column change_column change_column_default change_column_null remove_column remove_columns
-  syn keyword rubySchema add_foreign_key remove_foreign_key
-  syn keyword rubySchema add_timestamps remove_timestamps
-  syn keyword rubySchema add_reference remove_reference add_belongs_to remove_belongs_to
-  syn keyword rubySchema add_index remove_index rename_index
-  syn keyword rubySchema enable_extension reversible revert
-  syn keyword rubySchema execute transaction
+  syn match rubySchema '\v<%(create_table|change_table|drop_table|rename_table|create_join_table|drop_join_table)>[!?:]@!'
+  syn match rubySchema '\v<%(create_schema|drop_schema)>[!?:]@!'
+  syn match rubySchema '\v<%(add_column|rename_column|change_column|change_column_default|change_column_null|remove_column|remove_columns)>[!?:]@!'
+  syn match rubySchema '\v<%(add_foreign_key|remove_foreign_key)>[!?:]@!'
+  syn match rubySchema '\v<%(add_timestamps|remove_timestamps)>[!?:]@!'
+  syn match rubySchema '\v<%(add_reference|remove_reference|add_belongs_to|remove_belongs_to)>[!?:]@!'
+  syn match rubySchema '\v<%(add_index|remove_index|rename_index)>[!?:]@!'
+  syn match rubySchema '\v<%(enable_extension|reversible|revert)>[!?:]@!'
+  syn match rubySchema '\v<%(execute|transaction)>[!?:]@!'
 endif
 
 if s:path =~# '\.rake$\|/Rakefile[^/]*$'
@@ -140,114 +140,114 @@ if s:path =~# '\.rake$\|/Rakefile[^/]*$'
 endif
 
 if s:path =~# '/config/routes\>.*\.rb$'
-  syn keyword rubyRoute resource resources collection member new nested shallow
-  syn keyword rubyRoute match get put patch post delete root mount
-  syn keyword rubyRoute scope controller namespace constraints defaults
-  syn keyword rubyRoute concern concerns
-  syn keyword rubyRoute direct resolve
-  syn keyword rubyHelper redirect
+  syn match rubyRoute '\v<%(resource|resources|collection|member|new|nested|shallow)>[!?:]@!'
+  syn match rubyRoute '\v<%(match|get|put|patch|post|delete|root|mount)>[!?:]@!'
+  syn match rubyRoute '\v<%(scope|controller|namespace|constraints|defaults)>[!?:]@!'
+  syn match rubyRoute '\v<%(concern|concerns)>[!?:]@!'
+  syn match rubyRoute '\v<%(direct|resolve)>[!?:]@!'
+  syn match rubyHelper '\v<%(redirect)>[!?:]@!'
 endif
 
 if s:path =~# '/test\%(/\|/.*/\)test_[^\/]*\.rb$\|/test/.*_test\.rb$\|/features/step_definitions/.*\.rb$'
-  syn keyword rubyAssertion refute     refute_empty     refute_equal     refute_in_delta     refute_in_epsilon     refute_includes     refute_instance_of     refute_kind_of     refute_match    refute_nil     refute_operator     refute_predicate     refute_respond_to     refute_same
-  syn keyword rubyAssertion assert     assert_empty     assert_equal     assert_in_delta     assert_in_epsilon     assert_includes     assert_instance_of     assert_kind_of     assert_match    assert_nil     assert_operator     assert_predicate     assert_respond_to     assert_same
-  syn keyword rubyAssertion assert_not assert_not_empty assert_not_equal assert_not_in_delta assert_not_in_epsilon assert_not_includes assert_not_instance_of assert_not_kind_of assert_no_match assert_not_nil assert_not_operator assert_not_predicate assert_not_respond_to assert_not_same
-  syn keyword rubyAssertion assert_raises         assert_send     assert_throws
-  syn keyword rubyAssertion assert_nothing_raised assert_not_send assert_nothing_thrown
-  syn keyword rubyAssertion assert_raise assert_block assert_mock assert_output assert_raise_with_message assert_silent
-  syn keyword rubyAssertion flunk
+  syn match rubyAssertion '\v<%(refute|refute_empty|refute_equal|refute_in_delta|refute_in_epsilon|refute_includes|refute_instance_of|refute_kind_of|refute_match|refute_nil|refute_operator|refute_predicate|refute_respond_to|refute_same)>[!?:]@!'
+  syn match rubyAssertion '\v<%(assert|assert_empty|assert_equal|assert_in_delta|assert_in_epsilon|assert_includes|assert_instance_of|assert_kind_of|assert_match|assert_nil|assert_operator|assert_predicate|assert_respond_to|assert_same)>[!?:]@!'
+  syn match rubyAssertion '\v<%(assert_not|assert_not_empty|assert_not_equal|assert_not_in_delta|assert_not_in_epsilon|assert_not_includes|assert_not_instance_of|assert_not_kind_of|assert_no_match|assert_not_nil|assert_not_operator|assert_not_predicate|assert_not_respond_to|assert_not_same)>[!?:]@!'
+  syn match rubyAssertion '\v<%(assert_raises|assert_send|assert_throws)>[!?:]@!'
+  syn match rubyAssertion '\v<%(assert_nothing_raised|assert_not_send|assert_nothing_thrown)>[!?:]@!'
+  syn match rubyAssertion '\v<%(assert_raise|assert_block|assert_mock|assert_output|assert_raise_with_message|assert_silent)>[!?:]@!'
+  syn match rubyAssertion '\v<%(flunk)>[!?:]@!'
 endif
 
 if s:path =~# '/spec/.*_spec\.rb$'
   syn match rubyTestHelper '\v<subject>[!?:]@!'
   syn match rubyTestMacro '\v<%(let|given)!=[[:keyword:]!?:]@!'
   syn match rubyTestMacro '\v<subject>!=\ze%(\s*[(]|\s+[{&:]|\s+do\>)'
-  syn keyword rubyTestMacro before after around background setup teardown
-  syn keyword rubyTestMacro context describe feature shared_context shared_examples shared_examples_for containedin=rubyKeywordAsMethod
-  syn keyword rubyTestMacro it example specify scenario include_examples include_context it_should_behave_like it_behaves_like
-  syn keyword rubyDebug fcontext fdescribe containedin=rubyKeywordAsMethod
-  syn keyword rubyDebug fit fexample fspecify
-  syn keyword rubyComment xcontext xdescribe xfeature containedin=rubyKeywordAsMethod
-  syn keyword rubyComment xit xexample xspecify xscenario
+  syn match rubyTestMacro '\v<%(before|after|around|background|setup|teardown)>[!?:]@!'
+  syn match rubyTestMacro '\v<%(context|describe|feature|shared_context|shared_examples|shared_examples_for|containedin=rubyKeywordAsMethod)>[!?:]@!'
+  syn match rubyTestMacro '\v<%(it|example|specify|scenario|include_examples|include_context|it_should_behave_like|it_behaves_like)>[!?:]@!'
+  syn match rubyDebug '\v<%(fcontext|fdescribe|containedin=rubyKeywordAsMethod)>[!?:]@!'
+  syn match rubyDebug '\v<%(fit|fexample|fspecify)>[!?:]@!'
+  syn match rubyComment '\v<%(xcontext|xdescribe|xfeature|containedin=rubyKeywordAsMethod)>[!?:]@!'
+  syn match rubyComment '\v<%(xit|xexample|xspecify|xscenario)>[!?:]@!'
 endif
 if s:path =~# '/spec/.*_spec\.rb$\|/features/step_definitions/.*\.rb$'
-  syn keyword rubyAssertion pending skip expect is_expected expect_any_instance_of allow allow_any_instance_of
-  syn keyword rubyTestHelper described_class
-  syn keyword rubyTestHelper double instance_double class_double object_double
-  syn keyword rubyTestHelper spy instance_spy class_spy object_spy
-  syn keyword rubyTestAction stub_const hide_const
+  syn match rubyAssertion '\v<%(pending|skip|expect|is_expected|expect_any_instance_of|allow|allow_any_instance_of)>[!?:]@!'
+  syn match rubyTestHelper '\v<%(described_class)>[!?:]@!'
+  syn match rubyTestHelper '\v<%(double|instance_double|class_double|object_double)>[!?:]@!'
+  syn match rubyTestHelper '\v<%(spy|instance_spy|class_spy|object_spy)>[!?:]@!'
+  syn match rubyTestAction '\v<%(stub_const|hide_const)>[!?:]@!'
 endif
 
 if s:path =~# '\v/test/%(channels|controllers|helpers|integration|mailers|models|system)/.*_test\.rb$'
   if s:has_app && !empty(rails#app().user_assertions())
     exe "syn match rubyUserAssertion '\\v<%(" . escape(join(rails#app().user_assertions(), '|'), '?') . ")[[:keyword:]?!:]@!'"
   endif
-  syn keyword rubyTestMacro test setup teardown
-  syn keyword rubyAssertion assert_difference assert_no_difference
-  syn keyword rubyAssertion assert_changes    assert_no_changes
-  syn keyword rubyAssertion assert_emails assert_enqueued_emails assert_no_emails assert_no_enqueued_emails
-  syn keyword rubyTestAction travel travel_to travel_back freeze_time unfreeze_time
+  syn match rubyTestMacro '\v<%(test|setup|teardown)>[!?:]@!'
+  syn match rubyAssertion '\v<%(assert_difference|assert_no_difference)>[!?:]@!'
+  syn match rubyAssertion '\v<%(assert_changes|assert_no_changes)>[!?:]@!'
+  syn match rubyAssertion '\v<%(assert_emails|assert_enqueued_emails|assert_no_emails|assert_no_enqueued_emails)>[!?:]@!'
+  syn match rubyTestAction '\v<%(travel|travel_to|travel_back|freeze_time|unfreeze_time)>[!?:]@!'
 endif
 if s:path =~# '\v/test/%(controllers|integration|system)/.*_test\.rb$'
-  syn keyword rubyAssertion assert_response assert_redirected_to assert_template assert_recognizes assert_generates assert_routing
+  syn match rubyAssertion '\v<%(assert_response|assert_redirected_to|assert_template|assert_recognizes|assert_generates|assert_routing)>[!?:]@!'
 endif
 if s:path =~# '\v/test/%(controllers|helpers|integration|system)/.*_test\.rb$'
-  syn keyword rubyAssertion assert_dom_equal assert_dom_not_equal assert_select assert_select_encoded assert_select_email
-  syn keyword rubyTestHelper css_select
+  syn match rubyAssertion '\v<%(assert_dom_equal|assert_dom_not_equal|assert_select|assert_select_encoded|assert_select_email)>[!?:]@!'
+  syn match rubyTestHelper '\v<%(css_select)>[!?:]@!'
 endif
 if s:path =~# '/test/system/.*_test\.rb$' ||
       \ s:has_app && rails#buffer().type_name('test-system')
-  syn keyword rubyAssertion     assert_matches_css     assert_matches_selector     assert_matches_xpath
-  syn keyword rubyAssertion     refute_matches_css     refute_matches_selector     refute_matches_xpath
-  syn keyword rubyAssertion assert_not_matches_css assert_not_matches_selector assert_not_matches_xpath
-  syn keyword rubyAssertion    assert_button    assert_checked_field    assert_content    assert_css    assert_current_path    assert_field    assert_link    assert_select    assert_selector    assert_table    assert_text    assert_title    assert_unchecked_field    assert_xpath
-  syn keyword rubyAssertion assert_no_button assert_no_checked_field assert_no_content assert_no_css assert_no_current_path assert_no_field assert_no_link assert_no_select assert_no_selector assert_no_table assert_no_text assert_no_title assert_no_unchecked_field assert_no_xpath
-  syn keyword rubyAssertion    refute_button    refute_checked_field    refute_content    refute_css    refute_current_path    refute_field    refute_link    refute_select    refute_selector    refute_table    refute_text    refute_title    refute_unchecked_field    refute_xpath
+  syn match rubyAssertion     '\v<%(assert_matches_css|assert_matches_selector|assert_matches_xpath)>[!?:]@!'
+  syn match rubyAssertion     '\v<%(refute_matches_css|refute_matches_selector|refute_matches_xpath)>[!?:]@!'
+  syn match rubyAssertion '\v<%(assert_not_matches_css|assert_not_matches_selector|assert_not_matches_xpath)>[!?:]@!'
+  syn match rubyAssertion    '\v<%(assert_button|assert_checked_field|assert_content|assert_css|assert_current_path|assert_field|assert_link|assert_select|assert_selector|assert_table|assert_text|assert_title|assert_unchecked_field|assert_xpath)>[!?:]@!'
+  syn match rubyAssertion '\v<%(assert_no_button|assert_no_checked_field|assert_no_content|assert_no_css|assert_no_current_path|assert_no_field|assert_no_link|assert_no_select|assert_no_selector|assert_no_table|assert_no_text|assert_no_title|assert_no_unchecked_field|assert_no_xpath)>[!?:]@!'
+  syn match rubyAssertion    '\v<%(refute_button|refute_checked_field|refute_content|refute_css|refute_current_path|refute_field|refute_link|refute_select|refute_selector|refute_table|refute_text|refute_title|refute_unchecked_field|refute_xpath)>[!?:]@!'
 endif
 
 if s:path =~# '/spec/controllers/.*_spec\.rb$'
-  syn keyword rubyTestMacro render_views
-  syn keyword rubyTestHelper assigns
+  syn match rubyTestMacro '\v<%(render_views)>[!?:]@!'
+  syn match rubyTestHelper '\v<%(assigns)>[!?:]@!'
 endif
 if s:path =~# '/spec/helpers/.*_spec\.rb$'
-  syn keyword rubyTestAction assign
+  syn match rubyTestAction '\v<%(assign)>[!?:]@!'
   syn match rubyTestHelper '\v<helper>[!?:]@!'
   syn match rubyTestMacro '\v<helper>!=\ze%(\s*[(]|\s+[{&:]|\s+do\>)'
 endif
 if s:path =~# '/spec/views/.*_spec\.rb$'
-  syn keyword rubyTestAction assign render
-  syn keyword rubyTestHelper rendered
+  syn match rubyTestAction '\v<%(assign|render)>[!?:]@!'
+  syn match rubyTestHelper '\v<%(rendered)>[!?:]@!'
 endif
 
 if s:has_app && rails#buffer().type_name('test', 'spec')
-  syn keyword rubyTestMacro fixtures use_transactional_tests use_instantiated_fixtures
-  syn keyword rubyTestHelper file_fixture
+  syn match rubyTestMacro '\v<%(fixtures|use_transactional_tests|use_instantiated_fixtures)>[!?:]@!'
+  syn match rubyTestHelper '\v<%(file_fixture)>[!?:]@!'
 endif
 if s:path =~# '\v/test/%(controllers|integration)/.*_test\.rb$|/spec/%(controllers|requests)/.*_spec\.rb$'
   syn match   rubyTestAction '\v\.@<!<%(get|post|put|patch|delete|head|process)>[?!:]@!'
   syn match   rubyTestAction '\v<follow_redirect![[:keyword:]!?:]@!'
-  syn keyword rubyTestAction get_via_redirect post_via_redirect
-  syn keyword rubyTestHelper request response flash session cookies fixture_file_upload
+  syn match rubyTestAction '\v<%(get_via_redirect|post_via_redirect)>[!?:]@!'
+  syn match rubyTestHelper '\v<%(request|response|flash|session|cookies|fixture_file_upload)>[!?:]@!'
 endif
 if s:path =~# '/test/system/.*_test\.rb$\|/spec/features/.*_spec\.rb$' ||
       \ s:has_app && rails#buffer().type_name('cucumber')
-  syn keyword rubyTestHelper body current_host current_path current_scope current_url current_window html response_headers source status_code title windows
-  syn keyword rubyTestHelper page text
-  syn keyword rubyTestHelper all field_labeled find find_all find_button find_by_id find_field find_link first
-  syn keyword rubyTestAction evaluate_script execute_script go_back go_forward open_new_window save_and_open_page save_and_open_screenshot save_page save_screenshot switch_to_frame switch_to_window visit window_opened_by within within_element within_fieldset within_frame within_table within_window
+  syn match rubyTestHelper '\v<%(body|current_host|current_path|current_scope|current_url|current_window|html|response_headers|source|status_code|title|windows)>[!?:]@!'
+  syn match rubyTestHelper '\v<%(page|text)>[!?:]@!'
+  syn match rubyTestHelper '\v<%(all|field_labeled|find|find_all|find_button|find_by_id|find_field|find_link|first)>[!?:]@!'
+  syn match rubyTestAction '\v<%(evaluate_script|execute_script|go_back|go_forward|open_new_window|save_and_open_page|save_and_open_screenshot|save_page|save_screenshot|switch_to_frame|switch_to_window|visit|window_opened_by|within|within_element|within_fieldset|within_frame|within_table|within_window)>[!?:]@!'
   syn match   rubyTestAction '\v<reset_session![[:keyword:]!?:]@!'
-  syn keyword rubyTestAction attach_file check choose click_button click_link click_link_or_button click_on fill_in select uncheck unselect
+  syn match rubyTestAction '\v<%(attach_file|check|choose|click_button|click_link|click_link_or_button|click_on|fill_in|select|uncheck|unselect)>[!?:]@!'
 endif
 
 if !s:has_app
   finish
 endif
 
-syn keyword rubyAttribute class_attribute
-syn keyword rubyAttribute attr_internal attr_internal_accessor attr_internal_reader attr_internal_writer
-syn keyword rubyAttribute cattr_accessor cattr_reader cattr_writer mattr_accessor mattr_reader mattr_writer
-syn keyword rubyAttribute thread_cattr_accessor thread_cattr_reader thread_cattr_writer thread_mattr_accessor thread_mattr_reader thread_mattr_writer
-syn keyword rubyMacro alias_attribute concern concerning delegate delegate_missing_to with_options
+syn match rubyAttribute '\v<%(class_attribute)>[!?:]@!'
+syn match rubyAttribute '\v<%(attr_internal|attr_internal_accessor|attr_internal_reader|attr_internal_writer)>[!?:]@!'
+syn match rubyAttribute '\v<%(cattr_accessor|cattr_reader|cattr_writer|mattr_accessor|mattr_reader|mattr_writer)>[!?:]@!'
+syn match rubyAttribute '\v<%(thread_cattr_accessor|thread_cattr_reader|thread_cattr_writer|thread_mattr_accessor|thread_mattr_reader|thread_mattr_writer)>[!?:]@!'
+syn match rubyMacro '\v<%(alias_attribute|concern|concerning|delegate|delegate_missing_to|with_options)>[!?:]@!'
 
 let s:special = {
       \ '[': '\[\@=',
