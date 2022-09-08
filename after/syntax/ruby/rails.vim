@@ -94,14 +94,14 @@ if s:path =~# '/app/controllers/.*\.rb$'
   syn match rubyMacro '\v<%(protect_from_forgery|skip_forgery_protection|http_basic_authenticate_with)>[!?:]@!'
   syn match   rubyMacro '\v<respond_to>\ze[( ] *[:*]'
   syn match   rubyResponse '\v<respond_to>\ze +%([&{]|do>)'
-  syn match rubyResponse '\v<%(render|head|redirect_to|redirect_back|respond_with|send_data|send_file)>[!?:]@!'
+  syn match rubyResponse '\v<%(render|head|redirect_to|redirect_back|redirect_back_or_to|respond_with|send_data|send_file)>[!?:]@!'
   syn match rubyResponse '\v<%(authenticate_or_request_with_http_basic|authenticate_with_http_basic|http_basic_authenticate_or_request_with|request_http_basic_authentication)>[!?:]@!'
 endif
 
 let b:rails_path = s:path
 if s:path =~# '/app/controllers/.*\.rb$\|/app/mailers/.*\.rb$\|/app/models/.*_mailer\.rb$'
   syn match rubyHelper '\v<%(render_to_string)>[!?:]@!'
-  syn match rubyCallback '\v<%(before_action|append_before_action|prepend_before_action|after_action|append_after_action|prepend_after_action|around_action|append_around_action|prepend_around_action|skip_before_action|skip_after_action|skip_action)>[!?:]@!'
+  syn match rubyCallback '\v<%(before|append_before|prepend_before|after|append_after|prepend_after|around|append_around|prepend_around|skip_before|skip_after|skip)_action>[!?:]@!'
   syn match rubyMacro '\v<%(helper|helper_attr|helper_method|layout)>[!?:]@!'
   syn match rubyExceptionMacro '\v<%(rescue_from)>[!?:]@!'
 endif
