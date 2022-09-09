@@ -1450,7 +1450,7 @@ function! s:readable_default_rake_task(...) dict abort
     return 'routes'
   elseif self.type_name('fixtures-yaml') && lnum
     return "db:fixtures:identify LABEL=".self.last_method(lnum)
-  elseif self.type_name('fixtures') && lnum == 0
+  elseif self.type_name('fixtures') && !self.type_name('fixtures-replacement') && lnum == 0
     return "db:fixtures:load FIXTURES=".s:sub(fnamemodify(self.name(),':r'),'^.{-}/fixtures/','')
   elseif self.type_name('task')
     let mnum = self.last_method_line(lnum)
