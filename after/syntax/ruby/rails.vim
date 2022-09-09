@@ -259,9 +259,10 @@ function! s:highlight(group, ...) abort
   let words = split(join(filter(value, 'type(v:val) == type("")'), ' '))
   call filter(words, 'type(v:val) == type("") && v:val =~# ''^\h\k*[!?]\=[][{}]\=$''')
   if !empty(words)
-    exe 'syn match' a:group substitute(
-          \ '"\<\%('.join(words, '\|').'\)[[:keyword:]!?:]\@!"',
-          \ '[][{}]', '\=get(s:special, submatch(0), submatch(0))', 'g')
+    exe 'syn match' a:group '"\<\%(' . substitute(
+          \ join(words, '\|'),
+          \ '[][{}]', '\=get(s:special, submatch(0), submatch(0))', 'g') .
+          \ '\)[[:keyword:]!?:]\@!"'
   endif
 endfunction
 
