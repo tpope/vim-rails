@@ -4601,6 +4601,7 @@ let s:has_projections = {
       \  }
       \}
 
+let s:projections_for_gems = {}
 function! s:app_projections() dict abort
   let dict = s:combine_projections({}, s:default_projections)
   for [k, v] in items(s:has_projections)
@@ -4610,28 +4611,43 @@ function! s:app_projections() dict abort
   endfor
   call s:combine_projections(dict, self.smart_projections())
   call s:combine_projections(dict, get(g:, 'rails_projections', ''))
-  for gem in keys(get(g:, 'rails_gem_projections', {}))
+  for [gem, data] in items(get(g:, 'rails_gem_projections', {}))
     if self.has_gem(gem)
       try
-        if type(g:rails_gem_projections[gem]) ==# v:t_string
-          let file = g:rails_gem_projections[gem]
-          if file !~# '^\a\+:\|^/'
+        if type(data) ==# v:t_string && data isnot# 'lib/projections.json' && data isnot# 'lib/rails/projections.json'
+          if data !~# '^\a\+:\|^/\|^$'
             if !has_key(self.gems(), gem)
               continue
             endif
-            let file = self.gems()[gem] . '/' . file
+            let data = self.gems()[gem] . '/' . data
           endif
-          if file =~# '/$'
-            let file .= 'projections.json'
+          if data =~# '/$'
+            let data .= 'projections.json'
           endif
-          call s:combine_projections(dict, rails#json_parse(s:readfile(file)))
-        else
-          call s:combine_projections(dict, g:rails_gem_projections[gem])
+          call s:combine_projections(dict, rails#json_parse(s:readfile(data)))
+        elseif type(data) ==# v:t_dict
+          call s:combine_projections(dict, data)
         endif
       catch
       endtry
     endif
   endfor
+  let gem_path = escape(join(values(self.gems()),','), ' ')
+  if get(g:, 'rails_projections_inside_gems', 1) && !empty(gem_path)
+    if !has_key(s:projections_for_gems, gem_path)
+      let gem_projections = {}
+      for path in ['lib/', 'lib/rails/']
+        for file in findfile(path.'projections.json', gem_path, -1)
+          try
+            call s:combine_projections(gem_projections, rails#json_parse(s:readfile(self.path(file))))
+          catch
+          endtry
+        endfor
+      endfor
+      let s:projections_for_gems[gem_path] = gem_projections
+    endif
+    call s:combine_projections(dict, s:projections_for_gems[gem_path])
+  endif
   if self.cache.needs('projections')
     call self.cache.set('projections', {})
 
