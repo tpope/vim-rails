@@ -4256,8 +4256,6 @@ function! s:app_gems() dict abort
     let project = bundler#project(self.path())
     if has_key(project, 'paths')
       return project.paths()
-    elseif has_key(project, 'gems')
-      return project.gems()
     endif
   endif
   return {}
@@ -4266,11 +4264,7 @@ endfunction
 function! s:app_has_gem(gem) dict abort
   if self.has('bundler') && exists('*bundler#project')
     let project = bundler#project(self.path())
-    if has_key(project, 'has')
-      return project.has(a:gem)
-    elseif has_key(project, 'gems')
-      return has_key(bundler#project(self.path()).gems(), a:gem)
-    endif
+    return has_key(project, 'versions') && has_key(project.versions(), a:gem)
   else
     return 0
   endif
