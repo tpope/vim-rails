@@ -163,11 +163,11 @@ if s:path =~# '/spec/.*_spec\.rb$'
   syn match rubyTestMacro '\v<%(let|given)!=[[:keyword:]!?:]@!'
   syn match rubyTestMacro '\v<subject>!=\ze%(\s*[(]|\s+[{&:]|\s+do\>)'
   syn match rubyTestMacro '\v<%(before|after|around|background|setup|teardown)>[!?:]@!'
-  syn match rubyTestMacro '\v<%(context|describe|feature|shared_context|shared_examples|shared_examples_for|containedin=rubyKeywordAsMethod)>[!?:]@!'
+  syn match rubyTestMacro '\v<%(context|describe|feature|shared_context|shared_examples|shared_examples_for)>[!?:]@!' containedin=rubyKeywordAsMethod
   syn match rubyTestMacro '\v<%(it|example|specify|scenario|include_examples|include_context|it_should_behave_like|it_behaves_like)>[!?:]@!'
-  syn match rubyDebug '\v<%(fcontext|fdescribe|containedin=rubyKeywordAsMethod)>[!?:]@!'
+  syn match rubyDebug '\v<%(fcontext|fdescribe)>[!?:]@!' containedin=rubyKeywordAsMethod
   syn match rubyDebug '\v<%(fit|fexample|fspecify)>[!?:]@!'
-  syn match rubyComment '\v<%(xcontext|xdescribe|xfeature|containedin=rubyKeywordAsMethod)>[!?:]@!'
+  syn match rubyComment '\v<%(xcontext|xdescribe|xfeature)>[!?:]@!' containedin=rubyKeywordAsMethod
   syn match rubyComment '\v<%(xit|xexample|xspecify|xscenario)>[!?:]@!'
 endif
 if s:path =~# '/spec/.*_spec\.rb$\|/features/step_definitions/.*\.rb$'
