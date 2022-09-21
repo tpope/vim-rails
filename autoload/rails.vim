@@ -1727,31 +1727,37 @@ function! s:app_server_binding() dict abort
   endif
   for app in s:split(glob("~/.pow/*"))
     if resolve(app) ==# resolve(self.path())
-      return fnamemodify(app, ':t').'.dev'
+      return 'http://' . fnamemodify(app, ':t') . '.dev'
     endif
   endfor
   return ''
 endfunction
 
-call s:add_methods('app', ['server_pid', 'server_binding'])
+function! s:app_server_root() dict abort
+  return substitute(substitute(self.server_binding(),
+        \ '://\zs\%(0\.0\.0\.0\|127\.0\.0\.1\)\>', 'localhost', ''),
+        \ '://\zs\[::\]', '[::1]', '')
+endfunction
+
+call s:add_methods('app', ['server_pid', 'server_binding', 'server_root'])
 
 function! s:Preview(bang, lnum, uri) abort
-  let binding = rails#app().server_binding()
-  if empty(binding)
-    let binding = '0.0.0.0:3000'
+  let root = rails#app().server_root()
+  if empty(root)
+    let root = 'http://localhost:3000'
   endif
-  let binding = s:sub(binding, '^0\.0\.0\.0>|^127\.0\.0\.1>', 'localhost')
-  let binding = s:sub(binding, '^\[::\]', '[::1]')
   let uri = empty(a:uri) ? get(rails#buffer().preview_urls(a:lnum),0,'') : a:uri
   if uri =~ '://'
     "
   elseif uri =~# '^[[:alnum:]-]\+\.'
-    let uri = 'http://'.s:sub(uri, '^[^/]*\zs', matchstr(root, ':\d\+$'))
+    let uri = matchstr(root, '^.\{-\}://') . substitute(uri, '^[^/]*\zs', matchstr(root, ':\d\+$'), '')
   elseif uri =~# '^[[:alnum:]-]\+\%(/\|$\)'
-    let domain = s:sub(binding, '^localhost>', 'lvh.me')
-    let uri = 'http://'.s:sub(uri, '^[^/]*\zs', '.'.domain)
+    let domain = substitute(
+          \ substitute(matchstr(root, '://\zs.*'), '\C^localhost\>', 'lvh.me', ''),
+          \ '^\d\+\.\d\+\.\d\+\.\d\+\ze\%(:\|$\)', '&.nip.io', '')
+    let uri = matchstr(root, '^.\{-\}://') . substitute(uri, '^[^/]*\zs', '.' . domain, '')
   else
-    let uri = 'http://'.binding.'/'.s:sub(uri,'^/','')
+    let uri = root . '/' . substitute(uri, '^/', '', '')
   endif
   call s:initOpenURL()
   if (exists(':OpenURL') == 2) && !a:bang
@@ -1760,9 +1766,9 @@ function! s:Preview(bang, lnum, uri) abort
     " Work around bug where URLs ending in / get handled as FTP
     let url = uri.(uri =~ '/$' ? '?' : '')
     silent exe 'pedit '.url
-    let root = rails#app().path()
+    let app_path = rails#app().path()
     wincmd w
-    let b:rails_root = root
+    let b:rails_root = app_path
     if &filetype ==# ''
       if uri =~ '\.css$'
         setlocal filetype=css
@@ -1964,30 +1970,34 @@ function! rails#get_binding_for(pid) abort
   if has('win32')
     let output = system('netstat -anop tcp')
     let binding = matchstr(output, '\n\s*TCP\s\+\zs\S\+\ze\s\+\S\+\s\+LISTENING\s\+'.a:pid.'\>')
-    return s:sub(binding, '^([^[]*:.*):', '[\1]:')
-  endif
-  if executable('lsof')
-    let lsof = 'lsof'
-  elseif executable('/usr/sbin/lsof')
-    let lsof = '/usr/sbin/lsof'
-  endif
-  if exists('lsof')
-    let output = system(lsof.' -anP -i4tcp -sTCP:LISTEN -p'.a:pid)
-    let binding = matchstr(output, '\S\+:\d\+\ze\s\+(LISTEN)\n')
-    let binding = s:sub(binding, '^\*', '0.0.0.0')
-    if empty(binding)
-      let output = system(lsof.' -anP -i6tcp -sTCP:LISTEN -p'.a:pid)
-      let binding = matchstr(output, '\S\+:\d\+\ze\s\+(LISTEN)\n')
-      let binding = s:sub(binding, '^\*', '[::]')
+  else
+    if executable('lsof')
+      let lsof = 'lsof'
+    elseif executable('/usr/sbin/lsof')
+      let lsof = '/usr/sbin/lsof'
     endif
-    return binding
+    if exists('lsof')
+      let output = system(lsof.' -anP -i4tcp -sTCP:LISTEN -p'.a:pid)
+      let binding = matchstr(output, '\S\+:\d\+\ze\s\+(LISTEN)\n')
+      let binding = s:sub(binding, '^\*', '0.0.0.0')
+      if empty(binding)
+        let output = system(lsof.' -anP -i6tcp -sTCP:LISTEN -p'.a:pid)
+        let binding = matchstr(output, '\S\+:\d\+\ze\s\+(LISTEN)\n')
+        let binding = s:sub(binding, '^\*', '[::]')
+      endif
+    elseif executable('netstat')
+      let output = system('netstat -antp')
+      let binding = matchstr(output, '\S\+:\d\+\ze\s\+\S\+\s\+LISTEN\s\+'.a:pid.'/')
+      return empty(binding) ? '' : 'http://' . s:sub(binding, '^([^[]*:.*):', '[\1]:')
+    else
+      let binding = ''
+    endif
   endif
-  if executable('netstat')
-    let output = system('netstat -antp')
-    let binding = matchstr(output, '\S\+:\d\+\ze\s\+\S\+\s\+LISTEN\s\+'.a:pid.'/')
-    return s:sub(binding, '^([^[]*:.*):', '[\1]:')
+  let binding = substitute(binding, '^\(^[^[]*:.*):', '[\1]:', '')
+  if empty(binding)
+    return ''
   endif
-  return ''
+  return 'http://' . binding
 endfunction
 
 function! s:ServerCommand(kill, bg, arg) abort
@@ -2686,9 +2696,9 @@ function! s:app_routes() dict abort
     let cwd = getcwd()
     let routes = []
     let paths = {}
-    let binding = self.server_binding()
-    if len(binding) && len(s:webcat())
-      let html = system(s:webcat() . ' ' . shellescape('http://' . binding . '/rails/info/routes'))
+    let root = self.server_root()
+    if len(root) && len(s:webcat())
+      let html = system(s:webcat() . ' ' . shellescape(root . '/rails/info/routes'))
       for line in split(matchstr(html, '.*<tbody>\zs.*\ze</tbody>'), "\n")
         let val = matchstr(line, '\C<td data-route-name=''\zs[^'']*''\ze>')
         if len(val)
