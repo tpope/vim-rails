@@ -1967,6 +1967,7 @@ function! rails#get_binding_for(pid) abort
   if empty(a:pid)
     return ''
   endif
+  let uri_scheme = 'http://'
   if has('win32')
     let output = system('netstat -anop tcp')
     let binding = matchstr(output, '\n\s*TCP\s\+\zs\S\+\ze\s\+\S\+\s\+LISTENING\s\+'.a:pid.'\>')
@@ -1988,7 +1989,7 @@ function! rails#get_binding_for(pid) abort
     elseif executable('netstat')
       let output = system('netstat -antp')
       let binding = matchstr(output, '\S\+:\d\+\ze\s\+\S\+\s\+LISTEN\s\+'.a:pid.'/')
-      return empty(binding) ? '' : 'http://' . s:sub(binding, '^([^[]*:.*):', '[\1]:')
+      return empty(binding) ? '' : uri_scheme . s:sub(binding, '^([^[]*:.*):', '[\1]:')
     else
       let binding = ''
     endif
@@ -1997,7 +1998,7 @@ function! rails#get_binding_for(pid) abort
   if empty(binding)
     return ''
   endif
-  return 'http://' . binding
+  return uri_scheme . binding
 endfunction
 
 function! s:ServerCommand(kill, bg, arg) abort
