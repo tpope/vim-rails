@@ -1989,7 +1989,10 @@ function! rails#get_binding_for(pid) abort
     elseif executable('netstat')
       let output = system('netstat -antp')
       let binding = matchstr(output, '\S\+:\d\+\ze\s\+\S\+\s\+LISTEN\s\+'.a:pid.'/')
-      return empty(binding) ? '' : uri_scheme . s:sub(binding, '^([^[]*:.*):', '[\1]:')
+      if empty(binding)
+        return ''
+      endif
+      return uri_scheme . s:sub(binding, '^([^[]*:.*):', '[\1]:')
     else
       let binding = ''
     endif
