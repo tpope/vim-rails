@@ -1993,7 +1993,7 @@ function! rails#get_binding_for(pid) abort
       let binding = ''
     endif
   endif
-  let binding = substitute(binding, '^\(^[^[]*:.*):', '[\1]:', '')
+  let binding = substitute(binding, '^\(^[^[]*:.*\):', '[\1]:', '')
   if empty(binding)
     return ''
   endif
