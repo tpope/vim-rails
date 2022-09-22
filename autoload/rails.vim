@@ -1967,7 +1967,6 @@ function! rails#get_binding_for(pid) abort
   if empty(a:pid)
     return ''
   endif
-  let uri_scheme = 'http://'
   if has('win32')
     let output = system('netstat -anop tcp')
     let binding = matchstr(output, '\n\s*TCP\s\+\zs\S\+\ze\s\+\S\+\s\+LISTENING\s\+'.a:pid.'\>')
@@ -1992,6 +1991,7 @@ function! rails#get_binding_for(pid) abort
       if empty(binding)
         return ''
       endif
+      let uri_scheme = s:UriSchemeFor(binding)
       return uri_scheme . s:sub(binding, '^([^[]*:.*):', '[\1]:')
     else
       let binding = ''
@@ -2001,7 +2001,21 @@ function! rails#get_binding_for(pid) abort
   if empty(binding)
     return ''
   endif
+  let uri_scheme = s:UriSchemeFor(binding)
   return uri_scheme . binding
+endfunction
+
+function! s:UriSchemeFor(binding) abort
+  let uri_scheme = 'http://'
+
+  if executable('curl')
+    let curl_result = system('curl -k --silent --head --fail https://'.a:binding)
+    if len(matchstr(curl_result, '200 OK')) > 0
+      let uri_scheme = 'https://'
+    endif
+  endif
+
+  return uri_scheme
 endfunction
 
 function! s:ServerCommand(kill, bg, arg) abort
