@@ -1992,7 +1992,6 @@ function! rails#get_binding_for(pid) abort
         return ''
       endif
       let uri_scheme = s:UriSchemeFor(binding)
-      return uri_scheme . s:sub(binding, '^([^[]*:.*):', '[\1]:')
     else
       let binding = ''
     endif
