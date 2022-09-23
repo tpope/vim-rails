@@ -1968,6 +1968,7 @@ function! rails#get_binding_for(pid) abort
     return ''
   endif
   let uri_scheme = 'http://'
+  let ssl_result = ''
   if has('win32')
     let output = system('netstat -anop tcp')
     let binding = matchstr(output, '\n\s*TCP\s\+\zs\S\+\ze\s\+\S\+\s\+LISTENING\s\+'.a:pid.'\>')
@@ -2001,10 +2002,12 @@ function! rails#get_binding_for(pid) abort
     return ''
   endif
   if executable('curl')
-    let curl_result = system('curl -k --silent --head --fail https://'.binding)
-    if len(matchstr(curl_result, '200 OK')) > 0
-      let uri_scheme = 'https://'
-    endif
+    let ssl_result = system('curl -k --silent --head --fail https://'.binding)
+  elseif executable('wget')
+    let ssl_result = system('wget --no-check-certificate --method=HEAD -q -S https://'.binding)
+  endif
+  if len(matchstr(ssl_result, '200 OK')) > 0
+    let uri_scheme = 'https://'
   endif
   return uri_scheme . binding
 endfunction
