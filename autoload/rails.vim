@@ -1990,9 +1990,6 @@ function! rails#get_binding_for(pid) abort
     elseif executable('netstat')
       let output = system('netstat -antp')
       let binding = matchstr(output, '\S\+:\d\+\ze\s\+\S\+\s\+LISTEN\s\+'.a:pid.'/')
-      if empty(binding)
-        return ''
-      endif
     else
       let binding = ''
     endif
