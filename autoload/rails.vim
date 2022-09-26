@@ -1988,7 +1988,6 @@ function! rails#get_binding_for(pid) abort
     elseif executable('netstat')
       let output = system('netstat -antp')
       let binding = matchstr(output, '\S\+:\d\+\ze\s\+\S\+\s\+LISTEN\s\+'.a:pid.'/')
-      return empty(binding) ? '' : 'http://' . s:sub(binding, '^([^[]*:.*):', '[\1]:')
     else
       let binding = ''
     endif
@@ -1997,7 +1996,15 @@ function! rails#get_binding_for(pid) abort
   if empty(binding)
     return ''
   endif
-  return 'http://' . binding
+  let accepts_ssl = 0
+  if s:webcat() =~# '^curl'
+    call system('curl --max-time=2 -k --silent --head --fail ' . shellescape('https://'.binding))
+    let accepts_ssl = !v:shell_error
+  elseif s:webcat() =~# '^wget'
+    call system('wget --timeout=2 --no-check-certificate --method=HEAD -q -S ' . shellescape('https://'.binding))
+    let accepts_ssl = !v:shell_error
+  endif
+  return (accepts_ssl ? 'https://' : 'http://') . binding
 endfunction
 
 function! s:ServerCommand(kill, bg, arg) abort
