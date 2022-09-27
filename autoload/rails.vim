@@ -1998,7 +1998,7 @@ function! rails#get_binding_for(pid) abort
   endif
   let accepts_ssl = 0
   if s:webcat() =~# '^curl'
-    call system('curl --max-time=2 -k --silent --head --fail ' . shellescape('https://'.binding))
+    call system('curl --max-time 2 -k --silent --head --fail ' . shellescape('https://'.binding))
     let accepts_ssl = !v:shell_error
   elseif s:webcat() =~# '^wget'
     call system('wget --timeout=2 --no-check-certificate --method=HEAD -q -S ' . shellescape('https://'.binding))
