@@ -161,7 +161,7 @@ function! s:abolish_setup()
     if !has_key(g:Abolish.Coercions,'l')
       let g:Abolish.Coercions.l = function('s:abolish_l')
     endif
-    if !has_key(g:Abolish.Coercions,'t')
+    if !has_key(g:Abolish.Coercions,'t') || string(g:Abolish.Coercions.t) =~# "'<SNR>[0-9]*_titlecase'"
       let g:Abolish.Coercions.t = function('s:abolish_t')
     endif
   endif
