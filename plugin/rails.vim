@@ -86,17 +86,6 @@ if !exists('g:loaded_projectionist')
   runtime! plugin/projectionist.vim
 endif
 
-function! s:doau_user(arg) abort
-  if exists('#User#'.a:arg)
-    try
-      let [modelines, &modelines] = [&modelines, 0]
-      exe 'doautocmd User' a:arg
-    finally
-      let &modelines = modelines
-    endtry
-  endif
-endfunction
-
 augroup railsPluginDetect
   autocmd!
 
@@ -108,11 +97,9 @@ augroup railsPluginDetect
         \ if get(g:, 'rails_vim_enter', get(g:, 'projectionist_vim_enter', 1)) &&
         \     argc() == 0 && RailsDetect(getcwd()) |
         \   call rails#buffer_setup() |
-        \   call s:doau_user('BufEnterRails') |
         \ endif
   autocmd FileType netrw
         \ if RailsDetect(get(b:, 'netrw_curdir', @%)) |
-        \   call s:doau_user('BufEnterRails') |
         \ endif
   autocmd FileType * if RailsDetect() | call rails#buffer_setup() | endif
 

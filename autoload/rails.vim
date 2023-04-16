@@ -1222,14 +1222,6 @@ function! s:Refresh(bang)
     endif
     let i += 1
   endwhile
-  if exists('#User#BufEnterRails')
-    try
-      let [modelines, &modelines] = [&modelines, 0]
-      doautocmd User BufEnterRails
-    finally
-      let &modelines = modelines
-    endtry
-  endif
 endfunction
 
 " }}}1
