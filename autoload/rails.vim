@@ -17,12 +17,8 @@ let s:readable_prototype = {}
 
 function! s:add_methods(namespace, method_names)
   for name in a:method_names
-    let s:{a:namespace}_prototype[name] = s:function('s:'.a:namespace.'_'.name)
+    let s:{a:namespace}_prototype[name] = function('s:'.a:namespace.'_'.name)
   endfor
-endfunction
-
-function! s:function(name) abort
-  return function(substitute(a:name, '^s:', matchstr(expand('<sfile>'),  '.*\zs<SNR>\d\+_'), ''))
 endfunction
 
 function! s:sub(str,pat,rep)
@@ -446,7 +442,7 @@ call s:add_methods('readable',['end_of','last_opening_line','last_method_line','
 function! s:readable_find_affinity() dict abort
   let f = self.name()
   let all = self.app().projections()
-  for pattern in reverse(sort(filter(keys(all), 'v:val =~# "^[^*{}]*\\*[^*{}]*$"'), s:function('rails#lencmp')))
+  for pattern in reverse(sort(filter(keys(all), 'v:val =~# "^[^*{}]*\\*[^*{}]*$"'), function('rails#lencmp')))
     if !has_key(all[pattern], 'affinity')
       continue
     endif
@@ -3128,7 +3124,7 @@ function! s:readable_resolve_view(name, ...) dict abort
   else
     for format in ['.'.self.format(a:0 ? a:1 : 0), '']
       let found = self.app().relglob('', 'app/views/'.name.format.'.*')
-      call sort(found, s:function('s:dotcmp'))
+      call sort(found, function('s:dotcmp'))
       if !empty(found)
         return self.app().path(found[0])
       endif
@@ -4789,7 +4785,7 @@ function! s:readable_projected_with_raw(key, ...) dict abort
   if has_key(all, f)
     let mine += map(s:getlist(all[f], a:key), '[s:expand_placeholders(v:val, a:0 ? a:1 : {}), v:val]')
   endif
-  for pattern in reverse(sort(filter(keys(all), 'v:val =~# "^[^*{}]*\\*[^*{}]*$"'), s:function('rails#lencmp')))
+  for pattern in reverse(sort(filter(keys(all), 'v:val =~# "^[^*{}]*\\*[^*{}]*$"'), function('rails#lencmp')))
     let [prefix, suffix; _] = split(pattern, '\*', 1)
     if s:startswith(f, prefix) && s:endswith(f, suffix)
       let root = f[strlen(prefix) : -strlen(suffix)-1]
