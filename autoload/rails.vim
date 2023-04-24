@@ -4838,23 +4838,23 @@ call s:add_methods('app', ['internal_load_path'])
 nnoremap <SID>: :<C-U><C-R>=v:count ? v:count : ''<CR>
 function! s:map_gf() abort
   let pattern = '^$\|_gf(v:count\|[Rr]uby\|[Rr]ails'
-  if mapcheck('gf', 'n') =~# pattern.'\|^gf$'
+  if maparg('gf', 'n') =~# pattern.'\|^gf$'
     nmap <buffer><silent> gf         <SID>:find <Plug><cfile><CR>
     let b:undo_ftplugin .= "|sil! exe 'nunmap <buffer> gf'"
   endif
-  if mapcheck('<C-W>f', 'n') =~# pattern
+  if maparg('<C-W>f', 'n') =~# pattern
     nmap <buffer><silent> <C-W>f     <SID>:sfind <Plug><cfile><CR>
     let b:undo_ftplugin .= "|sil! exe 'nunmap <buffer> <C-W>f'"
   endif
-  if mapcheck('<C-W><C-F>', 'n') =~# pattern
+  if maparg('<C-W><C-F>', 'n') =~# pattern
     nmap <buffer><silent> <C-W><C-F> <SID>:sfind <Plug><cfile><CR>
     let b:undo_ftplugin .= "|sil! exe 'nunmap <buffer> <C-W><C-F>'"
   endif
-  if mapcheck('<C-W>gf', 'n') =~# pattern
+  if maparg('<C-W>gf', 'n') =~# pattern
     nmap <buffer><silent> <C-W>gf    <SID>:tabfind <Plug><cfile><CR>
     let b:undo_ftplugin .= "|sil! exe 'nunmap <buffer> <C-W>gf'"
   endif
-  if mapcheck('<C-R><C-F>', 'c') =~# pattern
+  if maparg('<C-R><C-F>', 'c') =~# pattern
     cmap <buffer>         <C-R><C-F> <Plug><cfile>
     let b:undo_ftplugin .= "|sil! exe 'cunmap <buffer> <C-R><C-F>'"
   endif
