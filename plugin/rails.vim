@@ -9,6 +9,11 @@ if exists('g:loaded_rails') || &cp || v:version < 800
 endif
 let g:loaded_rails = 1
 
+" Turn on $LOAD_PATH detection in the ruby ftplugin
+if !exists('g:ruby_exec')
+  let g:ruby_exec = 1
+endif
+
 " Utility Functions {{{1
 
 function! s:error(str)
