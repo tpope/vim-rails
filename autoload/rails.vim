@@ -1026,7 +1026,7 @@ function! s:app_start_rails_command(cmd, ...) dict abort
   try
     if exists(':Start') == 2
       let title = escape(fnamemodify(self.real(), ':t').' '.title, ' ')
-      exe 'Start'.(a:0 && a:1 ? '!' : '').' -title='.title.' '.cmd
+      exe 'Start'.(a:0 && a:1 ? '!' : '').' ++title='.title.' '.cmd
     elseif has("win32")
       exe "!start ".cmd
     else
@@ -5026,7 +5026,7 @@ function! rails#buffer_setup() abort
     let &l:errorformat = substitute(&l:errorformat, '%\\&completion=rails#complete_\zsrails', 'rake', 'g')
   endif
 
-  let dir = '-dir=' . substitute(fnameescape(fnamemodify(self.app().real(), ':~')), '^\\\~', '\~', '') . ' '
+  let dir = '++dir=' . substitute(fnameescape(fnamemodify(self.app().real(), ':~')), '^\\\~', '\~', '') . ' '
 
   let dispatch = self.projected('dispatch')
   if !empty(dispatch)
@@ -5041,7 +5041,7 @@ function! rails#buffer_setup() abort
             \ " %:s/.*/\\=rails#buffer(submatch(0)).default_task(exists('l#') ? l# : 0)/")
     else
       call self.setvar('dispatch',
-            \ dir . '-compiler=rails ' .
+            \ dir . '++compiler=rails ' .
             \ self.app().rake_command('static') .
             \ " %:s/.*/\\=rails#buffer(submatch(0)).default_rake_task(exists('l#') ? l# : 0)/")
     endif
