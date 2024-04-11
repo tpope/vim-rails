@@ -101,7 +101,7 @@ endif
 let b:rails_path = s:path
 if s:path =~# '/app/controllers/.*\.rb$\|/app/mailers/.*\.rb$\|/app/models/.*_mailer\.rb$'
   syn match rubyHelper '\v<%(render_to_string)>[!?:]@!'
-  syn match rubyCallback '\v<%(before|append_before|prepend_before|after|append_after|prepend_after|around|append_around|prepend_around|skip_before|skip_after|skip)_action>[!?:]@!'
+  syn match rubyCallback '\v<%(before|append_before|prepend_before|after|append_after|prepend_after|around|append_around|prepend_around|skip_before|skip_after|skip_around|skip)_action>[!?:]@!'
   syn match rubyMacro '\v<%(helper|helper_attr|helper_method|layout)>[!?:]@!'
   syn match rubyExceptionMacro '\v<%(rescue_from)>[!?:]@!'
 endif
