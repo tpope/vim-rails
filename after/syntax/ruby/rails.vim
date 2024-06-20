@@ -34,7 +34,7 @@ if s:path =~# '/app/models/.*_observer\.rb$'
   syn match rubyMacro '\v<%(observe)>[!?:]@!'
 
 elseif s:path =~# '/app/models/.*\.rb$'
-  syn match rubyMacro '\v<%(accepts_nested_attributes_for|attr_readonly|attribute|enum|serialize|store|store_accessor)>[!?:]@!'
+  syn match rubyMacro '\v<%(accepts_nested_attributes_for|attr_readonly|attribute|enum|normalizes|serialize|store|store_accessor)>[!?:]@!'
   syn match rubyMacro '\v<%(default_scope|scope)>[!?:]@!'
   syn match rubyEntity '\v<%(belongs_to|has_one|composed_of)>[!?:]@!'
   syn match rubyEntities '\v<%(has_many|has_and_belongs_to_many)>[!?:]@!'
