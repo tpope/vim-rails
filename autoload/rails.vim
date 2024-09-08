@@ -1481,8 +1481,10 @@ function! s:readable_default_rake_task(...) dict abort
       let opts = ''
       if test ==# self.name()
         let method = self.app().file(test).last_method(lnum)
-        if method =~ '^test_'
-          let opts = ' TESTOPTS=-n'.method
+        if method =~# '^test_\w*$'
+          let opts = ' TESTOPTS=-n' . method
+        elseif method =~# '^test_'
+          let opts = ' TESTOPTS=-n"' . method . '"'
         endif
       endif
       if self.app().has_rails5()
@@ -1883,8 +1885,10 @@ function! s:RunnerCommand(bang, count, arg) abort
       let compiler = 'rubyunit'
       if a:count > 0
         let method = file.last_method(a:count)
-        if method =~ '^test_'
-          let extra = ' -n'.method
+        if method =~# '^test_\w*$'
+          let extra = ' -n' . method
+        elseif method =~# '^test_'
+          let extra = ' -n"' . method . '"'
         else
           let extra = ''
         endif
